@@ -1,0 +1,95 @@
+{% extends 'users/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold" style="font-family: 'Space Grotesk', sans-serif;">
+                <i class="bi bi-map text-danger me-2"></i>Despliegue Territorial SNR
+            </h2>
+            <p class="text-muted">Distribución de instituciones y laboratorios por entidad federal.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: #ffffff;">
+                <div id="venezuela-map" style="width: 100%; height: 600px; position: relative;">
+                    <div id="vmap" style="width: 100%; height: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg text-white p-4 mb-4" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <h5 class="fw-bold mb-3" id="state-name">Selecciona un Estado</h5>
+                <div class="d-flex justify-content-between border-bottom border-white border-opacity-10 pb-2 mb-2">
+                    <span>Instituciones:</span>
+                    <span class="fw-bold" id="inst-count">-</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Participantes:</span>
+                    <span class="fw-bold" id="part-count">-</span>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm p-4" style="border-radius: 15px;">
+                <h6 class="fw-bold mb-3">Ranking de Sedes</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                        <span>1. Miranda</span>
+                        <span class="badge bg-primary rounded-pill">42</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                        <span>2. Dtto. Capital</span>
+                        <span class="badge bg-primary rounded-pill">38</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/jqvmap/1.5.1/jqvmap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqvmap/1.5.1/jquery.vmap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqvmap/1.5.1/maps/jquery.vmap.venezuela.js"></script>
+{% endblock %} {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqvmap/1.5.1/jquery.vmap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqvmap/1.5.1/maps/jquery.vmap.venezuela.js"></script>
+
+<script>
+    jQuery(document).ready(function() {
+        // Esta línea es la clave: Django traduce {{ mapa_data|safe }} 
+        // a un objeto que JavaScript puede entender.
+        const dataReal = {{ mapa_data|safe }}; 
+
+        jQuery('#vmap').vectorMap({
+            map: 'venezuela_en',
+            backgroundColor: '#ffffff',
+            color: '#e2e8f0', // Color de estados sin datos
+            hoverOpacity: 0.7,
+            selectedColor: '#00d4ff',
+            enableZoom: true,
+            showTooltip: true,
+            
+            // ESTA ES LA MAGIA: 
+            // 'values' usa los números para pintar el mapa automáticamente
+            values: dataReal, 
+            
+            // Define que los estados con más instituciones sean azul oscuro 
+            // y los de menos sean azul claro
+            scaleColors: ['#C8EEFF', '#0b2c6d'], 
+            normalizeFunction: 'polynomial',
+
+            onRegionClick: function(element, code, region) {
+                // Cuando haces clic, buscamos en la data real
+                const valor = dataReal[code] || 0;
+                $('#state-name').text(region);
+                $('#inst-count').text(valor);
+                // Aquí podrías agregar más lógica
+            }
+        });
+    });
+</script>
+{% endblock %}

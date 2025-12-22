@@ -1,0 +1,42 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-calendar-event"></i> Eventos Disponibles</h2>
+    <p class="text-muted">Explora los eventos organizados por estado</p>
+
+    {% if estados_con_eventos %}
+        {% for grupo in estados_con_eventos %}
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-geo-alt-fill"></i> {{ grupo.estado.nombre }}</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for evento in grupo.eventos %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ evento.nombre }}</strong><br>
+                                    <small class="text-muted">
+                                        Fecha: {{ evento.fecha }} |
+                                        Institución: {{ evento.institucion.nombre }}
+                                    </small>
+                                </div>
+
+                                <a href="#" class="btn btn-sm btn-success">
+                                    <i class="bi bi-box-arrow-in-right"></i> Inscribirme
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle"></i>
+            No hay eventos disponibles por ahora.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

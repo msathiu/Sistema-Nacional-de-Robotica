@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<style>
+    /* FONDO GRIS CON PATRÓN TECNOLÓGICO */
+    body {
+        background-color: #e9ecef; /* Gris base claro */
+        position: relative;
+    }
+
+    /* Patrón de iconos (Circuitos/Robótica) */
+    .bg-pattern-tech {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 35c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%230b2c6d' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+        z-index: -1;
+    }
+
+    .fvrc-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .fvrc-card-header {
+        background: #0b2c6d;
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+        font-family: 'Space Grotesk', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Estilo para campos de solo lectura */
+    input[readonly] {
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed;
+        border-style: dashed !important;
+    }
+
+    /* Contenedor de Teléfono */
+    .phone-container {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .phone-container .area-code { flex: 0 0 30%; }
+    .phone-container .number { flex: 1; }
+
+    /* Feedback de email en tiempo real */
+    .email-feedback {
+        font-size: 0.8rem;
+        margin-top: 4px;
+        display: none;
+    }
+</style>
+
+<div class="bg-pattern-tech"></div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="fvrc-card">
+                <div class="fvrc-card-header">
+                    <i class="bi bi-robot me-2"></i> Registro del Sistema
+                </div>
+                
+                <div class="p-4 p-md-5">
+                    <form method="post" id="registrationForm">
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                {{ form.nombre|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.codigo|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.password|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.confirm_password|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.email|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.categoria|as_crispy_field }}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">NÚMERO TELEFÓNICO</label>
+                                <div class="d-flex gap-2">
+                                    <div style="flex: 0 0 30%;">
+                                        {{ form.codigo_area|as_crispy_field }}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        {{ form.numero_telefono|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                {{ form.estado|as_crispy_field }}
+                            </div>
+                            <div class="col-12">
+                                {{ form.direccion|as_crispy_field }}
+                            </div>
+
+                            
+                            
+                            {{ form.telefono }} 
+                        </div>
+                                                <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill" style="background: #0b2c6d; border: none;">
+                                <i class="bi bi-shield-check me-2"></i> Confirmar Registro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.querySelector('input[type="email"]');
+    const emailFeedback = document.getElementById('emailStatus');
+
+    emailInput.addEventListener('input', function() {
+        const email = this.value;
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email.length > 0) {
+            emailFeedback.style.display = 'block';
+            if (regex.test(email)) {
+                emailFeedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Formato válido';
+                emailFeedback.className = 'email-feedback text-success';
+            } else {
+                emailFeedback.innerHTML = '<i class="bi bi-x-circle-fill"></i> Introduce un email válido';
+                emailFeedback.className = 'email-feedback text-danger';
+            }
+        } else {
+            emailFeedback.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

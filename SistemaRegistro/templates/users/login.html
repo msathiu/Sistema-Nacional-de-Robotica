@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Iniciar Sesión - Registro Nacional de Robótica{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4 d-flex justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-12 col-md-8 col-lg-5">
+        
+        <div class="card shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header bg-dark text-white text-center py-4 border-0">
+                <div class="mb-2">
+                    <i class="bi bi-robot" style="font-size: 3rem; color: #0d6efd;"></i>
+                </div>
+                <h3 class="fw-bold mb-0">ACCESO AL SISTEMA</h3>
+                <p class="small text-uppercase tracking-widest opacity-75 mb-0">Plataforma Nacional de Robótica</p>
+            </div>
+            
+            <div class="card-body p-5 bg-white">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="id_username" class="form-label fw-bold text-muted small">NOMBRE DE USUARIO (CÓDIGO SNR)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
+                            <input type="text" name="username" id="id_username" class="form-control bg-light border-start-0 ps-0" placeholder="Ej: SNR25-ABC123" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="id_password" class="form-label fw-bold text-muted small">CONTRASEÑA</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
+                            <input type="password" name="password" id="id_password" class="form-control bg-light border-start-0 ps-0" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold py-3" style="border-radius: 12px; transition: all 0.3s;">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> INGRESAR
+                        </button>
+                        
+                        <div class="text-center mt-2">
+                            <span class="text-muted small">¿No tienes cuenta?</span>
+                        </div>
+                        
+                        <a href="{% url 'registrar_institucion' %}" class="btn btn-outline-dark fw-bold py-2" style="border-radius: 12px;">
+                            <i class="bi bi-building-add me-2"></i>REGISTRAR INSTITUCIÓN
+                        </a>
+
+                        <a href="{% url 'home' %}" class="btn btn-link btn-sm text-decoration-none text-muted">
+                            <i class="bi bi-arrow-left me-1"></i> Volver al Inicio
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <p class="text-center text-muted mt-4 small">
+            &copy; 2025 Federación Venezolana de Robótica <br>
+            <span class="badge bg-light text-dark border mt-2">v1.0.2 - Protocolo Seguro</span>
+        </p>
+    </div>
+</div>
+{% endblock %}

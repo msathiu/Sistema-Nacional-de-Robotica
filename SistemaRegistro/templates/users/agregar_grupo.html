@@ -1,0 +1,33 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="col-md-6 offset-md-3 mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5>Agregar Nuevo Grupo</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Grupo</label>
+                    <input type="text" name="nombre_grupo" class="form-control" placeholder="Ej: Grupo de Robótica Avanzada" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Seleccionar Participantes</label>
+                    <select name="miembros" class="form-select" multiple>
+                        {% for p in participantes %}
+                        <option value="{{ p.id }}">{{ p.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Mantén presionada la tecla Ctrl para seleccionar múltiples participantes.</small>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Agregar Grupo</button>
+                <a href="{% url 'dashboard_participante' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
