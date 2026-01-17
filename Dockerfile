@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED 1
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema necesarias
+# Instalar dependencias del sistema necesarias y borrar archivos temporales
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
@@ -22,6 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el resto del código del proyecto
 COPY SistemaRegistro/ /app/
+
+# Crea usuario no root para mayor seguridad
+RUN useradd -m -u 1000 django && \
+    chown -R django:django /app
+USER django
 
 # Exponer el puerto de Django
 EXPOSE 8000

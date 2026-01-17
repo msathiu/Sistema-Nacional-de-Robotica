@@ -1,0 +1,45 @@
+# 1. Usamos una imagen ligera de Python 3.12
+FROM python:3.12-slim
+
+# 2. Variables de entorno para optimizar Python
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# 3. Establecer directorio de trabajo
+WORKDIR /app
+
+# 4. Instalar dependencias del sistema necesarias
+# Añadimos dependencias mínimas y limpiamos caché en la misma capa
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 5. Instalar dependencias de Python
+# Copiamos primero solo requirements para aprovechar la caché de Docker
+# Copiar el archivo de requerimientos
+COPY SistemaRegistro/requirements.txt /app/
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn  # Instalamos el servidor de producción
+
+# 6. Copiar el código del proyecto
+COPY SistemaRegistro/ /app/
+
+# 7. Gestión de archivos estáticos y seguridad
+# Recopilar archivos estáticos (asegúrate de tener STATIC_ROOT en settings.py)
+# RUN python manage.py collectstatic --noinput
+
+# 8. Usuario no root para seguridad
+RUN useradd -m -u 1000 django && \
+    chown -R django:django /app
+USER django
+
+# 9. Puerto de la aplicación
+EXPOSE 8000
+
+# 10. Comando de inicio para PRODUCCIÓN
+# nombre_del_proyecto donde está tu wsgi.py
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-", "SistemaRegistro.wsgi:application"]
+

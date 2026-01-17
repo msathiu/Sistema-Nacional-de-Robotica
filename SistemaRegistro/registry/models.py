@@ -1,24 +1,28 @@
-from django.db import models
-from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError 
-from datetime import date 
-from django.conf import settings
 import string
 import random
+from django.db import models
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.conf import settings
+from django.contrib.auth.models import User
 
 class Estado(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     codigo = models.CharField(max_length=10, unique=True)
     
+    class Meta:
+        ordering = ['nombre']
+        
     def __str__(self):
         return self.nombre
 
 class Municipio(models.Model):
-    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
+    estado = models.ForeignKey(Estado, on_delete=models.CASCADE, related_name='municipios')
     nombre = models.CharField(max_length=100)
     
     class Meta:
         unique_together = ['estado', 'nombre']
+        ordering = ['nombre']
     
     def __str__(self):
         return f"{self.nombre}, {self.estado.nombre}"
@@ -33,17 +37,28 @@ def generar_codigo_unico():
             return codigo
 
 class Institucion(models.Model):
+    usuario = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='institucion', # Este nombre es el que usará el getattr en la señal
+        null=True,                  # Permite que existan instituciones sin usuario asignado aún
+        blank=True
+    )
+    nombre = models.CharField(max_length=200)
     nombre = models.CharField(max_length=200)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     codigo = models.CharField(max_length=25, unique=True)
     direccion = models.TextField(blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
-    activa = models.BooleanField(default=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     activa = models.BooleanField(default=False)
     
     def save(self, *args, **kwargs):
+        # 1. Convertir el nombre a mayúsculas antes de procesar nada
+        if self.nombre:
+            self.nombre = self.nombre.upper()
+            
         if not self.codigo or self.codigo == "SISTEMA GENERARÁ CÓDIGO":
             # SNR25- (6 chars) + 6 aleatorios = 12 caracteres total.
             # Esto cabe perfectamente en tu max_length=20
@@ -60,7 +75,7 @@ class Institucion(models.Model):
         ordering = ['nombre']
     
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} ({self.codigo})"
 
 class Participante(models.Model):
     SEXO_CHOICES = [

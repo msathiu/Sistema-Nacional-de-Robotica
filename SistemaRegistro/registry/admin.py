@@ -14,10 +14,10 @@ class MunicipioAdmin(admin.ModelAdmin):
 
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'codigo', 'estado', 'telefono', 'activa']
-    list_filter = ['estado', 'activa']
-    search_fields = ['nombre', 'codigo']
-    list_editable = ['activa']
+    list_display = ('nombre', 'estado', 'codigo', 'activa', 'telefono', 'fecha_registro')# Esto crea columnas en la lista del admin
+    list_filter = ('activa', 'estado') # Esto añade filtros laterales
+    search_fields = ('nombre', 'codigo')# Esto permite buscar por nombre o código en la barra superior
+    list_editable = ('activa',) # ¡Truco! Esto permite activar instituciones desde la lista principal sin entrar a cada una.
 
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):

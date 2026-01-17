@@ -1,0 +1,73 @@
+# Entorno virtual
+venv/
+env/
+.env
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Variables de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Docker Data (Muy importante) ---
+# Ignora las carpetas donde Docker guarda los datos reales de la BD
+data/
+pgdata/
+postgres_data/
+
+# --- Logs de Docker y App ---
+*.log
+logs/
+
+# --- Node/Frontend (Si llegas a usarlo en el mismo repo) ---
+node_modules/
+npm-debug.log*
+
+# --- Archivos de sistema adicionales ---
+.python-version
+.pytest_cache/
+.coverage
+htmlcov/
