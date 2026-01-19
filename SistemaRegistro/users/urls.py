@@ -16,6 +16,8 @@ urlpatterns = [
     path('institucion/dashboard/', views.dashboard_institucional, name='dashboard_institucional'),
     path('dashboard/analitica/', views.estadisticas_demografia, name='estadisticas_por_estado'),
     path('dashboard/mapa/', views.mapa_interactivo, name='mapa_interactivo'),
+    path('exportar/excel/', views.exportar_participantes_excel, name='exportar_participantes_excel'),
+    path('sistema/logs/', views.ver_logs_sistema, name='ver_logs_sistema'),
     
     # Instituciones
     path('instituciones/', views.lista_instituciones, name='lista_instituciones'),

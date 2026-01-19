@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 
 from registry.models import Participante, Municipio, Institucion, Estado
 from .models import UserProfile  
@@ -18,6 +18,8 @@ from django.urls import reverse
 from registry.models import Evento
 from django.db import transaction
 from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm
+import pandas as pd
+from django.contrib.admin.models import LogEntry
 
 def home(request):
     """Página principal con opciones de login y registro"""
@@ -95,7 +97,6 @@ def dashboard(request):
     """Router principal del dashboard"""
     user_profile = request.user.userprofile
 
-    # 1. Redirigir según el tipo de usuario
     if user_profile.user_type == 'participante':
         return redirect('dashboard_participante')
 
@@ -103,20 +104,19 @@ def dashboard(request):
         return redirect('dashboard_institucional')
 
     elif user_profile.user_type == 'admin':
+        # --- NUEVA LÓGICA PARA EL MAPA ---
+        # 1. Contamos instituciones por nombre de estado
+        # Nota: Usamos 'estado__nombre' asumiendo que Institucion tiene una FK a Estado
+        conteo_db = Institucion.objects.values('estado__nombre').annotate(total=Count('id'))
+        
+        # 2. Creamos el diccionario que el JavaScript necesita: {'Miranda': 5, 'Zulia': 2...}
+        mapa_data = {registro['estado__nombre']: registro['total'] for registro in conteo_db}
+        # ---------------------------------
         
         total_participantes = Participante.objects.count()
-        
-        # Aquí puedes decidir si el total de instituciones incluye las inactivas o no.
-        # Si quieres que el número grande muestre todas:
         total_instituciones = Institucion.objects.count()
-        
-        # LÓGICA DE ACTIVACIÓN: Contamos las que están esperando (activa=False)
         pendientes_aprobacion = Institucion.objects.filter(activa=False).count()
-        
-        # Contamos cuántos estados distintos tienen al menos una institución
         cobertura_nacional = Institucion.objects.values('estado').distinct().count()
-        
-        # Conteo de eventos
         total_eventos = Evento.objects.count()
 
         context = {
@@ -126,7 +126,7 @@ def dashboard(request):
             'total_instituciones': total_instituciones,
             'cobertura_nacional': cobertura_nacional,
             'total_eventos': total_eventos,
-            # AGREGAMOS LA VARIABLE AL CONTEXTO AQUÍ:
+            'mapa_data': mapa_data,  # <--- AHORA SÍ TIENE DATOS
             'pendientes_aprobacion': pendientes_aprobacion,
         }
         return render(request, 'users/dashboard_admin.html', context)
@@ -140,7 +140,7 @@ def dashboard(request):
 def dashboard_participante(request):
     """Panel de control exclusivo para participantes"""
     
-    # 🚨 Es esencial que esta vista exista 🚨
+
     user_profile = request.user.userprofile
     
     if user_profile.user_type != 'participante':
@@ -170,22 +170,35 @@ def crear_usuario_institucional(request, institucion_id):
 
 @login_required
 def dashboard_institucional(request):
-
     user_profile = request.user.userprofile
-
     if user_profile.user_type != 'institucional' or not user_profile.institution:
         return redirect('dashboard')
 
     institution = user_profile.institution
 
-    # 🔥 AQUÍ ESTABA EL PROBLEMA: FALTABA DEFINIR "eventos"
-    eventos = Evento.objects.filter(institucion=institution).order_by('-fecha')
+    # --- CÁLCULOS DINÁMICOS ---
+    # 1. Participantes de esta institución
+    total_mis_participantes = Participante.objects.filter(institucion=institution).count()
+    
+    # 2. Eventos creados por esta institución
+    eventos_qs = Evento.objects.filter(institucion=institution)
+    total_eventos = eventos_qs.count()
+    
+    # 3. Eventos activos (ejemplo: fecha mayor o igual a hoy)
+    from django.utils import timezone
+    total_activos = eventos_qs.filter(fecha__gte=timezone.now().date()).count()
+    
+    # 4. Certificados (asumiendo que tienes un modelo o lógica para esto)
+    # Si no tienes modelo de certificados, puedes poner 0 o contar inscritos
+    total_certificados = 0 # Sustituir por: Certificado.objects.filter(evento__institucion=institution).count()
 
     context = {
-        'user': request.user,
         'user_profile': user_profile,
         'institution': institution,
-        'eventos': eventos,
+        'total_mis_participantes': total_mis_participantes,
+        'total_eventos': total_eventos,
+        'total_activos': total_activos,
+        'total_certificados': total_certificados,
     }
 
     return render(request, 'users/dashboard_institucional.html', context)
@@ -194,7 +207,25 @@ def is_admin(user):
     """Verifica si el usuario es administrador"""
     return hasattr(user, 'userprofile') and user.userprofile.user_type == 'admin'
 
-# En users/views.py - Opcional: redirigir la vista antigua
+@user_passes_test(is_admin)
+def exportar_participantes_excel(request):
+    # Obtenemos todos los registros
+    participantes = Participante.objects.all().values()
+    df = pd.DataFrame(participantes)
+
+    # Creamos la respuesta HTTP con el tipo de contenido de Excel
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="Padrón_Nacional_Robotica.xlsx"'
+    
+    # Escribimos el dataframe al response
+    df.to_excel(response, index=False, engine='openpyxl')
+    return response
+
+@user_passes_test(is_admin)
+def ver_logs_sistema(request):
+    # Usamos LogEntry de Django para mostrar las últimas acciones del panel
+    logs = LogEntry.objects.all().select_related('user', 'content_type')[:100]
+    return render(request, 'users/logs_sistema.html', {'logs': logs})
 
 def create_institutional_user(request):
     """Redirige al formulario unificado de institución"""
@@ -237,7 +268,6 @@ def lista_instituciones(request):
 
 
 
-# users/views.py
 
 def registrar_institucion(request):
     if request.method == 'POST':
@@ -646,6 +676,17 @@ def mapa_interactivo(request):
     return render(request, 'users/mapa_interactivo.html', {
         'mapa_data': mapa_data
     })
+
+def dashboard_mapa(request):
+    # Ejemplo de cómo agrupar instituciones por estado
+    from django.db.models import Count
+    # Asumiendo que tu modelo Institucion tiene un campo 'estado'
+    conteo = Institucion.objects.values('estado').annotate(total=Count('id'))
+    
+    # Crear el diccionario: {'Miranda': 10, 'Zulia': 5...}
+    mapa_data = {item['estado']: item['total'] for item in conteo}
+    
+    return render(request, 'tu_template.html', {'mapa_data': mapa_data})
 
 @login_required
 def gestionar_eventos_institucion(request):

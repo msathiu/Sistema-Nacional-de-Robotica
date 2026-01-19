@@ -13,53 +13,85 @@
                     <p class="text-muted mb-0 small">{{ user_profile.institution.nombre }} | Sede {{ user_profile.institution.estado.nombre }}</p>
                 </div>
             </div>
+            
             <hr class="mt-4 opacity-10">
+
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center border-end">
+                            <i class="bi bi-info-square-fill text-muted mb-2 fs-1"></i>
+                            <h6 class="fw-bold text-muted small uppercase">Ficha Técnica</h6>
+                        </div>
+                        <div class="col-md-10 ps-4">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="x-small text-uppercase fw-bold text-muted">Categoría</label>
+                                    <p class="mb-0 fw-bold">{{ user_profile.institution.get_categoria_display }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="x-small text-uppercase fw-bold text-muted">Contacto</label>
+                                    <p class="mb-0 fw-bold">{{ user_profile.institution.email }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="x-small text-uppercase fw-bold text-muted">Ubicación</label>
+                                    <p class="mb-0 fw-bold">{{ user_profile.institution.estado.nombre }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-5">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Participantes</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="45">0</h2> <i class="bi bi-people position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
-                </div>
-                <div style="height: 4px; background: var(--accent-cyan);"></div>
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+            <div class="card-body p-4 position-relative z-1">
+                <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Participantes</div>
+                <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_participantes }}">0</h2> 
+                <i class="bi bi-people position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
             </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Creados</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="8">0</h2> <i class="bi bi-calendar-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
-                </div>
-                <div style="height: 4px; background: #10b981;"></div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Certificados</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="32">0</h2>
-                    <i class="bi bi-patch-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
-                </div>
-                <div style="height: 4px; background: #f59e0b;"></div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Activos</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="3">0</h2>
-                    <i class="bi bi-activity position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
-                </div>
-                <div style="height: 4px; background: #8b5cf6;"></div>
-            </div>
+            <div style="height: 4px; background: #00d4ff;"></div>
         </div>
     </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+            <div class="card-body p-4 position-relative z-1">
+                <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Creados</div>
+                <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_eventos }}">0</h2> 
+                <i class="bi bi-calendar-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+            </div>
+            <div style="height: 4px; background: #10b981;"></div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+            <div class="card-body p-4 position-relative z-1">
+                <div class="text-white-50 small fw-bold text-uppercase mb-2">Certificados</div>
+                <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_certificados }}">0</h2>
+                <i class="bi bi-patch-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+            </div>
+            <div style="height: 4px; background: #f59e0b;"></div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+            <div class="card-body p-4 position-relative z-1">
+                <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Activos</div>
+                <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_activos }}">0</h2>
+                <i class="bi bi-activity position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+            </div>
+            <div style="height: 4px; background: #8b5cf6;"></div>
+        </div>
+    </div>
+</div>
 
     <div class="row g-4">
         <div class="col-md-6">
@@ -114,34 +146,6 @@
             </div>
         </div>
 
-        <div class="col-12 mt-4">
-            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-2 text-center border-end">
-                            <i class="bi bi-info-square-fill text-muted mb-2 fs-1"></i>
-                            <h6 class="fw-bold text-muted small uppercase">Ficha Técnica</h6>
-                        </div>
-                        <div class="col-md-10 ps-4">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="x-small text-uppercase fw-bold text-muted">Categoría</label>
-                                    <p class="mb-0 fw-bold">{{ user_profile.institution.get_categoria_display }}</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="x-small text-uppercase fw-bold text-muted">Contacto</label>
-                                    <p class="mb-0 fw-bold">{{ user_profile.institution.email }}</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="x-small text-uppercase fw-bold text-muted">Ubicación</label>
-                                    <p class="mb-0 fw-bold">{{ user_profile.institution.estado.nombre }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 

@@ -1,27 +1,31 @@
-{% extends "base.html" %}
+{% extends 'base.html' %} 
 {% load crispy_forms_tags %}
 
 {% block title %}Iniciar Sesión - Registro Nacional de Robótica{% endblock %}
 
 {% block content %}
-<div class="container mt-5 pt-4 d-flex justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="col-12 col-md-8 col-lg-5">
+<div class="container-fluid py-5 d-flex justify-content-center align-items-center" style="min-height: 85vh; background: #f4f7f9;">
+    <div class="col-12 col-md-8 col-lg-5 col-xl-4">
         
-        <div class="card shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
-            <div class="card-header bg-dark text-white text-center py-4 border-0">
-                <div class="mb-2">
-                    <i class="bi bi-robot" style="font-size: 3rem; color: #0d6efd;"></i>
+        <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden; background: white;">
+            <div class="card-header border-0 py-5 text-center" style="background: linear-gradient(135deg, var(--blue-main) 0%, #001529 100%); position: relative;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <div class="position-relative">
+                    <div class="bg-white d-inline-block p-3 rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-robot fs-1" style="color: var(--blue-main);"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-1" style="font-family: 'Space Grotesk', sans-serif; letter-spacing: 1px;">ACCESO MASTER</h3>
+                    <p class="small text-uppercase text-info fw-bold mb-0" style="letter-spacing: 2px; font-size: 0.7rem;">SISTEMA NACIONAL DE ROBÓTICA</p>
                 </div>
-                <h3 class="fw-bold mb-0">ACCESO AL SISTEMA</h3>
-                <p class="small text-uppercase tracking-widest opacity-75 mb-0">Plataforma Nacional de Robótica</p>
             </div>
             
-            <div class="card-body p-5 bg-white">
+            <div class="card-body p-4 p-md-5">
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <div class="alert border-0 shadow-sm alert-{{ message.tags }} alert-dismissible fade show rounded-4 mb-4" role="alert">
+                            <i class="bi bi-exclamation-circle-fill me-2"></i> {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     {% endfor %}
                 {% endif %}
@@ -30,46 +34,87 @@
                     {% csrf_token %}
                     
                     <div class="mb-4">
-                        <label for="id_username" class="form-label fw-bold text-muted small">NOMBRE DE USUARIO (CÓDIGO SNR)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
-                            <input type="text" name="username" id="id_username" class="form-control bg-light border-start-0 ps-0" placeholder="Ej: SNR25-ABC123" required>
+                        <label class="form-label fw-bold text-muted small text-uppercase">Nombre de Usuario / Código SNR</label>
+                        <div class="input-group login-input-group">
+                            <span class="input-group-text border-0 bg-light"><i class="bi bi-person-fill text-primary"></i></span>
+                            <input type="text" name="username" id="id_username" class="form-control border-0 bg-light" placeholder="Ej: SNR25-ABC123" required>
                         </div>
                     </div>
                     
                     <div class="mb-4">
-                        <label for="id_password" class="form-label fw-bold text-muted small">CONTRASEÑA</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
-                            <input type="password" name="password" id="id_password" class="form-control bg-light border-start-0 ps-0" placeholder="••••••••" required>
+                        <div class="d-flex justify-content-between">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Contraseña</label>
+
+                        </div>
+                        <div class="input-group login-input-group">
+                            <span class="input-group-text border-0 bg-light"><i class="bi bi-shield-lock-fill text-primary"></i></span>
+                            <input type="password" name="password" id="id_password" class="form-control border-0 bg-light" placeholder="••••••••" required>
                         </div>
                     </div>
+
                     
                     <div class="d-grid gap-3">
-                        <button type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold py-3" style="border-radius: 12px; transition: all 0.3s;">
-                            <i class="bi bi-box-arrow-in-right me-2"></i> INGRESAR
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg" style="border-radius: 15px; background: var(--blue-main); border: none; transition: transform 0.2s;">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> ENTRAR AL SISTEMA
                         </button>
                         
-                        <div class="text-center mt-2">
-                            <span class="text-muted small">¿No tienes cuenta?</span>
+                        <div class="position-relative my-2">
+                            <hr class="opacity-10">
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 small text-muted">Ó</span>
                         </div>
                         
-                        <a href="{% url 'registrar_institucion' %}" class="btn btn-outline-dark fw-bold py-2" style="border-radius: 12px;">
+                        <a href="{% url 'registrar_institucion' %}" class="btn btn-outline-secondary fw-bold py-2" style="border-radius: 12px; border-width: 2px;">
                             <i class="bi bi-building-add me-2"></i>REGISTRAR INSTITUCIÓN
                         </a>
 
-                        <a href="{% url 'home' %}" class="btn btn-link btn-sm text-decoration-none text-muted">
-                            <i class="bi bi-arrow-left me-1"></i> Volver al Inicio
+                        <a href="{% url 'home' %}" class="btn btn-link btn-sm text-decoration-none text-muted mt-2">
+                            <i class="bi bi-house-door me-1"></i> Regresar al portal principal
                         </a>
                     </div>
                 </form>
             </div>
         </div>
         
-        <p class="text-center text-muted mt-4 small">
-            &copy; 2025 Federación Venezolana de Robótica <br>
-            <span class="badge bg-light text-dark border mt-2">v1.0.2 - Protocolo Seguro</span>
-        </p>
     </div>
 </div>
+
+<style>
+    /* Estilos coherentes con el Registro Master */
+    .login-input-group {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .login-input-group:focus-within {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.1);
+        background-color: #fff;
+    }
+
+    .login-input-group .form-control {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        padding: 12px 10px;
+    }
+
+    .login-input-group .input-group-text {
+        padding-left: 15px;
+    }
+
+    .x-small { font-size: 0.75rem; }
+    
+    button:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    /* Estilo del checkbox */
+    .form-check-input:checked {
+        background-color: var(--accent-cyan);
+        border-color: var(--accent-cyan);
+    }
+</style>
 {% endblock %}

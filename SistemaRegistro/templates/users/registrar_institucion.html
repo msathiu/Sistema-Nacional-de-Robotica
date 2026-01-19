@@ -1,125 +1,130 @@
-{% extends 'base.html' %}
+{% extends 'users/base_dashboard.html' %}
 {% load crispy_forms_tags %}
 
+{% block title %}SNR | Registro de Institución{% endblock %}
+
 {% block content %}
-<style>
-    /* FONDO GRIS CON PATRÓN TECNOLÓGICO */
-    body {
-        background-color: #e9ecef; /* Gris base claro */
-        position: relative;
-    }
-
-    /* Patrón de iconos (Circuitos/Robótica) */
-    .bg-pattern-tech {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 35c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%230b2c6d' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
-        z-index: -1;
-    }
-
-    .fvrc-card {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 24px;
-        border: none;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-
-    .fvrc-card-header {
-        background: #0b2c6d;
-        color: white;
-        padding: 1.5rem;
-        text-align: center;
-        font-family: 'Space Grotesk', sans-serif;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* Estilo para campos de solo lectura */
-    input[readonly] {
-        background-color: #f1f3f5 !important;
-        cursor: not-allowed;
-        border-style: dashed !important;
-    }
-
-    /* Contenedor de Teléfono */
-    .phone-container {
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-    }
-    .phone-container .area-code { flex: 0 0 30%; }
-    .phone-container .number { flex: 1; }
-
-    /* Feedback de email en tiempo real */
-    .email-feedback {
-        font-size: 0.8rem;
-        margin-top: 4px;
-        display: none;
-    }
-</style>
-
-<div class="bg-pattern-tech"></div>
-
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
-            <div class="fvrc-card">
-                <div class="fvrc-card-header">
-                    <i class="bi bi-robot me-2"></i> Registro del Sistema
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-building-fill-add fs-2 text-white"></i>
                 </div>
-                
-                <div class="p-4 p-md-5">
-                    <form method="post" id="registrationForm">
-                        {% csrf_token %}
-                        
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                {{ form.nombre|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.codigo|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.password|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.confirm_password|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.email|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.categoria|as_crispy_field }}
-                            </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Registro de Sede / Institución</h2>
+                    <p class="text-muted mb-0 small">Ministerio del Poder Popular para la Ciencia y la Tecnología | Registro Nacional de Robótica</p>
+                </div>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
 
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold">NÚMERO TELEFÓNICO</label>
-                                <div class="d-flex gap-2">
-                                    <div style="flex: 0 0 30%;">
-                                        {{ form.codigo_area|as_crispy_field }}
-                                    </div>
-                                    <div style="flex: 1;">
-                                        {{ form.numero_telefono|as_crispy_field }}
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-lock text-white me-2"></i>
+                        <h5 class="fw-bold mb-0 text-white uppercase small tracking-wider">Afiliación de Entidad Educativa</h5>
+                    </div>
+                    <span class="badge rounded-pill" style="background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">Paso Único</span>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert border-0 shadow-sm alert-{{ message.tags }} alert-dismissible fade show rounded-4" role="alert">
+                                <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="registrationForm" autocomplete="off">
+                        {% csrf_token %}
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
+                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</span>
+                                Información de la Institución
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    {{ form.nombre|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.codigo|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.email|as_crispy_field }}
+                                    <div id="emailStatus" class="mt-1"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.categoria|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
+                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</span>
+                                Credenciales de Acceso
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    {{ form.password|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.confirm_password|as_crispy_field }}
+                                </div>
+                                <div class="col-12">
+                                    <div id="password-requirements" class="p-3 rounded-3 bg-light border border-dashed">
+                                        <p class="fw-bold x-small text-uppercase text-muted mb-2">Requerimientos de seguridad:</p>
+                                        <ul class="list-unstyled mb-0 row x-small">
+                                            <li id="min-length" class="col-md-4 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>8+ caracteres</li>
+                                            <li id="has-uppercase" class="col-md-4 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Mayúscula</li>
+                                            <li id="has-number" class="col-md-4 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Número</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-12">
-                                {{ form.estado|as_crispy_field }}
-                            </div>
-                            <div class="col-12">
-                                {{ form.direccion|as_crispy_field }}
-                            </div>
-
-                            
-                            
-                            {{ form.telefono }} 
                         </div>
-                                                <div class="d-grid mt-5">
-                            <button type="submit" class="btn btn-primary btn-lg rounded-pill" style="background: #0b2c6d; border: none;">
-                                <i class="bi bi-shield-check me-2"></i> Confirmar Registro
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
+                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</span>
+                                Ubicación y Contacto
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">Número Telefónico de Contacto</label>
+                                    <div class="input-group">
+                                        <div style="width: 30%;">{{ form.codigo_area|as_crispy_field }}</div>
+                                        <div class="flex-grow-1">{{ form.numero_telefono|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.estado|as_crispy_field }}
+                                </div>
+                                <div class="col-md-12">
+                                    {{ form.direccion|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Campo técnico oculto de Django #}
+                        <div style="display:none">
+                            {{ form.telefono }}
+                        </div>
+
+                        <div class="d-grid gap-3 pt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg" style="border-radius: 15px; background: var(--blue-main); border: none;">
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i> FINALIZAR REGISTRO NACIONAL
                             </button>
+                            <a href="{% url 'home' %}" class="btn btn-link text-muted text-decoration-none small text-center">
+                                <i class="bi bi-arrow-left"></i> Volver al inicio
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -128,28 +133,99 @@
     </div>
 </div>
 
+<style>
+    /* Sincronización con el estilo de la primera vista */
+    .form-control, .form-select {
+        display: block;
+        width: 100%;
+        padding: 10px 15px !important;
+        font-size: 1rem;
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: #fff !important;
+        border-color: var(--accent-cyan) !important;
+        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.1) !important;
+    }
+
+    /* Ajustes para Crispy Forms que a veces añade márgenes extra */
+    .mb-3 { margin-bottom: 0px !important; } 
+    label.form-label {
+        font-weight: 700;
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .asteriskField { color: #ef4444; }
+    .x-small { font-size: 0.72rem; }
+    
+    .border-dashed { border-style: dashed !important; }
+
+    /* Estilo para los inputs de grupo telefónico */
+    .input-group .asteriskField { display: none; }
+    .input-group .mb-3 { width: 100%; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const emailInput = document.querySelector('input[type="email"]');
-    const emailFeedback = document.getElementById('emailStatus');
+    // 1. Forzar Mayúsculas en el Código
+    const codigoInput = document.querySelector('input[name="codigo"]');
+    if (codigoInput) {
+        codigoInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
 
-    emailInput.addEventListener('input', function() {
-        const email = this.value;
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (email.length > 0) {
-            emailFeedback.style.display = 'block';
-            if (regex.test(email)) {
-                emailFeedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Formato válido';
-                emailFeedback.className = 'email-feedback text-success';
-            } else {
-                emailFeedback.innerHTML = '<i class="bi bi-x-circle-fill"></i> Introduce un email válido';
-                emailFeedback.className = 'email-feedback text-danger';
+    // 2. Validador Visual de Contraseña
+    const pass1 = document.querySelector('input[name="password"]');
+    const requirements = {
+        'min-length': /.{8,}/,
+        'has-uppercase': /[A-Z]/,
+        'has-number': /[0-9]/,
+    };
+
+    if (pass1) {
+        pass1.addEventListener('input', function() {
+            const val = this.value;
+            for (const [id, regex] of Object.entries(requirements)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    const icon = el.querySelector('i');
+                    if (regex.test(val)) {
+                        el.classList.replace('text-danger', 'text-success');
+                        icon.classList.replace('bi-x-circle', 'bi-check-circle-fill');
+                    } else {
+                        el.classList.replace('text-success', 'text-danger');
+                        icon.classList.replace('bi-check-circle-fill', 'bi-x-circle');
+                    }
+                }
             }
-        } else {
-            emailFeedback.style.display = 'none';
-        }
-    });
+        });
+    }
+
+    // 3. Feedback Simple de Email
+    const emailInput = document.querySelector('input[type="email"]');
+    const emailStatus = document.getElementById('emailStatus');
+    if (emailInput) {
+        emailInput.addEventListener('input', function() {
+            const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+            if (this.value.length > 0) {
+                emailStatus.innerHTML = isValid 
+                    ? '<small class="text-success x-small"><i class="bi bi-check"></i> Formato válido</small>' 
+                    : '<small class="text-danger x-small"><i class="bi bi-exclamation-circle"></i> Formato inválido</small>';
+            } else {
+                emailStatus.innerHTML = '';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
