@@ -48,8 +48,11 @@ urlpatterns = [
     # Agregar un grupo
     path('grupos/agregar/', views.agregar_grupo, name='agregar_grupo'),
 
-    # Ver grupo
-    path('grupos/<str:nombre_grupo>/', views.ver_grupo, name='ver_grupo'),
+    # 1. Ruta para ver TODOS los grupos (Lista general)
+    # path('mis-grupos/', views.lista_grupos_institucion, name='mis_grupos'),
+
+    # 2. Ruta para ver UN grupo específico (Detalle)
+    # path('grupos/<str:nombre_grupo>/', views.ver_grupo, name='ver_grupo'),
 
 
     # Otros

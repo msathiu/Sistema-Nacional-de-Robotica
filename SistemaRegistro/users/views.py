@@ -14,7 +14,7 @@ import random
 import string
 from django.views.generic.edit import UpdateView 
 from django.urls import reverse
-
+# from .models import Grupo,  Evento
 from registry.models import Evento
 from django.db import transaction
 from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm
@@ -735,3 +735,8 @@ def ajax_municipios(request):
     municipios = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
     data = [{'id': m.id_municipio, 'nombre': m.municipio} for m in municipios]
     return JsonResponse(data, safe=False)
+    
+def lista_grupos_institucion(request):
+    # Filtramos por la institución del usuario actual
+    grupos = Grupo.objects.filter(institucion=request.user.institucion) 
+    return render(request, 'users/ver_grupo.html', {'grupos': grupos})
