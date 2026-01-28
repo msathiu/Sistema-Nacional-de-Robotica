@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 
 # Asumiendo que tu modelo Institucion está en la aplicación 'registry'
 from registry.models import Institucion
-
+from .models import Estados, Municipios
 
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
@@ -126,16 +126,12 @@ class ParticipanteRegistrationForm(forms.ModelForm):
                 
         return cleaned_data
 
-
 class InstitucionRegistrationForm(forms.ModelForm):
-    # 1. Definimos las opciones de códigos con una opción vacía al inicio
+    # 1. Definimos las opciones de códigos de operadoras
     CODIGO_AREA_CHOICES = [
-        ('', 'Cod'), # Opción vacía implícita
-        ('0412', '0412'),
-        ('0414', '0414'),
-        ('0416', '0416'),
-        ('0424', '0424'),
-        ('0426', '0426'),
+        ('', '----'), 
+        ('0412', '0412'), ('0414', '0414'), ('0416', '0416'),
+        ('0422', '0422'), ('0424', '0424'), ('0426', '0426'),
     ]
 
     CATEGORIA_CHOICES = (
@@ -146,87 +142,72 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ('entidad', 'Entidad Gubernamental'),
     )
 
-    # 2. Agregamos el campo de confirmación de contraseña
-    password = forms.CharField(
-        label="Contraseña",
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
-    )
+    # Campos que NO están en el modelo pero se usan en el Form/Template
+    rif = forms.CharField(label="RIF", widget=forms.TextInput(attrs={'placeholder': 'J-12345678-9'}))
     
-    confirm_password = forms.CharField(
-        label="Confirmar Contraseña",
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
+    categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría")
+    
+
+    municipio = forms.ModelChoiceField(queryset=Municipios.objects.none()) 
+    parroquia = forms.CharField(required=True, label="Parroquia")
+
+    # Teléfono separado para validación
+    codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES, label="Cód.")
+    numero_telefono = forms.CharField(
+        max_length=7, 
+        min_length=7, 
+        label="Número", 
+        widget=forms.TextInput(attrs={'placeholder': '1234567'})
     )
 
-    # 3. Ajustamos campos existentes
-    categoria = forms.ChoiceField(
-        choices=CATEGORIA_CHOICES,
-        label="Categoría",
-        widget=forms.Select
-    )
-
-    codigo_area = forms.ChoiceField(
-        choices=CODIGO_AREA_CHOICES,
-        label="Cód.", # Etiqueta corta para el layout
-        required=True,
-    )
-
-    numero_telefono = forms.CharField(max_length=7, label="Número", widget=forms.TextInput(attrs={'placeholder': '1234567'}))
+    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
+    confirm_password = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput)
 
     class Meta:
         model = Institucion
-        
-        fields = ('nombre', 'codigo', 'email', 'direccion', 'estado', 'telefono')
-        widgets = {
-            'telefono': forms.HiddenInput(), # Lo ocultamos porque lo armaremos con codigo_area + numero_telefono
-        }
+        fields = ('nombre', 'rif', 'codigo', 'email', 'direccion', 'estado')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['codigo'].widget.attrs['readonly'] = True
         self.fields['codigo'].required = False  
-        self.fields['codigo'].initial = "SISTEMA GENERARÁ CÓDIGO"
-        # 5. Configuración del FormHelper para el Layout "Tech"
-        self.helper = FormHelper()
-        self.helper.form_tag = False # Evita que crispy cree el tag <form> duplicado
-        self.helper.layout = Layout(
-            Row(
-                Column('nombre', css_class='form-group col-md-8 mb-3'),
-                Column('codigo', css_class='form-group col-md-4 mb-3'),
-            ),
-            Row(
-                Column('email', css_class='form-group col-md-6 mb-3'),
-                Column('categoria', css_class='form-group col-md-6 mb-3'),
-            ),
-            'direccion',
-            Row(
-                Column('estado', css_class='form-group col-md-4 mb-3'),
-                # El teléfono ahora se ve en una sola línea
-                Column('codigo_area', css_class='form-group col-md-3 mb-3'),
-                Column('numero_telefono', css_class='form-group col-md-5 mb-3'),
-            ),
-            Row(
-                Column('password', css_class='form-group col-md-6 mb-3'),
-                Column('confirm_password', css_class='form-group col-md-6 mb-3'),
-            ),
-        )
+        self.fields['codigo'].initial = ""
+        
+      
+        if 'estado' in self.data:
+            try:
+                estado_id = int(self.data.get('estado'))
+                self.fields['municipio'].queryset = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.estado:
+            self.fields['municipio'].queryset = self.instance.estado.municipios_set.order_by('municipio')
 
-    # 6. Validación completa de contraseñas
     def clean(self):
         cleaned_data = super().clean()
+        rif = cleaned_data.get("rif")
+        codigo = cleaned_data.get("codigo")
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
+        num_tel = cleaned_data.get("numero_telefono")
 
+        # 1. Validación RIF MPPE
+        rif_mppe = "G200000010" 
+        if rif == rif_mppe and not codigo:
+            self.add_error('codigo', "Para el RIF del MPPE, el código de plantel es obligatorio.")
+
+        # 2. Validación Teléfono (solo números)
+        if num_tel and not num_tel.isdigit():
+            self.add_error('numero_telefono', "El número debe contener solo caracteres numéricos.")
+
+        # 3. Validación Seguridad Contraseña
         if password:
-            # Complejidad
             if len(password) < 8:
                 self.add_error('password', "Mínimo 8 caracteres.")
             if not re.search('[A-Z]', password):
-                self.add_error('password', "Debe incluir una mayúscula.")
+                self.add_error('password', "Debe incluir al menos una mayúscula.")
             if not re.search('[0-9]', password):
-                self.add_error('password', "Debe incluir un número.")
-
-            # Coincidencia
+                self.add_error('password', "Debe incluir al menos un número.")
             if password != confirm_password:
                 self.add_error('confirm_password', "Las contraseñas no coinciden.")
         

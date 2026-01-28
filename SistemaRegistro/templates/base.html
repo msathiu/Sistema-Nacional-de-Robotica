@@ -12,17 +12,19 @@
 
     <style>
         :root {
-            --blue-main: #0b2c6d;
-            --blue-dark: #051636;
-            --accent-cyan: #00d4ff;
-            --bg-light: #f8fafc;
-            --glass-white: rgba(255, 255, 255, 0.1);
+            /* Nuevos colores alineados al estilo azul claro/tecnológico */
+            --blue-main: #0077ff;      /* Azul Eléctrico */
+            --blue-dark: #0f172a;      /* Azul Medianoche para textos/footer */
+            --blue-deep: #0052b4;      /* Azul Profundo para Navbar */
+            --accent-cyan: #00d4ff;    /* Cyan brillante para acentos */
+            --bg-light: #f1f5f9;       /* Fondo gris azulado muy suave */
+            --glass-white: rgba(255, 255, 255, 0.15);
         }
 
         body {
             background-color: var(--bg-light);
             font-family: "Inter", sans-serif;
-            color: #334155;
+            color: #1e293b;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -33,76 +35,76 @@
             font-weight: 700;
         }
 
-        /* Fondo de puntos tecnológicos */
+        /* Fondo de puntos tecnológicos más sutil */
         .bg-pattern {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-image: radial-gradient(#cbd5e1 0.5px, transparent 0.5px);
-            background-size: 24px 24px;
+            background-image: radial-gradient(#cbd5e1 0.8px, transparent 0.8px);
+            background-size: 30px 30px;
             z-index: -1;
-            opacity: 0.5;
+            opacity: 0.4;
         }
 
-        /* NAVBAR UNIFICADA */
+        /* NAVBAR ACTUALIZADA - Azul profundo pero vibrante */
         .navbar {
-            background: rgba(11, 44, 109, 0.98) !important;
+            background: linear-gradient(90deg, #0047ab 0%, var(--blue-deep) 100%) !important;
             backdrop-filter: blur(10px);
-            border-bottom: 3px solid var(--accent-cyan);
-            padding: 0.7rem 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 0.6rem 0;
             z-index: 1050;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand img {
-            max-height: 48px;
-            filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+            max-height: 45px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
         }
 
-        /* Botón de Retorno Dinámico (Style Dashboard) */
+        /* Botón de Retorno Estilo Tech */
         .btn-panel-return {
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-cyan);
-            border: 1px solid var(--accent-cyan);
-            border-radius: 50px;
-            padding: 0.4rem 1.2rem;
+            background: var(--blue-main);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.5rem 1.2rem;
             font-size: 0.8rem;
             font-weight: 700;
             text-transform: uppercase;
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
         }
 
         .btn-panel-return:hover {
-            background: var(--accent-cyan);
-            color: var(--blue-dark);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+            background: #0063d5;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 119, 255, 0.4);
         }
 
         .user-indicator {
-            background: var(--glass-white);
+            background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            padding: 0.4rem 0.8rem;
-            border-radius: 8px;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
             color: white;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             display: flex;
             align-items: center;
         }
 
-        main { flex: 1; position: relative; }
+        main { 
+            flex: 1; 
+            position: relative; 
+        }
 
+        /* FOOTER UNIFICADO */
         footer {
             background: var(--blue-dark);
             color: #94a3b8;
-            padding: 2.5rem 0;
+            padding: 2rem 0;
             margin-top: 4rem;
             border-top: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .footer-logo-text {
-            color: white;
-            font-family: "Space Grotesk", sans-serif;
-            font-weight: 700;
-            letter-spacing: 2px;
         }
 
         .fade-in { animation: fadeIn 0.4s ease-out; }
@@ -110,13 +112,24 @@
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Ajustes de Nav-links */
+        .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: var(--accent-cyan) !important;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="bg-pattern"></div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow-lg">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container-fluid px-lg-5">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
                 <img src="{% static 'images/fvrc_logo.png' %}" alt="Logo FVRC" class="me-2">
@@ -134,7 +147,6 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     
                     {% if user.is_authenticated %}
-                        {# BOTÓN DINÁMICO DE VOLVER AL PANEL SEGÚN ROL #}
                         <li class="nav-item me-lg-3 my-2 my-lg-0">
                             {% if user.userprofile.user_type == 'admin' %}
                                 <a href="{% url 'dashboard' %}" class="btn-panel-return">
@@ -149,7 +161,7 @@
 
                         <li class="nav-item me-lg-3">
                             <div class="user-indicator">
-                                <i class="bi bi-person-circle me-2 text-info"></i>
+                                <i class="bi bi-person-circle me-2" style="color: var(--accent-cyan);"></i>
                                 <span class="text-uppercase fw-bold">{{ user.username }}</span>
                             </div>
                         </li>
@@ -157,8 +169,8 @@
                         <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger border-0 py-2">
-                                    <i class="bi bi-power"></i>
+                                <button type="submit" class="btn btn-sm text-white-50 hover-danger py-2">
+                                    <i class="bi bi-power fs-5"></i>
                                 </button>
                             </form>
                         </li>
@@ -166,7 +178,6 @@
                         <li class="nav-item">
                             <a class="nav-link fw-bold" href="{% url 'home' %}">INICIO</a>
                         </li>
-                       
                     {% endif %}
                 </ul>
             </div>
@@ -180,7 +191,7 @@
     <footer>
         <div class="container text-center">
             <p class="small mb-0 opacity-75">
-                &copy; 2025 Federación Venezolana de Robótica Creativa
+                &copy; 2026 Federación Venezolana de Robótica Creativa
             </p>
         </div>
     </footer>

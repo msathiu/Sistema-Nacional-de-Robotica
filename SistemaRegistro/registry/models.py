@@ -34,6 +34,7 @@ def generar_codigo_unico():
 
 class Institucion(models.Model):
     nombre = models.CharField(max_length=200)
+    rif = models.CharField(max_length=20, unique=True, null=True, blank=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     codigo = models.CharField(max_length=25, unique=True)
     direccion = models.TextField(blank=True)

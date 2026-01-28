@@ -55,4 +55,5 @@ urlpatterns = [
     # Otros
     path('buscar-usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
     path('create-institutional-user/', views.create_institutional_user, name='create_institutional_user'),
+    path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
 ]

@@ -121,12 +121,11 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navDashboard">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav ms-auto align-items-center flex-row justify-content-end">
                     
                     {% with request.resolver_match.url_name as current_url %}
-                        {# Solo muestra el botón si NO estás en el dashboard correspondiente o en el home #}
                         {% if current_url != 'dashboard' and current_url != 'dashboard_institucional' and current_url != 'home' %}
-                        <li class="nav-item me-lg-3 mb-3 mb-lg-0">
+                        <li class="nav-item me-3"> {# Eliminamos mb-3 mb-lg-0 para evitar saltos #}
                             {% if user.is_staff %}
                                 <a href="{% url 'dashboard' %}" class="btn-return-home">
                                     <i class="bi bi-arrow-left-circle me-2"></i> Volver al Panel
@@ -140,17 +139,10 @@
                         {% endif %}
                     {% endwith %}
 
-                    <li class="nav-item me-lg-3 mb-3 mb-lg-0">
-                        <div class="user-badge">
-                            <i class="bi bi-person-badge me-2 text-info"></i>
-                            <span class="text-uppercase small">ID: {{ user.username }}</span>
-                        </div>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <form action="{% url 'logout' %}" method="post" class="d-inline">
+                    <li class="nav-item d-flex align-items-center">
+                        <form action="{% url 'logout' %}" method="post" class="m-0 p-0"> {# m-0 asegura que el form no tenga margen #}
                             {% csrf_token %}
-                            <button type="submit" class="btn-logout shadow-sm">
+                            <button type="submit" class="btn-logout shadow-sm d-flex align-items-center">
                                 <i class="bi bi-power me-1"></i> Salir
                             </button>
                         </form>

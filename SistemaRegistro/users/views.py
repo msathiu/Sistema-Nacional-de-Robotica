@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-
+from .models import Estados, Municipios
 from registry.models import Participante, Municipio, Institucion, Estado
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -717,3 +717,10 @@ def detalle_evento_institucion(request, evento_id):
         'evento': evento,
         'inscripciones': inscripciones
     })
+
+def ajax_municipios(request):
+    estado_id = request.GET.get('estado_id')
+    # Filtramos los municipios por el ID del estado seleccionado
+    municipios = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
+    data = [{'id': m.id_municipio, 'nombre': m.municipio} for m in municipios]
+    return JsonResponse(data, safe=False)
