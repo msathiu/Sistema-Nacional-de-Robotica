@@ -268,36 +268,43 @@ def lista_instituciones(request):
 
 
 
-
 def registrar_institucion(request):
+    # 1. Definir la base dinámica al inicio para usarla en cualquier return
+    if request.user.is_authenticated and request.user.is_staff:
+        base_template = 'users/base_dashboard.html'
+    else:
+        base_template = 'base.html' 
+
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Creamos la institución (con activa=False por defecto en el modelo)
+                    # 2. Creamos la institución
                     institucion = form.save(commit=False)
                     
-                    # Unimos el teléfono (lo que ya tenías)
+                    # Unimos el teléfono
                     cod_area = form.cleaned_data.get('codigo_area')
                     num_tel = form.cleaned_data.get('numero_telefono')
                     institucion.telefono = f"{cod_area}{num_tel}"
                     
-                    institucion.save() # Aquí se genera el código SNR
+                    institucion.save() # Se genera el código SNR
 
-                    # 2. Creamos el usuario pero desactivado (is_active=False)
+                    # 3. Creamos el usuario desactivado
                     password = form.cleaned_data.get('password')
                     User.objects.create_user(
                         username=institucion.codigo,
                         email=institucion.email,
                         password=password,
-                        is_active=False # Nadie entra hasta que la Federación autorice
+                        is_active=False # Pendiente de aprobación
                     )
 
-                    # 3. NO REDIRIGIMOS, mostramos la pantalla de espera
+                    # 4. Pantalla de espera (Éxito)
+                    # Nota: Si esta pantalla también usa base_template, pásalo aquí también
                     return render(request, 'users/registro_pendiente.html', {
                         'nombre_inst': institucion.nombre,
-                        'email': institucion.email
+                        'email': institucion.email,
+                        'base_template': base_template 
                     })
 
             except Exception as e:
@@ -305,7 +312,11 @@ def registrar_institucion(request):
     else:
         form = InstitucionRegistrationForm()
     
-    return render(request, 'users/registrar_institucion.html', {'form': form})
+    # 5. Renderizado para GET o si el formulario falló (POST con errores)
+    return render(request, 'users/registrar_institucion.html', {
+        'form': form,
+        'base_template': base_template
+    })
 
 @login_required
 @login_required
