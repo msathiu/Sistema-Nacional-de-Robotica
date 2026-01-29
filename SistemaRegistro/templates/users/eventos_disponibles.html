@@ -13,15 +13,10 @@
                     <p class="text-muted mb-0 small">Administración de convocatorias institucionales - {{ institucion.nombre }}</p>
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold text-white" 
-                   style="background: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                    <i class="bi bi-plus-circle-fill me-2"></i> Nuevo Evento
-                </a>
-            </div>
+            
         </div>
     </div>
-
+    <hr class="mt-2 mb-4 opacity-10">
     <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
@@ -151,7 +146,7 @@
             <div class="text-center py-5">
                 <i class="bi bi-calendar-x display-1 text-light mb-3"></i>
                 <h4 class="text-muted">No has registrado eventos todavía</h4>
-                <a href="{% url 'crear_evento' %}" class="btn btn-link">Comenzar ahora</a>
+
             </div>
             {% endif %}
         </div>

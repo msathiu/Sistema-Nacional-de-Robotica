@@ -100,7 +100,7 @@
                 <a href="{% url 'lista_instituciones' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_instituciones' %}active{% endif %}">
                     <i class="bi bi-building"></i> Usuarios Registrados
                 </a>
-                <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
+                <a href="{% url 'eventos_disponibles' %}" class="nav-link-custom">
                     <i class="bi bi-people"></i> Eventos Participantes
                 </a>
             {% else %}

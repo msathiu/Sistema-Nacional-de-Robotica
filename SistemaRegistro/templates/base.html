@@ -134,8 +134,8 @@
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
                 <img src="{% static 'images/fvrc_logo.png' %}" alt="Logo FVRC" class="me-2">
                 <div class="lh-1">
-                    <span class="fs-6 d-block">SNR ROBÓTICA</span>
-                    <small style="color: var(--accent-cyan); font-size: 0.65rem; font-weight: 700; letter-spacing: 1px;">MINCYT VENEZUELA</small>
+                    <span class="fs-6 d-block">FNRC</span>
+
                 </div>
             </a>
             
@@ -147,25 +147,9 @@
                 <ul class="navbar-nav ms-auto align-items-center">
                     
                     {% if user.is_authenticated %}
-                        <li class="nav-item me-lg-3 my-2 my-lg-0">
-                            {% if user.userprofile.user_type == 'admin' %}
-                                <a href="{% url 'dashboard' %}" class="btn-panel-return">
-                                    <i class="bi bi-cpu-fill me-2"></i> Panel Admin
-                                </a>
-                            {% elif user.userprofile.user_type == 'institucional' %}
-                                <a href="{% url 'dashboard_institucional' %}" class="btn-panel-return">
-                                    <i class="bi bi-building-gear me-2"></i> Mi Institución
-                                </a>
-                            {% endif %}
-                        </li>
+                        
 
-                        <li class="nav-item me-lg-3">
-                            <div class="user-indicator">
-                                <i class="bi bi-person-circle me-2" style="color: var(--accent-cyan);"></i>
-                                <span class="text-uppercase fw-bold">{{ user.username }}</span>
-                            </div>
-                        </li>
-
+                        
                         <li class="nav-item">
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
                                 {% csrf_token %}
