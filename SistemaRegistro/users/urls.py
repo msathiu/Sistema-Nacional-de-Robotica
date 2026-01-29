@@ -45,18 +45,17 @@ urlpatterns = [
     path('institucion/gestionar-eventos/', views.gestionar_eventos_institucion, name='gestionar_eventos_inst'),
     path('institucion/eventos/<int:evento_id>/detalle/', views.detalle_evento_institucion, name='detalle_evento_gestion'),
 
-    # Agregar un grupo
+    # Grupo
     path('grupos/agregar/', views.agregar_grupo, name='agregar_grupo'),
 
-    # 1. Ruta para ver TODOS los grupos (Lista general)
-    # path('mis-grupos/', views.lista_grupos_institucion, name='mis_grupos'),
-
-    # 2. Ruta para ver UN grupo específico (Detalle)
-    # path('grupos/<str:nombre_grupo>/', views.ver_grupo, name='ver_grupo'),
+    path('mis-grupos/', views.mis_grupos, name='mis_grupos'),
+    path('obtener-datos-persona/', views.obtener_datos_persona, name='obtener_datos_persona'),
 
 
     # Otros
     path('buscar-usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
     path('create-institutional-user/', views.create_institutional_user, name='create_institutional_user'),
     path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
+    path('perfil/', views.mi_perfil, name='mi_perfil'),
+    path('institucion/perfil/', views.mi_perfil_institucional, name='mi_perfil'),
 ]

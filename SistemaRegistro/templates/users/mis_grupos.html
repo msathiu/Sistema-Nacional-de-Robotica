@@ -1,0 +1,404 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestión de Grupos - RNR{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --tech-blue: #0b2c6d;
+        --tech-cyan: #00d4ff;
+    }
+
+    /* Estilo de las Cards de Grupo */
+    .tech-card {
+        border-radius: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid #eef2f7;
+        background: white;
+        overflow: hidden;
+    }
+    .tech-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(11, 44, 109, 0.08) !important;
+    }
+    .card-icon-box {
+        background: linear-gradient(135deg, var(--tech-blue), #1e4eb8);
+        color: white;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+
+    /* Diseño del Formulario y Modal */
+    .modal-content { 
+        border-radius: 28px; 
+        border: none; 
+        max-height: 90vh; /* Asegura que el modal no se salga de la pantalla */
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* SOLUCIÓN AL SCROLL: Forzar barra lateral y permitir uso del mouse */
+    .modal-body {
+        overflow-y: auto !important;
+        max-height: calc(90vh - 180px); /* Ajuste dinámico restando header/footer */
+        padding-right: 15px;
+        scrollbar-width: thin; /* Para Firefox */
+        scrollbar-color: var(--tech-blue) #f1f5f9;
+    }
+
+    /* Estilo estético del scroll para Chrome/Safari */
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: var(--tech-blue);
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 10px 0;
+        border-bottom: 2px solid #f8fafc;
+    }
+    .section-header i {
+        background: var(--tech-blue);
+        color: white;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        margin-right: 15px;
+        box-shadow: 0 4px 10px rgba(11, 44, 109, 0.2);
+    }
+    .section-title-text {
+        font-weight: 700;
+        color: var(--tech-blue);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+    }
+
+    /* Inputs Estilizados */
+    .form-label {
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+    .form-control, .form-select {
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        border: 2px solid #f1f5f9;
+        background-color: #f8fafc;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .form-control:focus {
+        background-color: #fff;
+        border-color: var(--tech-cyan);
+        box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.1);
+    }
+
+    /* Filas de Participantes */
+    .participante-row {
+        background: white;
+        border: 2px solid #f1f5f9;
+        border-radius: 18px;
+        padding: 25px;
+        margin-bottom: 20px;
+        position: relative;
+        transition: border-color 0.3s;
+    }
+    .participante-row:hover { border-color: var(--tech-cyan); }
+    
+    .step-badge {
+        background: var(--tech-cyan);
+        color: var(--tech-blue);
+        font-weight: 800;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+    }
+
+    .status-badge { font-weight: 600; padding: 6px 16px; border-radius: 50px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-family: 'Space Grotesk'; color: var(--tech-blue);">Mis Grupos</h2>
+            <p class="text-muted mb-0"><i class="bi bi-layers me-2"></i>Panel de gestión de equipos institucionales</p>
+        </div>
+        <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#modalNuevoGrupo">
+            <i class="bi bi-plus-lg me-2"></i> CREAR EQUIPO
+        </button>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+    <div class="row g-4">
+        {% for grupo in grupos %}
+        <div class="col-xl-6">
+            <div class="card tech-card shadow-sm p-4">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="d-flex align-items-center">
+                        <div class="card-icon-box me-3">
+                            <i class="bi bi-robot fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0 text-dark">{{ grupo.nombre }}</h4>
+                            <span class="badge bg-light text-muted border">ID: #00{{ grupo.id }}</span>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-4">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Tutor Responsable</small>
+                            <span class="fw-bold"><i class="bi bi-person-check me-2"></i>{{ grupo.tutor_nombre|default:grupo.tutor_cedula }}</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-4">
+                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Integrantes</small>
+                            <span class="fw-bold"><i class="bi bi-people me-2"></i>{{ grupo.participantes.count }} Miembros</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    {% if grupo.evento %}
+                        <span class="status-badge bg-active"><i class="bi bi-check-circle-fill me-2"></i>Asignado a Evento</span>
+                    {% else %}
+                        <span class="status-badge bg-pending"><i class="bi bi-exclamation-triangle-fill me-2"></i>Sin Evento</span>
+                    {% endif %}
+                    <a href="#" class="btn btn-link text-decoration-none fw-bold p-0">Detalles <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="opacity-25 mb-4"><i class="bi bi-folder-x" style="font-size: 5rem;"></i></div>
+            <h4 class="text-muted">No se encontraron grupos registrados</h4>
+            <p class="text-muted">Comienza creando tu primer equipo de robótica.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoGrupo" tabindex="-1" aria-labelledby="modalNuevoGrupoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-0 pt-4 px-4">
+                <div>
+                    <h3 class="modal-title fw-bold" id="modalNuevoGrupoLabel" style="font-family: 'Space Grotesk'; color: var(--tech-blue);">Registro de Equipo</h3>
+                    <p class="text-muted small mb-0">Complete los datos para inscribir un nuevo grupo</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="formNuevoGrupo" method="POST">
+                {% csrf_token %}
+                <div class="modal-body px-4">
+                    <div class="row mb-5">
+                        <div class="col-md-7">
+                            <div class="p-4 bg-primary-subtle rounded-4 h-100 d-flex flex-column justify-content-center">
+                                <label class="form-label mb-1">Nombre distintivo del equipo</label>
+                                <input type="text" name="nombre_grupo" class="form-control form-control-lg border-0 bg-white fw-bold" 
+                                       placeholder="Ej: TITANES DEL ZULIA" required>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="p-4 bg-light rounded-4 border h-100">
+                                <label class="form-label"><i class="bi bi-search me-1"></i> Búsqueda Rápida de Tutor</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control search-cedula" placeholder="Cédula del Tutor">
+                                    <button class="btn btn-dark" type="button">Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">
+                        <i class="bi bi-award"></i>
+                        <span class="section-title-text">Información del Tutor</span>
+                    </div>
+                    <div class="row g-3 mb-5 px-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Nombres y Apellidos</label>
+                            <input type="text" class="form-control" name="tutor_nombre" placeholder="Nombre del tutor">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cédula de Identidad</label>
+                            <input type="text" class="form-control" name="tutor_cedula" placeholder="V-00.000.000">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono de Contacto</label>
+                            <input type="text" class="form-control" name="tutor_telefono" placeholder="0412-0000000">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="section-header mb-0 border-0">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span class="section-title-text">Integrantes del Equipo</span>
+                        </div>
+                        <button type="button" class="btn btn-dark rounded-pill px-4 btn-sm fw-bold shadow-sm" id="btnAgregarParticipante">
+                            <i class="bi bi-plus-lg me-2"></i>AGREGAR MIEMBRO
+                        </button>
+                    </div>
+
+                    <div id="participantesContainer">
+                        <div class="participante-row shadow-sm">
+                            <div class="row g-4">
+                                <div class="col-lg-7 border-end">
+                                    <div class="mb-3 d-flex align-items-center">
+                                        <span class="step-badge">1</span>
+                                        <h6 class="mb-0 fw-bold text-dark">DATOS DE IDENTIFICACIÓN</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Cédula Personal</label>
+                                            <input type="text" name="p_cedula_1" class="form-control" placeholder="Ej: 30123456">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Fecha de Nacimiento</label>
+                                            <input type="date" name="p_fecha_1" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Nombres</label>
+                                            <input type="text" name="p_nombre_1" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Apellidos</label>
+                                            <input type="text" name="p_apellido_1" class="form-control">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="mb-3 d-flex align-items-center">
+                                        <span class="step-badge">2</span>
+                                        <h6 class="mb-0 fw-bold text-dark">PROCEDENCIA</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label">Estado / Entidad</label>
+                                            <select name="p_estado_1" class="form-select">
+                                                <option selected disabled>Seleccionar Estado</option>
+                                                {% for estado in estados %}
+                                                <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Institución Educativa</label>
+                                            <input type="text" name="p_institucion_1" class="form-control" placeholder="Nombre del colegio">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-4 px-4">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow">
+                        <i class="bi bi-cloud-arrow-up me-2"></i> GUARDAR GRUPO
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let contador = 1;
+
+    document.getElementById('btnAgregarParticipante').addEventListener('click', function() {
+        contador++;
+        const container = document.getElementById('participantesContainer');
+        const original = container.querySelector('.participante-row');
+        const clone = original.cloneNode(true);
+        
+        clone.querySelectorAll('input, select').forEach(element => {
+            element.value = '';
+            if(element.name) {
+                element.name = element.name.replace(/_\d+$/, `_${contador}`);
+            }
+        });
+
+        clone.querySelector('.step-badge').innerText = contador;
+
+        const btnDelete = document.createElement('button');
+        btnDelete.innerHTML = '<i class="bi bi-trash3"></i>';
+        btnDelete.className = 'btn btn-danger btn-sm position-absolute rounded-circle shadow-sm';
+        btnDelete.style = 'top: -10px; right: -10px; width: 32px; height: 32px; padding: 0; z-index: 10;';
+        
+        btnDelete.onclick = function() {
+            clone.style.transform = 'translateX(20px)';
+            clone.style.opacity = '0';
+            setTimeout(() => clone.remove(), 300);
+        };
+        
+        clone.appendChild(btnDelete);
+        
+        clone.style.opacity = '0';
+        clone.style.transform = 'translateY(20px)';
+        container.appendChild(clone);
+        
+        setTimeout(() => {
+            clone.style.transition = 'all 0.4s ease';
+            clone.style.opacity = '1';
+            clone.style.transform = 'translateY(0)';
+            
+            // Scroll automático al nuevo elemento agregado
+            clone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 10);
+    });
+
+    document.querySelectorAll('.tech-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            const icon = card.querySelector('.card-icon-box');
+            if(icon) icon.style.transform = 'scale(1.1) rotate(5deg)';
+        });
+        card.addEventListener('mouseleave', () => {
+            const icon = card.querySelector('.card-icon-box');
+            if(icon) icon.style.transform = 'scale(1) rotate(0)';
+        });
+    });
+</script>
+{% endblock %}

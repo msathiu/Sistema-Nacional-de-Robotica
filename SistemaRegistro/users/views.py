@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Estados, Municipios
-from registry.models import Participante, Municipio, Institucion, Estado
+from registry.models import Participante, Municipio, Institucion, Grupo, Estado
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
@@ -14,12 +14,13 @@ import random
 import string
 from django.views.generic.edit import UpdateView 
 from django.urls import reverse
-# from .models import Grupo,  Evento
 from registry.models import Evento
 from django.db import transaction
 from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm
 import pandas as pd
 from django.contrib.admin.models import LogEntry
+from django.utils import timezone
+
 
 def home(request):
     """Página principal con opciones de login y registro"""
@@ -170,35 +171,52 @@ def crear_usuario_institucional(request, institucion_id):
 
 @login_required
 def dashboard_institucional(request):
-    user_profile = request.user.userprofile
+    try:
+        user_profile = request.user.userprofile
+    except AttributeError:
+        return redirect('dashboard')
+
     if user_profile.user_type != 'institucional' or not user_profile.institution:
         return redirect('dashboard')
 
     institution = user_profile.institution
+    usuario = request.user
+    hoy = timezone.now().date()
 
-    # --- CÁLCULOS DINÁMICOS ---
-    # 1. Participantes de esta institución
+    # 1. Métricas de Grupos y Participantes
+    mis_grupos = Grupo.objects.filter(usuario_creador=usuario)
+    total_mis_grupos = mis_grupos.count()
+    
+    # Participantes de esta institución
     total_mis_participantes = Participante.objects.filter(institucion=institution).count()
     
-    # 2. Eventos creados por esta institución
-    eventos_qs = Evento.objects.filter(institucion=institution)
-    total_eventos = eventos_qs.count()
+    # 2. Métricas de Eventos (Campos confirmados: fecha, grupos_inscritos)
+    total_eventos = Evento.objects.count()
     
-    # 3. Eventos activos (ejemplo: fecha mayor o igual a hoy)
-    from django.utils import timezone
-    total_activos = eventos_qs.filter(fecha__gte=timezone.now().date()).count()
+    # Eventos futuros
+    total_activos = Evento.objects.filter(fecha__gte=hoy).count()
     
-    # 4. Certificados (asumiendo que tienes un modelo o lógica para esto)
-    # Si no tienes modelo de certificados, puedes poner 0 o contar inscritos
-    total_certificados = 0 # Sustituir por: Certificado.objects.filter(evento__institucion=institution).count()
+    # CORRECCIÓN: Eventos donde mis grupos están inscritos
+    # Usamos 'grupos_inscritos' que es el nombre que nos dio el error
+    eventos_asignados = Evento.objects.filter(
+        grupos_inscritos__usuario_creador=usuario
+    ).distinct().count()
+
+    # 3. Listas para las tablas
+    proximos_eventos = Evento.objects.filter(fecha__gte=hoy).order_by('fecha')[:5]
+    grupos_recientes = mis_grupos.order_by('-fecha_registro')[:3]
 
     context = {
         'user_profile': user_profile,
         'institution': institution,
+        'total_mis_grupos': total_mis_grupos,
         'total_mis_participantes': total_mis_participantes,
         'total_eventos': total_eventos,
         'total_activos': total_activos,
-        'total_certificados': total_certificados,
+        'eventos_asignados': eventos_asignados,
+        'total_certificados': 0,
+        'proximos_eventos': proximos_eventos,
+        'grupos_recientes': grupos_recientes,
     }
 
     return render(request, 'users/dashboard_institucional.html', context)
@@ -740,3 +758,101 @@ def lista_grupos_institucion(request):
     # Filtramos por la institución del usuario actual
     grupos = Grupo.objects.filter(institucion=request.user.institucion) 
     return render(request, 'users/ver_grupo.html', {'grupos': grupos})
+
+@login_required
+def mi_perfil(request):
+    # Obtenemos datos básicos del usuario
+    usuario = request.user
+    
+    # Si es una institución, podemos contar sus recursos para el resumen
+    context = {
+        'usuario': usuario,
+        'fecha_unido': usuario.date_joined,
+    }
+    
+    return render(request, 'users/mi_perfil.html', context)
+
+@login_required
+def mi_perfil_institucional(request):
+    usuario = request.user
+    
+    # Intentamos obtener la institución a través del perfil del usuario
+    # Según tu error, 'userprofile' es una opción válida en Institucion
+    institucion = Institucion.objects.filter(userprofile__user=usuario).first()
+    
+    # Si lo anterior falla, revisemos si la institución se busca por el email
+    if not institucion:
+        institucion = Institucion.objects.filter(email=usuario.email).first()
+
+    context = {
+        'usuario': usuario,
+        'institucion': institucion,
+        'fecha_unido': usuario.date_joined,
+    }
+    return render(request, 'users/mi_perfil.html', context)
+
+@login_required
+def mis_grupos(request):
+    usuario = request.user
+
+    if request.method == 'POST':
+        nombre_grupo = request.POST.get('nombre_grupo')
+        tutor_cedula = request.POST.get('tutor_cedula')
+        tutor_nombre = request.POST.get('tutor_nombre')
+        tutor_telefono = request.POST.get('tutor_telefono')
+        
+        try:
+            # 1. Crear el Grupo vinculado al usuario_creador
+            nuevo_grupo = Grupo.objects.create(
+                nombre=nombre_grupo,
+                tutor_cedula=tutor_cedula,
+                tutor_nombre=tutor_nombre,
+                tutor_telefono=tutor_telefono,
+                usuario_creador=usuario
+            )
+
+            # 2. Procesar participantes dinámicos
+            for key in request.POST:
+                if key.startswith('p_cedula_'):
+                    suffix = key.split('_')[-1]
+                    
+                    Participante.objects.create(
+                        grupo=nuevo_grupo,
+                        cedula=request.POST.get(f'p_cedula_{suffix}'),
+                        nombre=request.POST.get(f'p_nombre_{suffix}'),
+                        apellido=request.POST.get(f'p_apellido_{suffix}'),
+                        fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
+                        # Si tu modelo tiene campo 'estado', puedes usar:
+                        # estado=request.POST.get(f'p_estado_{suffix}')
+                    )
+            
+            messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+            return redirect('mis_grupos')
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {e}")
+            return redirect('mis_grupos')
+
+    # Lógica GET
+    grupos = Grupo.objects.filter(usuario_creador=usuario).order_by('-fecha_registro')
+    
+    # Lista manual para evitar el ImportError de 'Estado'
+    estados_venezuela = [
+        'Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 
+        'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 
+        'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta', 'Portuguesa', 'Sucre', 
+        'Táchira', 'Trujillo', 'Vargas', 'Yaracuy', 'Zulia', 'Distrito Capital'
+    ]
+
+    context = {
+        'grupos': grupos,
+        'estados': estados_venezuela,
+    }
+    return render(request, 'users/mis_grupos.html', context)
+
+def obtener_datos_persona(request):
+    """ API para buscar datos por cédula y autocompletar """
+    cedula = request.GET.get('cedula')
+    # Lógica para buscar en Participantes o Tutores existentes
+    # data = { 'nombres': 'Juan', 'apellidos': 'Perez', ... }
+    return JsonResponse({'status': 'success', 'data': {}})

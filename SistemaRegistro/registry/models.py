@@ -270,3 +270,44 @@ class IntegranteEquipo(models.Model):
 
     def __str__(self):
         return self.usuario.username
+
+class Grupo(models.Model):
+    nombre = models.CharField(max_length=150, verbose_name="Nombre del Grupo")
+    
+    # El usuario que crea el grupo (usualmente el representante de la institución)
+    usuario_creador = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='grupos_creados'
+    )
+    
+    # Datos del Tutor
+    tutor_nombre = models.CharField(max_length=200)
+    tutor_cedula = models.CharField(max_length=20)
+    tutor_telefono = models.CharField(max_length=20, blank=True)
+    
+    # Relación con Participantes (Muchos a Muchos)
+    participantes = models.ManyToManyField(
+        Participante, 
+        related_name='grupos',
+        verbose_name="Integrantes del Grupo"
+    )
+    
+    # Relación opcional con un evento para el estado de "Asignado"
+    evento = models.ForeignKey(
+        Evento, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='grupos_inscritos'
+    )
+    
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Grupo"
+        verbose_name_plural = "Grupos"
+        ordering = ['-fecha_registro']
+
+    def __str__(self):
+        return f"{self.nombre} - {self.usuario_creador.username}"
