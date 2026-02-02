@@ -33,25 +33,37 @@ def generar_codigo_unico():
             return codigo
 
 class Institucion(models.Model):
-    nombre = models.CharField(max_length=200)
-    rif = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    
+    TIPO_FEDERADO_CHOICES = [
+        ('institucion', 'Institución Educativa'),
+        ('organizacion', 'Organización / Club'),
+        ('particular', 'Particular / Independiente'),
+    ]
+    nombre = models.CharField(max_length=255)
+    rif = models.CharField(max_length=20, null=True, blank=True) # Agregamos null=True y blank=True
+    tipo_federado = models.CharField(
+        max_length=20, 
+        choices=TIPO_FEDERADO_CHOICES, 
+        default='institucion' # Al darle un default, evitamos el error de NotNull
+    )
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     codigo = models.CharField(max_length=25, unique=True)
     direccion = models.TextField(blank=True)
     telefono = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(blank=True)
+    email = models.EmailField(unique=True)
     activa = models.BooleanField(default=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     activa = models.BooleanField(default=False)
-    
+    eliminado = models.BooleanField(default=False)
+    fecha_eliminacion = models.DateTimeField(null=True, blank=True)
     def save(self, *args, **kwargs):
         if not self.codigo or self.codigo == "SISTEMA GENERARÁ CÓDIGO":
-            # SNR25- (6 chars) + 6 aleatorios = 12 caracteres total.
+            # RNR26- (6 chars) + 6 aleatorios = 12 caracteres total.
             # Esto cabe perfectamente en tu max_length=20
-            nuevo_cod = f"SNR25-{generar_codigo_unico()}"
+            nuevo_cod = f"RNR26-{generar_codigo_unico()}"
             
             while Institucion.objects.filter(codigo=nuevo_cod).exists():
-                nuevo_cod = f"SNR25-{generar_codigo_unico()}"
+                nuevo_cod = f"RNR26-{generar_codigo_unico()}"
                 
             self.codigo = nuevo_cod
         super().save(*args, **kwargs)

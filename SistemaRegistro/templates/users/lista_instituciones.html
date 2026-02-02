@@ -10,16 +10,19 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Instituciones</h2>
-                    <p class="text-muted mb-0 small">Registro Nacional de Federados</p>
+                    <p class="text-muted mb-0 small">Padrón Nacional de Sedes Federadas</p>
                 </div>
             </div>
-            <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold" 
-               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                <i class="bi bi-plus-circle-fill me-2"></i> Registrar Sede
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Sede
+                </a>
+            </div>
         </div>
     </div>
     <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
@@ -36,7 +39,7 @@
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Sedes Activas</div>
                     <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ instituciones_activas|default:0 }}">0</h2>
-                    <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <i class="bi bi-patch-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>
             </div>
@@ -46,7 +49,7 @@
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Pendientes</div>
                     <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ instituciones_pendientes|default:0 }}">0</h2>
-                    <i class="bi bi-exclamation-triangle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <i class="bi bi-clock-history position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #ef4444;"></div>
             </div>
@@ -59,11 +62,11 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Buscar institución o código SNR...">
+                        <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre, RIF o SNR...">
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select id="estadoFilter" class="form-select border-0 bg-light">
+                    <select id="estadoFilter" class="form-select border-0 bg-light fw-semibold">
                         <option value="">Todos los Estados</option>
                         {% for estado in estados %}
                         <option value="{{ estado.nombre }}">{{ estado.nombre }}</option>
@@ -71,80 +74,73 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select id="statusFilter" class="form-select border-0 bg-light">
+                    <select id="statusFilter" class="form-select border-0 bg-light fw-semibold">
                         <option value="">Cualquier Estatus</option>
-                        <option value="Activa">Activa</option>
-                        <option value="Pendiente">Pendiente</option>
+                        <option value="VALIDADA">Validadas</option>
+                        <option value="PENDIENTE">Pendientes</option>
                     </select>
                 </div>
                 <div class="col-md-2 text-end">
-                    <button class="btn btn-outline-secondary border-0 w-100" onclick="location.reload()">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reiniciar
+                    <button class="btn btn-outline-secondary border-0 fw-bold w-100" onclick="resetFiltrosCompleto()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 20px;">
         <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
             <i class="bi bi-list-task text-white me-3 fs-5"></i>
-            <h5 class="fw-bold mb-0 text-white">PADRÓN INSTITUCIONAL REGISTRADO</h5>
+            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">PADRÓN INSTITUCIONAL FEDERADO</h5>
         </div>
         <div class="card-body p-0">
-            {% if instituciones_con_usuarios %}
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" id="institucionesTable">
                     <thead class="bg-light">
-                        <tr class="text-uppercase small fw-bold text-muted">
-                            <th class="px-4 py-3">Código SNR / Institución</th>
+                        <tr class="text-uppercase x-small fw-bold text-muted">
+                            <th class="px-4 py-3">SNR</th>
+                            <th class="py-3">Razón Social</th>
+                            <th class="py-3">Correo / Teléfono</th>
                             <th class="py-3">Ubicación</th>
-                            <th class="py-3">Estatus</th>
-                            <th class="py-3 text-center">Gestión</th>
+                            <th class="py-3 text-center">Estatus</th>
+                            <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in instituciones_con_usuarios %}
-                        <tr class="{% if not item.institucion.activa %}bg-light-alert{% endif %}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark font-monospace">{{ item.institucion.codigo }}</div>
-                                <div class="text-dark small fw-semibold">{{ item.institucion.nombre }}</div>
-                                <div class="text-muted x-small">{{ item.institucion.email|default:"Sin correo" }}</div>
+                        <tr class="clickable-row" style="cursor: pointer;" 
+                            onclick="verDetallesCompleto('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.rif }}', '{{ item.institucion.email }}', '{{ item.institucion.telefono }}', '{{ item.institucion.direccion|escapejs }}', '{{ item.usuarios.first.username }}')">
+                            <td class="px-4 font-monospace small fw-bold text-primary">{{ item.institucion.codigo }}</td>
+                            <td>
+                                <div class="fw-bold small text-dark">{{ item.institucion.nombre }}</div>
+                                <div class="x-small text-muted">RIF: <span class="rif-completo-texto">{{ item.institucion.rif }}</span></div>
                             </td>
                             <td>
-                                <div class="small text-dark fw-medium"><i class="bi bi-geo-alt me-1 text-danger"></i>{{ item.institucion.estado.nombre }}</div>
+                                <div class="small text-primary text-decoration-underline email-lista">{{ item.institucion.email }}</div>
+                                <div class="x-small text-muted">{{ item.institucion.telefono }}</div>
                             </td>
                             <td>
-                                {% if item.institucion.activa %}
-                                <span class="status-pill status-active">Activa</span>
-                                {% else %}
-                                <span class="status-pill status-pending pulse-alert">Pendiente</span>
-                                {% endif %}
+                                <div class="small fw-bold text-estado-val">{{ item.institucion.estado.nombre }}</div>
+                                <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
-                            <td class="text-center px-4">
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input switch-status" type="checkbox" role="switch" 
+                                           {% if item.institucion.activa %}checked{% endif %}
+                                           onchange="confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
+                                </div>
+                                <span class="d-none status-hidden">{% if item.institucion.activa %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                            </td>
+                            <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
-                                    {% if not item.institucion.activa %}
-                                    <button type="button" class="btn btn-success btn-sm px-3 rounded-pill fw-bold shadow-sm"
-                                            onclick="abrirModalValidar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.codigo }}')">
-                                        Validar
+                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
+                                            onclick="abrirModalEditar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.rif }}', '{{ item.institucion.email }}', '{{ item.institucion.telefono }}', '{{ item.institucion.direccion|escapejs }}')">
+                                        <i class="bi bi-pencil-square me-1"></i> Editar
                                     </button>
-                                    {% endif %}
-
-                                    <button type="button" class="btn-action btn-gray" title="Editar Información" 
-                                            onclick="abrirModalEditar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.email|default:'' }}')">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    
-                                    {% if item.institucion.activa %}
-                                    <button type="button" class="btn-action btn-orange" title="Suspender / Desactivar"
-                                            onclick="abrirModalDesactivar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
-                                        <i class="bi bi-person-x-fill"></i>
-                                    </button>
-                                    {% endif %}
-
-                                    <button type="button" class="btn-action btn-red" title="Eliminar Permanentemente"
+                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
                                             onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
-                                        <i class="bi bi-trash3-fill"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -153,193 +149,330 @@
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-building-slash display-1 text-light mb-3"></i>
-                <h4 class="text-muted">No se encontraron instituciones</h4>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalValidar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4">
-                <h5 class="fw-bold mb-0">Confirmar Activación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-info-circle-fill me-2"></i>Expediente del Federado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body px-4 py-3">
-                <p class="text-muted small">Al validar, la sede tendrá acceso completo al panel institucional.</p>
-                <div class="p-3 bg-light rounded-3 border-start border-4 border-success">
-                    <div id="valNombre" class="fw-bold text-dark"></div>
-                    <div id="valCodigo" class="small text-primary font-monospace"></div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-4">
+                    <div class="col-md-7 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-info">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Razón Social</label>
+                        <span id="detNombre" class="fw-bold text-dark fs-5"></span>
+                    </div>
+                    <div class="col-md-5 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-primary">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Usuario (SNR)</label>
+                        <span id="detUser" class="fw-bold text-primary fs-5 font-monospace"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold">RIF / ID</label>
+                        <p id="detRif" class="text-dark fw-bold mb-0"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold">Correo Electrónico</label>
+                        <p id="detEmail" class="text-dark fw-bold mb-0"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small fw-bold">Teléfono</label>
+                        <p id="detTel" class="text-dark fw-bold mb-0"></p>
+                    </div>
+                    <div class="col-12 bg-white p-3 rounded-3 shadow-sm">
+                        <label class="text-muted small fw-bold">Dirección de Sede</label>
+                        <p id="detDir" class="text-dark mb-0"></p>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 pb-4 px-4">
-                <form id="formValidar" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Confirmar y Validar</button>
-                </form>
-            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalUniversal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4">
-                <h5 class="fw-bold mb-0">Editar Información</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div id="modalHeader" class="modal-header border-0 pt-4 px-4 text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 id="modalTitle" class="fw-bold mb-0"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form id="formEditar" method="POST">
+            <form id="modalForm" method="POST">
                 {% csrf_token %}
-                <div class="modal-body px-4">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Nombre de la Institución</label>
-                        <input type="text" name="nombre" id="editNombre" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Correo Electrónico</label>
-                        <input type="email" name="email" id="editEmail" class="form-control" required>
-                    </div>
+                <div class="modal-body px-4 py-4" id="modalBody"></div>
+                <div id="editErrorMsg" class="alert alert-danger mx-4 py-2 small fw-bold mb-3" style="display:none; border-radius:10px; border-left: 5px solid #dc3545;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="errorText"></span>
                 </div>
                 <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Guardar Cambios</button>
+                    <button type="submit" id="modalSubmitBtn" class="btn rounded-pill px-4 fw-bold w-100 shadow-sm"></button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalDesactivar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4 text-warning">
-                <h5 class="fw-bold mb-0">Suspender Acceso</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 py-3 text-center">
-                <p class="text-muted">¿Desea suspender a <strong id="desNombre"></strong>?</p>
-            </div>
-            <div class="modal-footer border-0 pb-4 px-4 d-flex justify-content-center">
-                <form id="formDesactivar" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold">Suspender Ahora</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4 bg-danger text-white" style="border-radius: 20px 20px 0 0;">
-                <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>ELIMINAR CUENTA</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 py-4">
-                <p class="text-dark fw-bold mb-1">Esta acción es irreversible.</p>
-                <p class="text-muted small">Se eliminará permanentemente a <strong><span id="delNombre"></span></strong>. Escriba <strong>ELIMINAR</strong> para confirmar.</p>
-                <input type="text" id="confirmInput" class="form-control" placeholder="Escriba ELIMINAR">
-            </div>
-            <div class="modal-footer border-0 pb-4 px-4">
-                <form id="formEliminar" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" id="btnConfirmDelete" class="btn btn-danger rounded-pill px-4 fw-bold" disabled>Confirmar Eliminación</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
-    .bg-light-alert { background-color: rgba(239, 68, 68, 0.02) !important; }
-    .x-small { font-size: 0.75rem; }
-    .status-pill { padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; display: inline-block; }
-    .status-active { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .status-pending { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-    .btn-action { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #e2e8f0; background: white; transition: all 0.2s; color: #64748b; }
-    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .btn-orange:hover { color: #f59e0b; border-color: #f59e0b; background: #fffbeb; }
-    .btn-red:hover { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
-    .btn-gray:hover { color: #1e293b; border-color: #1e293b; background: #f8fafc; }
-    .pulse-alert { animation: pulse-red-soft 2s infinite; }
-    @keyframes pulse-red-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .clickable-row:hover { background-color: rgba(0, 212, 255, 0.04) !important; transition: 0.2s; }
+    .switch-status { width: 3.5rem !important; height: 1.7rem !important; cursor: pointer; background-color: #cbd5e1; border: none; }
+    .switch-status:checked { background-color: #10b981 !important; border-color: #10b981 !important; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function abrirModalValidar(id, nombre, codigo) {
-        document.getElementById('valNombre').innerText = nombre;
-        document.getElementById('valCodigo').innerText = 'SNR: ' + codigo;
-        document.getElementById('formValidar').action = `/instituciones/aprobar/${id}/`;
-        new bootstrap.Modal(document.getElementById('modalValidar')).show();
+    const universalModal = new bootstrap.Modal(document.getElementById('modalUniversal'));
+    const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+    function aplicarFiltros() {
+        const searchVal = document.getElementById('searchInput').value.toLowerCase();
+        const estadoVal = document.getElementById('estadoFilter').value.toLowerCase();
+        const statusVal = document.getElementById('statusFilter').value.toUpperCase();
+        const rows = document.querySelectorAll('#institucionesTable tbody tr');
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowEstado = row.querySelector('.text-estado-val').innerText.toLowerCase();
+            const rowStatus = row.querySelector('.status-hidden').innerText.toUpperCase();
+            row.style.display = (text.includes(searchVal) && (estadoVal === "" || rowEstado.includes(estadoVal)) && (statusVal === "" || rowStatus.includes(statusVal))) ? "" : "none";
+        });
     }
 
-    function abrirModalEditar(id, nombre, email) {
-        document.getElementById('editNombre').value = nombre;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('formEditar').action = `/instituciones/editar/${id}/`;
-        new bootstrap.Modal(document.getElementById('modalEditar')).show();
+    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+    document.getElementById('estadoFilter').addEventListener('change', aplicarFiltros);
+    document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
+
+    function resetFiltrosCompleto() {
+        document.getElementById('searchInput').value = "";
+        document.getElementById('statusFilter').value = "";
+        document.getElementById('estadoFilter').value = "";
+        aplicarFiltros();
     }
 
-    function abrirModalDesactivar(id, nombre) {
-        document.getElementById('desNombre').innerText = nombre;
-        document.getElementById('formDesactivar').action = `/instituciones/desactivar/${id}/`; 
-        new bootstrap.Modal(document.getElementById('modalDesactivar')).show();
+    function verDetallesCompleto(id, nombre, rif, email, tel, dir, user) {
+        document.getElementById('detNombre').innerText = nombre;
+        document.getElementById('detUser').innerText = user;
+        document.getElementById('detRif').innerText = rif || 'N/A';
+        document.getElementById('detEmail').innerText = email;
+        document.getElementById('detTel').innerText = tel || 'Sin registro';
+        document.getElementById('detDir').innerText = dir || 'Sin dirección';
+        detalleModal.show();
+    }
+
+    function abrirModalEditar(id, nombre, rifFull, emailOriginal, tel, dir) {
+        const header = document.getElementById('modalHeader');
+        header.className = "modal-header border-0 pt-4 px-4 text-white";
+        header.style.background = "var(--blue-main)";
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR INSTITUCIÓN';
+        
+        // Limpiar errores previos
+        const errorDiv = document.getElementById('editErrorMsg');
+        errorDiv.style.display = 'none';
+
+        let rifLetra = "J", rifNum = "";
+        if(rifFull && rifFull.includes('-')) {
+            let partes = rifFull.split('-');
+            rifLetra = partes[0];
+            rifNum = partes[1];
+        } else if(rifFull) {
+            rifLetra = rifFull.charAt(0).toUpperCase();
+            rifNum = rifFull.substring(1);
+        }
+
+        let codArea = "0412", numResto = "";
+        if(tel && tel.length >= 4) {
+            codArea = tel.substring(0,4);
+            numResto = tel.substring(4);
+        } else { numResto = tel || ""; }
+
+        document.getElementById('modalBody').innerHTML = `
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Razón Social</label>
+                    <input type="text" name="nombre" id="editNombre" class="form-control text-uppercase" value="${nombre}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">RIF / Identificación</label>
+                    <div class="d-flex gap-2">
+                        <select name="rif_letra" id="editRifLetra" class="form-select" style="max-width: 70px;">
+                            <option value="J" ${rifLetra == 'J' ? 'selected' : ''}>J</option>
+                            <option value="V" ${rifLetra == 'V' ? 'selected' : ''}>V</option>
+                            <option value="E" ${rifLetra == 'E' ? 'selected' : ''}>E</option>
+                            <option value="G" ${rifLetra == 'G' ? 'selected' : ''}>G</option>
+                            <option value="P" ${rifLetra == 'P' ? 'selected' : ''}>P</option>
+                        </select>
+                        <input type="text" name="rif_numero" id="editRifNum" class="form-control" value="${rifNum}" placeholder="Número" onkeypress="return /[0-9]/i.test(event.key)">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold d-block">Teléfono</label>
+                    <div class="input-group">
+                        <select name="modal_cod_area" id="editCodArea" class="form-select" style="max-width: 90px;">
+                            <option value="0412" ${codArea == '0412' ? 'selected' : ''}>0412</option>
+                            <option value="0414" ${codArea == '0414' ? 'selected' : ''}>0414</option>
+                            <option value="0424" ${codArea == '0424' ? 'selected' : ''}>0424</option>
+                            <option value="0416" ${codArea == '0416' ? 'selected' : ''}>0416</option>
+                            <option value="0426" ${codArea == '0426' ? 'selected' : ''}>0426</option>
+                        </select>
+                        <input type="text" name="modal_num_puro" id="editNumPuro" class="form-control" value="${numResto}" maxlength="7" onkeypress="return /[0-9]/i.test(event.key)">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Correo Electrónico</label>
+                    <input type="email" name="email" id="editEmail" class="form-control" value="${emailOriginal}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Dirección</label>
+                    <textarea name="direccion" id="editDir" class="form-control" rows="2">${dir}</textarea>
+                </div>
+                <div class="col-12 mt-3">
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="d-flex align-items-center mb-2 text-primary x-small">
+                            <i class="bi bi-shield-lock-fill me-2"></i>
+                            <span class="fw-bold text-uppercase">Cambio de Clave (Dejar en blanco para no cambiar)</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="x-small fw-bold text-muted">Nueva Contraseña</label>
+                                <input type="password" name="new_password" id="editPass" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="x-small fw-bold text-muted">Confirmar</label>
+                                <input type="password" name="confirm_password" id="editPassConf" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Guardar Cambios";
+        submit.className = "btn rounded-pill px-4 fw-bold w-100 shadow-sm text-white";
+        submit.style.background = "var(--blue-main)";
+        
+        const form = document.getElementById('modalForm');
+        form.action = `/instituciones/editar/${id}/`;
+
+        // LÓGICA DE VALIDACIÓN CORREGIDA
+        form.onsubmit = function(e) {
+            const email = document.getElementById('editEmail').value.trim();
+            const pass = document.getElementById('editPass').value;
+            const conf = document.getElementById('editPassConf').value;
+            const errorText = document.getElementById('errorText');
+            
+            // Función auxiliar para mostrar error
+            const showError = (msg) => {
+                e.preventDefault();
+                errorText.innerText = msg;
+                errorDiv.style.display = 'block';
+                document.getElementById('modalUniversal').scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            errorDiv.style.display = 'none';
+
+            // 1. Validar Email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(email)) {
+                showError("El formato del correo electrónico es inválido.");
+                return false;
+            }
+
+            // 2. Validar Contraseña (si se escribió algo)
+            if(pass.length > 0) {
+                if(pass !== conf) {
+                    showError("Las contraseñas ingresadas no coinciden.");
+                    return false;
+                }
+                
+                // Regex: Mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula y 1 número
+                const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+                if(!passRegex.test(pass)) {
+                    showError("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número.");
+                    return false;
+                }
+            }
+        };
+
+        universalModal.show();
+    }
+
+    function confirmarAccionStatus(id, nombre, checkbox) {
+        const activa = checkbox.checked;
+        const header = document.getElementById('modalHeader');
+        header.className = "modal-header border-0 pt-4 px-4 text-white shadow-sm";
+        const bgColor = activa ? "#10b981" : "#f59e0b";
+        const icon = activa ? "bi-check-circle-fill" : "bi-exclamation-octagon-fill";
+        header.style.background = bgColor;
+        document.getElementById('editErrorMsg').style.display = 'none';
+        
+        document.getElementById('modalTitle').innerHTML = `<i class="bi ${icon} me-2"></i> ${activa ? 'VALIDAR CUENTA' : 'SUSPENDER ACCESO'}`;
+        
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center py-3">
+                <div class="mb-3"><i class="bi ${icon}" style="font-size: 3rem; color: ${bgColor}; opacity: 0.2;"></i></div>
+                <p class="fs-5 mb-1">¿Confirmar cambio de estatus?</p>
+                <p class="text-muted small">Sede: <span class="fw-bold text-dark">${nombre}</span></p>
+                <div class="alert ${activa ? 'alert-success' : 'alert-warning'} small border-0 mt-3" style="border-radius: 10px;">
+                    ${activa ? 'La sede podrá acceder al sistema y gestionar sus eventos.' : 'La sede perderá acceso al sistema hasta que sea revalidada.'}
+                </div>
+            </div>`;
+            
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Confirmar Cambio";
+        submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
+        submit.style.background = bgColor;
+        document.getElementById('modalForm').onsubmit = null;
+        document.getElementById('modalForm').action = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
+        
+        universalModal.show();
+        document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', () => { location.reload(); }, {once: true});
     }
 
     function abrirModalEliminar(id, nombre) {
-        document.getElementById('delNombre').innerText = nombre;
-        document.getElementById('confirmInput').value = "";
-        document.getElementById('btnConfirmDelete').disabled = true;
-        document.getElementById('formEliminar').action = `/instituciones/eliminar/${id}/`;
-        new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+        const header = document.getElementById('modalHeader');
+        header.className = "modal-header border-0 pt-4 px-4 text-white shadow-sm";
+        header.style.background = "#ef4444";
+        document.getElementById('editErrorMsg').style.display = 'none';
+        document.getElementById('modalTitle').innerHTML = `<i class="bi bi-trash3-fill me-2"></i> ELIMINAR REGISTRO`;
+        
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center py-2">
+                <div class="mb-3"><i class="bi bi-x-circle-fill" style="font-size: 3.5rem; color: #ef4444; opacity: 0.15;"></i></div>
+                <h5 class="fw-bold text-danger">¡ACCIÓN IRREVERSIBLE!</h5>
+                <p class="text-muted">Se eliminarán permanentemente los datos de:<br><strong class="text-dark">${nombre}</strong></p>
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                    <label class="small fw-bold text-uppercase d-block mb-2">Para continuar, escriba la palabra:</label>
+                    <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR" style="letter-spacing: 3px;">
+                </div>
+            </div>`;
+            
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Eliminar Definitivamente";
+        submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow";
+        submit.disabled = true;
+        document.getElementById('modalForm').onsubmit = null;
+        document.getElementById('modalForm').action = `/instituciones/eliminar/${id}/`;
+        
+        universalModal.show();
+        document.getElementById('confirmInput').addEventListener('input', (e) => {
+            submit.disabled = (e.target.value.toUpperCase() !== "CONFIRMAR");
+        });
     }
 
-    document.getElementById('confirmInput').addEventListener('input', function(e) {
-        document.getElementById('btnConfirmDelete').disabled = (e.target.value !== "ELIMINAR");
-    });
-
     document.addEventListener("DOMContentLoaded", () => {
-        // Contadores
-        const counters = document.querySelectorAll('.counter');
-        counters.forEach(counter => {
-            const updateCount = () => {
-                const target = parseInt(counter.getAttribute('data-target')) || 0;
-                const count = parseInt(counter.innerText);
-                if (count < target) {
-                    counter.innerText = count + Math.ceil(target / 50);
-                    setTimeout(updateCount, 20);
-                } else { counter.innerText = target; }
+        document.querySelectorAll('.counter').forEach(c => {
+            const target = +c.getAttribute('data-target');
+            const update = () => {
+                const now = +c.innerText;
+                const inc = target / 30;
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                else c.innerText = target;
             };
-            updateCount();
+            update();
         });
-
-        // Filtrado
-        const searchInput = document.getElementById('searchInput');
-        const estadoFilter = document.getElementById('estadoFilter');
-        const statusFilter = document.getElementById('statusFilter');
-        const rows = document.querySelectorAll('#institucionesTable tbody tr');
-
-        function filter() {
-            const s = searchInput.value.toLowerCase();
-            const e = estadoFilter.value.toLowerCase();
-            const st = statusFilter.value.toLowerCase();
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                const matches = text.includes(s) && (e === "" || text.includes(e)) && (st === "" || text.includes(st));
-                row.style.display = matches ? "" : "none";
-            });
-        }
-        searchInput.addEventListener('input', filter);
-        estadoFilter.addEventListener('change', filter);
-        statusFilter.addEventListener('change', filter);
     });
 </script>
 {% endblock %}

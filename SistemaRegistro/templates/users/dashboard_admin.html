@@ -115,9 +115,10 @@
                 <div class="d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
                     <canvas id="genderGauge"></canvas>
                     <div style="margin-top: -50px;">
-                        <h3 class="fw-bold mb-0" style="color: #0b2c6d;">42%</h3>
+                        <h3 class="fw-bold mb-0" style="color: #0b2c6d;">{{ porcentaje_mujeres }}%</h3>
                         <span class="text-muted small fw-bold">Mujeres</span>
                     </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -147,7 +148,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // --- 1. LÓGICA DE CONTADORES ---
+        // --- 1. CONFIGURACIÓN DE DATOS DESDE DJANGO ---
+        // Usamos el filtro |safe para que JS reconozca las listas de Python
+        const labelsMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const dataCrecimiento = {{ data_crecimiento|safe|default:"[0,0,0,0,0,0,0,0,0,0,0,0]" }};
+        
+        const labelsEstados = {{ labels_estados|safe|default:"['Sin Datos']" }};
+        const dataEstados = {{ data_estados|safe|default:"[0]" }};
+        
+        const porcMujeres = {{ porcentaje_mujeres|default:42 }};
+        const porcHombres = 100 - porcMujeres;
+
+        // --- 2. LÓGICA DE CONTADORES ---
         const counters = document.querySelectorAll('.counter');
         const speed = 200;
         counters.forEach(counter => {
@@ -158,71 +170,106 @@
                 if (count < target) {
                     counter.innerText = count + increment;
                     setTimeout(updateCount, 10);
-                } else { counter.innerText = target; }
+                } else { 
+                    counter.innerText = target; 
+                }
             };
             updateCount();
         });
 
-        // --- 2. CONFIGURACIÓN DE GRÁFICOS (CHART.JS) ---
-        // Gráfico de Crecimiento
+        // --- 3. GRÁFICO DE CRECIMIENTO (LÍNEA) ---
         const ctxGrowth = document.getElementById('growthChart').getContext('2d');
         new Chart(ctxGrowth, {
             type: 'line',
             data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
+                labels: labelsMeses,
                 datasets: [{
-                    data: [150, 400, 750, 1200, 1800, 2300, 2840],
+                    label: 'Inscritos',
+                    data: dataCrecimiento,
                     borderColor: '#00d4ff',
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#0b2c6d'
                 }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
         });
 
-        // Gráfico de Barras por Estado
-        new Chart(document.getElementById('complexBarChart'), {
+        // --- 4. GRÁFICO DE BARRAS POR ESTADO ---
+        const ctxBar = document.getElementById('complexBarChart').getContext('2d');
+        new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['Mir', 'DC', 'Car', 'Zul', 'Ara', 'Lar', 'Bol', 'Anz'],
+                labels: labelsEstados,
                 datasets: [{
-                    data: [450, 380, 320, 290, 240, 210, 180, 150],
+                    data: dataEstados,
                     backgroundColor: '#0b2c6d',
-                    borderRadius: 5
+                    hoverBackgroundColor: '#00d4ff',
+                    borderRadius: 8
                 }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
         });
 
-        // Gráfico Radar (Especialidad)
-        new Chart(document.getElementById('radarChart'), {
+        // --- 5. GRÁFICO RADAR (ESPECIALIDAD) ---
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctxRadar, {
             type: 'radar',
             data: {
                 labels: ['Programación', 'IA', '3D', 'Electrónica', 'Mecánica'],
                 datasets: [{
-                    data: [95, 80, 70, 85, 90],
+                    label: 'Nivel Nacional',
+                    data: {{ data_especialidad|safe|default:"[80, 60, 70, 85, 90]" }},
                     borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0, 212, 255, 0.1)'
+                    backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                    pointBackgroundColor: '#0b2c6d'
                 }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: { angleLines: { color: '#f1f5f9' }, grid: { color: '#f1f5f9' }, suggestMin: 0 }
+                }
+            }
         });
 
-        // Gráfico Género
-        new Chart(document.getElementById('genderGauge'), {
+        // --- 6. GRÁFICO GÉNERO (VELOCÍMETRO) ---
+        const ctxGender = document.getElementById('genderGauge').getContext('2d');
+        new Chart(ctxGender, {
             type: 'doughnut',
             data: {
                 labels: ['Masculino', 'Femenino'],
                 datasets: [{
-                    data: [58, 42],
+                    data: [porcHombres, porcMujeres],
                     backgroundColor: ['#0b2c6d', '#f59e0b'],
+                    borderWidth: 0,
                     circumference: 180,
                     rotation: 270,
                     cutout: '85%'
                 }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                maintainAspectRatio: false, 
+                aspectRatio: 2,
+                plugins: { legend: { display: false } } 
+            }
         });
     });
 </script>

@@ -127,6 +127,18 @@ class ParticipanteRegistrationForm(forms.ModelForm):
         return cleaned_data
 
 class InstitucionRegistrationForm(forms.ModelForm):
+    RIF_LETRA_CHOICES = [
+        ('J', 'J - '),
+        ('G', 'G - '),
+        ('V', 'V - '),
+        ('E', 'E - '),
+        ('P', 'P - '),
+    ]
+    
+    rif_letra = forms.ChoiceField(choices=RIF_LETRA_CHOICES, label="Letra RIF")
+    rif_numero = forms.CharField(max_length=15, label="Número RIF", widget=forms.TextInput(attrs={'placeholder': 'Ej: 123456780'}))
+    
+    
     # 1. Definimos las opciones de códigos de operadoras
     CODIGO_AREA_CHOICES = [
         ('', '----'), 
@@ -143,7 +155,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
     )
 
     # Campos que NO están en el modelo pero se usan en el Form/Template
-    rif = forms.CharField(label="RIF", widget=forms.TextInput(attrs={'placeholder': 'J-12345678-9'}))
+    
     
     categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría")
     
@@ -165,7 +177,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
 
     class Meta:
         model = Institucion
-        fields = ('nombre', 'rif', 'codigo', 'email', 'direccion', 'estado')
+        fields = ['nombre', 'tipo_federado', 'email', 'codigo', 'estado', 'municipio', 'direccion']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -212,3 +224,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
                 self.add_error('confirm_password', "Las contraseñas no coinciden.")
         
         return cleaned_data
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Unificamos el RIF: Letra + Numero
+        letra = self.cleaned_data.get('rif_letra')
+        numero = self.cleaned_data.get('rif_numero')
+        instance.rif = f"{letra}-{numero}"
+        if commit:
+            instance.save()
+        return instance
