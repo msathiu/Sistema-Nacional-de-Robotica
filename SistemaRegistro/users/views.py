@@ -293,9 +293,9 @@ def lista_instituciones(request):
     return render(request, 'users/lista_instituciones.html', context)
 
 
+from django.db import transaction
 
 def registrar_institucion(request):
-    # Verificamos si es admin para elegir el template base
     es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'
     
     if es_administrador:
@@ -311,15 +311,22 @@ def registrar_institucion(request):
                     # 1. Creamos la institución
                     institucion = form.save(commit=False)
                     
-                    # Si el que registra es ADMIN, la activamos de inmediato
+                    # Asignación de nuevos campos según la imagen
+                    institucion.categoria = form.cleaned_data.get('categoria')
+                    institucion.codigo_mppe = form.cleaned_data.get('codigo_mppe')
+                    institucion.institucion_procedencia = form.cleaned_data.get('institucion_procedencia')
+                    institucion.parroquia = form.cleaned_data.get('parroquia')
+
                     if es_administrador:
                         institucion.activa = True
                     else:
-                        institucion.activa = False # Para externos queda pendiente
+                        institucion.activa = False 
 
+                    # Lógica de Teléfono
                     cod_area = form.cleaned_data.get('codigo_area')
                     num_tel = form.cleaned_data.get('numero_telefono')
                     institucion.telefono = f"{cod_area}{num_tel}"
+                    
                     institucion.save() 
 
                     # 2. Creamos el usuario
@@ -328,7 +335,6 @@ def registrar_institucion(request):
                         username=institucion.codigo,
                         email=institucion.email,
                         password=password,
-                        # Si es admin, el usuario también entra activo
                         is_active=True if es_administrador else False 
                     )
 
@@ -338,12 +344,10 @@ def registrar_institucion(request):
                     profile.institution = institucion
                     profile.save()
 
-                    # --- LÓGICA DE REDIRECCIÓN DIFERENCIADA ---
                     if es_administrador:
                         messages.success(request, f"Sede '{institucion.nombre}' registrada y activada exitosamente.")
-                        return redirect('lista_instituciones') # Directo a la lista
+                        return redirect('lista_instituciones')
                     else:
-                        # Si es público, mostramos la pantalla de "Espere el correo"
                         return render(request, 'users/registro_pendiente.html', {
                             'nombre_inst': institucion.nombre,
                             'email': institucion.email,

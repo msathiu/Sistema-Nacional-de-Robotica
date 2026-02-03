@@ -32,13 +32,15 @@
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-4">
                                 <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-info-lg"></i></span>
-                                <h5 class="fw-bold text-dark mb-0">Configuración de Sede</h5>
+                                <h5 class="fw-bold text-dark mb-0">1. Datos de Identificación</h5>
                             </div>
                             
                             <div class="row g-3">
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                     {{ form.tipo_federado|as_crispy_field }}
-                                    <small class="text-muted x-small d-block">Indique si se registra como Institución, Organización o Particular.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.categoria|as_crispy_field }}
                                 </div>
 
                                 <div class="col-12">
@@ -47,8 +49,8 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted small text-uppercase">RIF / Identificación</label>
-                                    <div class="d-flex gap-2 align-items-start rif-container">
-                                        <div class="rif-letra-wrapper">
+                                    <div class="d-flex gap-2 align-items-start custom-flex-row">
+                                        <div style="width: 90px;">
                                             {{ form.rif_letra|as_crispy_field }}
                                         </div>
                                         <div class="flex-grow-1">
@@ -58,11 +60,12 @@
                                 </div>
                                 
                                 <div class="col-md-6">
-                                    <div id="div_id_codigo" class="mb-3">
-                                        <label for="id_codigo" class="form-label fw-bold text-muted small text-uppercase">Código de Registro</label>
-                                        <input type="text" name="codigo" class="textinput form-control" readonly placeholder="Pendiente de asignación..." id="id_codigo">
-                                        <small class="text-primary x-small d-block mt-1">Este código será enviado a su correo electrónico.</small>
-                                    </div>
+                                    {{ form.codigo_mppe|as_crispy_field }}
+                                </div>
+
+                                <div class="col-12">
+                                    {{ form.institucion_procedencia|as_crispy_field }}
+                                    <small class="text-muted x-small d-block">Indique si pertenece a una entidad Pública, Privada o Gubernamental.</small>
                                 </div>
                             </div>
                         </div>
@@ -70,11 +73,23 @@
                         <div class="mb-5 p-4 rounded-4" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
                             <div class="d-flex align-items-center mb-4">
                                 <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-geo-alt"></i></span>
-                                <h5 class="fw-bold text-dark mb-0">Ubicación y Contacto</h5>
+                                <h5 class="fw-bold text-dark mb-0">2. Datos de Contacto y Ubicación</h5>
                             </div>
                             <div class="row g-3">
-                                <div class="col-12 mb-2">
+                                <div class="col-md-6 align-self-start">
                                     {{ form.email|as_crispy_field }}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Número Telefónico</label>
+                                    <div class="d-flex gap-2 align-items-start custom-flex-row">
+                                        <div style="width: 100px;">
+                                            {{ form.codigo_area|as_crispy_field }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {{ form.numero_telefono|as_crispy_field }}
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="col-md-4">{{ form.estado|as_crispy_field }}</div>
@@ -83,7 +98,7 @@
                                 
                                 <div class="col-12 mt-3">
                                     {{ form.direccion|as_crispy_field }}
-                                    <small class="text-muted x-small d-block mt-1">Punto de referencia detallado (Calle, local, número).</small>
+                                    <small class="text-muted x-small d-block mt-1">Dirección exacta de la sede.</small>
                                 </div>
                             </div>
                         </div>
@@ -91,7 +106,7 @@
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-4">
                                 <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-lock"></i></span>
-                                <h5 class="fw-bold text-dark mb-0">Seguridad</h5>
+                                <h5 class="fw-bold text-dark mb-0">3. Seguridad</h5>
                             </div>
                             <div class="row g-3">
                                 <div class="col-md-6">{{ form.password|as_crispy_field }}</div>
@@ -122,82 +137,88 @@
 
 <style>
     :root { --blue-main: #0046ad; --accent-cyan: #00d4ff; }
-    .form-control, .form-select { border-radius: 10px !important; background-color: #f8fafc !important; border: 1.5px solid #e2e8f0 !important; padding: 10px !important; }
-    .form-control[readonly] { background-color: #e9ecef !important; cursor: not-allowed; }
-    label.form-label { font-weight: 700 !important; font-size: 0.72rem !important; color: #475569 !important; text-uppercase: true; }
+    
+    .form-control, .form-select { 
+        border-radius: 10px !important; 
+        background-color: #f8fafc !important; 
+        border: 1.5px solid #e2e8f0 !important; 
+        padding: 10px !important; 
+    }
+
+    label.form-label { 
+        font-weight: 700 !important; 
+        font-size: 0.72rem !important; 
+        color: #475569 !important; 
+        text-transform: uppercase; 
+        margin-bottom: 0.5rem !important;
+    }
+
     .x-small { font-size: 0.7rem; }
     
-    .btn-submit-tech { background: linear-gradient(135deg, var(--blue-main), #003087) !important; border: none !important; border-radius: 12px !important; transition: all 0.3s ease; }
-    .btn-submit-tech:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,70,173,0.4); }
-
-    /* CORRECCIÓN RIF: Evita solapamiento y ajusta espacio */
-    .rif-container { margin-bottom: 1rem; }
-    .rif-container .mb-3 { margin-bottom: 0 !important; }
-    .rif-container label { display: none !important; }
-    .rif-letra-wrapper { flex: 0 0 90px; }
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.getElementById('id_estado').addEventListener('change', function() {
-    const estadoId = this.value;
-    const municipioSelect = document.getElementById('id_municipio');
-    const parroquiaSelect = document.getElementById('id_parroquia');
-
-    fetch(`/ajax/municipios/?estado_id=${estadoId}`)
-        .then(response => response.json())
-        .then(data => {
-            municipioSelect.innerHTML = '<option value="">Seleccione Municipio</option>';
-            parroquiaSelect.innerHTML = '<option value="">Seleccione Parroquia</option>';
-            data.forEach(m => {
-                const option = new Option(m.nombre, m.id);
-                municipioSelect.add(option);
-            });
-        });
-});
-
-document.getElementById('id_municipio').addEventListener('change', function() {
-    const municipioId = this.value;
-    const parroquiaSelect = document.getElementById('id_parroquia');
-
-    fetch(`/ajax/parroquias/?municipio_id=${municipioId}`)
-        .then(response => response.json())
-        .then(data => {
-            parroquiaSelect.innerHTML = '<option value="">Seleccione Parroquia</option>';
-            data.forEach(p => {
-                const option = new Option(p.nombre, p.id);
-                parroquiaSelect.add(option);
-            });
-        });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const pass1 = document.querySelector('input[name="password"]');
-    const requirements = {
-        'min-length': /.{8,}/,
-        'has-uppercase': /[A-Z]/,
-        'has-number': /[0-9]/,
-    };
-
-    if (pass1) {
-        pass1.addEventListener('input', function() {
-            const val = this.value;
-            for (const [id, regex] of Object.entries(requirements)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const icon = el.querySelector('i');
-                    if (regex.test(val)) {
-                        el.classList.replace('text-danger', 'text-success');
-                        icon.classList.replace('bi-x-circle', 'bi-check-circle-fill');
-                    } else {
-                        el.classList.replace('text-success', 'text-danger');
-                        icon.classList.replace('bi-check-circle-fill', 'bi-x-circle');
-                    }
-                }
-            }
-        });
+    .btn-submit-tech { 
+        background: linear-gradient(135deg, var(--blue-main), #003087) !important; 
+        border: none !important; 
+        border-radius: 12px !important; 
+        transition: all 0.3s ease; 
     }
+
+    .btn-submit-tech:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 15px rgba(0,70,173,0.4); 
+    }
+
+    /* Ajuste para los d-flex que contienen campos de Crispy */
+    .custom-flex-row .mb-3, .custom-flex-row .form-group { 
+        margin-bottom: 0 !important; 
+    }
+
+    /* Ocultar labels redundantes dentro de contenedores complejos como RIF y Teléfono */
+    .custom-flex-row label { 
+        display: none !important; 
+    }
+
+    /* Asegura que el email y el teléfono empiecen a la misma altura */
+    .col-md-6 {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    
+    const password = $('#id_password');
+    const confirm = $('#id_confirm_password');
+
+    function validatePassword() {
+        const val = password.val();
+        const confVal = confirm.val();
+
+        // Mínimo 8 caracteres
+        updateStatus('#min-length', val.length >= 8);
+        // Al menos una Mayúscula
+        updateStatus('#has-uppercase', /[A-Z]/.test(val));
+        // Al menos un Número
+        updateStatus('#has-number', /[0-9]/.test(val));
+        // Coincidencia
+        updateStatus('#match-pass', val === confVal && val !== "");
+    }
+
+    function updateStatus(selector, condition) {
+        const el = $(selector);
+        if (condition) {
+            el.removeClass('text-danger').addClass('text-success');
+            el.find('i').removeClass('bi-x-circle').addClass('bi-check-circle');
+        } else {
+            el.removeClass('text-success').addClass('text-danger');
+            el.find('i').removeClass('bi-check-circle').addClass('bi-x-circle');
+        }
+    }
+
+    password.on('keyup', validatePassword);
+    confirm.on('keyup', validatePassword);
 });
 </script>
 {% endblock %}
