@@ -1,233 +1,198 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from registry.models import Participante, Estado, Municipio, Institucion
-import datetime
-from datetime import date
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Row, Column
-from registry.models import Institucion
-# Importación necesaria para la validación de contraseñas
-import re 
-# Importación necesaria para la validación de contraseñas
-from django.core.exceptions import ValidationError 
 
-# Asumiendo que tu modelo Institucion está en la aplicación 'registry'
-from registry.models import Institucion
+# Importación de modelos desde tu app 'registry'
+from registry.models import Estado, Institucion, Municipio, Parroquia, Participante
 
 
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    
+    email = forms.EmailField(
+        required=True, widget=forms.EmailInput(attrs={"class": "form-control"})
+    )
+
     class Meta:
         model = User
-        fields = ('username', 'email', 'password1', 'password2')
-    
+        fields = ("username", "email")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Agregar clases Bootstrap a todos los campos
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
-            
+            field.widget.attrs["class"] = "form-control"
+
+
 class ParticipanteRegistrationForm(forms.ModelForm):
-    # Campo adicional para calcular edad
-    edad = forms.IntegerField(required=False, widget=forms.NumberInput(attrs={
-        'class': 'form-control',
-        'readonly': 'readonly',
-        'placeholder': 'Se calculará automáticamente'
-    }))
-    
+    edad = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(
+            attrs={"class": "form-control", "readonly": "readonly"}
+        ),
+    )
+
     class Meta:
         model = Participante
         fields = [
-            'cedula', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo',
-            'codigo_area', 'numero_telefono','direccion', 'estado', 'municipio', 'institucion', 
-            'grado_escolar', 'nombre_escuela', 'nombre_representante', 'cedula_representante',
-            'codigo_area_representante',
-            'numero_telefono_representante', 'email_representante'
+            "cedula",
+            "nombres",
+            "apellidos",
+            "fecha_nacimiento",
+            "sexo",
+            "codigo_area",
+            "numero_telefono",
+            "direccion",
+            "estado",
+            "municipio",
+            "institucion",
+            "grado_escolar",
+            "nombre_escuela",
+            "nombre_representante",
+            "cedula_representante",
+            "codigo_area_representante",
+            "numero_telefono_representante",
+            "email_representante",
         ]
         widgets = {
-            'fecha_nacimiento': forms.DateInput(attrs={
-                'type': 'date', 
-                'class': 'form-control',
-                'onchange': 'calcularEdad()'
-            }),
-            'direccion': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'estado': forms.Select(attrs={
-                'class': 'form-control',
-                'onchange': 'cargarMunicipios()'
-            }),
-            'municipio': forms.Select(attrs={
-                'class': 'form-control',
-                'id': 'id_municipio'  # Asegurar que tenga el ID correcto
-            }),
+            "fecha_nacimiento": forms.DateInput(
+                attrs={"type": "date", "onchange": "calcularEdad()"}
+            ),
+            "direccion": forms.Textarea(attrs={"rows": 3}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Agregar clases Bootstrap a todos los campos
         for field_name, field in self.fields.items():
-            if field_name not in ['fecha_nacimiento', 'estado', 'municipio']:
-                field.widget.attrs['class'] = 'form-control'
-        
-        # Ordenar estados y municipios alfabéticamente
-        self.fields['estado'].queryset = Estado.objects.all().order_by('nombre')
-        
-        # TEMPORAL: Cargar todos los municipios
-        self.fields['municipio'].queryset = Municipio.objects.all().order_by('estado__nombre', 'nombre')
-        
-        self.fields['institucion'].queryset = Institucion.objects.all().order_by('nombre')
-        
-        # Hacer campos de representante no requeridos inicialmente
-        self.fields['nombre_representante'].required = False
-        self.fields['cedula_representante'].required = False
-        # users/forms.py (LÍNEA CORREGIDA)
-        self.fields['codigo_area_representante'].required = False 
-        self.fields['numero_telefono_representante'].required = False
-        self.fields['email_representante'].required = False
-    
-
-    def clean(self):
-        cleaned_data = super().clean()
-        
-        fecha_nacimiento = cleaned_data.get('fecha_nacimiento')
-        
-        edad_calculada = None
-        if fecha_nacimiento:
-            # Lógica para calcular la edad en el backend
-            today = date.today()
-            edad_calculada = today.year - fecha_nacimiento.year - (
-                (today.month, today.day) < (fecha_nacimiento.month, fecha_nacimiento.day)
-            )
-            
-            # Re-validación de edad mínima (la que te dio error antes)
-            if edad_calculada < 4: 
-                self.add_error('fecha_nacimiento', 'El participante debe tener al menos 4 años para registrarse.')
-
-        # Lógica para campos del representante
-        
-        # Usamos 18 si no pudimos calcular la edad (asumimos adulto para no requerir representante)
-        es_menor = edad_calculada is not None and edad_calculada < 18
-        
-        if es_menor:
-            # Los campos del representante (nombre, cedula, telefono, email) se hacen obligatorios
-
-            requeridos = {
-                'nombre_representante': 'Nombre del representante',
-                'cedula_representante': 'Cédula del representante',
-                'codigo_area_representante': 'Código de área del representante',
-                'numero_telefono_representante': 'Número de teléfono del representante',
-                'email_representante': 'Email del representante',
-            }
-
-            for field_name, friendly_name in requeridos.items():
-                if not cleaned_data.get(field_name):
-                    self.add_error(field_name, f'{friendly_name} es requerido para menores de edad.')
-                
-        return cleaned_data
+            field.widget.attrs["class"] = "form-control"
+        self.fields["estado"].queryset = Estado.objects.all().order_by("nombre")
+        self.fields["municipio"].queryset = Municipio.objects.none()
 
 
 class InstitucionRegistrationForm(forms.ModelForm):
-    # 1. Definimos las opciones de códigos con una opción vacía al inicio
+    # --- CHOICES ---
+    RIF_LETRA_CHOICES = [
+        ("J", "J - "),
+        ("G", "G - "),
+        ("V", "V - "),
+        ("E", "E - "),
+        ("P", "P - "),
+    ]
     CODIGO_AREA_CHOICES = [
-        ('', 'Cod'), # Opción vacía implícita
-        ('0412', '0412'),
-        ('0414', '0414'),
-        ('0416', '0416'),
-        ('0424', '0424'),
-        ('0426', '0426'),
+        ("", "----"),
+        ("0412", "0412"),
+        ("0414", "0414"),
+        ("0416", "0416"),
+        ("0424", "0424"),
+        ("0426", "0426"),
+    ]
+    CATEGORIA_CHOICES = [
+        ("", "Seleccione categoría"),
+        ("publica", "Pública"),
+        ("privada", "Privada"),
+        ("fundacion", "Fundación"),
+        ("entidad", "Entidad Gubernamental"),
+    ]
+    PROCEDENCIA_CHOICES = [
+        ("", "Seleccione Procedencia"),
+        ("publica", "Instituciones Educativas Públicas"),
+        ("gubernamental", "Entidad Gubernamental / Fundación dependiente del Estado"),
+        ("privada", "Institución Privada"),
     ]
 
-    CATEGORIA_CHOICES = (
-        ('', 'Seleccione categoría'),
-        ('publica', 'Pública'),
-        ('privada', 'Privada'),
-        ('fundacion', 'Fundación'),
-        ('entidad', 'Entidad Gubernamental'),
+    # --- CAMPOS MANUALES (Lógica de Negocio) ---
+    rif_letra = forms.ChoiceField(choices=RIF_LETRA_CHOICES, label="Letra RIF")
+    rif_numero = forms.CharField(max_length=15, label="Número RIF")
+    categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría")
+    codigo_mppe = forms.CharField(required=False, label="Código MPPE / Plantel")
+    institucion_procedencia = forms.ChoiceField(
+        choices=PROCEDENCIA_CHOICES, label="Institución de Procedencia"
     )
+    codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES, label="Cód.")
+    numero_telefono = forms.CharField(max_length=7, min_length=7, label="Número")
 
-    # 2. Agregamos el campo de confirmación de contraseña
-    password = forms.CharField(
-        label="Contraseña",
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
-    )
-    
+    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
     confirm_password = forms.CharField(
-        label="Confirmar Contraseña",
-        widget=forms.PasswordInput(attrs={'placeholder': '********'}),
-        required=True
+        label="Confirmar Contraseña", widget=forms.PasswordInput
     )
-
-    # 3. Ajustamos campos existentes
-    categoria = forms.ChoiceField(
-        choices=CATEGORIA_CHOICES,
-        label="Categoría",
-        widget=forms.Select
-    )
-
-    codigo_area = forms.ChoiceField(
-        choices=CODIGO_AREA_CHOICES,
-        label="Cód.", # Etiqueta corta para el layout
-        required=True,
-    )
-
-    numero_telefono = forms.CharField(max_length=7, label="Número", widget=forms.TextInput(attrs={'placeholder': '1234567'}))
 
     class Meta:
         model = Institucion
-        
-        fields = ('nombre', 'codigo', 'email', 'direccion', 'estado', 'telefono')
+        # OJO: Se incluyeron municipio y parroquia en fields
+        fields = [
+            "nombre",
+            "tipo_federado",
+            "email",
+            "estado",
+            "municipio",
+            "parroquia",
+            "direccion",
+        ]
         widgets = {
-            'telefono': forms.HiddenInput(), # Lo ocultamos porque lo armaremos con codigo_area + numero_telefono
+            "nombre": forms.TextInput(attrs={"class": "form-control"}),
+            "tipo_federado": forms.Select(attrs={"class": "form-control form-select"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "estado": forms.Select(attrs={"class": "form-control form-select"}),
+            "municipio": forms.Select(attrs={"class": "form-control form-select"}),
+            "parroquia": forms.Select(attrs={"class": "form-control form-select"}),
+            "direccion": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['codigo'].widget.attrs['readonly'] = True
-        self.fields['codigo'].required = False  
-        self.fields['codigo'].initial = "SISTEMA GENERARÁ CÓDIGO"
-        # 5. Configuración del FormHelper para el Layout "Tech"
-        self.helper = FormHelper()
-        self.helper.form_tag = False # Evita que crispy cree el tag <form> duplicado
-        self.helper.layout = Layout(
-            Row(
-                Column('nombre', css_class='form-group col-md-8 mb-3'),
-                Column('codigo', css_class='form-group col-md-4 mb-3'),
-            ),
-            Row(
-                Column('email', css_class='form-group col-md-6 mb-3'),
-                Column('categoria', css_class='form-group col-md-6 mb-3'),
-            ),
-            'direccion',
-            Row(
-                Column('estado', css_class='form-group col-md-4 mb-3'),
-                # El teléfono ahora se ve en una sola línea
-                Column('codigo_area', css_class='form-group col-md-3 mb-3'),
-                Column('numero_telefono', css_class='form-group col-md-5 mb-3'),
-            ),
-            Row(
-                Column('password', css_class='form-group col-md-6 mb-3'),
-                Column('confirm_password', css_class='form-group col-md-6 mb-3'),
-            ),
-        )
 
-    # 6. Validación completa de contraseñas
+        # 1. Queryset de municipios dinámico
+        if "estado" in self.data:
+            try:
+                estado_id = int(self.data.get("estado"))
+                self.fields["municipio"].queryset = Municipio.objects.filter(
+                    estado_id=estado_id
+                ).order_by("nombre")
+            except (ValueError, TypeError):
+                self.fields["municipio"].queryset = Municipio.objects.none()
+        elif self.instance.pk:
+            self.fields[
+                "municipio"
+            ].queryset = self.instance.estado.municipios.all().order_by("nombre")
+        else:
+            self.fields["municipio"].queryset = Municipio.objects.none()
+
+        # 2. Queryset de parroquias dinámico
+        if "municipio" in self.data:
+            try:
+                municipio_id = int(self.data.get("municipio"))
+                self.fields["parroquia"].queryset = Parroquia.objects.filter(
+                    municipio_id=municipio_id
+                ).order_by("nombre")
+            except (ValueError, TypeError):
+                self.fields["parroquia"].queryset = Parroquia.objects.none()
+        elif self.instance.pk:
+            self.fields[
+                "parroquia"
+            ].queryset = self.instance.municipio.parroquias.all().order_by("nombre")
+        else:
+            self.fields["parroquia"].queryset = Parroquia.objects.none()
+
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
 
-        if password:
-            # Complejidad
-            if len(password) < 8:
-                self.add_error('password', "Mínimo 8 caracteres.")
-            if not re.search('[A-Z]', password):
-                self.add_error('password', "Debe incluir una mayúscula.")
-            if not re.search('[0-9]', password):
-                self.add_error('password', "Debe incluir un número.")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "Las contraseñas no coinciden.")
 
-            # Coincidencia
-            if password != confirm_password:
-                self.add_error('confirm_password', "Las contraseñas no coinciden.")
-        
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Concatenación de datos procesados
+        instance.rif = f"{self.cleaned_data.get('rif_letra')}-{self.cleaned_data.get('rif_numero')}"
+        instance.telefono = f"{self.cleaned_data.get('codigo_area')}{self.cleaned_data.get('numero_telefono')}"
+
+        # Asignación de campos manuales
+        instance.categoria = self.cleaned_data.get("categoria")
+        instance.codigo_mppe = self.cleaned_data.get("codigo_mppe")
+        instance.institucion_procedencia = self.cleaned_data.get(
+            "institucion_procedencia"
+        )
+
+        if commit:
+            instance.save()
+        return instance

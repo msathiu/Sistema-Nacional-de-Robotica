@@ -16,6 +16,8 @@ urlpatterns = [
     path('institucion/dashboard/', views.dashboard_institucional, name='dashboard_institucional'),
     path('dashboard/analitica/', views.estadisticas_demografia, name='estadisticas_por_estado'),
     path('dashboard/mapa/', views.mapa_interactivo, name='mapa_interactivo'),
+    path('exportar/excel/', views.exportar_participantes_excel, name='exportar_participantes_excel'),
+    path('sistema/logs/', views.ver_logs_sistema, name='ver_logs_sistema'),
     
     # Instituciones
     path('instituciones/', views.lista_instituciones, name='lista_instituciones'),
@@ -43,14 +45,17 @@ urlpatterns = [
     path('institucion/gestionar-eventos/', views.gestionar_eventos_institucion, name='gestionar_eventos_inst'),
     path('institucion/eventos/<int:evento_id>/detalle/', views.detalle_evento_institucion, name='detalle_evento_gestion'),
 
-    # Agregar un grupo
+    # Grupo
     path('grupos/agregar/', views.agregar_grupo, name='agregar_grupo'),
 
-    # Ver grupo
-    path('grupos/<str:nombre_grupo>/', views.ver_grupo, name='ver_grupo'),
+    path('mis-grupos/', views.mis_grupos, name='mis_grupos'),
+    path('obtener-datos-persona/', views.obtener_datos_persona, name='obtener_datos_persona'),
 
 
     # Otros
     path('buscar-usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
     path('create-institutional-user/', views.create_institutional_user, name='create_institutional_user'),
+    path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
+    path('perfil/', views.mi_perfil, name='mi_perfil'),
+    path('institucion/perfil/', views.mi_perfil_institucional, name='mi_perfil'),
 ]

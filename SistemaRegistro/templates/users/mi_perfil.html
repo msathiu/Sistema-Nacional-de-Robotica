@@ -1,0 +1,169 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Perfil Institucional - RNR{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <div class="p-3 rounded-3 me-3 shadow-sm"
+                     style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-building-gear fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family:'Space Grotesk'">
+                        Perfil Institucional
+                    </h2>
+                    <p class="text-muted mb-0 small">
+                        Información general y estado dentro del Registro Nacional de Robótica.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg text-white tech-kpi-card"
+                 style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
+                <div class="card-body p-4 position-relative">
+                    <div class="small text-white-50 fw-bold text-uppercase mb-2">Estado Actual</div>
+                    <h4 class="fw-bold mb-0">Sede Activa</h4>
+                    <i class="bi bi-shield-check position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                </div>
+                <div style="height:4px;background:#10b981"></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg text-white tech-kpi-card"
+                 style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
+                <div class="card-body p-4 position-relative">
+                    <div class="small text-white-50 fw-bold text-uppercase mb-2">Código RNR</div>
+                    <h4 class="fw-bold mb-0">{{ institucion.codigo|default:"---" }}</h4>
+                    <i class="bi bi-qr-code position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                </div>
+                <div style="height:4px;background:#00d4ff"></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg text-white tech-kpi-card"
+                 style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
+                <div class="card-body p-4 position-relative">
+                    <div class="small text-white-50 fw-bold text-uppercase mb-2">Incorporación</div>
+                    <h4 class="fw-bold mb-0">{{ fecha_unido|date:"M Y" }}</h4>
+                    <i class="bi bi-award position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                </div>
+                <div style="height:4px;background:#8b5cf6"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden" style="border-radius:20px;">
+                <div style="height:100px; background: linear-gradient(145deg, var(--blue-dark), var(--blue-main));"></div>
+                <div class="card-body text-center pt-0">
+                    <div class="rounded-circle mx-auto shadow-lg border border-3 border-white"
+                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan); 
+                                display:flex; align-items:center; justify-content:center;
+                                font-size:2.5rem; font-weight:700; color:var(--blue-dark); font-family:'Space Grotesk';">
+                        {{ institucion.nombre|default:usuario.username|first|upper }}
+                    </div>
+                    <h4 class="fw-bold mt-3 mb-1 text-dark">{{ institucion.nombre|default:"Institución" }}</h4>
+                    <p class="text-muted small mb-4">
+                        <i class="bi bi-person-circle me-1"></i> {{ usuario.get_full_name|default:usuario.username }}
+                    </p>
+                    
+                    <div class="bg-light p-3 rounded-3 text-start mb-2">
+                        <label class="small text-muted fw-bold text-uppercase d-block mb-1" style="font-size:0.6rem">Email de Acceso</label>
+                        <span class="small fw-bold">{{ usuario.email }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4" style="border-radius:20px;">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cpu text-primary me-2"></i>Ficha de Datos</h5>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3">Editar Perfil</button>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <div class="row g-4">
+                        <div class="col-md-6 tech-field">
+                            <label>RIF / Registro</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.rif|default:"No asignado" }}</div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Contacto Telefónico</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.telefono|default:"No registrado" }}</div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Email Institucional</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.email|default:usuario.email }}</div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Estado / Región</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.estado|default:"---" }}</div>
+                        </div>
+                        <div class="col-12 tech-field">
+                            <label>Dirección Física</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.direccion|default:"Sin dirección registrada" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" style="border-left:5px solid #8b5cf6; border-radius:15px;">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-purple-subtle p-2 rounded-2 me-3">
+                                <i class="bi bi-lock-fill text-purple" style="color:#8b5cf6"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Seguridad</h6>
+                                <a href="#" class="small text-decoration-none fw-bold" style="color:#8b5cf6">Actualizar Clave →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" style="border-left:5px solid #f59e0b; border-radius:15px;">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning-subtle p-2 rounded-2 me-3">
+                                <i class="bi bi-file-earmark-pdf-fill text-warning"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Credencial PDF</h6>
+                                <a href="#" class="small text-decoration-none fw-bold text-warning">Descargar Certificado →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tech-kpi-card { transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+    .tech-kpi-card:hover { transform: translateY(-5px); }
+    .tech-action-card { transition: all 0.3s ease; cursor: pointer; background: #fff; }
+    .tech-action-card:hover { transform: translateX(5px); background: #f8fafc; }
+    .tech-field label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #64748b;
+        font-weight: 800;
+        display: block;
+        margin-bottom: 2px;
+    }
+    .tech-field div { font-size: 0.95rem; color: var(--blue-dark); }
+</style>
+{% endblock %}

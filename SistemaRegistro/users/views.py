@@ -4,9 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.http import JsonResponse
-
-from registry.models import Participante, Municipio, Institucion, Estado
+from django.http import JsonResponse, HttpResponse
+from .models import Estados, Municipios
+from registry.models import Participante, Municipio, Institucion, Grupo, Estado
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
@@ -14,10 +14,13 @@ import random
 import string
 from django.views.generic.edit import UpdateView 
 from django.urls import reverse
-
 from registry.models import Evento
 from django.db import transaction
 from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm
+import pandas as pd
+from django.contrib.admin.models import LogEntry
+from django.utils import timezone
+
 
 def home(request):
     """Página principal con opciones de login y registro"""
@@ -95,7 +98,6 @@ def dashboard(request):
     """Router principal del dashboard"""
     user_profile = request.user.userprofile
 
-    # 1. Redirigir según el tipo de usuario
     if user_profile.user_type == 'participante':
         return redirect('dashboard_participante')
 
@@ -103,20 +105,19 @@ def dashboard(request):
         return redirect('dashboard_institucional')
 
     elif user_profile.user_type == 'admin':
+        # --- NUEVA LÓGICA PARA EL MAPA ---
+        # 1. Contamos instituciones por nombre de estado
+        # Nota: Usamos 'estado__nombre' asumiendo que Institucion tiene una FK a Estado
+        conteo_db = Institucion.objects.values('estado__nombre').annotate(total=Count('id'))
+        
+        # 2. Creamos el diccionario que el JavaScript necesita: {'Miranda': 5, 'Zulia': 2...}
+        mapa_data = {registro['estado__nombre']: registro['total'] for registro in conteo_db}
+        # ---------------------------------
         
         total_participantes = Participante.objects.count()
-        
-        # Aquí puedes decidir si el total de instituciones incluye las inactivas o no.
-        # Si quieres que el número grande muestre todas:
         total_instituciones = Institucion.objects.count()
-        
-        # LÓGICA DE ACTIVACIÓN: Contamos las que están esperando (activa=False)
         pendientes_aprobacion = Institucion.objects.filter(activa=False).count()
-        
-        # Contamos cuántos estados distintos tienen al menos una institución
         cobertura_nacional = Institucion.objects.values('estado').distinct().count()
-        
-        # Conteo de eventos
         total_eventos = Evento.objects.count()
 
         context = {
@@ -126,7 +127,7 @@ def dashboard(request):
             'total_instituciones': total_instituciones,
             'cobertura_nacional': cobertura_nacional,
             'total_eventos': total_eventos,
-            # AGREGAMOS LA VARIABLE AL CONTEXTO AQUÍ:
+            'mapa_data': mapa_data,  # <--- AHORA SÍ TIENE DATOS
             'pendientes_aprobacion': pendientes_aprobacion,
         }
         return render(request, 'users/dashboard_admin.html', context)
@@ -140,7 +141,7 @@ def dashboard(request):
 def dashboard_participante(request):
     """Panel de control exclusivo para participantes"""
     
-    # 🚨 Es esencial que esta vista exista 🚨
+
     user_profile = request.user.userprofile
     
     if user_profile.user_type != 'participante':
@@ -170,22 +171,52 @@ def crear_usuario_institucional(request, institucion_id):
 
 @login_required
 def dashboard_institucional(request):
-
-    user_profile = request.user.userprofile
+    try:
+        user_profile = request.user.userprofile
+    except AttributeError:
+        return redirect('dashboard')
 
     if user_profile.user_type != 'institucional' or not user_profile.institution:
         return redirect('dashboard')
 
     institution = user_profile.institution
+    usuario = request.user
+    hoy = timezone.now().date()
 
-    # 🔥 AQUÍ ESTABA EL PROBLEMA: FALTABA DEFINIR "eventos"
-    eventos = Evento.objects.filter(institucion=institution).order_by('-fecha')
+    # 1. Métricas de Grupos y Participantes
+    mis_grupos = Grupo.objects.filter(usuario_creador=usuario)
+    total_mis_grupos = mis_grupos.count()
+    
+    # Participantes de esta institución
+    total_mis_participantes = Participante.objects.filter(institucion=institution).count()
+    
+    # 2. Métricas de Eventos (Campos confirmados: fecha, grupos_inscritos)
+    total_eventos = Evento.objects.count()
+    
+    # Eventos futuros
+    total_activos = Evento.objects.filter(fecha__gte=hoy).count()
+    
+    # CORRECCIÓN: Eventos donde mis grupos están inscritos
+    # Usamos 'grupos_inscritos' que es el nombre que nos dio el error
+    eventos_asignados = Evento.objects.filter(
+        grupos_inscritos__usuario_creador=usuario
+    ).distinct().count()
+
+    # 3. Listas para las tablas
+    proximos_eventos = Evento.objects.filter(fecha__gte=hoy).order_by('fecha')[:5]
+    grupos_recientes = mis_grupos.order_by('-fecha_registro')[:3]
 
     context = {
-        'user': request.user,
         'user_profile': user_profile,
         'institution': institution,
-        'eventos': eventos,
+        'total_mis_grupos': total_mis_grupos,
+        'total_mis_participantes': total_mis_participantes,
+        'total_eventos': total_eventos,
+        'total_activos': total_activos,
+        'eventos_asignados': eventos_asignados,
+        'total_certificados': 0,
+        'proximos_eventos': proximos_eventos,
+        'grupos_recientes': grupos_recientes,
     }
 
     return render(request, 'users/dashboard_institucional.html', context)
@@ -194,88 +225,145 @@ def is_admin(user):
     """Verifica si el usuario es administrador"""
     return hasattr(user, 'userprofile') and user.userprofile.user_type == 'admin'
 
-# En users/views.py - Opcional: redirigir la vista antigua
+@user_passes_test(is_admin)
+def exportar_participantes_excel(request):
+    # Obtenemos todos los registros
+    participantes = Participante.objects.all().values()
+    df = pd.DataFrame(participantes)
+
+    # Creamos la respuesta HTTP con el tipo de contenido de Excel
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="Padrón_Nacional_Robotica.xlsx"'
+    
+    # Escribimos el dataframe al response
+    df.to_excel(response, index=False, engine='openpyxl')
+    return response
+
+@user_passes_test(is_admin)
+def ver_logs_sistema(request):
+    # Usamos LogEntry de Django para mostrar las últimas acciones del panel
+    logs = LogEntry.objects.all().select_related('user', 'content_type')[:100]
+    return render(request, 'users/logs_sistema.html', {'logs': logs})
 
 def create_institutional_user(request):
     """Redirige al formulario unificado de institución"""
     messages.info(request, 'Ahora el registro de instituciones incluye la creación de usuarios automáticamente.')
     return redirect('registrar_institucion')
 
-
 @login_required
 @user_passes_test(is_admin)
 def lista_instituciones(request):
-    """Vista para que el admin vea todas las instituciones con sus usuarios"""
-    instituciones = Institucion.objects.all().select_related('estado').prefetch_related('userprofile_set__user').order_by('nombre')
-    todas = Institucion.objects.all()
-    # Estadísticas
-    total_instituciones = todas.count()
-    activas = todas.filter(activa=True).count()
-    pendientes = todas.filter(activa=False).count()
-    instituciones_activas = instituciones.filter(activa=True).count()
-    estados = Estado.objects.all() # O Institucion.objects.values('estado__nombre').distinct()
-    # Obtener usuarios institucionales para cada institución
+    """Vista para que el admin vea todas las instituciones con sus usuarios (sin las eliminadas)"""
+    
+    # 1. Filtramos la base principal: Solo lo que NO está eliminado
+    # Usamos select_related para traer el estado de una vez y mejorar el rendimiento
+    instituciones_base = Institucion.objects.filter(eliminado=False).select_related('estado').order_by('nombre')
+    
+    # 2. Estadísticas (KPIs) basadas solo en las instituciones NO eliminadas
+    total_instituciones = instituciones_base.count()
+    instituciones_activas = instituciones_base.filter(activa=True).count() # Corregido el nombre
+    instituciones_pendientes = instituciones_base.filter(activa=False).count()
+    
+    # 3. Datos para los filtros de la vista
+    estados = Estado.objects.all()
+
+    # 4. Construcción de la lista con usuarios
     instituciones_con_usuarios = []
-    for institucion in instituciones:
+    for institucion in instituciones_base:
+        # Filtramos los usuarios asociados a esta institución específica
         usuarios_institucionales = User.objects.filter(
             userprofile__institution=institucion,
             userprofile__user_type='institucional'
         )
+        
         instituciones_con_usuarios.append({
             'institucion': institucion,
             'usuarios': usuarios_institucionales
         })
     
+    # 5. Contexto (Asegúrate de que los nombres coincidan con tu HTML)
     context = {
         'instituciones_con_usuarios': instituciones_con_usuarios,
         'total_instituciones': total_instituciones,
-        'instituciones_activas': instituciones_activas,
-        'instituciones_pendientes': pendientes,
-        'estados': estados, # Esto evita que el filtro aparezca vacío
+        'instituciones_activas': instituciones_activas,       # Variable ya definida arriba
+        'instituciones_pendientes': instituciones_pendientes, # Variable ya definida arriba
+        'estados': estados,
     }
+    
     return render(request, 'users/lista_instituciones.html', context)
 
 
-
-# users/views.py
+from django.db import transaction
 
 def registrar_institucion(request):
+    es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'
+    
+    if es_administrador:
+        base_template = 'users/base_dashboard.html'
+    else:
+        base_template = 'base.html' 
+
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Creamos la institución (con activa=False por defecto en el modelo)
+                    # 1. Creamos la institución
                     institucion = form.save(commit=False)
                     
-                    # Unimos el teléfono (lo que ya tenías)
+                    # Asignación de nuevos campos según la imagen
+                    institucion.categoria = form.cleaned_data.get('categoria')
+                    institucion.codigo_mppe = form.cleaned_data.get('codigo_mppe')
+                    institucion.institucion_procedencia = form.cleaned_data.get('institucion_procedencia')
+                    institucion.parroquia = form.cleaned_data.get('parroquia')
+
+                    if es_administrador:
+                        institucion.activa = True
+                    else:
+                        institucion.activa = False 
+
+                    # Lógica de Teléfono
                     cod_area = form.cleaned_data.get('codigo_area')
                     num_tel = form.cleaned_data.get('numero_telefono')
                     institucion.telefono = f"{cod_area}{num_tel}"
                     
-                    institucion.save() # Aquí se genera el código SNR
+                    institucion.save() 
 
-                    # 2. Creamos el usuario pero desactivado (is_active=False)
+                    # 2. Creamos el usuario
                     password = form.cleaned_data.get('password')
-                    User.objects.create_user(
+                    nuevo_usuario = User.objects.create_user(
                         username=institucion.codigo,
                         email=institucion.email,
                         password=password,
-                        is_active=False # Nadie entra hasta que la Federación autorice
+                        is_active=True if es_administrador else False 
                     )
 
-                    # 3. NO REDIRIGIMOS, mostramos la pantalla de espera
-                    return render(request, 'users/registro_pendiente.html', {
-                        'nombre_inst': institucion.nombre,
-                        'email': institucion.email
-                    })
+                    # 3. Vinculamos Perfil
+                    profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
+                    profile.user_type = 'institucional'
+                    profile.institution = institucion
+                    profile.save()
+
+                    if es_administrador:
+                        messages.success(request, f"Sede '{institucion.nombre}' registrada y activada exitosamente.")
+                        return redirect('lista_instituciones')
+                    else:
+                        return render(request, 'users/registro_pendiente.html', {
+                            'nombre_inst': institucion.nombre,
+                            'email': institucion.email,
+                            'base_template': base_template 
+                        })
 
             except Exception as e:
                 form.add_error(None, f"Error inesperado: {e}")
     else:
         form = InstitucionRegistrationForm()
     
-    return render(request, 'users/registrar_institucion.html', {'form': form})
+    return render(request, 'users/registrar_institucion.html', {
+        'form': form,
+        'base_template': base_template
+    })
+    
 
 @login_required
 @login_required
@@ -345,21 +433,7 @@ def admin_crear_institucion(request):
             messages.success(request, "Institución creada y activada correctamente.")
             return redirect('lista_instituciones')
 
-@login_required
-def aprobar_institucion(request, institucion_id):
-    # Solo permitimos que el admin realice esta acción
-    if request.user.userprofile.user_type != 'admin':
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
-        return redirect('home')
 
-    if request.method == 'POST':
-        institucion = get_object_or_404(Institucion, id=institucion_id)
-        institucion.activa = True
-        institucion.save()
-        
-        messages.success(request, f'La institución {institucion.nombre} ha sido activada correctamente.')
-    
-    return redirect('lista_instituciones')
 
 class ParticipanteUpdateView(UpdateView):
     # Modelo que se va a editar
@@ -550,24 +624,53 @@ def ver_grupo(request, nombre_grupo):
     }
     
     return render(request, 'users/ver_grupo.html', context)
+
 # 1. ACTIVAR / VALIDAR
 @login_required
 def aprobar_institucion(request, institucion_id):
+    # Solo permitimos que el admin realice esta acción
+    if request.user.userprofile.user_type != 'admin':
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('home')
+
     if request.method == 'POST':
-        inst = get_object_or_404(Institucion, id=institucion_id)
-        inst.activa = True
-        inst.save()
-        messages.success(request, f'¡{inst.nombre} ha sido activada!')
+        with transaction.atomic(): # Usamos atomic para que se activen los dos o ninguno
+            institucion = get_object_or_404(Institucion, id=institucion_id)
+            
+            # 1. Activamos la institución (tu modelo)
+            institucion.activa = True
+            institucion.save()
+            
+            # 2. Activamos el usuario de Django (la cuenta de acceso)
+            # Buscamos el usuario asociado a través del UserProfile
+            perfil = UserProfile.objects.filter(institution=institucion).first()
+            if perfil and perfil.user:
+                perfil.user.is_active = True # <--- ESTO ES LO QUE FALTABA
+                perfil.user.save()
+                messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
+            else:
+                messages.warning(request, f'Institución activada, pero no se encontró un usuario vinculado.')
+    
     return redirect('lista_instituciones')
 
 # 2. SUSPENDER / DESACTIVAR
 @login_required
 def desactivar_institucion(request, institucion_id):
     if request.method == 'POST':
-        inst = get_object_or_404(Institucion, id=institucion_id)
-        inst.activa = False
-        inst.save()
-        messages.warning(request, f'La institución "{inst.nombre}" ha sido desactivada correctamente.')
+        with transaction.atomic():
+            inst = get_object_or_404(Institucion, id=institucion_id)
+            
+            # 1. Desactivamos institución
+            inst.activa = False
+            inst.save()
+            
+            # 2. Desactivamos usuario de Django
+            perfil = UserProfile.objects.filter(institution=inst).first()
+            if perfil and perfil.user:
+                perfil.user.is_active = False # <--- BLOQUEA EL LOGIN
+                perfil.user.save()
+            
+            messages.warning(request, f'La institución "{inst.nombre}" y su acceso han sido suspendidos.')
     return redirect('lista_instituciones')
 
 # 3. GESTIONAR CREDENCIALES (Cambio de contraseña)
@@ -584,27 +687,92 @@ def gestionar_credenciales(request, institucion_id):
     return render(request, 'users/gestionar_credenciales.html', {'institucion': inst, 'usuario': usuario})
 
 
-# EDITAR INFORMACIÓN (MODAL)
 @login_required
 def editar_institucion_modal(request, institucion_id):
     if request.method == 'POST':
         inst = get_object_or_404(Institucion, id=institucion_id)
-        inst.nombre = request.POST.get('nombre')
-        inst.email = request.POST.get('email')
-        inst.save()
-        messages.success(request, f'Datos de {inst.nombre} actualizados.')
-    return redirect('lista_instituciones')
+        
+        # 1. Intentamos localizar al usuario vinculado
+        # Buscamos al usuario cuyo username sea igual al código SNR de la institución
+        user = User.objects.filter(username=inst.codigo).first()
 
-# ELIMINAR TOTALMENTE
+        # 2. Actualizar datos básicos de la Institución
+        inst.nombre = request.POST.get('nombre', '').upper()
+        inst.email = request.POST.get('email', '')
+        inst.direccion = request.POST.get('direccion', '')
+
+        # Reconstrucción del RIF desde el modal
+        rif_letra = request.POST.get('rif_letra', '')
+        rif_num = request.POST.get('rif_numero', '')
+        if rif_letra and rif_num:
+            inst.rif = f"{rif_letra}-{rif_num}"
+
+        # Reconstrucción del Teléfono
+        cod_area = request.POST.get('modal_cod_area', '')
+        num_puro = request.POST.get('modal_num_puro', '')
+        if cod_area and num_puro:
+            inst.telefono = f"{cod_area}{num_puro}"
+        
+        # 3. Guardar cambios en la Institución
+        try:
+            inst.save()
+            
+            # 4. Si encontramos al usuario, actualizamos su clave y correo
+            if user:
+                # Actualizar email del usuario para que coincida con la institución
+                user.email = inst.email
+                
+                nueva_clave = request.POST.get('new_password')
+                confirm_clave = request.POST.get('confirm_password')
+
+                if nueva_clave:
+                    if nueva_clave == confirm_clave:
+                        # set_password encripta la clave correctamente
+                        user.set_password(nueva_clave)
+                        user.save()
+                    else:
+                        messages.warning(request, f'La institución se actualizó, pero las contraseñas no coincidían.')
+                else:
+                    # Si no hay clave nueva, solo guardamos el posible cambio de email
+                    user.save()
+
+            messages.success(request, f'Sede {inst.nombre} actualizada correctamente.')
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar los cambios: {e}")
+            
+    return redirect('lista_instituciones')
+    
+# ELIMINAR 
 @login_required
+@user_passes_test(is_admin)
 def eliminar_institucion(request, institucion_id):
+    """
+    Mueve la institución a la papelera (eliminado=True) 
+    y desactiva su estatus (activa=False).
+    """
+    # Buscamos la institución por el ID que viene de la URL
+    institucion = get_object_or_404(Institucion, id=institucion_id) 
+    
     if request.method == 'POST':
-        inst = get_object_or_404(Institucion, id=institucion_id)
-        nombre_cache = inst.nombre
-        inst.delete() # Esto elimina la inst y los usuarios si usas on_delete=models.CASCADE
-        messages.error(request, f'La institución "{nombre_cache}" ha sido eliminada permanentemente.')
+        # 1. Cambiamos los estados según lo solicitado
+        institucion.eliminado = True
+        institucion.activa = False  # <--- Aquí forzamos el estado inactivo
+        
+        # 2. Guardamos la fecha si el campo existe en tu modelo
+        if hasattr(institucion, 'fecha_eliminacion'):
+            institucion.fecha_eliminacion = timezone.now()
+        
+        institucion.save()
+        
+        # 3. Seguridad: Desactivamos el acceso de sus usuarios asociados
+        # para que no puedan iniciar sesión mientras la sede esté "borrada"
+        User.objects.filter(userprofile__institution=institucion).update(is_active=False)
+        
+        messages.warning(request, f"La institución '{institucion.nombre}' ha sido desactivada y movida a la papelera.")
+        return redirect('lista_instituciones')
+    
     return redirect('lista_instituciones')
-
 def estadisticas_demografia(request):
     # Cálculos para las tarjetas KPI
     context = {
@@ -647,6 +815,17 @@ def mapa_interactivo(request):
         'mapa_data': mapa_data
     })
 
+def dashboard_mapa(request):
+    # Ejemplo de cómo agrupar instituciones por estado
+    from django.db.models import Count
+    # Asumiendo que tu modelo Institucion tiene un campo 'estado'
+    conteo = Institucion.objects.values('estado').annotate(total=Count('id'))
+    
+    # Crear el diccionario: {'Miranda': 10, 'Zulia': 5...}
+    mapa_data = {item['estado']: item['total'] for item in conteo}
+    
+    return render(request, 'tu_template.html', {'mapa_data': mapa_data})
+
 @login_required
 def gestionar_eventos_institucion(request):
     """Lista todos los eventos creados por la institución actual"""
@@ -676,3 +855,166 @@ def detalle_evento_institucion(request, evento_id):
         'evento': evento,
         'inscripciones': inscripciones
     })
+
+def ajax_municipios(request):
+    estado_id = request.GET.get('estado_id')
+    # Filtramos los municipios por el ID del estado seleccionado
+    municipios = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
+    data = [{'id': m.id_municipio, 'nombre': m.municipio} for m in municipios]
+    return JsonResponse(data, safe=False)
+    
+def lista_grupos_institucion(request):
+    # Filtramos por la institución del usuario actual
+    grupos = Grupo.objects.filter(institucion=request.user.institucion) 
+    return render(request, 'users/ver_grupo.html', {'grupos': grupos})
+
+@login_required
+def mi_perfil(request):
+    # Obtenemos datos básicos del usuario
+    usuario = request.user
+    
+    # Si es una institución, podemos contar sus recursos para el resumen
+    context = {
+        'usuario': usuario,
+        'fecha_unido': usuario.date_joined,
+    }
+    
+    return render(request, 'users/mi_perfil.html', context)
+
+@login_required
+def mi_perfil_institucional(request):
+    usuario = request.user
+    
+    # Intentamos obtener la institución a través del perfil del usuario
+    # Según tu error, 'userprofile' es una opción válida en Institucion
+    institucion = Institucion.objects.filter(userprofile__user=usuario).first()
+    
+    # Si lo anterior falla, revisemos si la institución se busca por el email
+    if not institucion:
+        institucion = Institucion.objects.filter(email=usuario.email).first()
+
+    context = {
+        'usuario': usuario,
+        'institucion': institucion,
+        'fecha_unido': usuario.date_joined,
+    }
+    return render(request, 'users/mi_perfil.html', context)
+
+@login_required
+def mis_grupos(request):
+    usuario = request.user
+
+    if request.method == 'POST':
+        nombre_grupo = request.POST.get('nombre_grupo')
+        tutor_cedula = request.POST.get('tutor_cedula')
+        tutor_nombre = request.POST.get('tutor_nombre')
+        tutor_telefono = request.POST.get('tutor_telefono')
+        
+        try:
+            # 1. Crear el Grupo vinculado al usuario_creador
+            nuevo_grupo = Grupo.objects.create(
+                nombre=nombre_grupo,
+                tutor_cedula=tutor_cedula,
+                tutor_nombre=tutor_nombre,
+                tutor_telefono=tutor_telefono,
+                usuario_creador=usuario
+            )
+
+            # 2. Procesar participantes dinámicos
+            for key in request.POST:
+                if key.startswith('p_cedula_'):
+                    suffix = key.split('_')[-1]
+                    
+                    Participante.objects.create(
+                        grupo=nuevo_grupo,
+                        cedula=request.POST.get(f'p_cedula_{suffix}'),
+                        nombre=request.POST.get(f'p_nombre_{suffix}'),
+                        apellido=request.POST.get(f'p_apellido_{suffix}'),
+                        fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
+                        # Si tu modelo tiene campo 'estado', puedes usar:
+                        # estado=request.POST.get(f'p_estado_{suffix}')
+                    )
+            
+            messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+            return redirect('mis_grupos')
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {e}")
+            return redirect('mis_grupos')
+
+    # Lógica GET
+    grupos = Grupo.objects.filter(usuario_creador=usuario).order_by('-fecha_registro')
+    
+    # Lista manual para evitar el ImportError de 'Estado'
+    estados_venezuela = [
+        'Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 
+        'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 
+        'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta', 'Portuguesa', 'Sucre', 
+        'Táchira', 'Trujillo', 'Vargas', 'Yaracuy', 'Zulia', 'Distrito Capital'
+    ]
+
+    context = {
+        'grupos': grupos,
+        'estados': estados_venezuela,
+    }
+    return render(request, 'users/mis_grupos.html', context)
+
+def obtener_datos_persona(request):
+    """ API para buscar datos por cédula y autocompletar """
+    cedula = request.GET.get('cedula')
+    # Lógica para buscar en Participantes o Tutores existentes
+    # data = { 'nombres': 'Juan', 'apellidos': 'Perez', ... }
+    return JsonResponse({'status': 'success', 'data': {}})
+
+@login_required
+def dashboard_central(request):
+    hoy = timezone.now().date()
+    
+    # KPIs Básicos
+    total_participantes = Participante.objects.count()
+    total_instituciones = Institution.objects.count() # Usando el nombre corregido
+    total_eventos = Evento.objects.filter(fecha__gte=hoy).count()
+    
+    # Cobertura: Ajustado al nombre del campo que vimos en errores anteriores
+    cobertura_nacional = Institution.objects.values('estado').distinct().count()
+
+    # 1. Gráfica de Barras: Distribución de Instituciones por Estado
+    stats_estados = Institution.objects.values('estado') \
+        .annotate(total=Count('id')) \
+        .order_by('-total')[:8]
+    
+    labels_estados = [item['estado'] for item in stats_estados]
+    data_estados = [item['total'] for item in stats_estados]
+
+    # 2. Gráfica de Línea: Crecimiento por mes
+    # Usamos 'fecha_registro' si existe, si no, puedes usar 'id' para probar
+    crecimiento_inst = Institution.objects.filter(fecha_registro__year=hoy.year) \
+        .values('fecha_registro__month') \
+        .annotate(total=Count('id')) \
+        .order_by('fecha_registro__month')
+
+    data_crecimiento = [0] * 12
+    for item in crecimiento_inst:
+        # Django a veces devuelve el mes en una llave diferente según la DB
+        mes_num = item.get('fecha_registro__month')
+        if mes_num:
+            data_crecimiento[mes_num - 1] = item['total']
+
+    # 3. Género
+    porcentaje_mujeres = 0
+    if total_participantes > 0:
+        mujeres = Participante.objects.filter(genero='Femenino').count()
+        porcentaje_mujeres = round((mujeres / total_participantes) * 100)
+
+    context = {
+        'total_participantes': total_participantes,
+        'total_instituciones': total_instituciones,
+        'total_eventos': total_eventos,
+        'cobertura_nacional': cobertura_nacional,
+        'labels_estados': labels_estados,
+        'data_estados': data_estados,
+        'data_crecimiento': data_crecimiento,
+        'porcentaje_mujeres': porcentaje_mujeres,
+        'pendientes_aprobacion': 0, 
+    }
+    return render(request, 'users/dashboard_central.html', context)

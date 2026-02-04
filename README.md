@@ -2,76 +2,81 @@
 
 ![Django](https://img.shields.io/badge/Framework-Django%205.0-092e20?style=for-the-badge&logo=django)
 ![Bootstrap](https://img.shields.io/badge/Frontend-Bootstrap%205.3-7952b3?style=for-the-badge&logo=bootstrap)
+![Docker](https://img.shields.io/badge/Container-Docker-2496ED?style=for-the-badge&logo=docker)
 ![Status](https://img.shields.io/badge/Status-En%20Desarrollo-green?style=for-the-badge)
 
-**SNR-PRO** es la plataforma oficial para el **Registro Nacional de Semilleros Científicos**. Este sistema centraliza la gestión de participantes, instituciones y eventos de robótica a nivel nacional, proporcionando herramientas analíticas para el seguimiento del desarrollo tecnológico juvenil en Venezuela.
+**SNR-PRO** es la plataforma oficial para el **Sistema Nacional de
+Robótica** y el **Registro Nacional de Semilleros Científicos**,
+orientada a centralizar la gestión de participantes, instituciones,
+eventos y proyectos tecnológicos a nivel nacional.
+
+------------------------------------------------------------------------
 
 ## 🚀 Características Principales
 
-### 💎 Interfaz "Tech-Modern"
-* **Dashboards Diferenciados:** Paneles específicos con lógica de acceso para Administradores, Instituciones y Participantes.
-* **Visualización de Datos:** KPIs dinámicos con animaciones de contadores, estados de registro y mapas interactivos.
-* **Diseño Adaptativo:** Basado en una estética futurista "Tech" con componentes optimizados para la gestión masiva de datos.
+### 💎 Interfaz Tech-Modern
 
-### 🛠 Funcionalidades de Gestión
-* **Módulo Institucional:** Registro automatizado de sedes con validación de código SNR y activación por parte de entes rectores.
-* **Padrón de Participantes:** Base de datos robusta con filtros avanzados (género, edad, estado) y perfiles detallados.
-* **Gestión de Eventos:** Centro de control para crear convocatorias, monitorear proyectos inscritos y administrar estatus de competencia.
+-   Dashboards diferenciados por rol (Administrador, Institución,
+    Participante)
+-   KPIs dinámicos y estados de registro
+-   Diseño responsive con estética tecnológica institucional
 
----
+### 🛠 Gestión Centralizada
 
-## ⚙️ Guía de Inicio Rápido
+-   Registro y validación de instituciones
+-   Padrón nacional de participantes
+-   Gestión de eventos, convocatorias y proyectos
+-   Control de estatus y trazabilidad de información
 
-Sigue estos comandos en tu terminal para poner en marcha el sistema en tu entorno local:
+------------------------------------------------------------------------
 
-### 1. Preparar el Entorno
-Desde la raíz del repositorio, activa el entorno virtual de Python:
-```bash
+## 🐳 Ejecución con Docker (Modo Recomendado)
+
+### Requisitos
+
+-   Docker
+-   Docker Compose
+
+### 1️⃣ Construir y levantar los servicios
+
+``` bash
+docker compose up --build
+```
+
+### 2️⃣ Acceder al sistema
+
+Abrir en el navegador:
+
+http://127.0.0.1:8000
+
+------------------------------------------------------------------------
+
+## 🧪 Ejecución Local (Modo Desarrollo Alternativo)
+
+``` bash
 source env/bin/activate
-```
-
-### 2. Acceder al Proyecto
-Entra en la carpeta raíz del código fuente de Django:
-```bash
 cd SistemaRegistro/
-```
-
-### 3. Ejecutar el Servidor
-Inicia el servicio de desarrollo local:
-```bash
 python manage.py runserver
 ```
 
-Luego, accede mediante tu navegador a: http://127.0.0.1:8000
-
----
+------------------------------------------------------------------------
 
 ## 🛠 Tech Stack
-**Backend:** Python 3.12+ / Django 5.0  
-**Frontend:** HTML5, CSS3 (Custom Tech UI), JavaScript (ES6+)  
-**UI/UX:** Bootstrap 5.3 + Bootstrap Icons  
-**Base de Datos:** PostgreSQL (Producción) / SQLite3 (Desarrollo)
 
----
+-   Backend: Python 3.12 / Django 5.0
+-   Frontend: Bootstrap 5.3, HTML5, CSS3, JavaScript
+-   Base de Datos: SQLite3 / PostgreSQL
+-   Infraestructura: Docker & Docker Compose
+
+------------------------------------------------------------------------
 
 ## 📁 Estructura del Proyecto
-```plaintext
-SNR-PRO/
-├── env/                # Entorno virtual de Python (Dependencias)
-├── SistemaRegistro/    # Carpeta raíz del proyecto Django
-│   ├── core/           # Configuración central (settings, urls)
-│   ├── registry/       # App de lógica de negocio (Participantes, Eventos)
-│   ├── users/          # App de gestión de usuarios, perfiles y dashboards
-│   ├── templates/      # Vistas HTML con diseño Tech-Modern
-│   ├── static/         # Archivos estáticos (CSS, JS, Imágenes)
-│   └── manage.py       # Script de administración de Django
-└── README.md           # Documentación del proyecto
-```
 
----
+Sistema-Nacional-de-Robótica/ - docker-compose.yml - Dockerfile - env/ -
+SistemaRegistro/ - README.md
+
+------------------------------------------------------------------------
 
 ## 📄 Licencia
-Este proyecto es de uso institucional bajo la supervisión del Ministerio del Poder Popular para la Ciencia y la Tecnología (MINCYT).  
-Queda prohibida su reproducción total o parcial sin autorización.
 
----
+Proyecto institucional supervisado por el MINCYT.

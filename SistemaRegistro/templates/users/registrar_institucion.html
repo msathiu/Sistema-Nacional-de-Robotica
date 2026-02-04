@@ -1,124 +1,133 @@
-{% extends 'base.html' %}
+{% extends base_template %}
 {% load crispy_forms_tags %}
 
 {% block content %}
-<style>
-    /* FONDO GRIS CON PATRÓN TECNOLÓGICO */
-    body {
-        background-color: #e9ecef; /* Gris base claro */
-        position: relative;
-    }
-
-    /* Patrón de iconos (Circuitos/Robótica) */
-    .bg-pattern-tech {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 35c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%230b2c6d' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
-        z-index: -1;
-    }
-
-    .fvrc-card {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 24px;
-        border: none;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-
-    .fvrc-card-header {
-        background: #0b2c6d;
-        color: white;
-        padding: 1.5rem;
-        text-align: center;
-        font-family: 'Space Grotesk', sans-serif;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* Estilo para campos de solo lectura */
-    input[readonly] {
-        background-color: #f1f3f5 !important;
-        cursor: not-allowed;
-        border-style: dashed !important;
-    }
-
-    /* Contenedor de Teléfono */
-    .phone-container {
-        display: flex;
-        gap: 10px;
-        align-items: flex-end;
-    }
-    .phone-container .area-code { flex: 0 0 30%; }
-    .phone-container .number { flex: 1; }
-
-    /* Feedback de email en tiempo real */
-    .email-feedback {
-        font-size: 0.8rem;
-        margin-top: 4px;
-        display: none;
-    }
-</style>
-
-<div class="bg-pattern-tech"></div>
-
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
-            <div class="fvrc-card">
-                <div class="fvrc-card-header">
-                    <i class="bi bi-robot me-2"></i> Registro del Sistema
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-building-fill-add fs-2 text-white"></i>
                 </div>
-                
-                <div class="p-4 p-md-5">
-                    <form method="post" id="registrationForm">
-                        {% csrf_token %}
-                        
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                {{ form.nombre|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.codigo|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.password|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.confirm_password|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.email|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6">
-                                {{ form.categoria|as_crispy_field }}
-                            </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark">Registro de Sede / Institución</h2>
+                    <p class="text-muted mb-0 small">Registro Nacional de Federados</p>
+                </div>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
 
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold">NÚMERO TELEFÓNICO</label>
-                                <div class="d-flex gap-2">
-                                    <div style="flex: 0 0 30%;">
-                                        {{ form.codigo_area|as_crispy_field }}
-                                    </div>
-                                    <div style="flex: 1;">
-                                        {{ form.numero_telefono|as_crispy_field }}
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+                    <h5 class="fw-bold mb-0 text-white small"><i class="bi bi-shield-lock me-2"></i>DATOS DE AFILIACIÓN</h5>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="registrationForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-info-lg"></i></span>
+                                <h5 class="fw-bold text-dark mb-0">1. Datos de Identificación</h5>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    {{ form.tipo_federado|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.categoria|as_crispy_field }}
+                                </div>
+
+                                <div class="col-12">
+                                    {{ form.nombre|as_crispy_field }}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">RIF / Identificación</label>
+                                    <div class="d-flex gap-2 align-items-start custom-flex-row">
+                                        <div style="width: 90px;">
+                                            {{ form.rif_letra|as_crispy_field }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {{ form.rif_numero|as_crispy_field }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                                
+                                <div class="col-md-6">
+                                    {{ form.codigo_mppe|as_crispy_field }}
+                                </div>
 
-                            <div class="col-12">
-                                {{ form.estado|as_crispy_field }}
+                                <div class="col-12">
+                                    {{ form.institucion_procedencia|as_crispy_field }}
+                                    <small class="text-muted x-small d-block">Indique si pertenece a una entidad Pública, Privada o Gubernamental.</small>
+                                </div>
                             </div>
-                            <div class="col-12">
-                                {{ form.direccion|as_crispy_field }}
-                            </div>
-
-                            
-                            
-                            {{ form.telefono }} 
                         </div>
-                                                <div class="d-grid mt-5">
-                            <button type="submit" class="btn btn-primary btn-lg rounded-pill" style="background: #0b2c6d; border: none;">
-                                <i class="bi bi-shield-check me-2"></i> Confirmar Registro
+
+                        <div class="mb-5 p-4 rounded-4" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-geo-alt"></i></span>
+                                <h5 class="fw-bold text-dark mb-0">2. Datos de Contacto y Ubicación</h5>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 align-self-start">
+                                    {{ form.email|as_crispy_field }}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Número Telefónico</label>
+                                    <div class="d-flex gap-2 align-items-start custom-flex-row">
+                                        <div style="width: 100px;">
+                                            {{ form.codigo_area|as_crispy_field }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {{ form.numero_telefono|as_crispy_field }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">{{ form.estado|as_crispy_field }}</div>
+                                <div class="col-md-4">{{ form.municipio|as_crispy_field }}</div>
+                                <div class="col-md-4">{{ form.parroquia|as_crispy_field }}</div>
+                                
+                                <div class="col-12 mt-3">
+                                    {{ form.direccion|as_crispy_field }}
+                                    <small class="text-muted x-small d-block mt-1">Dirección exacta de la sede.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-lock"></i></span>
+                                <h5 class="fw-bold text-dark mb-0">3. Seguridad</h5>
+                            </div>
+   <div class="row g-3">
+    <div class="col-md-6">{{ form.password|as_crispy_field }}</div>
+    <div class="col-md-6">{{ form.confirm_password|as_crispy_field }}</div>
+    <div class="col-12">
+        <div class="p-3 rounded-3 bg-white border x-small shadow-sm">
+            <div class="d-flex gap-3 justify-content-center">
+                <!-- Los IDs deben coincidir con el JS -->
+                <span id="min-length" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>8+ carac.</span>
+                <span id="has-uppercase" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Mayúscula</span>
+                <span id="has-number" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Número</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+                                     </div>
+
+                        <div class="d-grid pt-2">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 btn-submit-tech">
+                                <i class="bi bi-check-all fs-4 me-2"></i> Finalizar Registro
                             </button>
                         </div>
                     </form>
@@ -128,28 +137,153 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const emailInput = document.querySelector('input[type="email"]');
-    const emailFeedback = document.getElementById('emailStatus');
+<style>
+    :root { --blue-main: #0046ad; --accent-cyan: #00d4ff; }
+    
+    .form-control, .form-select { 
+        border-radius: 10px !important; 
+        background-color: #f8fafc !important; 
+        border: 1.5px solid #e2e8f0 !important; 
+        padding: 10px !important; 
+    }
 
-    emailInput.addEventListener('input', function() {
-        const email = this.value;
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (email.length > 0) {
-            emailFeedback.style.display = 'block';
-            if (regex.test(email)) {
-                emailFeedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Formato válido';
-                emailFeedback.className = 'email-feedback text-success';
-            } else {
-                emailFeedback.innerHTML = '<i class="bi bi-x-circle-fill"></i> Introduce un email válido';
-                emailFeedback.className = 'email-feedback text-danger';
-            }
+    label.form-label { 
+        font-weight: 700 !important; 
+        font-size: 0.72rem !important; 
+        color: #475569 !important; 
+        text-transform: uppercase; 
+        margin-bottom: 0.5rem !important;
+    }
+
+    .x-small { font-size: 0.7rem; }
+    
+    .btn-submit-tech { 
+        background: linear-gradient(135deg, var(--blue-main), #003087) !important; 
+        border: none !important; 
+        border-radius: 12px !important; 
+        transition: all 0.3s ease; 
+    }
+
+    .btn-submit-tech:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 5px 15px rgba(0,70,173,0.4); 
+    }
+
+    /* Ajuste para los d-flex que contienen campos de Crispy */
+    .custom-flex-row .mb-3, .custom-flex-row .form-group { 
+        margin-bottom: 0 !important; 
+    }
+
+    /* Ocultar labels redundantes dentro de contenedores complejos como RIF y Teléfono */
+    .custom-flex-row label { 
+        display: none !important; 
+    }
+
+    /* Asegura que el email y el teléfono empiecen a la misma altura */
+    .col-md-6 {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    
+    const password = $('#id_password');
+    const confirm = $('#id_confirm_password');
+
+    function validatePassword() {
+        const val = password.val();
+        const confVal = confirm.val();
+
+        // Mínimo 8 caracteres
+        updateStatus('#min-length', val.length >= 8);
+        // Al menos una Mayúscula
+        updateStatus('#has-uppercase', /[A-Z]/.test(val));
+        // Al menos un Número
+        updateStatus('#has-number', /[0-9]/.test(val));
+        // Coincidencia
+        updateStatus('#match-pass', val === confVal && val !== "");
+    }
+
+    function updateStatus(selector, condition) {
+        const el = $(selector);
+        if (condition) {
+            el.removeClass('text-danger').addClass('text-success');
+            el.find('i').removeClass('bi-x-circle').addClass('bi-check-circle');
         } else {
-            emailFeedback.style.display = 'none';
+            el.removeClass('text-success').addClass('text-danger');
+            el.find('i').removeClass('bi-check-circle').addClass('bi-x-circle');
+        }
+    }
+
+    password.on('keyup', validatePassword);
+    confirm.on('keyup', validatePassword);
+});
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Identificar los elementos por los IDs que genera Django automáticamente
+    const estadoSelect = document.getElementById('id_estado');
+    const municipioSelect = document.getElementById('id_municipio');
+    const parroquiaSelect = document.getElementById('id_parroquia');
+
+    // 2. Evento cuando cambia el Estado
+    estadoSelect.addEventListener('change', function() {
+        const estadoId = this.value;
+        
+        // Limpiar municipios y parroquias
+        municipioSelect.innerHTML = '<option value="">---------</option>';
+        parroquiaSelect.innerHTML = '<option value="">---------</option>';
+
+        if (estadoId) {
+            // Llamada AJAX profesional a la vista que creamos
+            fetch(`{% url 'ajax_cargar_municipios' %}?estado_id=${estadoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        const option = new Option(item.nombre, item.id);
+                        municipioSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error cargando municipios:', error));
+        }
+    });
+
+    // 3. Evento cuando cambia el Municipio
+    municipioSelect.addEventListener('change', function() {
+        const municipioId = this.value;
+
+        // Limpiar parroquias
+        parroquiaSelect.innerHTML = '<option value="">---------</option>';
+
+        if (municipioId) {
+            fetch(`{% url 'ajax_cargar_parroquias' %}?municipio_id=${municipioId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        const option = new Option(item.nombre, item.id);
+                        parroquiaSelect.add(option);
+                    });
+                })
+                .catch(error => console.error('Error cargando parroquias:', error));
         }
     });
 });
 </script>
+
+<style>
+    /* Mejora visual para los campos bloqueados mientras cargan */
+    .form-select:disabled {
+        background-color: #e9ecef !important;
+        cursor: not-allowed;
+    }
+    .x-small { font-size: 0.75rem; }
+    .custom-flex-row { flex-wrap: nowrap; }
+    @media (max-width: 576px) {
+        .custom-flex-row { flex-wrap: wrap; }
+        .custom-flex-row > div { width: 100% !important; }
+    }
+</style>
+
 {% endblock %}
