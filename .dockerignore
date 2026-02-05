@@ -1,0 +1,47 @@
+# --- Git ---
+.git
+.gitignore
+
+# --- Secretos y Configuración ---
+.env
+.env.*
+!.env.example
+secrets.json
+
+# --- Entorno Virtual de Python (¡MUY IMPORTANTE!) ---
+# Nunca copies el venv de tu PC al contenedor; Docker instalará el suyo
+venv/
+env/
+.venv/
+bin/
+lib/
+share/
+
+# --- Cache de Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Archivos Estáticos y Media ---
+# Docker debe generar sus propios staticfiles mediante collectstatic
+staticfiles/
+media/
+db.sqlite3
+
+# --- Documentación y Otros ---
+*.md
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Docker ---
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+

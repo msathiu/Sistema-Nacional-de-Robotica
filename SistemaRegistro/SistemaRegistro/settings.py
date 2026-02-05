@@ -35,8 +35,8 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "users.apps.UsersConfig",
     "registry",
-    "users",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -143,16 +143,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "registro@fvrc.org.ve")
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "sandbox.smtp.mailtrap.io"
-EMAIL_HOST_USER = "6faaeaec5086ff"
-EMAIL_HOST_PASSWORD = "9a0f4ab61fc09b"
+EMAIL_HOST_USER = "7290e54bbad5b6"
+EMAIL_HOST_PASSWORD = "4f051bb2dae914"
 EMAIL_PORT = "2525"
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
 # --- VARIABLES GLOBALES DEL SISTEMA ---
 SITE_NAME = "Registro Nacional para Robótica Creativa"  # Nombre del sitio
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")  # URL base del sitio
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"  # Evita warnings en modelos nuevos
+DEFAULT_FROM_EMAIL = "prueba@fvrc.org.ve"  # Correo
 
 # CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",")
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

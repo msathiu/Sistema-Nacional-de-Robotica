@@ -6,9 +6,5 @@ class UsersConfig(AppConfig):
     name = "users"
 
     def ready(self):
-        # Cada aplicación importa sus propias señales
-        try:
-            import registry.signals
-            # Usar logging en lugar de print es más profesional
-        except ImportError:
-            pass
+        # Ahora importamos las señales que están dentro de esta misma app
+        import users.signals  # noqa
