@@ -3,22 +3,27 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema Nacional de Robótica | FVRC</title>
+    <title>Federación Nacional de Robótica Creativa | FVRC</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <meta name="description" content="Plataforma oficial de la Federación Nacional de Robótica Creativa (FVRC) para el registro y gestión de equipos, instituciones y competencias de robótica en Venezuela.">
+    <meta name="keywords" content="FVRC, Federación Nacional de Robótica Creativa, Registro Nacional de Robótica, Competencias de Robótica, Equipos de Robótica, Instituciones de Robótica, Venezuela">
+    <meta name="author" content="Federación Nacional de Robótica Creativa (FVRC)">  
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-
+    <link rel="shortcut icon" href="{% static 'images/fvrc_logo.png' %}" type="image/x-icon"> 
     <style>
         :root {
-            /* Paleta de Azules Claros y Tecnológicos */
-            --blue-bright: #0077ff;
+            /* Paleta de Azules Claros y Tecnológicos - Exactos como solicitaste */
+            --blue-main: #0077ff;
             --blue-light: #00d4ff;
             --blue-deep: #0052b4;
             --accent-cyan: #ffffff;
             --bg-light: #f1f5f9;
             --glass-bg: rgba(255, 255, 255, 0.92);
+            --glass-white: rgba(255, 255, 255, 0.15);
+            --blue-dark: #0f172a;      /* Azul Medianoche para textos/footer */
+            --carbon-image: url("{% static 'images/carbon-fibre.png' %}");
         }
 
         body {
@@ -42,9 +47,9 @@
             opacity: 0.4;
         }
 
-        /* HERO SECTION - Azul Eléctrico Claro */
+        /* HERO SECTION - Usando los azules especificados */
         .hero {
-            background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-bright) 50%, var(--blue-light) 100%);
+            background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-main) 50%, var(--blue-light) 100%);
             padding: 7rem 0;
             position: relative;
             color: white;
@@ -56,26 +61,25 @@
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            background: var(--carbon-image);
             opacity: 0.1;
         }
 
         .hero-logo {
             max-width: 260px;
-            /* Resalte con sombra blanca para azul claro */
-            filter: drop-shadow(0 10px 20px rgba(255,255,255,0.25));
+            filter: drop-shadow(0 10px 20px rgba(0, 119, 255, 0.3));
             transition: all 0.4s ease;
         }
         
         .hero-logo:hover {
             transform: translateY(-5px) scale(1.02);
-            filter: drop-shadow(0 15px 30px rgba(255,255,255,0.4));
+            filter: drop-shadow(0 15px 30px rgba(0, 119, 255, 0.5));
         }
 
         .hero h1 {
             font-size: 3.8rem;
             font-weight: 800;
-            color: #ffffff;
+            color: var(--accent-cyan);
             text-shadow: 0 2px 10px rgba(0,0,0,0.1);
             line-height: 1.1;
         }
@@ -87,7 +91,7 @@
             -webkit-backdrop-filter: blur(12px);
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 30px 60px -12px rgba(0, 71, 171, 0.2);
+            box-shadow: 0 30px 60px -12px rgba(0, 119, 255, 0.15);
         }
 
         /* BUTTONS */
@@ -101,20 +105,32 @@
 
         .btn-primary-tech {
             background: var(--blue-deep);
-            color: white;
-            box-shadow: 0 8px 15px rgba(0, 82, 180, 0.3);
+            color: var(--accent-cyan);
+            box-shadow: 0 8px 15px rgba(0, 119, 255, 0.3);
         }
 
         .btn-primary-tech:hover {
-            background: #003d86;
+            background: var(--blue-deep);
             transform: translateY(-2px);
-            box-shadow: 0 12px 20px rgba(0, 82, 180, 0.4);
-            color: white;
+            box-shadow: 0 12px 20px rgba(0, 119, 255, 0.4);
+            color: var(--accent-cyan);
+        }
+
+        .btn-outline-primary {
+            border-color: var(--blue-main) !important;
+            color: var(--blue-main) !important;
+            border-width: 2px !important;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--blue-deep) !important;
+            color: var(--accent-cyan) !important;
+            border-color: var(--blue-deep) !important;
         }
 
         /* FEATURE CARDS */
         .feature-card {
-            background: white;
+            background: var(--accent-cyan);
             border: 1px solid #e2e8f0;
             border-radius: 24px;
             padding: 3rem 2rem;
@@ -124,9 +140,9 @@
         }
 
         .feature-card:hover {
-            border-color: var(--blue-bright);
+            border-color: var(--blue-main);
             transform: translateY(-8px);
-            box-shadow: 0 20px 30px rgba(0,119,255,0.1);
+            box-shadow: 0 20px 30px rgba(0, 119, 255, 0.1);
         }
 
         .feature-icon {
@@ -137,24 +153,85 @@
             align-items: center;
             justify-content: center;
             border-radius: 18px;
-            background: #e0f2fe;
-            color: var(--blue-bright);
+            background: linear-gradient(135deg, #e6f2ff 0%, #d1e7ff 100%);
+            color: var(--blue-main);
             font-size: 1.8rem;
         }
 
-        /* FOOTER */
+        /* FOOTER - Consistente con el header usando los mismos colores */
         footer {
-            background: #0f172a;
-            color: #94a3b8;
+            background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-main) 50%, var(--blue-light) 100%);
+            color: var(--accent-cyan);
             padding: 4rem 0 2rem;
+            margin-top: 5rem;
+            position: relative;
+        }
+
+        footer::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background:rgba(3, 11, 56, 0.27);
+            opacity: 0.08;
+            pointer-events: none;
+        }
+
+        .footer-content {
+            color: rgba(255, 255, 255, 0.95);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-content a {
+            color: rgba(255, 255, 255, 0.95);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-content a:hover {
+            color: var(--accent-cyan);
+            text-decoration: underline;
+        }
+
+        .footer-logo {
+            max-width: 140px;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.2));
+            margin-bottom: 1.5rem;
         }
 
         .access-divider {
             width: 50px;
             height: 4px;
-            background: var(--blue-bright);
+            background: var(--blue-light);
             border-radius: 10px;
             margin: 1.5rem auto;
+        }
+
+        /* Botón específico para el hero */
+        .btn-outline-light-tech {
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            background: transparent;
+        }
+
+        .btn-outline-light-tech:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+            color: white;
+        }
+
+        /* Efecto de brillo sutil para el footer */
+        .footer-glow {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                var(--blue-light) 0%, 
+                var(--blue-main) 50%, 
+                var(--blue-light) 100%);
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -168,10 +245,10 @@
                 
                 <div class="col-lg-7 text-center text-lg-start">
                     <div class="mb-4">
-                        <img src="{% static 'images/fvrc_logo.png' %}" class="hero-logo" alt="FVRC">
+                         <img src="{% static 'images/fvrc_logo_blanco.png' %}" class="hero-logo" alt="FVRC">
                     </div>
                     <h1 class="mb-4">
-                        Registro Nacional <br>de Robótica
+                        Registro Nacional <br>para Robótica Creativa
                     </h1>
                     <p class="lead mb-0 opacity-90 fs-4 fw-medium">
                         Construyendo el futuro tecnológico de Venezuela.
@@ -190,7 +267,7 @@
                             <a href="{% url 'login' %}" class="btn btn-tech btn-primary-tech">
                                 <i class="bi bi-person-check-fill me-2"></i> Iniciar Sesión
                             </a>
-                            <a href="{% url 'registrar_institucion' %}" class="btn btn-tech btn-outline-primary border-2">
+                            <a href="{% url 'registrar_institucion' %}" class="btn btn-tech btn-outline-primary">
                                 <i class="bi bi-trophy me-2"></i> Registrar Institución
                             </a>
                         </div>
@@ -241,18 +318,19 @@
     </section>
 
     <footer>
-        <div class="container text-center">
-            <div class="row align-items-center">
-                <div class="col-md-4 text-md-start">
-                    <h5 class="text-white fw-bold mb-0">FVRC</h5>
-                </div>
-                <div class="col-md-4 my-3 my-md-0">
-                    <small>&copy; 2024 Sistema Nacional de Robótica.</small>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="social-links">
-                        <a href="#" class="text-white mx-2"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="text-white mx-2"><i class="bi bi-linkedin"></i></a>
+        <div class="footer-glow"></div>
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <div class="mb-4">
+                        <img src="{% static 'images/fvrc_logo.png' %}" alt="FVRC" class="footer-logo">
+                    </div>
+                    <div class="footer-content">
+                        <h5 class="mb-3">Federación Venezolana de Robótica Creativa</h5>
+                        <p class="mb-4" style="opacity: 0.9;">Promoviendo la innovación tecnológica y la educación en robótica en Venezuela.</p>
+                        <p class="small mb-0" style="opacity: 0.8;">
+                            &copy; 2024 Federación Venezolana de Robótica Creativa (FVRC). Todos los derechos reservados.
+                        </p>
                     </div>
                 </div>
             </div>
