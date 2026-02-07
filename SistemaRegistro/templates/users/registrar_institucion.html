@@ -108,22 +108,21 @@
                                 <span class="badge rounded-circle bg-primary-subtle text-primary me-2 px-2 py-2"><i class="bi bi-lock"></i></span>
                                 <h5 class="fw-bold text-dark mb-0">3. Seguridad</h5>
                             </div>
-   <div class="row g-3">
-    <div class="col-md-6">{{ form.password|as_crispy_field }}</div>
-    <div class="col-md-6">{{ form.confirm_password|as_crispy_field }}</div>
-    <div class="col-12">
-        <div class="p-3 rounded-3 bg-white border x-small shadow-sm">
-            <div class="d-flex gap-3 justify-content-center">
-                <!-- Los IDs deben coincidir con el JS -->
-                <span id="min-length" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>8+ carac.</span>
-                <span id="has-uppercase" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Mayúscula</span>
-                <span id="has-number" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Número</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-                                     </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">{{ form.password|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.confirm_password|as_crispy_field }}</div>
+                                <div class="col-12">
+                                    <div class="p-3 rounded-3 bg-white border x-small shadow-sm">
+                                        <div class="d-flex gap-3 justify-content-center flex-wrap">
+                                            <span id="min-length" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>8+ carac.</span>
+                                            <span id="has-uppercase" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Mayúscula</span>
+                                            <span id="has-number" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Número</span>
+                                            <span id="has-special" class="text-danger transition-all"><i class="bi bi-x-circle me-1"></i>Carácter Especial</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="d-grid pt-2">
                             <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 btn-submit-tech">
@@ -169,43 +168,76 @@
         box-shadow: 0 5px 15px rgba(0,70,173,0.4); 
     }
 
-    /* Ajuste para los d-flex que contienen campos de Crispy */
     .custom-flex-row .mb-3, .custom-flex-row .form-group { 
         margin-bottom: 0 !important; 
     }
 
-    /* Ocultar labels redundantes dentro de contenedores complejos como RIF y Teléfono */
     .custom-flex-row label { 
         display: none !important; 
     }
 
-    /* Asegura que el email y el teléfono empiecen a la misma altura */
     .col-md-6 {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
     }
+
+    .transition-all { transition: all 0.3s ease; }
 </style>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    
+    // --- SELECTORES ---
+    const tipoUsuarioSelect = $('#id_tipo_federado');
+    const rifLetra = $('#id_rif_letra');
+    const rifNumero = $('#id_rif_numero');
+    const codigoMppe = $('#id_codigo_mppe');
     const password = $('#id_password');
     const confirm = $('#id_confirm_password');
+    
+    const estadoSelect = document.getElementById('id_estado');
+    const municipioSelect = document.getElementById('id_municipio');
+    const parroquiaSelect = document.getElementById('id_parroquia');
 
+    // --- 1. LÓGICA RIF MPPE CONDICIONAL ---
+    function verificarMppe() {
+        const seleccion = tipoUsuarioSelect.val();
+        if (seleccion && seleccion.includes('mppe')) {
+            rifLetra.val('G').css({'pointer-events': 'none', 'background-color': '#e9ecef'});
+            rifNumero.val('200000090').attr('readonly', true).css('background-color', '#e9ecef');
+            codigoMppe.attr('required', true);
+            $("label[for='id_codigo_mppe']").html('Código MPPE / Plantel <span class="text-danger">*</span>');
+        } else {
+            rifLetra.css({'pointer-events': 'auto', 'background-color': '#f8fafc'});
+            rifNumero.attr('readonly', false).val('').css('background-color', '#f8fafc');
+            codigoMppe.attr('required', false);
+            $("label[for='id_codigo_mppe']").text('Código MPPE / Plantel');
+        }
+    }
+
+    // --- 2. VALIDACIÓN DE CONTRASEÑA ---
     function validatePassword() {
         const val = password.val();
         const confVal = confirm.val();
-
-        // Mínimo 8 caracteres
+        
+        // Requisitos básicos
         updateStatus('#min-length', val.length >= 8);
-        // Al menos una Mayúscula
         updateStatus('#has-uppercase', /[A-Z]/.test(val));
-        // Al menos un Número
         updateStatus('#has-number', /[0-9]/.test(val));
+        
+        // Nueva validación: Caracteres especiales
+        const specialRegex = /[!@#$%^&*(),.?":{}|<>]/;
+        updateStatus('#has-special', specialRegex.test(val));
+        
         // Coincidencia
-        updateStatus('#match-pass', val === confVal && val !== "");
+        if (val !== "" && confVal !== "") {
+            if (val === confVal) {
+                confirm.addClass('is-valid').removeClass('is-invalid');
+            } else {
+                confirm.addClass('is-invalid').removeClass('is-valid');
+            }
+        }
     }
 
     function updateStatus(selector, condition) {
@@ -219,71 +251,54 @@ $(document).ready(function() {
         }
     }
 
+    // --- 3. UBICACIÓN DINÁMICA ---
+    if (estadoSelect) {
+        estadoSelect.addEventListener('change', function() {
+            const estadoId = this.value;
+            municipioSelect.innerHTML = '<option value="">---------</option>';
+            parroquiaSelect.innerHTML = '<option value="">---------</option>';
+            if (estadoId) {
+                fetch(`{% url 'ajax_cargar_municipios' %}?estado_id=${estadoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            municipioSelect.add(new Option(item.nombre, item.id));
+                        });
+                    });
+            }
+        });
+    }
+
+    if (municipioSelect) {
+        municipioSelect.addEventListener('change', function() {
+            const municipioId = this.value;
+            parroquiaSelect.innerHTML = '<option value="">---------</option>';
+            if (municipioId) {
+                fetch(`{% url 'ajax_cargar_parroquias' %}?municipio_id=${municipioId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            parroquiaSelect.add(new Option(item.nombre, item.id));
+                        });
+                    });
+            }
+        });
+    }
+
+    // --- 4. LISTENERS ---
+    tipoUsuarioSelect.on('change', verificarMppe);
     password.on('keyup', validatePassword);
     confirm.on('keyup', validatePassword);
-});
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Identificar los elementos por los IDs que genera Django automáticamente
-    const estadoSelect = document.getElementById('id_estado');
-    const municipioSelect = document.getElementById('id_municipio');
-    const parroquiaSelect = document.getElementById('id_parroquia');
-
-    // 2. Evento cuando cambia el Estado
-    estadoSelect.addEventListener('change', function() {
-        const estadoId = this.value;
-        
-        // Limpiar municipios y parroquias
-        municipioSelect.innerHTML = '<option value="">---------</option>';
-        parroquiaSelect.innerHTML = '<option value="">---------</option>';
-
-        if (estadoId) {
-            // Llamada AJAX profesional a la vista que creamos
-            fetch(`{% url 'ajax_cargar_municipios' %}?estado_id=${estadoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(item => {
-                        const option = new Option(item.nombre, item.id);
-                        municipioSelect.add(option);
-                    });
-                })
-                .catch(error => console.error('Error cargando municipios:', error));
-        }
-    });
-
-    // 3. Evento cuando cambia el Municipio
-    municipioSelect.addEventListener('change', function() {
-        const municipioId = this.value;
-
-        // Limpiar parroquias
-        parroquiaSelect.innerHTML = '<option value="">---------</option>';
-
-        if (municipioId) {
-            fetch(`{% url 'ajax_cargar_parroquias' %}?municipio_id=${municipioId}`)
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(item => {
-                        const option = new Option(item.nombre, item.id);
-                        parroquiaSelect.add(option);
-                    });
-                })
-                .catch(error => console.error('Error cargando parroquias:', error));
-        }
-    });
+    verificarMppe();
 });
 </script>
 
 <style>
-    /* Mejora visual para los campos bloqueados mientras cargan */
-    .form-select:disabled {
-        background-color: #e9ecef !important;
-        cursor: not-allowed;
-    }
-    .x-small { font-size: 0.75rem; }
+    .form-select:disabled { background-color: #e9ecef !important; cursor: not-allowed; }
     .custom-flex-row { flex-wrap: nowrap; }
     @media (max-width: 576px) {
         .custom-flex-row { flex-wrap: wrap; }
         .custom-flex-row > div { width: 100% !important; }
     }
 </style>
-
 {% endblock %}

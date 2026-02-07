@@ -2,6 +2,9 @@ from django.contrib import admin
 
 from .models import Estado, Institucion, Municipio, Parroquia, Participante
 
+from django.contrib.admin.exceptions import NotRegistered
+
+
 
 @admin.register(Estado)
 class EstadoAdmin(admin.ModelAdmin):
@@ -111,3 +114,29 @@ class ParticipanteAdmin(admin.ModelAdmin):
             {"fields": ("fecha_registro", "activo"), "classes": ("collapse",)},
         ),
     )
+
+
+# 1. Definimos la acción
+@admin.action(description="Aprobar y generar código RNR")
+def aprobar_registros(modeladmin, request, queryset):
+    count = 0
+    for institucion in queryset:
+        if institucion.aprobar_y_generar_codigo():
+            count += 1
+    modeladmin.message_user(request, f"Se han aprobado {count} instituciones correctamente.")
+
+# 2. Intentamos desregistrar para evitar el error AlreadyRegistered
+try:
+    admin.site.unregister(Institucion)
+except NotRegistered:
+    pass
+
+# 3. Registramos formalmente
+
+@admin.register(Institucion)
+class InstitucionAdmin(admin.ModelAdmin):
+    # Cambiamos 'estatus' por 'activa' que sí existe en tu modelo
+    list_display = ('nombre', 'codigo', 'activa', 'fecha_registro')
+    list_filter = ('activa', 'estado') 
+    search_fields = ('nombre', 'codigo', 'email')
+    actions = [aprobar_registros]

@@ -112,8 +112,8 @@ class Institucion(models.Model):
     def generar_codigo_rnr(self):
         """Genera el código con formato RNR[YY]-[EEEMMMPPP]-[8CHARS]"""
         year = str(timezone.now().year)[2:]
-
-        # zfill(3) asegura los tres ceros para IDs bajos
+        
+        # Formateo de IDs de ubicación con ceros a la izquierda
         e = str(self.estado.id).zfill(3) if self.estado_id else "000"
         m = str(self.municipio.id).zfill(3) if self.municipio_id else "000"
         p = str(self.parroquia.id).zfill(3) if self.parroquia_id else "000"
@@ -122,17 +122,26 @@ class Institucion(models.Model):
         chars = string.ascii_uppercase + string.digits
 
         while True:
-            # get_random_string es la forma profesional en Django
             secuencia = get_random_string(length=8, allowed_chars=chars)
             nuevo_codigo = f"{prefijo}{secuencia}"
-
-            # Verificamos contra el propio modelo Institucion
             if not Institucion.objects.filter(codigo=nuevo_codigo).exists():
                 return nuevo_codigo
 
-    def save(self, *args, **kwargs):
-        if not self.codigo:
+    def aprobar_y_generar_codigo(self):
+        """
+        Método profesional para activar la cuenta.
+        Se debe llamar desde el Admin o una vista de revisión.
+        """
+        if self.estatus == 'pendiente':
             self.codigo = self.generar_codigo_rnr()
+            self.estatus = 'aprobado'
+            self.activa = True
+            self.save()
+            return True
+        return False
+
+    def save(self, *args, **kwargs):
+        # El save ahora es simple. No genera código automáticamente.
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -377,3 +386,29 @@ class Grupo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - {self.usuario_creador.username}"
+
+
+class Club(models.Model):
+    # Lista de líneas de investigación (puedes agregar más según necesites)
+    LINEAS_INVESTIGACION_CHOICES = [
+        ('electronica', 'Electrónica y Circuitos'),
+        ('programacion', 'Programación y Algoritmos'),
+        ('mecanica', 'Mecánica y Estructuras'),
+        ('ia', 'Inteligencia Artificial'),
+        ('iot', 'Internet de las Cosas (IoT)'),
+        ('automatizacion', 'Automatización Industrial'),
+        ('diseno_3d', 'Diseño e Impresión 3D'),
+        ('telecom', 'Telecomunicaciones'),
+    ]
+
+    nombre = models.CharField(max_length=200, verbose_name="Nombre del Club")
+    descripcion = models.TextField(verbose_name="Descripción")
+    ubicacion = models.CharField(max_length=255, verbose_name="Ubicación")
+    
+    # Usaremos campos separados para asegurar que sean "hasta 3"
+    linea_1 = models.CharField(max_length=50, choices=LINEAS_INVESTIGACION_CHOICES, verbose_name="Línea de investigación 1")
+    linea_2 = models.CharField(max_length=50, choices=LINEAS_INVESTIGACION_CHOICES, verbose_name="Línea de investigación 2", blank=True, null=True)
+    linea_3 = models.CharField(max_length=50, choices=LINEAS_INVESTIGACION_CHOICES, verbose_name="Línea de investigación 3", blank=True, null=True)
+
+    def __str__(self):
+        return self.nombre

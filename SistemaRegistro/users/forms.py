@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-
+from registry.models import Club
 # Importación de modelos desde tu app 'registry'
 from registry.models import Estado, Institucion, Municipio, Parroquia, Participante
 
@@ -65,9 +65,36 @@ class ParticipanteRegistrationForm(forms.ModelForm):
         self.fields["estado"].queryset = Estado.objects.all().order_by("nombre")
         self.fields["municipio"].queryset = Municipio.objects.none()
 
-
 class InstitucionRegistrationForm(forms.ModelForm):
-    # --- CHOICES ---
+    # --- CHOICES ORGANIZADOS POR CATEGORÍAS ---
+    TIPO_USUARIO_CHOICES = [
+        ('', 'Seleccione Tipo de Usuario'),
+        ('Institución Educativa (MPPE) - Pública', [
+            ('mppe_pub_pre', 'Preescolar '),
+            ('mppe_pub_pri', 'Primaria 1ra y 2da etapa '),
+            ('mppe_pub_sec', 'Secundaria 3ra etapa '),
+            ('mppe_pub_gen', 'Media General '),
+            ('mppe_pub_tec', 'Media Técnica '),
+        ]),
+        ('Institución Educativa (MPPE) - Privada', [
+            ('mppe_priv_pre', 'Preescolar '),
+            ('mppe_priv_pri', 'Primaria 1ra y 2da etapa '),
+            ('mppe_priv_sec', 'Secundaria 3ra etapa '),
+            ('mppe_priv_gen', 'Media General '),
+            ('mppe_priv_tec', 'Media Técnica '),
+        ]),
+        ('Otras Instituciones - Pública', [
+            ('otra_pub_dep', 'Dependencia Gubernamental / Estado'),
+        ]),
+        ('Otras Instituciones - Privada', [
+            ('otra_priv_emp', 'Empresa Privada'),
+            ('otra_priv_fun', 'Fundación Privada'),
+        ]),
+        ('Particular', [
+            ('particular_nat', 'Persona Natural'),
+        ]),
+    ]
+
     RIF_LETRA_CHOICES = [
         ("J", "J - "),
         ("G", "G - "),
@@ -75,6 +102,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ("E", "E - "),
         ("P", "P - "),
     ]
+    
     CODIGO_AREA_CHOICES = [
         ("", "----"),
         ("0412", "0412"),
@@ -83,6 +111,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ("0424", "0424"),
         ("0426", "0426"),
     ]
+    
     CATEGORIA_CHOICES = [
         ("", "Seleccione categoría"),
         ("publica", "Pública"),
@@ -90,6 +119,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ("fundacion", "Fundación"),
         ("entidad", "Entidad Gubernamental"),
     ]
+    
     PROCEDENCIA_CHOICES = [
         ("", "Seleccione Procedencia"),
         ("publica", "Instituciones Educativas Públicas"),
@@ -98,6 +128,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
     ]
 
     # --- CAMPOS MANUALES (Lógica de Negocio) ---
+    tipo_federado = forms.ChoiceField(
+        choices=TIPO_USUARIO_CHOICES,
+        label="Tipo de Usuario",
+        widget=forms.Select(attrs={'class': 'form-control form-select'})
+    )
+    
     rif_letra = forms.ChoiceField(choices=RIF_LETRA_CHOICES, label="Letra RIF")
     rif_numero = forms.CharField(max_length=15, label="Número RIF")
     categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría")
@@ -108,14 +144,13 @@ class InstitucionRegistrationForm(forms.ModelForm):
     codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES, label="Cód.")
     numero_telefono = forms.CharField(max_length=7, min_length=7, label="Número")
 
-    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput)
+    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
     confirm_password = forms.CharField(
-        label="Confirmar Contraseña", widget=forms.PasswordInput
+        label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
 
     class Meta:
         model = Institucion
-        # OJO: Se incluyeron municipio y parroquia en fields
         fields = [
             "nombre",
             "tipo_federado",
@@ -127,7 +162,6 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ]
         widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
-            "tipo_federado": forms.Select(attrs={"class": "form-control form-select"}),
             "email": forms.EmailInput(attrs={"class": "form-control"}),
             "estado": forms.Select(attrs={"class": "form-control form-select"}),
             "municipio": forms.Select(attrs={"class": "form-control form-select"}),
@@ -147,10 +181,6 @@ class InstitucionRegistrationForm(forms.ModelForm):
                 ).order_by("nombre")
             except (ValueError, TypeError):
                 self.fields["municipio"].queryset = Municipio.objects.none()
-        elif self.instance.pk:
-            self.fields[
-                "municipio"
-            ].queryset = self.instance.estado.municipios.all().order_by("nombre")
         else:
             self.fields["municipio"].queryset = Municipio.objects.none()
 
@@ -163,10 +193,6 @@ class InstitucionRegistrationForm(forms.ModelForm):
                 ).order_by("nombre")
             except (ValueError, TypeError):
                 self.fields["parroquia"].queryset = Parroquia.objects.none()
-        elif self.instance.pk:
-            self.fields[
-                "parroquia"
-            ].queryset = self.instance.municipio.parroquias.all().order_by("nombre")
         else:
             self.fields["parroquia"].queryset = Parroquia.objects.none()
 
@@ -186,13 +212,43 @@ class InstitucionRegistrationForm(forms.ModelForm):
         instance.rif = f"{self.cleaned_data.get('rif_letra')}-{self.cleaned_data.get('rif_numero')}"
         instance.telefono = f"{self.cleaned_data.get('codigo_area')}{self.cleaned_data.get('numero_telefono')}"
 
-        # Asignación de campos manuales
+        # Asignación de campos manuales que no están en el Meta.fields directo
         instance.categoria = self.cleaned_data.get("categoria")
         instance.codigo_mppe = self.cleaned_data.get("codigo_mppe")
-        instance.institucion_procedencia = self.cleaned_data.get(
-            "institucion_procedencia"
-        )
+        instance.institucion_procedencia = self.cleaned_data.get("institucion_procedencia")
+        
+        # Guardar el tipo de usuario en el campo tipo_federado del modelo
+        instance.tipo_federado = self.cleaned_data.get("tipo_federado")
 
         if commit:
             instance.save()
         return instance
+    
+
+
+
+class ClubRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = Club
+        fields = ['nombre', 'descripcion', 'ubicacion', 'linea_1', 'linea_2', 'linea_3']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robótica "Simon Rodriguez"'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'linea_1': forms.Select(attrs={'class': 'form-select'}),
+            'linea_2': forms.Select(attrs={'class': 'form-select'}),
+            'linea_3': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        l1 = cleaned_data.get('linea_1')
+        l2 = cleaned_data.get('linea_2')
+        l3 = cleaned_data.get('linea_3')
+
+        # Validación: No permitir líneas duplicadas
+        lineas = [l for l in [l1, l2, l3] if l]
+        if len(lineas) != len(set(lineas)):
+            raise forms.ValidationError("No puedes seleccionar la misma línea de investigación más de una vez.")
+        
+        return cleaned_data

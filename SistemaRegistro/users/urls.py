@@ -58,4 +58,5 @@ urlpatterns = [
     path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
     path('perfil/', views.mi_perfil, name='mi_perfil'),
     path('institucion/perfil/', views.mi_perfil_institucional, name='mi_perfil'),
+    path('registrar-club/', views.registrar_club, name='registrar_club'),
 ]

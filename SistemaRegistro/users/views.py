@@ -16,10 +16,11 @@ from django.views.generic.edit import UpdateView
 from django.urls import reverse
 from registry.models import Evento
 from django.db import transaction
-from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm
+from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm, ClubRegistrationForm
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
+
 
 
 def home(request):
@@ -1018,3 +1019,15 @@ def dashboard_central(request):
         'pendientes_aprobacion': 0, 
     }
     return render(request, 'users/dashboard_central.html', context)
+
+
+def registrar_club(request):
+    if request.method == 'POST':
+        form = ClubRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_clubes') # Cambia esto a tu URL de éxito
+    else:
+        form = ClubRegistrationForm()
+    
+    return render(request, 'registrar_club.html', {'form': form})
