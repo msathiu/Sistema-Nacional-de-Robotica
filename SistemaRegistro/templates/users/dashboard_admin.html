@@ -14,7 +14,21 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+        
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
+            <!--
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle fw-bold shadow-sm" type="button" data-bs-toggle="dropdown" style="border-radius: 12px; background: var(--blue-main);">
+                    <i class="bi bi-plus-circle me-2"></i>Crear Actividad
+                </button>
+                <ul class="dropdown-menu border-0 shadow-lg">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-trophy me-2"></i>Competición</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-mic me-2"></i>Conferencia / Foro</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-journal-code me-2"></i>Curso / Taller</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-megaphone me-2"></i>Feria / Divulgación</a></li>
+                </ul>
+            </div>
+            -->
             <a href="{% url 'exportar_participantes_excel' %}" class="btn tech-report-btn shadow-sm">
                 <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
                 <span>Exportar Data</span>
@@ -46,79 +60,103 @@
     {% endif %}
 
     <div class="row g-4 mb-5">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Participantes</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_participantes|default:0 }}">0</h2>
-                    <i class="bi bi-people position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Participantes</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_participantes|default:0 }}">0</h3>
+                    <i class="bi bi-people position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: var(--accent-cyan);"></div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Instituciones</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_instituciones|default:0 }}">0</h2>
-                    <i class="bi bi-building position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Instituciones</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_instituciones|default:0 }}">0</h3>
+                    <i class="bi bi-building position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Cobertura</div>
-                    <h2 class="display-5 fw-bold mb-0">
-                        <span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-4 text-white-50">/24</span>
-                    </h2>
-                    <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Clubes</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_clubes|default:0 }}">0</h3>
+                    <i class="bi bi-robot position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #3b82f6;"></div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Tutores</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_tutores|default:0 }}">0</h3>
+                    <i class="bi bi-person-workspace position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #a855f7;"></div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Eventos</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_eventos|default:0 }}">0</h3>
+                    <i class="bi bi-calendar-event position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: #f59e0b;"></div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Eventos Activos</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_eventos|default:0 }}">0</h2>
-                    <i class="bi bi-cpu position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Cobertura</div>
+                    <h3 class="fw-bold mb-0"><span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-6 text-white-50">/24</span></h3>
+                    <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
-                <div style="height: 4px; background: #8b5cf6;"></div>
+                <div style="height: 4px; background: #ef4444;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-activity text-primary me-2"></i>Curva de Inscripción Mensual</h5>
+                <div style="height: 300px;"><canvas id="growthChart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 h-100 text-center" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-gender-ambiguous text-warning me-2"></i>Distribución de Género</h5>
+                <div class="d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                    <canvas id="genderGauge"></canvas>
+                    <div style="margin-top: -50px;">
+                        <h3 class="fw-bold mb-0" style="color: #0b2c6d;">{{ porcentaje_mujeres|default:0 }}%</h3>
+                        <span class="text-muted small fw-bold">Mujeres</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-lg-12">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: white;">
-                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-activity text-primary me-2"></i>Curva de Inscripción Mensual</h5>
-                <div style="height: 250px;"><canvas id="growthChart"></canvas></div>
+                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-robot text-primary me-2"></i>Especialidades de Clubes (Líneas)</h5>
+                <div style="height: 300px;">
+                    <canvas id="clubsRadarChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 20px; background: white;">
-                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Distribución por Entidad</h5>
-                <div style="height: 350px;"><canvas id="complexBarChart"></canvas></div>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 20px; background: white;">
-                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-bullseye text-danger me-2"></i>Especialización</h5>
-                <div style="height: 300px;"><canvas id="radarChart"></canvas></div>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card border-0 shadow-sm p-4 h-100 text-center" style="border-radius: 20px; background: white;">
-                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-gender-ambiguous text-warning me-2"></i>Género</h5>
-                <div class="d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
-                    <canvas id="genderGauge"></canvas>
-                    <div style="margin-top: -50px;">
-                        <h3 class="fw-bold mb-0" style="color: #0b2c6d;">{{ porcentaje_mujeres }}%</h3>
-                        <span class="text-muted small fw-bold">Mujeres</span>
-                    </div>
-                </div>
+            <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4"><i class="bi bi-person-video3 text-info me-2"></i>Distribución Geográfica de Tutores</h5>
+                <div style="height: 300px;">
+                    <canvas id="tutorsBarChart"></canvas>
                 </div>
             </div>
         </div>
@@ -127,18 +165,11 @@
 
 <style>
     .counter { font-family: 'Space Grotesk', sans-serif; }
-    canvas { width: 100% !important; }
+    .x-small { font-size: 0.75rem; }
     .tech-report-btn {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        padding: 0.6rem 1.2rem;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        text-decoration: none;
-        color: #1e293b;
-        font-weight: 600;
-        transition: all 0.3s ease;
+        background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.6rem 1.2rem;
+        border-radius: 12px; display: inline-flex; align-items: center;
+        text-decoration: none; color: #1e293b; font-weight: 600; transition: all 0.3s ease;
     }
     .tech-report-btn:hover { background: white; border-color: var(--accent-cyan); transform: translateY(-2px); }
 </style>
@@ -148,127 +179,93 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // --- 1. CONFIGURACIÓN DE DATOS DESDE DJANGO ---
-        // Usamos el filtro |safe para que JS reconozca las listas de Python
-        const labelsMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        const dataCrecimiento = {{ data_crecimiento|safe|default:"[0,0,0,0,0,0,0,0,0,0,0,0]" }};
-        
-        const labelsEstados = {{ labels_estados|safe|default:"['Sin Datos']" }};
-        const dataEstados = {{ data_estados|safe|default:"[0]" }};
-        
-        const porcMujeres = {{ porcentaje_mujeres|default:42 }};
-        const porcHombres = 100 - porcMujeres;
-
-        // --- 2. LÓGICA DE CONTADORES ---
+        // --- ANIMACIÓN DE CONTADORES ---
         const counters = document.querySelectorAll('.counter');
-        const speed = 200;
         counters.forEach(counter => {
             const updateCount = () => {
                 const target = parseInt(counter.getAttribute('data-target'));
                 const count = parseInt(counter.innerText);
-                const increment = Math.max(Math.trunc(target / speed), 1);
+                const increment = Math.max(Math.trunc(target / 100), 1);
                 if (count < target) {
                     counter.innerText = count + increment;
-                    setTimeout(updateCount, 10);
-                } else { 
-                    counter.innerText = target; 
-                }
+                    setTimeout(updateCount, 20);
+                } else { counter.innerText = target; }
             };
             updateCount();
         });
 
-        // --- 3. GRÁFICO DE CRECIMIENTO (LÍNEA) ---
-        const ctxGrowth = document.getElementById('growthChart').getContext('2d');
-        new Chart(ctxGrowth, {
+        // --- 1. GRÁFICO DE CRECIMIENTO (Línea) ---
+        new Chart(document.getElementById('growthChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: labelsMeses,
+                labels: {{ meses_labels|safe|default:"['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']" }},
                 datasets: [{
-                    label: 'Inscritos',
-                    data: dataCrecimiento,
+                    label: 'Registros Totales',
+                    data: {{ data_crecimiento|safe|default:"[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" }},
                     borderColor: '#00d4ff',
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#0b2c6d'
+                    tension: 0.4
                 }]
             },
-            options: { 
-                maintainAspectRatio: false, 
+            options: {
+                maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                }
+                scales: { y: { beginAtZero: true } }
             }
         });
 
-        // --- 4. GRÁFICO DE BARRAS POR ESTADO ---
-        const ctxBar = document.getElementById('complexBarChart').getContext('2d');
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: labelsEstados,
-                datasets: [{
-                    data: dataEstados,
-                    backgroundColor: '#0b2c6d',
-                    hoverBackgroundColor: '#00d4ff',
-                    borderRadius: 8
-                }]
-            },
-            options: { 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-
-        // --- 5. GRÁFICO RADAR (ESPECIALIDAD) ---
-        const ctxRadar = document.getElementById('radarChart').getContext('2d');
-        new Chart(ctxRadar, {
-            type: 'radar',
-            data: {
-                labels: ['Programación', 'IA', '3D', 'Electrónica', 'Mecánica'],
-                datasets: [{
-                    label: 'Nivel Nacional',
-                    data: {{ data_especialidad|safe|default:"[80, 60, 70, 85, 90]" }},
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0, 212, 255, 0.2)',
-                    pointBackgroundColor: '#0b2c6d'
-                }]
-            },
-            options: { 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: {
-                    r: { angleLines: { color: '#f1f5f9' }, grid: { color: '#f1f5f9' }, suggestMin: 0 }
-                }
-            }
-        });
-
-        // --- 6. GRÁFICO GÉNERO (VELOCÍMETRO) ---
-        const ctxGender = document.getElementById('genderGauge').getContext('2d');
-        new Chart(ctxGender, {
+        // --- 2. GRÁFICO GÉNERO (Dona Gauche) ---
+        new Chart(document.getElementById('genderGauge').getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels: ['Masculino', 'Femenino'],
                 datasets: [{
-                    data: [porcHombres, porcMujeres],
+                    data: [{{ porcentaje_hombres|default:50 }}, {{ porcentaje_mujeres|default:50 }}],
                     backgroundColor: ['#0b2c6d', '#f59e0b'],
-                    borderWidth: 0,
                     circumference: 180,
                     rotation: 270,
                     cutout: '85%'
                 }]
             },
-            options: { 
-                maintainAspectRatio: false, 
-                aspectRatio: 2,
-                plugins: { legend: { display: false } } 
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        // --- 3. GRÁFICO CLUBES (Radar) ---
+        new Chart(document.getElementById('clubsRadarChart').getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: {{ clubes_labels|safe|default:"['Electrónica', 'Programación', 'IA', 'Mecánica', 'Diseño 3D']" }},
+                datasets: [{
+                    label: 'Clubes Activos',
+                    data: {{ clubes_data|safe|default:"[0, 0, 0, 0, 0]" }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    pointBackgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // --- 4. GRÁFICO TUTORES (Barras Verticales) ---
+        new Chart(document.getElementById('tutorsBarChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: {{ tutores_labels|safe|default:"['Distrito Capital', 'Miranda', 'Zulia', 'Carabobo', 'Lara']" }},
+                datasets: [{
+                    label: 'N° de Tutores',
+                    data: {{ tutores_data|safe|default:"[0, 0, 0, 0, 0]" }},
+                    backgroundColor: '#10b981',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
             }
         });
     });

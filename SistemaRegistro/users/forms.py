@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from registry.models import Club
+import uuid
 # Importación de modelos desde tu app 'registry'
 from registry.models import Estado, Institucion, Municipio, Parroquia, Participante
 
@@ -66,60 +67,30 @@ class ParticipanteRegistrationForm(forms.ModelForm):
         self.fields["municipio"].queryset = Municipio.objects.none()
 
 class InstitucionRegistrationForm(forms.ModelForm):
-    # --- CHOICES ORGANIZADOS POR CATEGORÍAS ---
+    # --- CHOICES ---
     TIPO_USUARIO_CHOICES = [
         ('', 'Seleccione Tipo de Usuario'),
         ('Institución Educativa (MPPE) - Pública', [
-            ('mppe_pub_pre', 'Preescolar '),
-            ('mppe_pub_pri', 'Primaria 1ra y 2da etapa '),
-            ('mppe_pub_sec', 'Secundaria 3ra etapa '),
-            ('mppe_pub_gen', 'Media General '),
+            ('mppe_pub_pre', 'Preescolar '), ('mppe_pub_pri', 'Primaria '),
+            ('mppe_pub_sec', 'Secundaria '), ('mppe_pub_gen', 'Media General '),
             ('mppe_pub_tec', 'Media Técnica '),
         ]),
         ('Institución Educativa (MPPE) - Privada', [
-            ('mppe_priv_pre', 'Preescolar '),
-            ('mppe_priv_pri', 'Primaria 1ra y 2da etapa '),
-            ('mppe_priv_sec', 'Secundaria 3ra etapa '),
-            ('mppe_priv_gen', 'Media General '),
+            ('mppe_priv_pre', 'Preescolar '), ('mppe_priv_pri', 'Primaria '),
+            ('mppe_priv_sec', 'Secundaria '), ('mppe_priv_gen', 'Media General '),
             ('mppe_priv_tec', 'Media Técnica '),
         ]),
         ('Otras Instituciones - Pública', [
             ('otra_pub_dep', 'Dependencia Gubernamental / Estado'),
         ]),
         ('Otras Instituciones - Privada', [
-            ('otra_priv_emp', 'Empresa Privada'),
-            ('otra_priv_fun', 'Fundación Privada'),
+            ('otra_priv_emp', 'Empresa Privada'), ('otra_priv_fun', 'Fundación Privada'),
         ]),
         ('Particular', [
             ('particular_nat', 'Persona Natural'),
         ]),
     ]
 
-    RIF_LETRA_CHOICES = [
-        ("J", "J - "),
-        ("G", "G - "),
-        ("V", "V - "),
-        ("E", "E - "),
-        ("P", "P - "),
-    ]
-    
-    CODIGO_AREA_CHOICES = [
-        ("", "----"),
-        ("0412", "0412"),
-        ("0414", "0414"),
-        ("0416", "0416"),
-        ("0424", "0424"),
-        ("0426", "0426"),
-    ]
-    
-    CATEGORIA_CHOICES = [
-        ("", "Seleccione categoría"),
-        ("publica", "Pública"),
-        ("privada", "Privada"),
-        ("fundacion", "Fundación"),
-        ("entidad", "Entidad Gubernamental"),
-    ]
-    
     PROCEDENCIA_CHOICES = [
         ("", "Seleccione Procedencia"),
         ("publica", "Instituciones Educativas Públicas"),
@@ -127,39 +98,39 @@ class InstitucionRegistrationForm(forms.ModelForm):
         ("privada", "Institución Privada"),
     ]
 
-    # --- CAMPOS MANUALES (Lógica de Negocio) ---
+    CATEGORIA_CHOICES = [
+        ("", "Seleccione categoría"),
+        ("publica", "Pública"),
+        ("privada", "Privada"),
+        ("fundacion", "Fundación"),
+        ("entidad", "Entidad Gubernamental"),
+    ]
+
+    RIF_LETRA_CHOICES = [("J", "J"), ("G", "G"), ("V", "V"), ("E", "E"), ("P", "P")]
+    CODIGO_AREA_CHOICES = [("", "----"), ("0412", "0412"), ("0414", "0414"), ("0416", "0416"), ("0424", "0424"), ("0426", "0426")]
+
+    # --- CAMPOS QUE TU HTML EXIGE (Declararlos aquí evita el CrispyError) ---
     tipo_federado = forms.ChoiceField(
         choices=TIPO_USUARIO_CHOICES,
         label="Tipo de Usuario",
         widget=forms.Select(attrs={'class': 'form-control form-select'})
     )
-    
-    rif_letra = forms.ChoiceField(choices=RIF_LETRA_CHOICES, label="Letra RIF")
-    rif_numero = forms.CharField(max_length=15, label="Número RIF")
-    categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría")
+    categoria = forms.ChoiceField(choices=CATEGORIA_CHOICES, label="Categoría", required=False)
+    institucion_procedencia = forms.ChoiceField(choices=PROCEDENCIA_CHOICES, label="Institución de Procedencia", required=False)
     codigo_mppe = forms.CharField(required=False, label="Código MPPE / Plantel")
-    institucion_procedencia = forms.ChoiceField(
-        choices=PROCEDENCIA_CHOICES, label="Institución de Procedencia"
-    )
+    
+    rif_letra = forms.ChoiceField(choices=RIF_LETRA_CHOICES, label="Letra")
+    rif_numero = forms.CharField(max_length=15, label="Número RIF")
+    
     codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES, label="Cód.")
     numero_telefono = forms.CharField(max_length=7, min_length=7, label="Número")
 
-    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'}))
-    confirm_password = forms.CharField(
-        label="Confirmar Contraseña", widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
+    password = forms.CharField(label="Contraseña", widget=forms.PasswordInput())
+    confirm_password = forms.CharField(label="Confirmar Contraseña", widget=forms.PasswordInput())
 
     class Meta:
         model = Institucion
-        fields = [
-            "nombre",
-            "tipo_federado",
-            "email",
-            "estado",
-            "municipio",
-            "parroquia",
-            "direccion",
-        ]
+        fields = ["nombre", "email", "estado", "municipio", "parroquia", "direccion"]
         widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
             "email": forms.EmailInput(attrs={"class": "form-control"}),
@@ -171,62 +142,48 @@ class InstitucionRegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # 1. Queryset de municipios dinámico
+        # Lógica dinámica de estados/municipios (se mantiene igual)
         if "estado" in self.data:
             try:
-                estado_id = int(self.data.get("estado"))
-                self.fields["municipio"].queryset = Municipio.objects.filter(
-                    estado_id=estado_id
-                ).order_by("nombre")
-            except (ValueError, TypeError):
-                self.fields["municipio"].queryset = Municipio.objects.none()
-        else:
-            self.fields["municipio"].queryset = Municipio.objects.none()
-
-        # 2. Queryset de parroquias dinámico
+                self.fields["municipio"].queryset = Municipio.objects.filter(estado_id=int(self.data.get("estado"))).order_by("nombre")
+            except: pass
         if "municipio" in self.data:
             try:
-                municipio_id = int(self.data.get("municipio"))
-                self.fields["parroquia"].queryset = Parroquia.objects.filter(
-                    municipio_id=municipio_id
-                ).order_by("nombre")
-            except (ValueError, TypeError):
-                self.fields["parroquia"].queryset = Parroquia.objects.none()
-        else:
-            self.fields["parroquia"].queryset = Parroquia.objects.none()
+                self.fields["parroquia"].queryset = Parroquia.objects.filter(municipio_id=int(self.data.get("municipio"))).order_by("nombre")
+            except: pass
 
     def clean(self):
         cleaned_data = super().clean()
-        password = cleaned_data.get("password")
-        confirm_password = cleaned_data.get("confirm_password")
-
-        if password and confirm_password and password != confirm_password:
+        if cleaned_data.get("password") != cleaned_data.get("confirm_password"):
             self.add_error("confirm_password", "Las contraseñas no coinciden.")
-
         return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Concatenación de datos procesados
+        
+        # 1. Procesar RIF y Teléfono
         instance.rif = f"{self.cleaned_data.get('rif_letra')}-{self.cleaned_data.get('rif_numero')}"
         instance.telefono = f"{self.cleaned_data.get('codigo_area')}{self.cleaned_data.get('numero_telefono')}"
-
-        # Asignación de campos manuales que no están en el Meta.fields directo
-        instance.categoria = self.cleaned_data.get("categoria")
-        instance.codigo_mppe = self.cleaned_data.get("codigo_mppe")
-        instance.institucion_procedencia = self.cleaned_data.get("institucion_procedencia")
         
-        # Guardar el tipo de usuario en el campo tipo_federado del modelo
-        instance.tipo_federado = self.cleaned_data.get("tipo_federado")
+        # 2. Asignar TIPO y DEPENDENCIA
+        val_tipo = self.cleaned_data.get("tipo_federado")
+        instance.tipo_federado = val_tipo
+        instance.dependencia = val_tipo
+        
+        # 3. SOLUCIÓN AL ERROR DE CÓDIGO:
+        # Si el código está vacío, le asignamos uno temporal basado en UUID
+        # para que no choque con otros registros pendientes.
+        if not instance.codigo:
+            instance.codigo = f"TEMP-{uuid.uuid4().hex[:8].upper()}"
+
+        # ... resto de tu lógica de dirección ...
+        info_extra = f" | Cat: {self.cleaned_data.get('categoria')} | Proc: {self.cleaned_data.get('institucion_procedencia')}"
+        instance.direccion += info_extra
 
         if commit:
             instance.save()
         return instance
     
-
-
-
 class ClubRegistrationForm(forms.ModelForm):
     class Meta:
         model = Club

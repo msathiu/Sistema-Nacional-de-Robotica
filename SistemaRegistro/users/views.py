@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Estados, Municipios
-from registry.models import Participante, Municipio, Institucion, Grupo, Estado
+from registry.models import Participante, Municipio, Institucion, Grupo, Club, Estado
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
@@ -20,6 +20,9 @@ from .forms import InstitucionRegistrationForm, CustomUserCreationForm, Particip
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
+
+from django.db.models.functions import ExtractMonth
+from datetime import datetime
 
 
 
@@ -74,18 +77,39 @@ def register(request):
         'participante_form': participante_form,
     })
 
+
 def custom_login(request):
-    """Vista de login personalizada"""
+    """Vista de login personalizada con manejo seguro de perfiles"""
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=password)
+            
             if user is not None:
                 login(request, user)
+                
+                # Intentamos obtener el perfil de forma segura
+                try:
+                    # Acceso directo al OneToOneField
+                    profile = user.userprofile
+                    user_type = profile.user_type
+                except UserProfile.DoesNotExist:
+                    # Si el usuario no tiene perfil (como un SuperUser creado por consola)
+                    # le asignamos uno por defecto o lo manejamos como admin
+                    if user.is_superuser:
+                        user_type = 'admin'
+                    else:
+                        user_type = 'particular' # O el tipo que prefieras por defecto
+                
                 messages.success(request, f'¡Bienvenido de nuevo, {username}!')
-                return redirect('dashboard')
+
+                # Lógica de redirección basada en el tipo de usuario
+                if user_type == 'admin' or user.is_superuser:
+                    return redirect('dashboard') # O 'admin_dashboard' si tienes uno específico
+                else:
+                    return redirect('dashboard') # Redirige al dashboard estándar
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     else:
@@ -96,46 +120,119 @@ def custom_login(request):
 
 @login_required
 def dashboard(request):
-    """Router principal del dashboard"""
-    user_profile = request.user.userprofile
+    """Router principal del dashboard con estadísticas completas para Admin"""
+    try:
+        user_profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        # Manejo de seguridad para usuarios sin perfil (como superusers de consola)
+        if request.user.is_superuser:
+            user_type = 'admin'
+        else:
+            messages.error(request, 'No tienes un perfil configurado.')
+            return redirect('login')
+    else:
+        user_type = user_profile.user_type
 
-    if user_profile.user_type == 'participante':
+    if user_type == 'participante':
         return redirect('dashboard_participante')
 
-    elif user_profile.user_type == 'institucional':
+    elif user_type == 'institucional':
         return redirect('dashboard_institucional')
 
-    elif user_profile.user_type == 'admin':
-        # --- NUEVA LÓGICA PARA EL MAPA ---
-        # 1. Contamos instituciones por nombre de estado
-        # Nota: Usamos 'estado__nombre' asumiendo que Institucion tiene una FK a Estado
-        conteo_db = Institucion.objects.values('estado__nombre').annotate(total=Count('id'))
-        
-        # 2. Creamos el diccionario que el JavaScript necesita: {'Miranda': 5, 'Zulia': 2...}
-        mapa_data = {registro['estado__nombre']: registro['total'] for registro in conteo_db}
-        # ---------------------------------
-        
+    elif user_type == 'admin' or request.user.is_superuser:
+        # 1. MÉTRICAS BÁSICAS (TARJETAS)
         total_participantes = Participante.objects.count()
         total_instituciones = Institucion.objects.count()
+        total_clubes = Club.objects.count()
+        total_eventos = Evento.objects.count()
         pendientes_aprobacion = Institucion.objects.filter(activa=False).count()
         cobertura_nacional = Institucion.objects.values('estado').distinct().count()
-        total_eventos = Evento.objects.count()
+        
+        # Conteo de Tutores (basado en cédulas únicas en la tabla Grupo)
+        total_tutores = Grupo.objects.values('tutor_cedula').distinct().count()
+
+        # 2. CURVA DE INSCRIPCIÓN MENSUAL (Instituciones)
+        year_actual = datetime.now().year
+        registros_por_mes = (
+            Institucion.objects.filter(fecha_registro__year=year_actual)
+            .annotate(mes=ExtractMonth('fecha_registro'))
+            .values('mes')
+            .annotate(total=Count('id'))
+            .order_by('mes')
+        )
+        data_crecimiento = [0] * 12
+        for r in registros_por_mes:
+            if r['mes']: data_crecimiento[r['mes'] - 1] = r['total']
+
+        # 3. DISTRIBUCIÓN DE GÉNERO (Participantes)
+        total_p = Participante.objects.count() or 1
+        
+        # Cambiamos 'genero' por 'sexo' que es el nombre real en tu BD
+        mujeres = Participante.objects.filter(sexo='F').count() 
+        hombres = Participante.objects.filter(sexo='M').count()
+        
+        porcentaje_mujeres = round((mujeres / total_p) * 100)
+        porcentaje_hombres = round((hombres / total_p) * 100)
+
+        # 4. ESPECIALIDADES DE CLUBES (Radar Chart)
+        # Contamos cuántas veces aparece cada opción en linea_1 (puedes ampliarlo a las 3)
+        clubes_stats = Club.objects.values('linea_1').annotate(total=Count('id')).order_by('-total')
+        
+        # Extraemos los nombres y los totales
+        # Si el campo está vacío, ponemos 'General'
+        clubes_labels = [c['linea_1'] if c['linea_1'] else 'General' for c in clubes_stats]
+        clubes_data = [c['total'] for c in clubes_stats]
+
+        # Si no hay datos, enviamos valores por defecto para que no rompa el JS
+        if not clubes_labels:
+            clubes_labels = ['Sin Líneas']
+            clubes_data = [0]
+
+        # 5. DISTRIBUCIÓN GEOGRÁFICA DE TUTORES (Bar Chart)
+        # Obtenemos la ubicación de los tutores a través de los estados de sus participantes
+        tutores_stats = (
+            Participante.objects.values('estado__nombre')
+            .annotate(total=Count('grupos__tutor_cedula', distinct=True))
+            .order_by('-total')[:5]
+        )
+        
+        tutores_labels = [t['estado__nombre'] for t in tutores_stats if t['estado__nombre']]
+        tutores_data = [t['total'] for t in tutores_stats if t['estado__nombre']]
+
+        # Fallback si no hay datos
+        if not tutores_labels:
+            tutores_labels = ['Sin Datos']
+            tutores_data = [0]
+
+        # 6. DATOS DEL MAPA (Existente)
+        conteo_db = Institucion.objects.values('estado__nombre').annotate(total=Count('id'))
+        mapa_data = {registro['estado__nombre']: registro['total'] for registro in conteo_db}
 
         context = {
             'user': request.user,
-            'user_profile': user_profile,
             'total_participantes': total_participantes,
             'total_instituciones': total_instituciones,
-            'cobertura_nacional': cobertura_nacional,
+            'total_clubes': total_clubes,
+            'total_tutores': total_tutores,
             'total_eventos': total_eventos,
-            'mapa_data': mapa_data,  # <--- AHORA SÍ TIENE DATOS
             'pendientes_aprobacion': pendientes_aprobacion,
+            'cobertura_nacional': cobertura_nacional,
+            
+            # Datos para Gráficas
+            'data_crecimiento': data_crecimiento,
+            'meses_labels': ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            'porcentaje_mujeres': porcentaje_mujeres,
+            'porcentaje_hombres': porcentaje_hombres,
+            'clubes_labels': clubes_labels,
+            'clubes_data': clubes_data,
+            'tutores_labels': tutores_labels,
+            'tutores_data': tutores_data,
+            'mapa_data': mapa_data,
         }
         return render(request, 'users/dashboard_admin.html', context)
 
     messages.error(request, 'Tipo de usuario no reconocido.')
     return redirect('home')
-
 
 
 @login_required
@@ -294,7 +391,6 @@ def lista_instituciones(request):
     return render(request, 'users/lista_instituciones.html', context)
 
 
-from django.db import transaction
 
 def registrar_institucion(request):
     es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'

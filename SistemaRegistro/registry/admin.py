@@ -135,8 +135,15 @@ except NotRegistered:
 
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
-    # Cambiamos 'estatus' por 'activa' que sí existe en tu modelo
-    list_display = ('nombre', 'codigo', 'activa', 'fecha_registro')
-    list_filter = ('activa', 'estado') 
-    search_fields = ('nombre', 'codigo', 'email')
-    actions = [aprobar_registros]
+    list_display = ('nombre', 'rif', 'codigo', 'activa')
+    readonly_fields = ('codigo',) # Importante: que sea solo lectura
+    actions = ['aprobar_instituciones']
+
+    def aprobar_instituciones(self, request, queryset):
+        for inst in queryset:
+            inst.activa = True
+            # Al llamar al save(), se ejecutará la lógica que pusimos arriba
+            inst.save() 
+        self.message_user(request, "Las instituciones seleccionadas han sido aprobadas y sus códigos generados.")
+    
+    aprobar_instituciones.short_description = "Aprobar y generar códigos RNR"

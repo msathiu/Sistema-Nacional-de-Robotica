@@ -104,7 +104,7 @@ class Institucion(models.Model):
     activa = models.BooleanField(default=False)
     eliminado = models.BooleanField(default=False)
     fecha_eliminacion = models.DateTimeField(null=True, blank=True)
-
+    dependencia = models.CharField(max_length=255, null=True, blank=True)
     class Meta:
         verbose_name_plural = "Instituciones"
         ordering = ["nombre"]
@@ -141,9 +141,19 @@ class Institucion(models.Model):
         return False
 
     def save(self, *args, **kwargs):
-        # El save ahora es simple. No genera código automáticamente.
-        super().save(*args, **kwargs)
+        # 1. Si se activa la institución y tiene un código temporal o vacío
+        if self.activa and (not self.codigo or self.codigo.startswith('TEMP-')):
+            nuevo_codigo = self.generar_codigo_rnr()
+            self.codigo = nuevo_codigo
+            
+            # 2. Sincronizar el nombre de usuario (username) del objeto User vinculado
+            if self.usuario:
+                self.usuario.username = nuevo_codigo
+                # Guardamos el usuario con el nuevo username
+                self.usuario.save()
 
+        # 3. Llamada correcta al super().save dentro del método
+        super().save(*args, **kwargs)
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
 
