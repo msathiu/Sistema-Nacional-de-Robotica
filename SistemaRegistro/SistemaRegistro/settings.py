@@ -171,6 +171,10 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
 
+# --- CREAR CARPETA DE LOGS SI NO EXISTE ---
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 # --- CONFIGURACIÓN DE LOGGING ---
 LOGGING = {
     "version": 1,
