@@ -77,6 +77,50 @@ SistemaRegistro/ - README.md
 
 ------------------------------------------------------------------------
 
+## 🔧 Mejoras Recientes
+
+El sistema ha sido optimizado con las siguientes mejoras:
+
+- ✅ **Seguridad mejorada**: Eliminación de credenciales hardcodeadas y configuraciones de seguridad robustas
+- ✅ **Optimización de base de datos**: 20+ índices agregados para consultas más rápidas
+- ✅ **Sistema de logging**: Logs rotativos con niveles configurables
+- ✅ **Validaciones mejoradas**: Validaciones más robustas en modelos y formularios
+- ✅ **Utilidades comunes**: Funciones reutilizables para validaciones y operaciones comunes
+- ✅ **Documentación completa**: Docstrings y comentarios en todo el código
+
+📖 Ver detalles completos en [`MEJORAS_CODIGO.md`](MEJORAS_CODIGO.md)  
+📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)
+
+---
+
+## 🚀 Configuración Inicial
+
+### 1️⃣ Configurar Variables de Entorno
+
+```bash
+# Copiar el archivo de ejemplo
+cp .env.example .env
+
+# Editar .env con tus configuraciones
+# IMPORTANTE: Generar una SECRET_KEY única
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+### 2️⃣ Aplicar Migraciones
+
+```bash
+cd SistemaRegistro
+python manage.py migrate
+```
+
+### 3️⃣ Crear Superusuario
+
+```bash
+python manage.py createsuperuser
+```
+
+---
+
 ## 📄 Licencia
 
 Proyecto institucional supervisado por el MINCYT.

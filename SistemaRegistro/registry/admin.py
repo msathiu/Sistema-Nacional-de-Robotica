@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Estado, Institucion, Municipio, Parroquia, Participante
+from .models import Dependencia, Estado, Institucion, Municipio, Parroquia, Participante
 
 from django.contrib.admin.exceptions import NotRegistered
 
@@ -11,6 +11,13 @@ class EstadoAdmin(admin.ModelAdmin):
     list_display = ("id", "nombre", "codigo")
     search_fields = ("nombre", "codigo")
     ordering = ("nombre",)
+
+
+@admin.register(Dependencia)
+class DependenciaAdmin(admin.ModelAdmin):
+    list_display = ("id", "nombre", "activa")
+    search_fields = ("nombre",)
+    list_filter = ("activa",)
 
 
 @admin.register(Municipio)
@@ -52,7 +59,7 @@ class InstitucionAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "codigo", "email")
 
     # Filtros laterales
-    list_filter = ("estado", "activa", "tipo_federado")
+    list_filter = ("estado", "activa", "federado")
 
     # ESTA ES LA CLAVE:
     # Permite ver el campo en el formulario de edición aunque sea editable=False
@@ -63,7 +70,7 @@ class InstitucionAdmin(admin.ModelAdmin):
         ("Identificación del Sistema", {"fields": ("codigo",)}),
         (
             "Información General",
-            {"fields": ("nombre", "rif", "tipo_federado", "email", "telefono")},
+            {"fields": ("nombre", "rif", "federado", "email", "telefono")},
         ),
         (
             "Ubicación Geográfica",
@@ -135,15 +142,18 @@ except NotRegistered:
 
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'rif', 'codigo', 'activa')
+    list_display = ('nombre', 'rif', 'codigo', 'federado', 'activa')
     readonly_fields = ('codigo',) # Importante: que sea solo lectura
+    exclude = ('tipo_federado',)
+    list_filter = ('federado', 'activa')
     actions = ['aprobar_instituciones']
 
     def aprobar_instituciones(self, request, queryset):
         for inst in queryset:
             inst.activa = True
-            # Al llamar al save(), se ejecutará la lógica que pusimos arriba
-            inst.save() 
-        self.message_user(request, "Las instituciones seleccionadas han sido aprobadas y sus códigos generados.")
+            inst.estatus = 'aprobado'
+            # Al llamar a save(), si el codigo es TEMP-* se reemplaza por RNR...
+            inst.save()
+        self.message_user(request, "Las instituciones seleccionadas han sido aprobadas y sus codigos generados.")
     
     aprobar_instituciones.short_description = "Aprobar y generar códigos RNR"

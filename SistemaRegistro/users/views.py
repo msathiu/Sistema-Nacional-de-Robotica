@@ -6,7 +6,15 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Estados, Municipios
-from registry.models import Participante, Municipio, Institucion, Grupo, Club, Estado
+from registry.models import (
+    Club,
+    Dependencia,
+    Estado,
+    Grupo,
+    Institucion,
+    Municipio,
+    Participante,
+)
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
@@ -394,48 +402,33 @@ def lista_instituciones(request):
 
 def registrar_institucion(request):
     es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'
-    
+
     if es_administrador:
         base_template = 'users/base_dashboard.html'
     else:
-        base_template = 'base.html' 
+        base_template = 'base.html'
 
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Creamos la institución
                     institucion = form.save(commit=False)
-                    
-                    # Asignación de nuevos campos según la imagen
-                    institucion.categoria = form.cleaned_data.get('categoria')
-                    institucion.codigo_mppe = form.cleaned_data.get('codigo_mppe')
-                    institucion.institucion_procedencia = form.cleaned_data.get('institucion_procedencia')
-                    institucion.parroquia = form.cleaned_data.get('parroquia')
+                    institucion.activa = bool(es_administrador)
+                    institucion.estatus = 'aprobado' if es_administrador else 'pendiente'
+                    institucion.save()
 
-                    if es_administrador:
-                        institucion.activa = True
-                    else:
-                        institucion.activa = False 
-
-                    # Lógica de Teléfono
-                    cod_area = form.cleaned_data.get('codigo_area')
-                    num_tel = form.cleaned_data.get('numero_telefono')
-                    institucion.telefono = f"{cod_area}{num_tel}"
-                    
-                    institucion.save() 
-
-                    # 2. Creamos el usuario
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
                         username=institucion.codigo,
                         email=institucion.email,
                         password=password,
-                        is_active=True if es_administrador else False 
+                        is_active=True if es_administrador else False,
                     )
 
-                    # 3. Vinculamos Perfil
+                    institucion.usuario = nuevo_usuario
+                    institucion.save(update_fields=['usuario'])
+
                     profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
                     profile.user_type = 'institucional'
                     profile.institution = institucion
@@ -444,23 +437,23 @@ def registrar_institucion(request):
                     if es_administrador:
                         messages.success(request, f"Sede '{institucion.nombre}' registrada y activada exitosamente.")
                         return redirect('lista_instituciones')
-                    else:
-                        return render(request, 'users/registro_pendiente.html', {
-                            'nombre_inst': institucion.nombre,
-                            'email': institucion.email,
-                            'base_template': base_template 
-                        })
+
+                    return render(request, 'users/registro_pendiente.html', {
+                        'nombre_inst': institucion.nombre,
+                        'email': institucion.email,
+                        'base_template': base_template,
+                    })
 
             except Exception as e:
                 form.add_error(None, f"Error inesperado: {e}")
     else:
         form = InstitucionRegistrationForm()
-    
+
     return render(request, 'users/registrar_institucion.html', {
         'form': form,
-        'base_template': base_template
+        'base_template': base_template,
+        'dependencias': Dependencia.objects.filter(activa=True).order_by('nombre'),
     })
-    
 
 @login_required
 @login_required
@@ -736,13 +729,15 @@ def aprobar_institucion(request, institucion_id):
             
             # 1. Activamos la institución (tu modelo)
             institucion.activa = True
+            institucion.estatus = 'aprobado'
             institucion.save()
             
             # 2. Activamos el usuario de Django (la cuenta de acceso)
             # Buscamos el usuario asociado a través del UserProfile
-            perfil = UserProfile.objects.filter(institution=institucion).first()
+            perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
             if perfil and perfil.user:
                 perfil.user.is_active = True # <--- ESTO ES LO QUE FALTABA
+                perfil.user.username = institucion.codigo
                 perfil.user.save()
                 messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
             else:
@@ -953,6 +948,15 @@ def detalle_evento_institucion(request, evento_id):
         'inscripciones': inscripciones
     })
 
+def ajax_dependencias(request):
+    q = request.GET.get('q', '').strip()
+    queryset = Dependencia.objects.filter(activa=True).order_by('nombre')
+    if q:
+        queryset = queryset.filter(nombre__icontains=q)
+    data = [{'id': d.id, 'nombre': d.nombre} for d in queryset[:30]]
+    return JsonResponse(data, safe=False)
+
+
 def ajax_municipios(request):
     estado_id = request.GET.get('estado_id')
     # Filtramos los municipios por el ID del estado seleccionado
@@ -1127,3 +1131,4 @@ def registrar_club(request):
         form = ClubRegistrationForm()
     
     return render(request, 'registrar_club.html', {'form': form})
+

@@ -56,6 +56,7 @@ urlpatterns = [
     path('buscar-usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
     path('create-institutional-user/', views.create_institutional_user, name='create_institutional_user'),
     path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
+    path('ajax/dependencias/', views.ajax_dependencias, name='ajax_dependencias'),
     path('perfil/', views.mi_perfil, name='mi_perfil'),
     path('institucion/perfil/', views.mi_perfil_institucional, name='mi_perfil'),
     path('registrar-club/', views.registrar_club, name='registrar_club'),
