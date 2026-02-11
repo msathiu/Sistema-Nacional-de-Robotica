@@ -401,8 +401,14 @@ def lista_instituciones(request):
 
 
 def registrar_institucion(request):
-    es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'
+    # Detectar si el usuario es un administrador de la FVRN
+    es_administrador = (
+        request.user.is_authenticated and 
+        hasattr(request.user, 'userprofile') and 
+        request.user.userprofile.user_type == 'admin'
+    )
 
+    # Definir el template base dinámicamente
     if es_administrador:
         base_template = 'users/base_dashboard.html'
     else:
@@ -413,46 +419,62 @@ def registrar_institucion(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    # 1. Guardar la institución (sin commit para procesar datos)
                     institucion = form.save(commit=False)
-                    institucion.activa = bool(es_administrador)
-                    institucion.estatus = 'aprobado' if es_administrador else 'pendiente'
+                    
+                    # Si registra el admin, se aprueba de una vez
+                    if es_administrador:
+                        institucion.activa = True
+                        institucion.estatus = 'aprobado'
+                    else:
+                        institucion.activa = False
+                        institucion.estatus = 'pendiente'
+                    
                     institucion.save()
 
+                    # 2. Crear el Usuario asociado
+                    # El username inicial es el código generado (RNR...) o el email si aún no tiene código
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
-                        username=institucion.codigo,
+                        username=institucion.codigo if institucion.codigo else institucion.email,
                         email=institucion.email,
                         password=password,
+                        # El usuario solo puede loguear si el admin lo registró o si ya fue activado
                         is_active=True if es_administrador else False,
                     )
 
+                    # 3. Vincular usuario e institución
                     institucion.usuario = nuevo_usuario
                     institucion.save(update_fields=['usuario'])
 
+                    # 4. Crear Perfil de Usuario con rol institucional
                     profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
                     profile.user_type = 'institucional'
                     profile.institution = institucion
                     profile.save()
 
+                    # --- REDIRECCIONES SEGÚN EL ROL ---
                     if es_administrador:
-                        messages.success(request, f"Sede '{institucion.nombre}' registrada y activada exitosamente.")
+                        messages.success(request, f"La sede '{institucion.nombre}' ha sido registrada y activada correctamente.")
                         return redirect('lista_instituciones')
-
-                    return render(request, 'users/registro_pendiente.html', {
-                        'nombre_inst': institucion.nombre,
-                        'email': institucion.email,
-                        'base_template': base_template,
-                    })
+                    else:
+                        # Usuario común va a la página de espera
+                        return render(request, 'users/registro_pendiente.html', {
+                            'nombre_inst': institucion.nombre,
+                            'email': institucion.email,
+                            'base_template': base_template
+                        })
 
             except Exception as e:
-                form.add_error(None, f"Error inesperado: {e}")
+                messages.error(request, f"Ocurrió un error inesperado: {str(e)}")
     else:
         form = InstitucionRegistrationForm()
 
-    return render(request, 'users/registrar_institucion.html', {
+    # Se ejecuta si es GET o si el formulario falló (POST con errores)
+    return render(request, 'users/registrar_institucion.html', { 
         'form': form,
         'base_template': base_template,
-        'dependencias': Dependencia.objects.filter(activa=True).order_by('nombre'),
+        'dependencias': Dependencia.objects.all()
     })
 
 @login_required
