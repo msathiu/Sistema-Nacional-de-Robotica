@@ -1,0 +1,111 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Inscribir Grupo - {{ evento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-plus"></i> Inscribir Grupo al Evento</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del Evento -->
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">{{ evento.nombre }}</h5>
+                        <hr>
+                        <p class="mb-1"><strong>Tipo:</strong> {{ evento.get_tipo_display }}</p>
+                        <p class="mb-1"><strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}</p>
+                        <p class="mb-1"><strong>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
+                        {% if evento.ubicacion %}
+                        <p class="mb-0"><strong>Ubicación:</strong> {{ evento.ubicacion }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Formulario de Inscripción -->
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Seleccionar Grupo <span class="text-danger">*</span></label>
+                            <select name="grupo_id" class="form-select" id="selectGrupo" required>
+                                <option value="">-- Seleccione un grupo --</option>
+                                {% for grupo in grupos %}
+                                <option value="{{ grupo.id }}" 
+                                    data-tutor="{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}"
+                                    data-participantes="{{ grupo.cantidad_participantes }}">
+                                    {{ grupo.nombre }} ({{ grupo.cantidad_participantes }} participantes)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if not grupos %}
+                            <div class="alert alert-warning mt-2">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                No tienes grupos en estado "Editable". 
+                                <a href="{% url 'crear_grupo' %}">Crear un grupo</a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Información del Grupo Seleccionado -->
+                        <div id="infoGrupo" class="card bg-light mb-4" style="display:none;">
+                            <div class="card-body">
+                                <h6 class="card-title">Información del Grupo</h6>
+                                <p class="mb-1"><strong>Tutor:</strong> <span id="tutorNombre"></span></p>
+                                <p class="mb-0"><strong>Participantes:</strong> <span id="numParticipantes"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Rol de Participación <span class="text-danger">*</span></label>
+                            <select name="rol_participacion" class="form-select" required>
+                                {% for value, label in roles %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Validaciones -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Importante</h6>
+                            <ul class="mb-0 small">
+                                <li>Solo puedes inscribir grupos en estado "Editable"</li>
+                                <li>Una vez inscrito, el grupo cambiará a estado "Inscrito"</li>
+                                <li>No podrás editar el grupo mientras esté inscrito</li>
+                                <li>Cuando el evento finalice, el grupo quedará "Bloqueado"</li>
+                            </ul>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'eventos_disponibles_institucion' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" {% if not grupos %}disabled{% endif %}>
+                                <i class="fas fa-check"></i> Confirmar Inscripción
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('selectGrupo').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const infoDiv = document.getElementById('infoGrupo');
+    
+    if (this.value) {
+        document.getElementById('tutorNombre').textContent = selected.dataset.tutor;
+        document.getElementById('numParticipantes').textContent = selected.dataset.participantes;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

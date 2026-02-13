@@ -21,7 +21,15 @@
             </div>
             
             <div class="card-body p-4 p-md-5">
-               
+                
+                {% if form.errors or form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; border-left: 4px solid #dc3545;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Error de autenticación:</strong>
+                        <p class="mb-0 small mt-1">Usuario o contraseña incorrectos. Por favor, inténtalo de nuevo.</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
 
                 <form method="post" autocomplete="off">
                     {% csrf_token %}
@@ -30,18 +38,20 @@
                         <label class="form-label fw-bold text-muted small text-uppercase">Nombre de Usuario / Código SNR</label>
                         <div class="input-group login-input-group">
                             <span class="input-group-text border-0 bg-light"><i class="bi bi-person-fill text-primary"></i></span>
-                            <input type="text" name="username" id="id_username" class="form-control border-0 bg-light" placeholder="Ej: RNR26-ABC123" required>
+                            <input type="text" name="username" id="id_username" class="form-control border-0 bg-light" placeholder="Ej: RNR26-ABC123" value="{{ form.username.value|default:'' }}" required>
                         </div>
                     </div>
                     
                     <div class="mb-4">
                         <div class="d-flex justify-content-between">
                             <label class="form-label fw-bold text-muted small text-uppercase">Contraseña</label>
-
                         </div>
                         <div class="input-group login-input-group">
                             <span class="input-group-text border-0 bg-light"><i class="bi bi-shield-lock-fill text-primary"></i></span>
                             <input type="password" name="password" id="id_password" class="form-control border-0 bg-light" placeholder="••••••••" required>
+                            <button class="btn border-0 bg-light" type="button" onclick="togglePassword('id_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -72,7 +82,6 @@
 </div>
 
 <style>
-    /* Estilos coherentes con el Registro Master */
     .login-input-group {
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -104,10 +113,33 @@
         filter: brightness(1.1);
     }
 
-    /* Estilo del checkbox */
-    .form-check-input:checked {
-        background-color: var(--accent-cyan);
-        border-color: var(--accent-cyan);
+    .alert {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
+
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+</script>
 {% endblock %}

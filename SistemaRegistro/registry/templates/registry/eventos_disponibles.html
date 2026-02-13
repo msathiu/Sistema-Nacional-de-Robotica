@@ -1,0 +1,126 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Eventos Disponibles{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h2><i class="fas fa-calendar-alt"></i> Eventos Disponibles</h2>
+        <p class="text-muted">Explora y inscribe tus grupos en los eventos activos</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <select class="form-select" id="filtroTipo">
+                        <option value="">Todos los tipos</option>
+                        <option value="competencia">Competencia</option>
+                        <option value="taller">Taller</option>
+                        <option value="seminario">Seminario</option>
+                        <option value="exhibicion">Exhibición</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filtroModalidad">
+                        <option value="">Todas las modalidades</option>
+                        <option value="presencial">Presencial</option>
+                        <option value="virtual">Virtual</option>
+                        <option value="hibrido">Híbrido</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filtroEstado">
+                        <option value="">Todos los estados</option>
+                        <option value="abierto">Abierto</option>
+                        <option value="pausado">Pausado</option>
+                        <option value="cerrado">Cerrado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Eventos -->
+    <div class="row g-4">
+        {% for evento in eventos %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 evento-card">
+                <div class="card-header 
+                    {% if evento.estado_evento == 'abierto' %}bg-success
+                    {% elif evento.estado_evento == 'pausado' %}bg-warning
+                    {% elif evento.estado_evento == 'cerrado' %}bg-danger
+                    {% else %}bg-secondary{% endif %} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-white text-dark">{{ evento.get_tipo_display }}</span>
+                        <span class="badge bg-white text-dark">{{ evento.get_estado_evento_display }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ evento.nombre }}</h5>
+                    <p class="card-text text-muted small">{{ evento.descripcion|truncatewords:20 }}</p>
+                    
+                    <div class="mb-3">
+                        <p class="mb-1 small">
+                            <i class="fas fa-calendar text-primary"></i> 
+                            <strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}
+                        </p>
+                        <p class="mb-1 small">
+                            <i class="fas fa-laptop text-info"></i> 
+                            <strong>Modalidad:</strong> {{ evento.get_modalidad_display }}
+                        </p>
+                        {% if evento.ubicacion %}
+                        <p class="mb-1 small">
+                            <i class="fas fa-map-marker-alt text-danger"></i> 
+                            <strong>Ubicación:</strong> {{ evento.ubicacion }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    {% if evento.estado_evento == 'abierto' %}
+                        <a href="{% url 'inscribir_grupo_evento' evento.id %}" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus"></i> Inscribir Grupo
+                        </a>
+                    {% elif evento.estado_evento == 'pausado' %}
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="fas fa-pause"></i> Inscripciones Pausadas
+                        </button>
+                    {% elif evento.estado_evento == 'cerrado' %}
+                        <button class="btn btn-danger w-100" disabled>
+                            <i class="fas fa-lock"></i> Cerrado
+                        </button>
+                    {% else %}
+                        <button class="btn btn-secondary w-100" disabled>
+                            <i class="fas fa-check"></i> Finalizado
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay eventos disponibles en este momento</h5>
+                    <p class="text-muted">Vuelve pronto para ver nuevas convocatorias</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.evento-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.evento-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}

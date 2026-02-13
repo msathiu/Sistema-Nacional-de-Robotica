@@ -6,7 +6,15 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Estados, Municipios
-from registry.models import Participante, Municipio, Institucion, Grupo, Club, Estado
+from registry.models import (
+    Club,
+    Dependencia,
+    Estado,
+    Grupo,
+    Institucion,
+    Municipio,
+    Participante,
+)
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
@@ -37,19 +45,20 @@ def register(request):
         participante_form = ParticipanteRegistrationForm(request.POST)
         
         if user_form.is_valid() and participante_form.is_valid():
-            with transaction.atomic(): # Usamos atomic para asegurar que se creen ambos o ninguno
+            with transaction.atomic():
                 # 1. Crear usuario
                 user = user_form.save(commit=False)
                 user.email = user_form.cleaned_data['email']
                 user.save()
+                
+                # 1.5 Crear perfil si no existe
+                UserProfile.objects.get_or_create(user=user, defaults={'user_type': 'participante'})
                 
                 # 2. Crear participante
                 participante = participante_form.save(commit=False)
                 participante.user = user
                 participante.email = user.email
                 
-                # Opcional: Si quieres que el participante quede ligado a la institución 
-                # que lo está registrando en ese momento:
                 if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
                     participante.institucion = request.user.userprofile.institution
                 
@@ -57,13 +66,9 @@ def register(request):
             
             messages.success(request, f'Participante {user.username} registrado exitosamente.')
             
-            # 3. REDIRECCIÓN: 
-            # Si quien registra es una institución, lo mandamos a su dashboard.
-            # Si es un registro público (anonimo), lo mandamos al dashboard general.
             if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
                 return redirect('dashboard_institucional')
             
-            # En caso de que sea un registro independiente:
             login(request, user)
             return redirect('dashboard')
         else:
@@ -79,7 +84,7 @@ def register(request):
 
 
 def custom_login(request):
-    """Vista de login personalizada con manejo seguro de perfiles"""
+    """Vista de login personalizada con redirección para superusuarios"""
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -90,26 +95,23 @@ def custom_login(request):
             if user is not None:
                 login(request, user)
                 
-                # Intentamos obtener el perfil de forma segura
+                # Si es superusuario, redirigir al admin de Django
+                if user.is_superuser:
+                    messages.success(request, f'¡Bienvenido Superusuario, {username}!')
+                    return redirect('/admin/')
+                
+                # Para otros usuarios, continuar con la lógica normal
                 try:
-                    # Acceso directo al OneToOneField
                     profile = user.userprofile
                     user_type = profile.user_type
                 except UserProfile.DoesNotExist:
-                    # Si el usuario no tiene perfil (como un SuperUser creado por consola)
-                    # le asignamos uno por defecto o lo manejamos como admin
-                    if user.is_superuser:
+                    if user.is_staff:
                         user_type = 'admin'
                     else:
-                        user_type = 'particular' # O el tipo que prefieras por defecto
+                        user_type = 'participante'
                 
                 messages.success(request, f'¡Bienvenido de nuevo, {username}!')
-
-                # Lógica de redirección basada en el tipo de usuario
-                if user_type == 'admin' or user.is_superuser:
-                    return redirect('dashboard') # O 'admin_dashboard' si tienes uno específico
-                else:
-                    return redirect('dashboard') # Redirige al dashboard estándar
+                return redirect('dashboard')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     else:
@@ -393,74 +395,81 @@ def lista_instituciones(request):
 
 
 def registrar_institucion(request):
-    es_administrador = request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'admin'
-    
+    # Detectar si el usuario es un administrador de la FVRN
+    es_administrador = (
+        request.user.is_authenticated and 
+        hasattr(request.user, 'userprofile') and 
+        request.user.userprofile.user_type == 'admin'
+    )
+
+    # Definir el template base dinámicamente
     if es_administrador:
         base_template = 'users/base_dashboard.html'
     else:
-        base_template = 'base.html' 
+        base_template = 'base.html'
 
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Creamos la institución
+                    # 1. Guardar la institución (sin commit para procesar datos)
                     institucion = form.save(commit=False)
                     
-                    # Asignación de nuevos campos según la imagen
-                    institucion.categoria = form.cleaned_data.get('categoria')
-                    institucion.codigo_mppe = form.cleaned_data.get('codigo_mppe')
-                    institucion.institucion_procedencia = form.cleaned_data.get('institucion_procedencia')
-                    institucion.parroquia = form.cleaned_data.get('parroquia')
-
+                    # Si registra el admin, se aprueba de una vez
                     if es_administrador:
                         institucion.activa = True
+                        institucion.estatus = 'aprobado'
                     else:
-                        institucion.activa = False 
-
-                    # Lógica de Teléfono
-                    cod_area = form.cleaned_data.get('codigo_area')
-                    num_tel = form.cleaned_data.get('numero_telefono')
-                    institucion.telefono = f"{cod_area}{num_tel}"
+                        institucion.activa = False
+                        institucion.estatus = 'pendiente'
                     
-                    institucion.save() 
+                    institucion.save()
 
-                    # 2. Creamos el usuario
+                    # 2. Crear el Usuario asociado
+                    # El username inicial es el código generado (RNR...) o el email si aún no tiene código
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
-                        username=institucion.codigo,
+                        username=institucion.codigo if institucion.codigo else institucion.email,
                         email=institucion.email,
                         password=password,
-                        is_active=True if es_administrador else False 
+                        # El usuario solo puede loguear si el admin lo registró o si ya fue activado
+                        is_active=True if es_administrador else False,
                     )
 
-                    # 3. Vinculamos Perfil
+                    # 3. Vincular usuario e institución
+                    institucion.usuario = nuevo_usuario
+                    institucion.save(update_fields=['usuario'])
+
+                    # 4. Crear Perfil de Usuario con rol institucional
                     profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
                     profile.user_type = 'institucional'
                     profile.institution = institucion
                     profile.save()
 
+                    # --- REDIRECCIONES SEGÚN EL ROL ---
                     if es_administrador:
-                        messages.success(request, f"Sede '{institucion.nombre}' registrada y activada exitosamente.")
+                        messages.success(request, f"La sede '{institucion.nombre}' ha sido registrada y activada correctamente.")
                         return redirect('lista_instituciones')
                     else:
+                        # Usuario común va a la página de espera
                         return render(request, 'users/registro_pendiente.html', {
                             'nombre_inst': institucion.nombre,
                             'email': institucion.email,
-                            'base_template': base_template 
+                            'base_template': base_template
                         })
 
             except Exception as e:
-                form.add_error(None, f"Error inesperado: {e}")
+                messages.error(request, f"Ocurrió un error inesperado: {str(e)}")
     else:
         form = InstitucionRegistrationForm()
-    
-    return render(request, 'users/registrar_institucion.html', {
+
+    # Se ejecuta si es GET o si el formulario falló (POST con errores)
+    return render(request, 'users/registrar_institucion.html', { 
         'form': form,
-        'base_template': base_template
+        'base_template': base_template,
+        'dependencias': Dependencia.objects.all()
     })
-    
 
 @login_required
 @login_required
@@ -736,13 +745,15 @@ def aprobar_institucion(request, institucion_id):
             
             # 1. Activamos la institución (tu modelo)
             institucion.activa = True
+            institucion.estatus = 'aprobado'
             institucion.save()
             
             # 2. Activamos el usuario de Django (la cuenta de acceso)
             # Buscamos el usuario asociado a través del UserProfile
-            perfil = UserProfile.objects.filter(institution=institucion).first()
+            perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
             if perfil and perfil.user:
                 perfil.user.is_active = True # <--- ESTO ES LO QUE FALTABA
+                perfil.user.username = institucion.codigo
                 perfil.user.save()
                 messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
             else:
@@ -953,6 +964,15 @@ def detalle_evento_institucion(request, evento_id):
         'inscripciones': inscripciones
     })
 
+def ajax_dependencias(request):
+    q = request.GET.get('q', '').strip()
+    queryset = Dependencia.objects.filter(activa=True).order_by('nombre')
+    if q:
+        queryset = queryset.filter(nombre__icontains=q)
+    data = [{'id': d.id, 'nombre': d.nombre} for d in queryset[:30]]
+    return JsonResponse(data, safe=False)
+
+
 def ajax_municipios(request):
     estado_id = request.GET.get('estado_id')
     # Filtramos los municipios por el ID del estado seleccionado
@@ -1122,8 +1142,9 @@ def registrar_club(request):
         form = ClubRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_clubes') # Cambia esto a tu URL de éxito
+            return redirect('lista_clubes')
     else:
         form = ClubRegistrationForm()
     
     return render(request, 'registrar_club.html', {'form': form})
+

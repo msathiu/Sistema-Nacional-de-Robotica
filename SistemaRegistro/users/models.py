@@ -8,26 +8,34 @@ class UserProfile(models.Model):
         ('participante', 'Participante'),
         ('institucional', 'Usuario Institucional'),
         ('admin', 'Administrador (Ministerio)'),
+        ('superuser', 'Superusuario'),
     )
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     user_type = models.CharField(max_length=20, choices=USER_TYPES, default='participante')
     institution = models.ForeignKey('registry.Institucion', on_delete=models.CASCADE, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
+    estado = models.ForeignKey('registry.Estado', on_delete=models.SET_NULL, null=True, blank=True)
+    municipio = models.ForeignKey('registry.Municipio', on_delete=models.SET_NULL, null=True, blank=True)
+    parroquia = models.ForeignKey('registry.Parroquia', on_delete=models.SET_NULL, null=True, blank=True)
+    ubicacion = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.get_user_type_display()}"
 
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
+# Señales deshabilitadas - se manejan desde el admin y vistas
+# @receiver(post_save, sender=User)
+# def create_user_profile(sender, instance, created, **kwargs):
+#     if created:
+#         user_type = 'superuser' if instance.is_superuser else 'participante'
+#         UserProfile.objects.get_or_create(user=instance, defaults={'user_type': user_type})
 
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.userprofile.save()
+# @receiver(post_save, sender=User)
+# def save_user_profile(sender, instance, **kwargs):
+#     if hasattr(instance, 'userprofile'):
+#         instance.userprofile.save()
 
 class Estados(models.Model):
     id_estado = models.IntegerField(primary_key=True)

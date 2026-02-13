@@ -1,3 +1,0 @@
-admin_robotica admin1234
-
-institucion_user inst1234

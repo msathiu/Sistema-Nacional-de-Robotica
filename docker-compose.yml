@@ -22,10 +22,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: sistema-registro-web:latest
     volumes:
       - ./SistemaRegistro:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
     environment:
