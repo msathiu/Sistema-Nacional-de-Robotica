@@ -1142,7 +1142,7 @@ def registrar_club(request):
         form = ClubRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_clubes') # Cambia esto a tu URL de éxito
+            return redirect('lista_clubes')
     else:
         form = ClubRegistrationForm()
     

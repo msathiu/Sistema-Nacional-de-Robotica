@@ -87,9 +87,12 @@ El sistema ha sido optimizado con las siguientes mejoras:
 - ✅ **Validaciones mejoradas**: Validaciones más robustas en modelos y formularios
 - ✅ **Utilidades comunes**: Funciones reutilizables para validaciones y operaciones comunes
 - ✅ **Documentación completa**: Docstrings y comentarios en todo el código
+- ✅ **Comando createsuperuser personalizado**: Asignación automática de tipo 'superusuario'
+- ✅ **Sistema de ubicación en cascada**: Filtrado seguro Estado → Municipio → Parroquia
 
 📖 Ver detalles completos en [`MEJORAS_CODIGO.md`](MEJORAS_CODIGO.md)  
-📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)
+📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)  
+🗺️ Sistema de ubicación en cascada en [`IMPLEMENTACION_UBICACION_CASCADA.md`](IMPLEMENTACION_UBICACION_CASCADA.md)
 
 ---
 
@@ -117,6 +120,13 @@ python manage.py migrate
 
 ```bash
 python manage.py createsuperuser
+# El sistema automáticamente asignará user_type='superuser' al perfil
+```
+
+### 4️⃣ Recolectar Archivos Estáticos
+
+```bash
+python manage.py collectstatic --noinput
 ```
 
 ---

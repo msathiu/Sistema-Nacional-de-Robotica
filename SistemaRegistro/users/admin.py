@@ -40,45 +40,20 @@ class CustomUserAdmin(UserAdmin):
 # Registrar el modelo UserProfile en el admin
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "user_type", "institution", "phone", "estado", "created_at")
-    list_filter = ("user_type", "estado", "created_at")
-    search_fields = ("user__username", "user__email", "phone", "ubicacion")
+    list_display = ("user", "user_type", "institution", "phone", "get_ubicacion", "created_at")
+    list_filter = ("user_type", "created_at")
+    search_fields = ("user__username", "user__email", "phone")
     list_editable = ("user_type",)
     readonly_fields = ("created_at", "updated_at")
     fields = ('user', 'user_type', 'institution', 'phone', 'estado', 'municipio', 'parroquia', 'ubicacion', 'created_at', 'updated_at')
     
-    class Media:
-        js = ('https://code.jquery.com/jquery-3.6.0.min.js', 'admin/js/userprofile_location.js',)
-    
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "municipio":
-            # Si hay un objeto siendo editado, cargar municipios del estado
-            obj_id = request.resolver_match.kwargs.get('object_id')
-            if obj_id:
-                try:
-                    profile = UserProfile.objects.get(pk=obj_id)
-                    if profile.estado:
-                        kwargs["queryset"] = db_field.related_model.objects.filter(estado=profile.estado)
-                    else:
-                        kwargs["queryset"] = db_field.related_model.objects.none()
-                except UserProfile.DoesNotExist:
-                    kwargs["queryset"] = db_field.related_model.objects.none()
-            else:
-                kwargs["queryset"] = db_field.related_model.objects.none()
-        
-        if db_field.name == "parroquia":
-            # Si hay un objeto siendo editado, cargar parroquias del municipio
-            obj_id = request.resolver_match.kwargs.get('object_id')
-            if obj_id:
-                try:
-                    profile = UserProfile.objects.get(pk=obj_id)
-                    if profile.municipio:
-                        kwargs["queryset"] = db_field.related_model.objects.filter(municipio=profile.municipio)
-                    else:
-                        kwargs["queryset"] = db_field.related_model.objects.none()
-                except UserProfile.DoesNotExist:
-                    kwargs["queryset"] = db_field.related_model.objects.none()
-            else:
-                kwargs["queryset"] = db_field.related_model.objects.none()
-        
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    @admin.display(description="Ubicación")
+    def get_ubicacion(self, obj):
+        partes = []
+        if obj.estado:
+            partes.append(obj.estado.nombre)
+        if obj.municipio:
+            partes.append(obj.municipio.nombre)
+        if obj.parroquia:
+            partes.append(obj.parroquia.nombre)
+        return " → ".join(partes) if partes else "-"
