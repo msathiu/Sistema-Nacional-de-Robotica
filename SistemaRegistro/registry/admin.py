@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.http import HttpResponse
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+from datetime import datetime
 
 from .models import Dependencia, Estado, Institucion, Municipio, Parroquia, Participante
-
 from django.contrib.admin.exceptions import NotRegistered
 
 
@@ -143,17 +146,62 @@ except NotRegistered:
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'rif', 'codigo', 'federado', 'activa')
-    readonly_fields = ('codigo',) # Importante: que sea solo lectura
+    readonly_fields = ('codigo',)
     exclude = ('tipo_federado',)
-    list_filter = ('federado', 'activa')
-    actions = ['aprobar_instituciones']
+    list_filter = ('federado', 'activa', 'estado')
+    search_fields = ('nombre', 'codigo', 'email')
+    actions = ['aprobar_instituciones', 'exportar_excel']
 
     def aprobar_instituciones(self, request, queryset):
         for inst in queryset:
             inst.activa = True
             inst.estatus = 'aprobado'
-            # Al llamar a save(), si el codigo es TEMP-* se reemplaza por RNR...
             inst.save()
-        self.message_user(request, "Las instituciones seleccionadas han sido aprobadas y sus codigos generados.")
-    
+        self.message_user(request, "Las instituciones seleccionadas han sido aprobadas y sus códigos generados.")
     aprobar_instituciones.short_description = "Aprobar y generar códigos RNR"
+    
+    def exportar_excel(self, request, queryset):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Instituciones"
+        
+        # Encabezados
+        headers = ['Código', 'Nombre', 'RIF', 'Email', 'Teléfono', 'Estado', 'Municipio', 'Parroquia', 'Activa', 'Federado', 'Fecha Registro']
+        ws.append(headers)
+        
+        # Estilo encabezados
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        
+        # Datos
+        for inst in queryset:
+            ws.append([
+                inst.codigo,
+                inst.nombre,
+                inst.rif or '',
+                inst.email,
+                inst.telefono or '',
+                inst.estado.nombre if inst.estado else '',
+                inst.municipio.nombre if inst.municipio else '',
+                inst.parroquia.nombre if inst.parroquia else '',
+                'Sí' if inst.activa else 'No',
+                'Sí' if inst.federado else 'No',
+                inst.fecha_registro.strftime('%d/%m/%Y %H:%M') if inst.fecha_registro else ''
+            ])
+        
+        # Ajustar ancho columnas
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
+        
+        # Respuesta HTTP
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="instituciones_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        wb.save(response)
+        return response
+    exportar_excel.short_description = "⬇️ Exportar a Excel"

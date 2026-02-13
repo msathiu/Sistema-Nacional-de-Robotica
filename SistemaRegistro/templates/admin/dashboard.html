@@ -1,0 +1,134 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+    .dashboard-card {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dashboard-card .card-body {
+        padding: 1.25rem;
+    }
+    .dashboard-card h2 {
+        font-size: 2rem;
+        margin: 0.5rem 0;
+    }
+    .dashboard-card small {
+        font-size: 0.875rem;
+    }
+    @media (max-width: 768px) {
+        .dashboard-card h2 {
+            font-size: 1.5rem;
+        }
+        .table {
+            font-size: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+    <h2 class="mb-4">Panel de Control</h2>
+    
+    <!-- KPIs -->
+    <div class="row">
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="card dashboard-card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Instituciones</h5>
+                    <h2>{{ total_instituciones }}</h2>
+                    <small>{{ instituciones_activas }} activas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="card dashboard-card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Participantes</h5>
+                    <h2>{{ total_participantes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="card dashboard-card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Eventos</h5>
+                    <h2>{{ total_eventos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 mb-3">
+            <div class="card dashboard-card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Grupos</h5>
+                    <h2>{{ total_grupos }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tablas -->
+    <div class="row">
+        <div class="col-12 col-lg-6 mb-3">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Top 5 Estados</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Estado</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in instituciones_por_estado %}
+                                <tr>
+                                    <td>{{ item.estado__nombre }}</td>
+                                    <td class="text-end"><span class="badge bg-primary">{{ item.total }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 col-lg-6 mb-3">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Últimas Instituciones</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th class="d-none d-md-table-cell">Estado</th>
+                                    <th class="text-end">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inst in ultimas_instituciones %}
+                                <tr>
+                                    <td>{{ inst.nombre|truncatewords:3 }}</td>
+                                    <td class="d-none d-md-table-cell">{{ inst.estado.nombre }}</td>
+                                    <td class="text-end">{{ inst.fecha_registro|date:"d/m/y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
