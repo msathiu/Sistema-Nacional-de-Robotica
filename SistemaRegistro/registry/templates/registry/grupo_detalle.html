@@ -1,0 +1,212 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ grupo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'grupos_institucion' %}">Grupos</a></li>
+            <li class="breadcrumb-item active">{{ grupo.nombre }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header con Estado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ grupo.nombre }}</h2>
+            <p class="text-muted mb-0">Código: <code>{{ grupo.codigo }}</code></p>
+        </div>
+        <div>
+            <span class="badge 
+                {% if grupo.estado_grupo == 'editable' %}bg-secondary
+                {% elif grupo.estado_grupo == 'inscrito' %}bg-primary
+                {% else %}bg-danger{% endif %} fs-6 px-3 py-2">
+                {{ grupo.get_estado_grupo_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="mb-4">
+        <div class="btn-group">
+            {% if grupo.estado_grupo == 'editable' %}
+            <a href="{% url 'editar_grupo' grupo.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar Grupo
+            </a>
+            <button class="btn btn-danger" onclick="confirmarEliminar()">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+            {% endif %}
+            <a href="{% url 'grupos_institucion' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Información del Grupo -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información del Grupo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Criterio de Agrupación</label>
+                        <p class="mb-0"><strong>{{ grupo.get_criterio_display }}</strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Fecha de Registro</label>
+                        <p class="mb-0">{{ grupo.fecha_registro|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Total Participantes</label>
+                        <p class="mb-0"><span class="badge bg-info fs-6">{{ grupo.cantidad_participantes }}</span></p>
+                    </div>
+                    {% if grupo.evento %}
+                    <div class="mb-0">
+                        <label class="text-muted small">Evento Inscrito</label>
+                        <p class="mb-0"><strong>{{ grupo.evento.nombre }}</strong></p>
+                        <p class="small text-muted">{{ grupo.evento.fecha|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información del Tutor -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-tie"></i> Tutor Responsable</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Nombre Completo</label>
+                        <p class="mb-0"><strong>{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}</strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Cédula</label>
+                        <p class="mb-0">{{ grupo.tutor_cedula }}</p>
+                    </div>
+                    <div class="mb-0">
+                        <label class="text-muted small">Teléfono</label>
+                        <p class="mb-0">{{ grupo.tutor_telefono }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participantes -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Participantes ({{ participantes.count }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Cédula</th>
+                                    <th>Edad</th>
+                                    <th>Nivel</th>
+                                    <th>Sexo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participante in participantes %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ participante.nombre_completo }}</strong>
+                                    </td>
+                                    <td><code>{{ participante.cedula }}</code></td>
+                                    <td>{{ participante.edad }} años</td>
+                                    <td>{{ participante.get_grado_escolar_display }}</td>
+                                    <td>
+                                        {% if participante.sexo == 'M' %}
+                                            <i class="fas fa-mars text-primary"></i>
+                                        {% elif participante.sexo == 'F' %}
+                                            <i class="fas fa-venus text-danger"></i>
+                                        {% else %}
+                                            <i class="fas fa-genderless text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        No hay participantes registrados en este grupo
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inscripciones a Eventos -->
+            {% if inscripciones %}
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Historial de Inscripciones</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for inscripcion in inscripciones %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ inscripcion.evento.nombre }}</h6>
+                                    <p class="mb-1 small text-muted">
+                                        <i class="fas fa-calendar"></i> {{ inscripcion.evento.fecha|date:"d/m/Y" }}
+                                    </p>
+                                    <span class="badge bg-primary">{{ inscripcion.get_rol_participacion_display }}</span>
+                                </div>
+                                <small class="text-muted">{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</p>
+                <p class="text-danger small">Esta acción no se puede deshacer y eliminará toda la información del grupo.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{% url 'eliminar_grupo' grupo.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar Definitivamente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarEliminar() {
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+</script>
+{% endblock %}

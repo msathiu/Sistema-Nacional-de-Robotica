@@ -1,0 +1,57 @@
+python manage.py crear_admin_ministerio <username> <email>
+
+# 1. Detener contenedores
+docker compose down
+
+# 2. Reconstruir sin caché
+docker compose build --no-cache
+
+# 3. Iniciar
+docker compose up -d
+
+# 4. Aplicar migraciones
+docker compose exec web python manage.py migrate
+
+# 5. Crear superusuario
+docker compose exec web python manage.py createsuperuser
+
+# 6. Crear admin ministerio
+docker compose exec web python manage.py crear_admin_ministerio <username> <correo>
+docker compose exec web python manage.py collectstatic --noinput
+
+
+
+✓ Usuario administrador del Ministerio creado exitosamente:
+  Username: admin_fvrc   clave:admin1234
+  Email: fvrc@webmaster.org.ve
+  Tipo: Administrador Ministerio
+  Acceso Admin Django: Sí
+  Superusuario: No
+
+
+
+# Limpia cache de Python, pytest, coverage, archivos temporales
+python manage.py limpiar_cache
+
+# Incluye staticfiles y media (usar con precaución)
+python manage.py limpiar_cache --todo
+
+docker compose exec web python manage.py limpiar_cache
+docker compose exec web python manage.py limpiar_cache --todo
+
+#################################################################################################################
+from django.contrib.auth.models import User
+from users.models import UserProfile
+
+# Ver usuarios sin perfil
+for user in User.objects.all():
+    try:
+        profile = user.userprofile
+        print(f"✓ {user.username} tiene perfil")
+    except UserProfile.DoesNotExist:
+        print(f"✗ {user.username} NO tiene perfil")
+        UserProfile.objects.create(user=user, user_type='superuser' if user.is_superuser else 'participante')
+        print(f"  → Perfil creado")
+
+exit()
+

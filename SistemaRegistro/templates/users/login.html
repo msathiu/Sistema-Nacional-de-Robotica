@@ -49,6 +49,9 @@
                         <div class="input-group login-input-group">
                             <span class="input-group-text border-0 bg-light"><i class="bi bi-shield-lock-fill text-primary"></i></span>
                             <input type="password" name="password" id="id_password" class="form-control border-0 bg-light" placeholder="••••••••" required>
+                            <button class="btn border-0 bg-light" type="button" onclick="togglePassword('id_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -125,4 +128,18 @@
         }
     }
 </style>
+
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+</script>
 {% endblock %}

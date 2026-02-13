@@ -1,0 +1,207 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Dashboard Institucional{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">{{ institution.nombre }}</h2>
+            <p class="text-muted mb-0">{{ user.username }}</p>
+        </div>
+        <div>
+            <a href="{% url 'mi_perfil' %}" class="btn btn-outline-primary">
+                <i class="fas fa-user"></i> Mi Perfil
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Grupos</p>
+                            <h3 class="mb-0">{{ total_mis_grupos }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-users text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Participantes</p>
+                            <h3 class="mb-0">{{ total_mis_participantes }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-user-graduate text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Eventos Disponibles</p>
+                            <h3 class="mb-0">{{ total_activos }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-calendar-alt text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Eventos Inscritos</p>
+                            <h3 class="mb-0">{{ eventos_asignados }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-check-circle text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Central -->
+    <div class="row g-4">
+        <!-- Próximos Eventos -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check text-primary"></i> Próximos Eventos</h5>
+                    <a href="{% url 'eventos_disponibles_institucion' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if proximos_eventos %}
+                        <div class="list-group list-group-flush">
+                            {% for evento in proximos_eventos %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ evento.nombre }}</h6>
+                                        <p class="mb-1 small text-muted">
+                                            <i class="fas fa-calendar"></i> {{ evento.fecha|date:"d/m/Y" }}
+                                        </p>
+                                        <span class="badge bg-{{ evento.estado_evento|default:'primary' }}">
+                                            {{ evento.get_estado_evento_display|default:'Abierto' }}
+                                        </span>
+                                    </div>
+                                    <a href="{% url 'inscribir_grupo_evento' evento.id %}" class="btn btn-sm btn-primary">
+                                        Inscribir
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No hay eventos próximos</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Grupos Recientes -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users text-success"></i> Grupos Recientes</h5>
+                    <a href="{% url 'grupos_institucion' %}" class="btn btn-sm btn-outline-success">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if grupos_recientes %}
+                        <div class="list-group list-group-flush">
+                            {% for grupo in grupos_recientes %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ grupo.nombre }}</h6>
+                                        <p class="mb-1 small text-muted">
+                                            <i class="fas fa-user"></i> {{ grupo.tutor_nombre }}
+                                        </p>
+                                        <span class="badge 
+                                            {% if grupo.estado_grupo == 'editable' %}bg-secondary
+                                            {% elif grupo.estado_grupo == 'inscrito' %}bg-primary
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ grupo.get_estado_grupo_display }}
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="mb-0 small text-muted">{{ grupo.cantidad_participantes }} participantes</p>
+                                        <a href="{% url 'ver_grupo' grupo.id %}" class="btn btn-sm btn-outline-primary mt-1">
+                                            Ver
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No hay grupos creados</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row g-3 mt-4">
+        <div class="col-md-4">
+            <a href="{% url 'crear_grupo' %}" class="card border-0 shadow-sm text-decoration-none hover-shadow">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
+                    <h5 class="mb-0">Crear Grupo</h5>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'eventos_disponibles_institucion' %}" class="card border-0 shadow-sm text-decoration-none hover-shadow">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-calendar-plus fa-3x text-success mb-3"></i>
+                    <h5 class="mb-0">Explorar Eventos</h5>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'clubes_lista' %}" class="card border-0 shadow-sm text-decoration-none hover-shadow">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                    <h5 class="mb-0">Clubes</h5>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}

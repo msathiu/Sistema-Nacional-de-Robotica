@@ -1,0 +1,127 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Mis Grupos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Mis Grupos</h2>
+        <a href="{% url 'crear_grupo' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Crear Grupo
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <select class="form-select" id="filtroEstado">
+                        <option value="">Todos los estados</option>
+                        <option value="editable">Editable</option>
+                        <option value="inscrito">Inscrito</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="buscarGrupo" placeholder="Buscar por nombre...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Grupos -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Código</th>
+                            <th>Tutor</th>
+                            <th>Nº Participantes</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grupo in grupos %}
+                        <tr>
+                            <td><strong>{{ grupo.nombre }}</strong></td>
+                            <td><code>{{ grupo.codigo }}</code></td>
+                            <td>{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ grupo.num_participantes }}</span>
+                            </td>
+                            <td>
+                                {% if grupo.estado_grupo == 'editable' %}
+                                    <span class="badge bg-secondary">Editable</span>
+                                {% elif grupo.estado_grupo == 'inscrito' %}
+                                    <span class="badge bg-primary">Inscrito</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Bloqueado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'ver_grupo' grupo.id %}" class="btn btn-outline-primary" title="Ver">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if grupo.estado_grupo == 'editable' %}
+                                    <a href="{% url 'editar_grupo' grupo.id %}" class="btn btn-outline-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="confirmarEliminar({{ grupo.id }}, '{{ grupo.nombre }}')" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No hay grupos registrados. <a href="{% url 'crear_grupo' %}">Crear el primero</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar el grupo <strong id="nombreGrupo"></strong>?</p>
+                <p class="text-danger small">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formEliminar" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarEliminar(grupoId, nombreGrupo) {
+    document.getElementById('nombreGrupo').textContent = nombreGrupo;
+    document.getElementById('formEliminar').action = `/registry/grupos/${grupoId}/eliminar/`;
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+</script>
+{% endblock %}

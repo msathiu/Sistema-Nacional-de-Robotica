@@ -45,19 +45,20 @@ def register(request):
         participante_form = ParticipanteRegistrationForm(request.POST)
         
         if user_form.is_valid() and participante_form.is_valid():
-            with transaction.atomic(): # Usamos atomic para asegurar que se creen ambos o ninguno
+            with transaction.atomic():
                 # 1. Crear usuario
                 user = user_form.save(commit=False)
                 user.email = user_form.cleaned_data['email']
                 user.save()
+                
+                # 1.5 Crear perfil si no existe
+                UserProfile.objects.get_or_create(user=user, defaults={'user_type': 'participante'})
                 
                 # 2. Crear participante
                 participante = participante_form.save(commit=False)
                 participante.user = user
                 participante.email = user.email
                 
-                # Opcional: Si quieres que el participante quede ligado a la institución 
-                # que lo está registrando en ese momento:
                 if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
                     participante.institucion = request.user.userprofile.institution
                 
@@ -65,13 +66,9 @@ def register(request):
             
             messages.success(request, f'Participante {user.username} registrado exitosamente.')
             
-            # 3. REDIRECCIÓN: 
-            # Si quien registra es una institución, lo mandamos a su dashboard.
-            # Si es un registro público (anonimo), lo mandamos al dashboard general.
             if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
                 return redirect('dashboard_institucional')
             
-            # En caso de que sea un registro independiente:
             login(request, user)
             return redirect('dashboard')
         else:
@@ -87,7 +84,7 @@ def register(request):
 
 
 def custom_login(request):
-    """Vista de login personalizada con manejo seguro de perfiles"""
+    """Vista de login personalizada con redirección para superusuarios"""
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -98,26 +95,23 @@ def custom_login(request):
             if user is not None:
                 login(request, user)
                 
-                # Intentamos obtener el perfil de forma segura
+                # Si es superusuario, redirigir al admin de Django
+                if user.is_superuser:
+                    messages.success(request, f'¡Bienvenido Superusuario, {username}!')
+                    return redirect('/admin/')
+                
+                # Para otros usuarios, continuar con la lógica normal
                 try:
-                    # Acceso directo al OneToOneField
                     profile = user.userprofile
                     user_type = profile.user_type
                 except UserProfile.DoesNotExist:
-                    # Si el usuario no tiene perfil (como un SuperUser creado por consola)
-                    # le asignamos uno por defecto o lo manejamos como admin
-                    if user.is_superuser:
+                    if user.is_staff:
                         user_type = 'admin'
                     else:
-                        user_type = 'particular' # O el tipo que prefieras por defecto
+                        user_type = 'participante'
                 
                 messages.success(request, f'¡Bienvenido de nuevo, {username}!')
-
-                # Lógica de redirección basada en el tipo de usuario
-                if user_type == 'admin' or user.is_superuser:
-                    return redirect('dashboard') # O 'admin_dashboard' si tienes uno específico
-                else:
-                    return redirect('dashboard') # Redirige al dashboard estándar
+                return redirect('dashboard')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
     else:

@@ -89,6 +89,15 @@
     box-shadow: 0 4px 10px rgba(0, 82, 180, 0.18);
   }
   .btn-submit i { margin-right: .35rem; }
+  .input-group .btn-outline-secondary {
+    border: 2px solid var(--border-color);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+  .input-group .btn-outline-secondary:hover {
+    background: var(--light-bg);
+    border-color: var(--secondary-blue);
+  }
   .btn-back {
     border: 2px solid #cbd5e1;
     color: #1e3a8a;
@@ -197,21 +206,28 @@
         </div>
 
         <div class="row g-3 mb-3 align-items-end">
-          <div class="col-md-6">
+          <div class="col-md-2">
             <label class="form-label required">RIF</label>
+            <select class="form-select" id="rifLetra" name="rif_letra">
+              <option value="J" {% if form.rif_letra.value == 'J' %}selected{% endif %}>J</option>
+              <option value="G" {% if form.rif_letra.value == 'G' %}selected{% endif %}>G</option>
+              <option value="V" {% if form.rif_letra.value == 'V' %}selected{% endif %}>V</option>
+              <option value="E" {% if form.rif_letra.value == 'E' %}selected{% endif %}>E</option>
+            </select>
+            {% if form.rif_letra.errors %}<div class="validation-text">{{ form.rif_letra.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">&nbsp;</label>
             <input
               type="text"
               class="form-control"
-              id="rifCompleto"
-              placeholder="Ej: J-12345678-9"
-              value="{% if form.rif_prefijo.value and form.rif_numero.value and form.rif_digito.value %}{{ form.rif_prefijo.value }}-{{ form.rif_numero.value }}-{{ form.rif_digito.value }}{% endif %}"
+              id="rifNumero"
+              name="rif_numero"
+              placeholder="12345678-9"
+              maxlength="10"
+              value="{{ form.rif_numero.value|default:'' }}"
             >
-            <input type="hidden" id="rifPrefijo" name="rif_prefijo" value="{{ form.rif_prefijo.value|default:'' }}">
-            <input type="hidden" id="rifNumero" name="rif_numero" value="{{ form.rif_numero.value|default:'' }}">
-            <input type="hidden" id="rifDigito" name="rif_digito" value="{{ form.rif_digito.value|default:'' }}">
-            {% if form.rif_prefijo.errors %}<div class="validation-text">{{ form.rif_prefijo.errors|striptags }}</div>{% endif %}
             {% if form.rif_numero.errors %}<div class="validation-text">{{ form.rif_numero.errors|striptags }}</div>{% endif %}
-            {% if form.rif_digito.errors %}<div class="validation-text">{{ form.rif_digito.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-4">
             <label class="form-label" id="codigoMppeLabel">Codigo MPPE</label>
@@ -313,12 +329,22 @@
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label required">Contrasena</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            <div class="input-group">
+              <input type="password" class="form-control" id="password" name="password" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('password', this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
             {% if form.password.errors %}<div class="validation-text">{{ form.password.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label required">Confirmar Contrasena</label>
-            <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+            <div class="input-group">
+              <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('confirmPassword', this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
             {% if form.confirm_password.errors %}<div class="validation-text">{{ form.confirm_password.errors|striptags }}</div>{% endif %}
           </div>
         </div>
@@ -371,25 +397,15 @@
     document.getElementById('section' + currentSection).scrollIntoView({ behavior: 'smooth' });
   }
 
-  function formatearRifInput(valor) {
-    const limpio = (valor || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const letra = limpio.slice(0, 1).replace(/[^JGEV]/g, '');
-    const numeros = limpio.slice(1).replace(/\D/g, '');
-    const cuerpo = numeros.slice(0, 8);
-    const digito = numeros.slice(8, 9);
-    let out = letra;
-    if (cuerpo) out += '-' + cuerpo;
-    if (digito) out += '-' + digito;
-    return out;
+  function formatearRifNumero(valor) {
+    const limpio = valor.replace(/\D/g, '');
+    if (limpio.length <= 8) return limpio;
+    return limpio.slice(0, 8) + '-' + limpio.slice(8, 9);
   }
 
   function sincronizarRifHidden() {
-    const rifCompleto = document.getElementById('rifCompleto').value.trim().toUpperCase();
-    const match = rifCompleto.match(/^([JGEV])-([0-9]{8})-([0-9])$/);
-    document.getElementById('rifPrefijo').value = match ? match[1] : '';
-    document.getElementById('rifNumero').value = match ? match[2] : '';
-    document.getElementById('rifDigito').value = match ? match[3] : '';
-    return !!match;
+    // Función removida - ya no se usa
+    return true;
   }
 
   function cargarSubcategorias() {
@@ -426,7 +442,8 @@
     const depContainer = document.getElementById('dependenciaContainer');
     const naturaleza = document.getElementById('naturaleza').value;
 
-    const rifCompleto = document.getElementById('rifCompleto');
+    const rifLetra = document.getElementById('rifLetra');
+    const rifNumero = document.getElementById('rifNumero');
     const codigoMppe = document.getElementById('codigoMPPE');
     const codigoMppeLabel = document.getElementById('codigoMppeLabel');
 
@@ -437,21 +454,25 @@
       depContainer.classList.add('hidden');
     }
 
+    // Selección automática de letra RIF según tipo
     if (tipo === 'educativa') {
-      rifCompleto.value = 'G-20000009-0';
-      rifCompleto.setAttribute('readonly', 'readonly');
+      rifLetra.value = 'G';
+      rifNumero.value = '20000009-0';
+      rifLetra.setAttribute('disabled', 'disabled');
+      rifNumero.setAttribute('readonly', 'readonly');
       codigoMppe.setAttribute('required', 'required');
       codigoMppeLabel.classList.add('required');
     } else {
-      rifCompleto.removeAttribute('readonly');
+      rifLetra.removeAttribute('disabled');
+      rifNumero.removeAttribute('readonly');
       codigoMppe.removeAttribute('required');
       codigoMppeLabel.classList.remove('required');
 
-      if (!rifCompleto.value || rifCompleto.value === 'G-20000009-0') {
-        if (tipo === 'publica') rifCompleto.value = 'G-';
-        if (tipo === 'privada') rifCompleto.value = 'J-';
-        if (tipo === 'particular') rifCompleto.value = 'V-';
-      }
+      if (tipo === 'particular') rifLetra.value = 'V';
+      else if (tipo === 'publica') rifLetra.value = 'G';
+      else if (tipo === 'privada') rifLetra.value = 'J';
+      
+      if (rifNumero.value === '20000009-0') rifNumero.value = '';
     }
 
     if (tipo === 'otra' && naturaleza === 'publica') {
@@ -463,7 +484,6 @@
     }
 
     cargarSubcategorias();
-    sincronizarRifHidden();
     actualizarPreviewDependencia();
   }
 
@@ -565,6 +585,18 @@
     preview.classList.add('hidden');
   }
 
+  function togglePasswordField(fieldId, btn) {
+    const input = document.getElementById(fieldId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'bi bi-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'bi bi-eye';
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     $('#dependenciaSelect').select2({
       tags: true,
@@ -603,26 +635,23 @@
     document.getElementById('municipio').addEventListener('change', cargarParroquias);
     document.getElementById('password').addEventListener('input', validarPasswordUI);
     document.getElementById('confirmPassword').addEventListener('input', validarPasswordUI);
-    document.getElementById('rifCompleto').addEventListener('input', function(e) {
-      const cursorAtEnd = e.target.selectionStart === e.target.value.length;
-      e.target.value = formatearRifInput(e.target.value);
-      if (cursorAtEnd) e.target.setSelectionRange(e.target.value.length, e.target.value.length);
-      sincronizarRifHidden();
+    document.getElementById('rifNumero').addEventListener('input', function(e) {
+      e.target.value = formatearRifNumero(e.target.value);
     });
 
     document.getElementById('registroForm').addEventListener('submit', function(e) {
       limpiarErrorInline();
-      const valido = sincronizarRifHidden();
-      if (!valido) {
+      const rifNum = document.getElementById('rifNumero').value.replace(/-/g, '');
+      if (rifNum.length !== 9) {
         e.preventDefault();
-        mostrarErrorInline('Ingrese un RIF valido con formato J-12345678-9.');
+        mostrarErrorInline('Ingrese un RIF válido (8 dígitos + 1 dígito verificador).');
         if (currentSection !== 1) irSeccion(1);
-        document.getElementById('rifCompleto').focus();
+        document.getElementById('rifNumero').focus();
         return;
       }
       if (!validarPasswordUI()) {
         e.preventDefault();
-        mostrarErrorInline('La contrasena no cumple los requisitos indicados.');
+        mostrarErrorInline('La contraseña no cumple los requisitos indicados.');
         if (currentSection !== 3) irSeccion(3);
         document.getElementById('password').focus();
         return;

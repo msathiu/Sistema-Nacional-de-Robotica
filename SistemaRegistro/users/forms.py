@@ -116,9 +116,8 @@ class InstitucionRegistrationForm(forms.ModelForm):
     )
     nueva_dependencia = forms.CharField(max_length=255, required=False)
 
-    rif_prefijo = forms.ChoiceField(choices=RIF_PREFIJO_CHOICES)
-    rif_numero = forms.CharField(max_length=8)
-    rif_digito = forms.CharField(max_length=1)
+    rif_letra = forms.ChoiceField(choices=RIF_PREFIJO_CHOICES)
+    rif_numero = forms.CharField(max_length=10)  # 8 dígitos + guión + 1 dígito
 
     codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES)
     numero_telefono = forms.CharField(max_length=7, min_length=7)
@@ -186,9 +185,8 @@ class InstitucionRegistrationForm(forms.ModelForm):
         dependencia = cleaned_data.get("dependencia_existente")
         nueva_dependencia = (cleaned_data.get("nueva_dependencia") or "").strip()
 
-        rif_prefijo = cleaned_data.get("rif_prefijo")
-        rif_numero = (cleaned_data.get("rif_numero") or "").strip()
-        rif_digito = (cleaned_data.get("rif_digito") or "").strip()
+        rif_letra = cleaned_data.get("rif_letra")
+        rif_numero = (cleaned_data.get("rif_numero") or "").strip().replace("-", "")
 
         codigo_area = cleaned_data.get("codigo_area")
         numero_telefono = (cleaned_data.get("numero_telefono") or "").strip()
@@ -214,14 +212,11 @@ class InstitucionRegistrationForm(forms.ModelForm):
                 "Debe seleccionar o crear una dependencia publica.",
             )
 
-        if not rif_numero.isdigit() or len(rif_numero) != 8:
-            self.add_error("rif_numero", "El RIF debe tener 8 digitos.")
-
-        if not rif_digito.isdigit() or len(rif_digito) != 1:
-            self.add_error("rif_digito", "El digito verificador debe tener 1 digito.")
+        if not rif_numero.isdigit() or len(rif_numero) != 9:
+            self.add_error("rif_numero", "El RIF debe tener 9 dígitos (8 + 1 verificador).")
 
         if tipo == "educativa":
-            if f"{rif_prefijo}-{rif_numero}-{rif_digito}" != "G-20000009-0":
+            if f"{rif_letra}-{rif_numero[:8]}-{rif_numero[8]}" != "G-20000009-0":
                 self.add_error("rif_numero", "Para MPPE use G-20000009-0.")
             if not cleaned_data.get("codigo_mppe"):
                 self.add_error("codigo_mppe", "El codigo MPPE es obligatorio.")
@@ -249,13 +244,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
 
-        rif_prefijo = self.cleaned_data.get("rif_prefijo")
-        rif_numero = self.cleaned_data.get("rif_numero")
-        rif_digito = self.cleaned_data.get("rif_digito")
+        rif_letra = self.cleaned_data.get("rif_letra")
+        rif_numero = self.cleaned_data.get("rif_numero").replace("-", "")
         codigo_area = self.cleaned_data.get("codigo_area")
         numero_telefono = self.cleaned_data.get("numero_telefono")
 
-        instance.rif = f"{rif_prefijo}-{rif_numero}-{rif_digito}"
+        instance.rif = f"{rif_letra}-{rif_numero[:8]}-{rif_numero[8]}"
         instance.telefono_codigo = codigo_area
         instance.telefono_numero = numero_telefono
         instance.telefono = f"{codigo_area}{numero_telefono}"
