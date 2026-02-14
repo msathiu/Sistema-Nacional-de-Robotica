@@ -51,10 +51,10 @@
         </a>
         <p class="mb-0 mt-2"><small>Mostrando últimas {{ total_lines }} líneas</small></p>
     </div>
-    
+
     <div class="log-container">
         {% for line in logs %}
-        <div class="log-line 
+        <div class="log-line
             {% if 'ERROR' in line %}log-error
             {% elif 'WARNING' in line %}log-warning
             {% elif 'INFO' in line %}log-info

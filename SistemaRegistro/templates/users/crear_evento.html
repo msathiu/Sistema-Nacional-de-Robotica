@@ -24,7 +24,7 @@
                     <i class="bi bi-gear-wide-connected text-white me-2"></i>
                     <h5 class="fw-bold mb-0 text-white">NUEVO REGISTRO</h5>
                 </div>
-                
+
                 <div class="card-body p-4 p-md-5">
                     <form method="POST">
                         {% csrf_token %}
@@ -34,7 +34,7 @@
                                 <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Evento</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-0"><i class="bi bi-bookmark-star"></i></span>
-                                    <input type="text" class="form-control border-0 bg-light p-2" name="nombre" 
+                                    <input type="text" class="form-control border-0 bg-light p-2" name="nombre"
                                            placeholder="Ej: Feria Regional de Robótica 2024" required style="border-radius: 0 10px 10px 0;">
                                 </div>
                             </div>
@@ -43,7 +43,7 @@
                                 <label class="form-label fw-bold text-muted small text-uppercase">Fecha Programada</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-0"><i class="bi bi-calendar-event"></i></span>
-                                    <input type="date" class="form-control border-0 bg-light p-2" name="fecha" 
+                                    <input type="date" class="form-control border-0 bg-light p-2" name="fecha"
                                            required style="border-radius: 0 10px 10px 0;">
                                 </div>
                             </div>
@@ -63,21 +63,21 @@
 
                             <div class="col-12">
                                 <label class="form-label fw-bold text-muted small text-uppercase">Descripción del Evento (Opcional)</label>
-                                <textarea class="form-control border-0 bg-light p-3" rows="3" name="descripcion" 
-                                          placeholder="Detalles adicionales, objetivos o locación específica..." 
+                                <textarea class="form-control border-0 bg-light p-3" rows="3" name="descripcion"
+                                          placeholder="Detalles adicionales, objetivos o locación específica..."
                                           style="border-radius: 15px;"></textarea>
                             </div>
 
                             <div class="col-12 pt-3">
                                 <div class="row g-2">
                                     <div class="col-md-8">
-                                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" 
+                                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm"
                                                 style="border-radius: 12px; background: var(--blue-main); border: none;">
                                             <i class="bi bi-cloud-arrow-up-fill me-2"></i> Publicar Evento
                                         </button>
                                     </div>
                                     <div class="col-md-4">
-                                        <a href="{% url 'dashboard_institucional' %}" class="btn btn-light w-100 py-3 fw-bold text-muted" 
+                                        <a href="{% url 'dashboard_institucional' %}" class="btn btn-light w-100 py-3 fw-bold text-muted"
                                            style="border-radius: 12px; border: 1px solid #e2e8f0;">
                                             Cancelar
                                         </a>

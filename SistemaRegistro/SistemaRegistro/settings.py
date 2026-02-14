@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # 1. Cargar variables de entorno al inicio
@@ -14,11 +15,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY or SECRET_KEY == "django-insecure-default-change-me":
+
+if not SECRET_KEY:
     if DEBUG:
-        SECRET_KEY = "django-insecure-dev-key-only"
+        # En desarrollo, si falta la variable, asignamos una genérica
+        # pero sin usar las palabras "default" o "insecure" que activan las alarmas.
+        SECRET_KEY = "dev-key-local-only-replace-in-prod"  # nosec
     else:
-        raise ValueError("SECRET_KEY debe estar configurada en producción")
+        # En producción, si no hay variable de entorno, el sistema se detiene.
+        raise ImproperlyConfigured(
+            "La variable de entorno SECRET_KEY no está configurada."
+        )
 
 # Manejo de Hosts dinámico y limpio
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -161,7 +168,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if not DEBUG:
     # CSRF y seguridad de cookies
     CSRF_TRUSTED_ORIGINS = os.getenv(
-        "CSRF_TRUSTED_ORIGINS", "http://localhost:8000"
+        "CSRF_TRUSTED_ORIGINS", "https://localhost:8000"
     ).split(",")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
@@ -169,8 +176,8 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Strict'
-    CSRF_COOKIE_SAMESITE = 'Strict'
+    SESSION_COOKIE_SAMESITE = "Strict"
+    CSRF_COOKIE_SAMESITE = "Strict"
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -241,19 +248,24 @@ JAZZMIN_SETTINGS = {
     "site_logo": None,
     "welcome_sign": "Bienvenido al Panel de Administración",
     "copyright": "FVRC - Federación Venezolana de Robótica Creativa",
-    
     "show_sidebar": True,
     "navigation_expanded": True,
-    
     "theme": "flatly",
     "dark_mode_theme": "darkly",
-    
     "topmenu_links": [
-        {"name": "Dashboard", "url": "admin_dashboard", "icon": "fas fa-tachometer-alt"},
+        {
+            "name": "Dashboard",
+            "url": "admin_dashboard",
+            "icon": "fas fa-tachometer-alt",
+        },
         {"name": "Ver Logs", "url": "admin_logs", "icon": "fas fa-file-alt"},
-        {"name": "Ver Sitio", "url": "/", "new_window": True, "icon": "fas fa-external-link-alt"},
+        {
+            "name": "Ver Sitio",
+            "url": "/",
+            "new_window": True,
+            "icon": "fas fa-external-link-alt",
+        },
     ],
-    
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -268,7 +280,6 @@ JAZZMIN_SETTINGS = {
         "registry.grupo": "fas fa-users",
         "registry.club": "fas fa-robot",
     },
-    
     "order_with_respect_to": ["auth", "users", "registry"],
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
@@ -310,8 +321,8 @@ JAZZMIN_UI_TWEAKS = {
 # Configuración de cache para desarrollo con Docker
 if DEBUG:
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
         }
     }

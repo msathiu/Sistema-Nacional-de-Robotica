@@ -259,6 +259,6 @@ Las mejoras implementadas proporcionan:
 
 Para preguntas o sugerencias sobre estas mejoras, contactar al equipo de desarrollo.
 
-**Fecha de implementación:** Febrero 2026  
-**Versión del sistema:** Django 5.2.6  
+**Fecha de implementación:** Febrero 2026
+**Versión del sistema:** Django 5.2.6
 **Estado:** ✅ Implementado y probado

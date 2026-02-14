@@ -300,7 +300,7 @@ El sistema está listo para ser desplegado siguiendo los pasos de implementació
 
 ---
 
-**Desarrollado por**: Amazon Q Developer  
-**Fecha**: Febrero 2025  
-**Versión**: 1.0.0  
+**Desarrollado por**: Amazon Q Developer
+**Fecha**: Febrero 2025
+**Versión**: 1.0.0
 **Estado**: ✅ Completo y Listo para Producción

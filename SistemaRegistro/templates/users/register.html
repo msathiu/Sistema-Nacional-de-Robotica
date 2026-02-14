@@ -148,7 +148,7 @@
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Dirección Exacta</label>
                                     {{ participante_form.direccion }}
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Nivel Educativo / Grado</label>
                                     {{ participante_form.grado_escolar }}
@@ -200,7 +200,7 @@
                             <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg" style="border-radius: 15px; background: var(--blue-main); border: none;">
                                 <i class="bi bi-cloud-check-fill me-2"></i> Finalizar Registro
                             </button>
-                            
+
                         </div>
                     </form>
                 </div>
@@ -235,7 +235,7 @@
 
     .x-small { font-size: 0.72rem; }
     .required-field::after { content: " *"; color: #ef4444; }
-    
+
     .representante-section {
         display: none;
         animation: slideDown 0.4s ease-out;
@@ -282,7 +282,7 @@
             edad--;
         }
         edadInput.value = edad;
-        
+
         if (edad < 18) {
             repSection.style.display = 'block';
             document.querySelectorAll('#representanteSection input').forEach(i => i.required = true);

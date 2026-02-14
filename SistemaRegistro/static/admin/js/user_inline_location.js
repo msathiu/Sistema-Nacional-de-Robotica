@@ -1,18 +1,18 @@
 (function($) {
     'use strict';
-    
+
     $(document).ready(function() {
         console.log('User inline location script loaded');
-        
+
         // Buscar campos en el inline (tienen prefijos diferentes)
         var $estado = $('select[name$="-estado"]');
         var $municipio = $('select[name$="-municipio"]');
         var $parroquia = $('select[name$="-parroquia"]');
-        
+
         console.log('Estado fields found:', $estado.length);
         console.log('Municipio fields found:', $municipio.length);
         console.log('Parroquia fields found:', $parroquia.length);
-        
+
         if ($estado.length === 0) {
             // Intentar con IDs específicos del inline
             $estado = $('#id_userprofile-0-estado, #id_estado');
@@ -20,18 +20,18 @@
             $parroquia = $('#id_userprofile-0-parroquia, #id_parroquia');
             console.log('Retry - Estado:', $estado.length, 'Municipio:', $municipio.length, 'Parroquia:', $parroquia.length);
         }
-        
+
         var estadoInicial = $estado.val();
         var municipioInicial = $municipio.val();
-        
+
         // Cargar municipios cuando cambia el estado
         $estado.on('change', function() {
             var estadoId = $(this).val();
             console.log('Estado changed:', estadoId);
-            
+
             $municipio.empty().append('<option value="">---------</option>');
             $parroquia.empty().append('<option value="">---------</option>');
-            
+
             if (estadoId) {
                 $.ajax({
                     url: '/registry/ajax/municipios/',
@@ -45,7 +45,7 @@
                                 text: item.nombre
                             }));
                         });
-                        
+
                         if (municipioInicial) {
                             $municipio.val(municipioInicial);
                             $municipio.trigger('change');
@@ -58,14 +58,14 @@
                 });
             }
         });
-        
+
         // Cargar parroquias cuando cambia el municipio
         $municipio.on('change', function() {
             var municipioId = $(this).val();
             console.log('Municipio changed:', municipioId);
-            
+
             $parroquia.empty().append('<option value="">---------</option>');
-            
+
             if (municipioId) {
                 $.ajax({
                     url: '/registry/ajax/parroquias/',
@@ -86,7 +86,7 @@
                 });
             }
         });
-        
+
         // Cargar datos iniciales si hay un estado seleccionado
         if (estadoInicial) {
             console.log('Triggering initial load for estado:', estadoInicial);

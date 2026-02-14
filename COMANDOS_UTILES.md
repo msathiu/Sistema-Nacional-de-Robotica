@@ -490,5 +490,5 @@ git merge feature/nueva-funcionalidad
 
 ---
 
-**Última actualización:** Febrero 2026  
+**Última actualización:** Febrero 2026
 **Mantenido por:** Equipo de Desarrollo SNR

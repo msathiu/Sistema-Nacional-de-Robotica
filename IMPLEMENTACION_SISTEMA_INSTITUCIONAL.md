@@ -364,6 +364,6 @@ Para dudas o problemas con la implementación, revisar:
 
 ---
 
-**Fecha de Implementación**: Febrero 2025  
-**Versión**: 1.0.0  
+**Fecha de Implementación**: Febrero 2025
+**Versión**: 1.0.0
 **Autor**: Amazon Q Developer

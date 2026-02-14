@@ -193,7 +193,7 @@ curl http://localhost:8000/api/municipios/1/
 2. **Agregar caché a las APIs**
    ```python
    from django.views.decorators.cache import cache_page
-   
+
    @cache_page(60 * 15)  # Cache por 15 minutos
    def api_municipios(request, estado_id):
        # ...

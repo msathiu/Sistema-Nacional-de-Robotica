@@ -11,7 +11,7 @@ Copiar este código en cualquier template que necesite selección de ubicación
 <!-- Formulario de ejemplo -->
 <form method="post">
     {% csrf_token %}
-    
+
     <div class="mb-3">
         <label for="id_estado" class="form-label">Estado</label>
         <select name="estado" id="id_estado" class="form-select" required>
@@ -21,21 +21,21 @@ Copiar este código en cualquier template que necesite selección de ubicación
             {% endfor %}
         </select>
     </div>
-    
+
     <div class="mb-3">
         <label for="id_municipio" class="form-label">Municipio</label>
         <select name="municipio" id="id_municipio" class="form-select" required disabled>
             <option value="">Primero seleccione un estado</option>
         </select>
     </div>
-    
+
     <div class="mb-3">
         <label for="id_parroquia" class="form-label">Parroquia</label>
         <select name="parroquia" id="id_parroquia" class="form-select" required disabled>
             <option value="">Primero seleccione un municipio</option>
         </select>
     </div>
-    
+
     <button type="submit" class="btn btn-primary">Guardar</button>
 </form>
 
@@ -45,16 +45,16 @@ $(document).ready(function() {
     const $estado = $('#id_estado');
     const $municipio = $('#id_municipio');
     const $parroquia = $('#id_parroquia');
-    
+
     function cargarMunicipios(estadoId) {
         if (!estadoId) {
             $municipio.html('<option value="">Primero seleccione un estado</option>').prop('disabled', true);
             $parroquia.html('<option value="">Primero seleccione un municipio</option>').prop('disabled', true);
             return;
         }
-        
+
         $municipio.html('<option value="">Cargando...</option>').prop('disabled', true);
-        
+
         $.ajax({
             url: `/api/municipios/${estadoId}/`,
             method: 'GET',
@@ -76,15 +76,15 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     function cargarParroquias(municipioId) {
         if (!municipioId) {
             $parroquia.html('<option value="">Primero seleccione un municipio</option>').prop('disabled', true);
             return;
         }
-        
+
         $parroquia.html('<option value="">Cargando...</option>').prop('disabled', true);
-        
+
         $.ajax({
             url: `/api/parroquias/${municipioId}/`,
             method: 'GET',
@@ -105,11 +105,11 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     $estado.on('change', function() {
         cargarMunicipios($(this).val());
     });
-    
+
     $municipio.on('change', function() {
         cargarParroquias($(this).val());
     });

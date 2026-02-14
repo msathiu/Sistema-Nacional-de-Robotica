@@ -43,4 +43,3 @@ db.sqlite3
 !Dockerfile-prod
 !docker-compose-prod.yml
 .dockerignore
-

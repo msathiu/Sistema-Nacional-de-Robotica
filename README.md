@@ -89,41 +89,78 @@ El sistema ha sido optimizado con las siguientes mejoras:
 - ✅ **Documentación completa**: Docstrings y comentarios en todo el código
 - ✅ **Comando createsuperuser personalizado**: Asignación automática de tipo 'superusuario'
 - ✅ **Sistema de ubicación en cascada**: Filtrado seguro Estado → Municipio → Parroquia
+- ✅ **Control de aprobación de instituciones**: Sistema de aprobación manual con códigos temporales
+- ✅ **Flujo de activación optimizado**: Códigos TEMP → RNR con envío automático de correos
+- ✅ **Panel de gestión institucional**: Switch de activación con confirmación y envío de credenciales
 
-📖 Ver detalles completos en [`MEJORAS_CODIGO.md`](MEJORAS_CODIGO.md)  
-📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)  
+📖 Ver detalles completos en [`MEJORAS_CODIGO.md`](MEJORAS_CODIGO.md)
+📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)
 🗺️ Sistema de ubicación en cascada en [`IMPLEMENTACION_UBICACION_CASCADA.md`](IMPLEMENTACION_UBICACION_CASCADA.md)
+🔐 Control de aprobación de instituciones en [`INDICE_STATUS_INSTITUCIONES.md`](INDICE_STATUS_INSTITUCIONES.md)
+
+---
+
+## 🔒 Correcciones de Seguridad (NUEVO)
+
+Se han aplicado correcciones críticas de seguridad:
+
+- 🔐 **Control de acceso robusto**: Decoradores personalizados para validación de permisos
+- 🛡️ **Protección de endpoints**: Todos los endpoints AJAX requieren autenticación
+- 🚫 **Rate limiting**: Límite de 60 peticiones/minuto por IP
+- 🔑 **Credenciales seguras**: Variables de entorno obligatorias
+- 🍪 **Cookies seguras**: HttpOnly, SameSite, Secure habilitados
+- 📋 **Headers de seguridad**: XSS, Clickjacking, MIME sniffing protegidos
+- ✔️ **Validación de entrada**: Sanitización y límites en todos los inputs
+- 🔍 **Auditoría**: Logging de intentos sospechosos
+
+🔒 **Documentación de seguridad:**
+- [`CORRECCIONES_SEGURIDAD.md`](CORRECCIONES_SEGURIDAD.md) - Detalles técnicos completos
+- [`GUIA_RAPIDA_SEGURIDAD.md`](GUIA_RAPIDA_SEGURIDAD.md) - Guía de implementación
+- [`RESUMEN_EJECUTIVO_SEGURIDAD.md`](RESUMEN_EJECUTIVO_SEGURIDAD.md) - Resumen ejecutivo
+- `verificar_seguridad.py` / `verificar_seguridad.bat` - Scripts de verificación
 
 ---
 
 ## 🚀 Configuración Inicial
 
-### 1️⃣ Configurar Variables de Entorno
+### ⚠️ IMPORTANTE: Configuración de Seguridad
+
+Antes de ejecutar el sistema, **DEBES** configurar las variables de entorno:
 
 ```bash
-# Copiar el archivo de ejemplo
+# 1. Copiar el archivo de ejemplo
 cp .env.example .env
 
-# Editar .env con tus configuraciones
-# IMPORTANTE: Generar una SECRET_KEY única
+# 2. Generar SECRET_KEY única (OBLIGATORIO)
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# 3. Editar .env y configurar:
+#    - SECRET_KEY (pegar la generada arriba)
+#    - EMAIL_HOST_USER
+#    - EMAIL_HOST_PASSWORD
+#    - DEBUG=False (para producción)
+
+# 4. Verificar configuración
+python verificar_seguridad.py
+# O en Windows:
+verificar_seguridad.bat
 ```
 
-### 2️⃣ Aplicar Migraciones
+### 1️⃣ Aplicar Migraciones
 
 ```bash
 cd SistemaRegistro
 python manage.py migrate
 ```
 
-### 3️⃣ Crear Superusuario
+### 2️⃣ Crear Superusuario
 
 ```bash
 python manage.py createsuperuser
 # El sistema automáticamente asignará user_type='superuser' al perfil
 ```
 
-### 4️⃣ Recolectar Archivos Estáticos
+### 3️⃣ Recolectar Archivos Estáticos
 
 ```bash
 python manage.py collectstatic --noinput

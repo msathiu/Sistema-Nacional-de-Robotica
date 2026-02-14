@@ -35,9 +35,9 @@
     }
 
     /* Diseño del Formulario y Modal */
-    .modal-content { 
-        border-radius: 28px; 
-        border: none; 
+    .modal-content {
+        border-radius: 28px;
+        border: none;
         max-height: 90vh; /* Asegura que el modal no se salga de la pantalla */
         display: flex;
         flex-direction: column;
@@ -67,7 +67,7 @@
     .modal-body::-webkit-scrollbar-thumb:hover {
         background: var(--tech-blue);
     }
-    
+
     .section-header {
         display: flex;
         align-items: center;
@@ -128,7 +128,7 @@
         transition: border-color 0.3s;
     }
     .participante-row:hover { border-color: var(--tech-cyan); }
-    
+
     .step-badge {
         background: var(--tech-cyan);
         color: var(--tech-blue);
@@ -181,7 +181,7 @@
                         </ul>
                     </div>
                 </div>
-                
+
                 <div class="row g-3">
                     <div class="col-sm-6">
                         <div class="p-3 bg-light rounded-4">
@@ -227,7 +227,7 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
+
             <form id="formNuevoGrupo" method="POST">
                 {% csrf_token %}
                 <div class="modal-body px-4">
@@ -235,7 +235,7 @@
                         <div class="col-md-7">
                             <div class="p-4 bg-primary-subtle rounded-4 h-100 d-flex flex-column justify-content-center">
                                 <label class="form-label mb-1">Nombre distintivo del equipo</label>
-                                <input type="text" name="nombre_grupo" class="form-control form-control-lg border-0 bg-white fw-bold" 
+                                <input type="text" name="nombre_grupo" class="form-control form-control-lg border-0 bg-white fw-bold"
                                        placeholder="Ej: TITANES DEL ZULIA" required>
                             </div>
                         </div>
@@ -353,7 +353,7 @@
         const container = document.getElementById('participantesContainer');
         const original = container.querySelector('.participante-row');
         const clone = original.cloneNode(true);
-        
+
         clone.querySelectorAll('input, select').forEach(element => {
             element.value = '';
             if(element.name) {
@@ -367,24 +367,24 @@
         btnDelete.innerHTML = '<i class="bi bi-trash3"></i>';
         btnDelete.className = 'btn btn-danger btn-sm position-absolute rounded-circle shadow-sm';
         btnDelete.style = 'top: -10px; right: -10px; width: 32px; height: 32px; padding: 0; z-index: 10;';
-        
+
         btnDelete.onclick = function() {
             clone.style.transform = 'translateX(20px)';
             clone.style.opacity = '0';
             setTimeout(() => clone.remove(), 300);
         };
-        
+
         clone.appendChild(btnDelete);
-        
+
         clone.style.opacity = '0';
         clone.style.transform = 'translateY(20px)';
         container.appendChild(clone);
-        
+
         setTimeout(() => {
             clone.style.transition = 'all 0.4s ease';
             clone.style.opacity = '1';
             clone.style.transform = 'translateY(0)';
-            
+
             // Scroll automático al nuevo elemento agregado
             clone.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 10);

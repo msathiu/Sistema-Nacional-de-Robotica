@@ -34,7 +34,7 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 ```
 
-**Resultado esperado**: 
+**Resultado esperado**:
 - Se copian los archivos JavaScript a `staticfiles/`
 - Mensaje: "X static files copied to..."
 
@@ -82,7 +82,7 @@ python manage.py runserver
 
 **Paso A - Seleccionar Estado**:
 1. En el campo **Estado**, seleccionar "Distrito Capital"
-2. **Resultado esperado**: 
+2. **Resultado esperado**:
    - El campo **Municipio** se habilita automáticamente
    - Se cargan solo los municipios de Distrito Capital
    - El campo **Parroquia** permanece deshabilitado
@@ -109,7 +109,7 @@ Abrir una ventana de incógnito y probar:
 http://localhost:8000/api/municipios/1/
 ```
 
-**Resultado esperado**: 
+**Resultado esperado**:
 ```json
 {"error": "No autorizado"}
 ```
@@ -252,6 +252,6 @@ Si encuentras algún problema:
 
 ---
 
-**Fecha**: 2025  
-**Django**: 5.2.6  
+**Fecha**: 2025
+**Django**: 5.2.6
 **Estado**: ✅ LISTO PARA PROBAR

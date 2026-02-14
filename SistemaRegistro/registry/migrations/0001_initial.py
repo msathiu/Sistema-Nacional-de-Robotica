@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,163 +15,480 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Estado',
+            name="Estado",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=100, unique=True)),
-                ('codigo', models.CharField(max_length=10, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=100, unique=True)),
+                ("codigo", models.CharField(max_length=10, unique=True)),
             ],
             options={
-                'verbose_name': 'Estado',
-                'verbose_name_plural': 'Estados',
-                'ordering': ['nombre'],
+                "verbose_name": "Estado",
+                "verbose_name_plural": "Estados",
+                "ordering": ["nombre"],
             },
         ),
         migrations.CreateModel(
-            name='Evento',
+            name="Evento",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=255)),
-                ('fecha', models.DateField()),
-                ('descripcion', models.TextField(blank=True)),
-                ('estado', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='registry.estado')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=255)),
+                ("fecha", models.DateField()),
+                ("descripcion", models.TextField(blank=True)),
+                (
+                    "estado",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="registry.estado",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Inscripcion',
+            name="Inscripcion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('modalidad', models.CharField(choices=[('individual', 'Individual'), ('equipo', 'Equipo')], max_length=20)),
-                ('nombre_proyecto', models.CharField(max_length=150)),
-                ('descripcion_proyecto', models.TextField()),
-                ('fecha_inscripcion', models.DateTimeField(auto_now_add=True)),
-                ('evento', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='registry.evento')),
-                ('lider', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "modalidad",
+                    models.CharField(
+                        choices=[("individual", "Individual"), ("equipo", "Equipo")],
+                        max_length=20,
+                    ),
+                ),
+                ("nombre_proyecto", models.CharField(max_length=150)),
+                ("descripcion_proyecto", models.TextField()),
+                ("fecha_inscripcion", models.DateTimeField(auto_now_add=True)),
+                (
+                    "evento",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="registry.evento",
+                    ),
+                ),
+                (
+                    "lider",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Institucion',
+            name="Institucion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=255)),
-                ('rif', models.CharField(blank=True, max_length=20, null=True)),
-                ('tipo_federado', models.CharField(choices=[('institucion', 'Institución Educativa'), ('organizacion', 'Organización / Club'), ('particular', 'Particular / Independiente')], default='institucion', max_length=20)),
-                ('codigo', models.CharField(editable=False, max_length=35, unique=True)),
-                ('direccion', models.TextField(blank=True)),
-                ('telefono', models.CharField(blank=True, max_length=20)),
-                ('email', models.EmailField(max_length=254, unique=True)),
-                ('fecha_registro', models.DateTimeField(auto_now_add=True)),
-                ('activa', models.BooleanField(default=False)),
-                ('eliminado', models.BooleanField(default=False)),
-                ('fecha_eliminacion', models.DateTimeField(blank=True, null=True)),
-                ('estado', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='registry.estado')),
-                ('usuario', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='institucion', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=255)),
+                ("rif", models.CharField(blank=True, max_length=20, null=True)),
+                (
+                    "tipo_federado",
+                    models.CharField(
+                        choices=[
+                            ("institucion", "Institución Educativa"),
+                            ("organizacion", "Organización / Club"),
+                            ("particular", "Particular / Independiente"),
+                        ],
+                        default="institucion",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "codigo",
+                    models.CharField(editable=False, max_length=35, unique=True),
+                ),
+                ("direccion", models.TextField(blank=True)),
+                ("telefono", models.CharField(blank=True, max_length=20)),
+                ("email", models.EmailField(max_length=254, unique=True)),
+                ("fecha_registro", models.DateTimeField(auto_now_add=True)),
+                ("activa", models.BooleanField(default=False)),
+                ("eliminado", models.BooleanField(default=False)),
+                ("fecha_eliminacion", models.DateTimeField(blank=True, null=True)),
+                (
+                    "estado",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="registry.estado",
+                    ),
+                ),
+                (
+                    "usuario",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="institucion",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Instituciones',
-                'ordering': ['nombre'],
+                "verbose_name_plural": "Instituciones",
+                "ordering": ["nombre"],
             },
         ),
         migrations.AddField(
-            model_name='evento',
-            name='institucion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='registry.institucion'),
+            model_name="evento",
+            name="institucion",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="registry.institucion"
+            ),
         ),
         migrations.CreateModel(
-            name='IntegranteEquipo',
+            name="IntegranteEquipo",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('inscripcion', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='integrantes', to='registry.inscripcion')),
-                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "inscripcion",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="integrantes",
+                        to="registry.inscripcion",
+                    ),
+                ),
+                (
+                    "usuario",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Municipio',
+            name="Municipio",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=100)),
-                ('estado', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='municipios', to='registry.estado')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=100)),
+                (
+                    "estado",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="municipios",
+                        to="registry.estado",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Municipio',
-                'verbose_name_plural': 'Municipios',
-                'ordering': ['estado', 'nombre'],
-                'unique_together': {('estado', 'nombre')},
+                "verbose_name": "Municipio",
+                "verbose_name_plural": "Municipios",
+                "ordering": ["estado", "nombre"],
+                "unique_together": {("estado", "nombre")},
             },
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='municipio',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='registry.municipio'),
+            model_name="institucion",
+            name="municipio",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, to="registry.municipio"
+            ),
         ),
         migrations.CreateModel(
-            name='Parroquia',
+            name="Parroquia",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=100)),
-                ('municipio', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='parroquias', to='registry.municipio')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=100)),
+                (
+                    "municipio",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="parroquias",
+                        to="registry.municipio",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Parroquia',
-                'verbose_name_plural': 'Parroquias',
-                'ordering': ['nombre'],
-                'unique_together': {('municipio', 'nombre')},
+                "verbose_name": "Parroquia",
+                "verbose_name_plural": "Parroquias",
+                "ordering": ["nombre"],
+                "unique_together": {("municipio", "nombre")},
             },
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='parroquia',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='registry.parroquia'),
+            model_name="institucion",
+            name="parroquia",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, to="registry.parroquia"
+            ),
         ),
         migrations.CreateModel(
-            name='Participante',
+            name="Participante",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cedula', models.CharField(max_length=20, unique=True, validators=[django.core.validators.RegexValidator(message='Cédula válida requerida', regex='^[VE0-9]+$')])),
-                ('nombres', models.CharField(max_length=100)),
-                ('apellidos', models.CharField(max_length=100)),
-                ('fecha_nacimiento', models.DateField()),
-                ('sexo', models.CharField(choices=[('M', 'Masculino'), ('F', 'Femenino'), ('O', 'Otro')], max_length=1)),
-                ('email', models.EmailField(max_length=254)),
-                ('direccion', models.TextField()),
-                ('codigo_area', models.CharField(choices=[('0424', '0424'), ('0414', '0414'), ('0422', '0422'), ('0412', '0412'), ('0426', '0426'), ('0416', '0416')], default='0424', max_length=4, verbose_name='Código de Área')),
-                ('numero_telefono', models.CharField(max_length=7, validators=[django.core.validators.RegexValidator(message='El número debe ser de 7 dígitos numéricos.', regex='^[0-9]{7}$')], verbose_name='Número (7 dígitos)')),
-                ('nombre_escuela', models.CharField(blank=True, help_text='Nombre del centro de estudio actual.', max_length=200, verbose_name='Nombre de la Escuela/Universidad')),
-                ('grado_escolar', models.CharField(choices=[('NO', 'No estudia'), ('P1', 'Preescolar Nivel 1'), ('P2', 'Preescolar Nivel 2'), ('PR1', '1er Grado Primaria'), ('PR2', '2do Grado Primaria'), ('PR3', '3er Grado Primaria'), ('PR4', '4to Grado Primaria'), ('PR5', '5to Grado Primaria'), ('PR6', '6to Grado Primaria'), ('L1', '1er Año Liceo'), ('L2', '2do Año Liceo'), ('L3', '3er Año Liceo'), ('L4', '4to Año Liceo'), ('L5', '5to Año Liceo'), ('L6', '6to Año Liceo'), ('U', 'Estudios Universitarios'), ('OTRO', 'Otro/No especificado')], default='NO', max_length=4, verbose_name='Nivel Educativo/Grado')),
-                ('nombre_representante', models.CharField(blank=True, max_length=200)),
-                ('cedula_representante', models.CharField(blank=True, max_length=20)),
-                ('codigo_area_representante', models.CharField(blank=True, choices=[('0424', '0424'), ('0414', '0414'), ('0422', '0422'), ('0412', '0412'), ('0426', '0426'), ('0416', '0416')], max_length=4, verbose_name='Cód. Área Rep.')),
-                ('numero_telefono_representante', models.CharField(blank=True, max_length=7, validators=[django.core.validators.RegexValidator(message='El número debe ser de 7 dígitos numéricos.', regex='^[0-9]{7}$')], verbose_name='Número Rep. (7 dígitos)')),
-                ('email_representante', models.EmailField(blank=True, max_length=254)),
-                ('fecha_registro', models.DateTimeField(auto_now_add=True)),
-                ('activo', models.BooleanField(default=True)),
-                ('estado', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='registry.estado')),
-                ('institucion', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='registry.institucion')),
-                ('municipio', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='registry.municipio')),
-                ('user', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "cedula",
+                    models.CharField(
+                        max_length=20,
+                        unique=True,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="Cédula válida requerida", regex="^[VE0-9]+$"
+                            )
+                        ],
+                    ),
+                ),
+                ("nombres", models.CharField(max_length=100)),
+                ("apellidos", models.CharField(max_length=100)),
+                ("fecha_nacimiento", models.DateField()),
+                (
+                    "sexo",
+                    models.CharField(
+                        choices=[("M", "Masculino"), ("F", "Femenino"), ("O", "Otro")],
+                        max_length=1,
+                    ),
+                ),
+                ("email", models.EmailField(max_length=254)),
+                ("direccion", models.TextField()),
+                (
+                    "codigo_area",
+                    models.CharField(
+                        choices=[
+                            ("0424", "0424"),
+                            ("0414", "0414"),
+                            ("0422", "0422"),
+                            ("0412", "0412"),
+                            ("0426", "0426"),
+                            ("0416", "0416"),
+                        ],
+                        default="0424",
+                        max_length=4,
+                        verbose_name="Código de Área",
+                    ),
+                ),
+                (
+                    "numero_telefono",
+                    models.CharField(
+                        max_length=7,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="El número debe ser de 7 dígitos numéricos.",
+                                regex="^[0-9]{7}$",
+                            )
+                        ],
+                        verbose_name="Número (7 dígitos)",
+                    ),
+                ),
+                (
+                    "nombre_escuela",
+                    models.CharField(
+                        blank=True,
+                        help_text="Nombre del centro de estudio actual.",
+                        max_length=200,
+                        verbose_name="Nombre de la Escuela/Universidad",
+                    ),
+                ),
+                (
+                    "grado_escolar",
+                    models.CharField(
+                        choices=[
+                            ("NO", "No estudia"),
+                            ("P1", "Preescolar Nivel 1"),
+                            ("P2", "Preescolar Nivel 2"),
+                            ("PR1", "1er Grado Primaria"),
+                            ("PR2", "2do Grado Primaria"),
+                            ("PR3", "3er Grado Primaria"),
+                            ("PR4", "4to Grado Primaria"),
+                            ("PR5", "5to Grado Primaria"),
+                            ("PR6", "6to Grado Primaria"),
+                            ("L1", "1er Año Liceo"),
+                            ("L2", "2do Año Liceo"),
+                            ("L3", "3er Año Liceo"),
+                            ("L4", "4to Año Liceo"),
+                            ("L5", "5to Año Liceo"),
+                            ("L6", "6to Año Liceo"),
+                            ("U", "Estudios Universitarios"),
+                            ("OTRO", "Otro/No especificado"),
+                        ],
+                        default="NO",
+                        max_length=4,
+                        verbose_name="Nivel Educativo/Grado",
+                    ),
+                ),
+                ("nombre_representante", models.CharField(blank=True, max_length=200)),
+                ("cedula_representante", models.CharField(blank=True, max_length=20)),
+                (
+                    "codigo_area_representante",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("0424", "0424"),
+                            ("0414", "0414"),
+                            ("0422", "0422"),
+                            ("0412", "0412"),
+                            ("0426", "0426"),
+                            ("0416", "0416"),
+                        ],
+                        max_length=4,
+                        verbose_name="Cód. Área Rep.",
+                    ),
+                ),
+                (
+                    "numero_telefono_representante",
+                    models.CharField(
+                        blank=True,
+                        max_length=7,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="El número debe ser de 7 dígitos numéricos.",
+                                regex="^[0-9]{7}$",
+                            )
+                        ],
+                        verbose_name="Número Rep. (7 dígitos)",
+                    ),
+                ),
+                ("email_representante", models.EmailField(blank=True, max_length=254)),
+                ("fecha_registro", models.DateTimeField(auto_now_add=True)),
+                ("activo", models.BooleanField(default=True)),
+                (
+                    "estado",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="registry.estado",
+                    ),
+                ),
+                (
+                    "institucion",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="registry.institucion",
+                    ),
+                ),
+                (
+                    "municipio",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="registry.municipio",
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Participante',
-                'verbose_name_plural': 'Participantes',
+                "verbose_name": "Participante",
+                "verbose_name_plural": "Participantes",
             },
         ),
         migrations.CreateModel(
-            name='Grupo',
+            name="Grupo",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=150, verbose_name='Nombre del Grupo')),
-                ('tutor_nombre', models.CharField(max_length=200)),
-                ('tutor_cedula', models.CharField(max_length=20)),
-                ('tutor_telefono', models.CharField(blank=True, max_length=20)),
-                ('fecha_registro', models.DateTimeField(auto_now_add=True)),
-                ('evento', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='grupos_inscritos', to='registry.evento')),
-                ('usuario_creador', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='grupos_creados', to=settings.AUTH_USER_MODEL)),
-                ('participantes', models.ManyToManyField(related_name='grupos', to='registry.participante', verbose_name='Integrantes del Grupo')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "nombre",
+                    models.CharField(max_length=150, verbose_name="Nombre del Grupo"),
+                ),
+                ("tutor_nombre", models.CharField(max_length=200)),
+                ("tutor_cedula", models.CharField(max_length=20)),
+                ("tutor_telefono", models.CharField(blank=True, max_length=20)),
+                ("fecha_registro", models.DateTimeField(auto_now_add=True)),
+                (
+                    "evento",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="grupos_inscritos",
+                        to="registry.evento",
+                    ),
+                ),
+                (
+                    "usuario_creador",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="grupos_creados",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "participantes",
+                    models.ManyToManyField(
+                        related_name="grupos",
+                        to="registry.participante",
+                        verbose_name="Integrantes del Grupo",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Grupo',
-                'verbose_name_plural': 'Grupos',
-                'ordering': ['-fecha_registro'],
+                "verbose_name": "Grupo",
+                "verbose_name_plural": "Grupos",
+                "ordering": ["-fecha_registro"],
             },
         ),
     ]

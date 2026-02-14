@@ -1,5 +1,5 @@
 import logging
-import random
+import secrets
 import string
 from datetime import date
 
@@ -101,17 +101,24 @@ class Dependencia(models.Model):
 
 def generar_codigo_unico():
     """
-    Genera un código aleatorio de 8 caracteres alfanuméricos.
+    Genera un código aleatorio de 8 caracteres alfanuméricos de forma segura.
 
     Returns:
         str: Código único de 8 caracteres en mayúsculas.
     """
+    # Definimos los caracteres (A-Z y 0-9)
     caracteres = string.ascii_uppercase + string.digits
     max_intentos = 100
+
     for _ in range(max_intentos):
-        codigo = "".join(random.choices(caracteres, k=8))
+        # Generamos el código usando secrets.choice para evitar predicciones
+        # secrets.choice es más seguro que random.choices
+        codigo = "".join(secrets.choice(caracteres) for _ in range(8))
+
+        # Verificamos si ya existe en la base de datos
         if not Institucion.objects.filter(codigo=codigo).exists():
             return codigo
+
     raise ValueError("No se pudo generar un código único después de múltiples intentos")
 
 
@@ -531,17 +538,17 @@ class Participante(models.Model):
             if edad_calculada < 18:
                 errores = {}
                 if not self.nombre_representante:
-                    errores["nombre_representante"] = (
-                        "El nombre del representante es obligatorio para menores de 18 años."
-                    )
+                    errores[
+                        "nombre_representante"
+                    ] = "El nombre del representante es obligatorio para menores de 18 años."
                 if not self.cedula_representante:
-                    errores["cedula_representante"] = (
-                        "La cédula del representante es obligatoria para menores de 18 años."
-                    )
+                    errores[
+                        "cedula_representante"
+                    ] = "La cédula del representante es obligatoria para menores de 18 años."
                 if not self.numero_telefono_representante:
-                    errores["numero_telefono_representante"] = (
-                        "El teléfono del representante es obligatorio para menores de 18 años."
-                    )
+                    errores[
+                        "numero_telefono_representante"
+                    ] = "El teléfono del representante es obligatorio para menores de 18 años."
 
                 if errores:
                     raise ValidationError(errores)
@@ -551,32 +558,36 @@ class Evento(models.Model):
     """Modelo para representar eventos de robótica."""
 
     TIPO_CHOICES = [
-        ('competencia', 'Competencia'),
-        ('taller', 'Taller'),
-        ('seminario', 'Seminario'),
-        ('exhibicion', 'Exhibición'),
+        ("competencia", "Competencia"),
+        ("taller", "Taller"),
+        ("seminario", "Seminario"),
+        ("exhibicion", "Exhibición"),
     ]
 
     MODALIDAD_CHOICES = [
-        ('presencial', 'Presencial'),
-        ('virtual', 'Virtual'),
-        ('hibrido', 'Híbrido'),
+        ("presencial", "Presencial"),
+        ("virtual", "Virtual"),
+        ("hibrido", "Híbrido"),
     ]
 
     ESTADO_CHOICES = [
-        ('abierto', 'Abierto'),
-        ('pausado', 'Pausado'),
-        ('cerrado', 'Cerrado'),
-        ('finalizado', 'Finalizado'),
+        ("abierto", "Abierto"),
+        ("pausado", "Pausado"),
+        ("cerrado", "Cerrado"),
+        ("finalizado", "Finalizado"),
     ]
 
     nombre = models.CharField(max_length=255, db_index=True)
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='competencia')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="competencia")
     fecha = models.DateField(db_index=True)
     descripcion = models.TextField(blank=True)
-    modalidad = models.CharField(max_length=20, choices=MODALIDAD_CHOICES, default='presencial')
+    modalidad = models.CharField(
+        max_length=20, choices=MODALIDAD_CHOICES, default="presencial"
+    )
     ubicacion = models.CharField(max_length=255, blank=True)
-    estado_evento = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='abierto', db_index=True)
+    estado_evento = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="abierto", db_index=True
+    )
     estado = models.ForeignKey(
         "Estado", on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -634,31 +645,35 @@ class Grupo(models.Model):
     """Modelo para representar grupos de participantes."""
 
     ESTADO_CHOICES = [
-        ('editable', 'Editable'),
-        ('inscrito', 'Inscrito'),
-        ('bloqueado', 'Bloqueado'),
+        ("editable", "Editable"),
+        ("inscrito", "Inscrito"),
+        ("bloqueado", "Bloqueado"),
     ]
 
     CRITERIO_CHOICES = [
-        ('edad', 'Por Edad'),
-        ('nivel', 'Por Nivel Educativo'),
-        ('proyecto', 'Por Proyecto'),
-        ('mixto', 'Mixto'),
+        ("edad", "Por Edad"),
+        ("nivel", "Por Nivel Educativo"),
+        ("proyecto", "Por Proyecto"),
+        ("mixto", "Mixto"),
     ]
 
     nombre = models.CharField(
         max_length=150, verbose_name="Nombre del Grupo", db_index=True
     )
     codigo = models.CharField(max_length=20, unique=True, editable=False)
-    criterio = models.CharField(max_length=20, choices=CRITERIO_CHOICES, default='mixto')
-    estado_grupo = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='editable', db_index=True)
+    criterio = models.CharField(
+        max_length=20, choices=CRITERIO_CHOICES, default="mixto"
+    )
+    estado_grupo = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="editable", db_index=True
+    )
     usuario_creador = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="grupos_creados",
     )
     tutor_nombre = models.CharField(max_length=200)
-    tutor_apellidos = models.CharField(max_length=200, default='')
+    tutor_apellidos = models.CharField(max_length=200, default="")
     tutor_cedula = models.CharField(max_length=20, db_index=True)
     tutor_telefono = models.CharField(max_length=20, blank=True)
     participantes = models.ManyToManyField(
@@ -690,7 +705,7 @@ class Grupo(models.Model):
             # Generar código único para el grupo
             chars = string.ascii_uppercase + string.digits
             while True:
-                codigo = 'GRP-' + get_random_string(length=8, allowed_chars=chars)
+                codigo = "GRP-" + get_random_string(length=8, allowed_chars=chars)
                 if not Grupo.objects.filter(codigo=codigo).exists():
                     self.codigo = codigo
                     break
@@ -720,22 +735,25 @@ class Club(models.Model):
     ]
 
     ESTADO_VINCULACION_CHOICES = [
-        ('abierto', 'Abierto'),
-        ('cerrado', 'Cerrado'),
-        ('invitacion', 'Bajo Invitación'),
+        ("abierto", "Abierto"),
+        ("cerrado", "Cerrado"),
+        ("invitacion", "Bajo Invitación"),
     ]
 
     nombre = models.CharField(
         max_length=200, verbose_name="Nombre del Club", db_index=True
     )
-    logo = models.ImageField(upload_to='clubes/logos/', blank=True, null=True)
+    logo = models.ImageField(upload_to="clubes/logos/", blank=True, null=True)
     siglas = models.CharField(max_length=10, blank=True)
     descripcion = models.TextField(verbose_name="Descripción")
     ubicacion = models.CharField(max_length=255, verbose_name="Ubicación")
     fecha_fundacion = models.DateField(null=True, blank=True)
     institucion_creadora = models.ForeignKey(
-        Institucion, on_delete=models.CASCADE, related_name='clubes_creados',
-        null=True, blank=True
+        Institucion,
+        on_delete=models.CASCADE,
+        related_name="clubes_creados",
+        null=True,
+        blank=True,
     )
     linea_1 = models.CharField(
         max_length=50,
@@ -757,9 +775,11 @@ class Club(models.Model):
         null=True,
     )
     estado_vinculacion = models.CharField(
-        max_length=20, choices=ESTADO_VINCULACION_CHOICES, default='abierto'
+        max_length=20, choices=ESTADO_VINCULACION_CHOICES, default="abierto"
     )
-    cupo_maximo = models.IntegerField(default=10, verbose_name="Cupo máximo de instituciones")
+    cupo_maximo = models.IntegerField(
+        default=10, verbose_name="Cupo máximo de instituciones"
+    )
     requisitos = models.TextField(blank=True)
     fecha_creacion = models.DateTimeField(default=timezone.now, editable=False)
     activo = models.BooleanField(default=True, db_index=True)
@@ -788,7 +808,7 @@ class Club(models.Model):
     @property
     def cupos_disponibles(self):
         """Retorna cuántos cupos quedan disponibles."""
-        miembros_actuales = self.membresias.filter(estado='aprobada').count()
+        miembros_actuales = self.membresias.filter(estado="aprobada").count()
         return max(0, self.cupo_maximo - miembros_actuales)
 
 
@@ -796,18 +816,20 @@ class MembresiaClu(models.Model):
     """Modelo para gestionar solicitudes de membresía a clubes."""
 
     ESTADO_CHOICES = [
-        ('pendiente', 'Pendiente'),
-        ('revision', 'En Revisión'),
-        ('aprobada', 'Aprobada'),
-        ('rechazada', 'Rechazada'),
+        ("pendiente", "Pendiente"),
+        ("revision", "En Revisión"),
+        ("aprobada", "Aprobada"),
+        ("rechazada", "Rechazada"),
     ]
 
-    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='membresias')
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="membresias")
     institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
     carta_intencion = models.TextField()
     propuesta_tecnica = models.TextField()
     representante_legal = models.CharField(max_length=200)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    estado = models.CharField(
+        max_length=20, choices=ESTADO_CHOICES, default="pendiente"
+    )
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_respuesta = models.DateTimeField(null=True, blank=True)
     observaciones = models.TextField(blank=True)
@@ -815,8 +837,8 @@ class MembresiaClu(models.Model):
     class Meta:
         verbose_name = "Membresía de Club"
         verbose_name_plural = "Membresías de Clubes"
-        unique_together = ['club', 'institucion']
-        ordering = ['-fecha_solicitud']
+        unique_together = ["club", "institucion"]
+        ordering = ["-fecha_solicitud"]
 
     def __str__(self):
         return f"{self.institucion.nombre} -> {self.club.nombre} ({self.estado})"
@@ -826,22 +848,28 @@ class InscripcionGrupoEvento(models.Model):
     """Modelo para inscripción de grupos a eventos."""
 
     ROL_CHOICES = [
-        ('participante', 'Participante'),
-        ('expositor', 'Expositor'),
-        ('competidor', 'Competidor'),
+        ("participante", "Participante"),
+        ("expositor", "Expositor"),
+        ("competidor", "Competidor"),
     ]
 
-    evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name='inscripciones_grupo')
-    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='inscripciones')
-    rol_participacion = models.CharField(max_length=20, choices=ROL_CHOICES, default='participante')
+    evento = models.ForeignKey(
+        Evento, on_delete=models.CASCADE, related_name="inscripciones_grupo"
+    )
+    grupo = models.ForeignKey(
+        Grupo, on_delete=models.CASCADE, related_name="inscripciones"
+    )
+    rol_participacion = models.CharField(
+        max_length=20, choices=ROL_CHOICES, default="participante"
+    )
     fecha_inscripcion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Inscripción Grupo-Evento"
         verbose_name_plural = "Inscripciones Grupo-Evento"
-        unique_together = ['evento', 'grupo']
-        ordering = ['-fecha_inscripcion']
+        unique_together = ["evento", "grupo"]
+        ordering = ["-fecha_inscripcion"]
 
     def __str__(self):
         return f"{self.grupo.nombre} -> {self.evento.nombre}"

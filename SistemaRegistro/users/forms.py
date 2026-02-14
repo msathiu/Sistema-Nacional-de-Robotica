@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-
+from django.core.exceptions import ValidationError
+import re
 import uuid
 
 from registry.models import (
@@ -73,6 +74,42 @@ class ParticipanteRegistrationForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
         self.fields["estado"].queryset = Estado.objects.all().order_by("nombre")
         self.fields["municipio"].queryset = Municipio.objects.none()
+
+    def clean_cedula(self):
+        cedula = self.cleaned_data.get("cedula", "").strip().upper()
+        if not re.match(r"^[VE]\d{6,8}$", cedula):
+            raise ValidationError("Cédula inválida. Formato: V12345678 o E12345678")
+        return cedula
+
+    def clean_nombres(self):
+        nombres = self.cleaned_data.get("nombres", "").strip()
+        if not re.match(r"^[a-zA-ZÁ-ú\s]+$", nombres):
+            raise ValidationError("El nombre solo puede contener letras.")
+        if len(nombres) > 100:
+            raise ValidationError("El nombre es demasiado largo.")
+        return nombres
+
+    def clean_apellidos(self):
+        apellidos = self.cleaned_data.get("apellidos", "").strip()
+        if not re.match(r"^[a-zA-ZÁ-ú\s]+$", apellidos):
+            raise ValidationError("El apellido solo puede contener letras.")
+        if len(apellidos) > 100:
+            raise ValidationError("El apellido es demasiado largo.")
+        return apellidos
+
+    def clean_numero_telefono(self):
+        numero = self.cleaned_data.get("numero_telefono", "").strip()
+        if not numero.isdigit() or len(numero) != 7:
+            raise ValidationError("El número debe tener exactamente 7 dígitos.")
+        return numero
+
+    def clean_direccion(self):
+        direccion = self.cleaned_data.get("direccion", "").strip()
+        if len(direccion) > 500:
+            raise ValidationError("La dirección es demasiado larga.")
+        if re.search(r'[<>"\']', direccion):
+            raise ValidationError("La dirección contiene caracteres no permitidos.")
+        return direccion
 
 
 class InstitucionRegistrationForm(forms.ModelForm):
@@ -179,11 +216,45 @@ class InstitucionRegistrationForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
+        # Sanitizar y validar campos de texto
+        nombre = (cleaned_data.get("nombre") or "").strip()
+        if nombre:
+            if len(nombre) > 255:
+                self.add_error("nombre", "El nombre no puede exceder 255 caracteres.")
+            if re.search(r'[<>"\']', nombre):
+                self.add_error("nombre", "El nombre contiene caracteres no permitidos.")
+            cleaned_data["nombre"] = nombre
+
+        # Validar email
+        email = cleaned_data.get("email")
+        if email and Institucion.objects.filter(email=email).exists():
+            self.add_error("email", "Este correo ya está registrado.")
+
+        # Validar dirección
+        direccion = (cleaned_data.get("direccion") or "").strip()
+        if direccion:
+            if len(direccion) > 500:
+                self.add_error(
+                    "direccion", "La dirección no puede exceder 500 caracteres."
+                )
+            cleaned_data["direccion"] = direccion
+
         tipo = cleaned_data.get("tipo_institucion")
         naturaleza = cleaned_data.get("naturaleza")
         subcategoria = (cleaned_data.get("subcategoria") or "").strip().lower()
         dependencia = cleaned_data.get("dependencia_existente")
         nueva_dependencia = (cleaned_data.get("nueva_dependencia") or "").strip()
+
+        # Sanitizar nueva_dependencia
+        if nueva_dependencia:
+            if len(nueva_dependencia) > 255:
+                self.add_error(
+                    "nueva_dependencia", "El nombre de la dependencia es muy largo."
+                )
+            if re.search(r'[<>"\']', nueva_dependencia):
+                self.add_error(
+                    "nueva_dependencia", "Contiene caracteres no permitidos."
+                )
 
         rif_letra = cleaned_data.get("rif_letra")
         rif_numero = (cleaned_data.get("rif_numero") or "").strip().replace("-", "")
@@ -193,27 +264,49 @@ class InstitucionRegistrationForm(forms.ModelForm):
         password = cleaned_data.get("password") or ""
         confirm_password = cleaned_data.get("confirm_password") or ""
 
+        # Validar tipo de institución
+        if tipo not in dict(Institucion.TIPO_INSTITUCION_CHOICES):
+            self.add_error("tipo_institucion", "Tipo de institución inválido.")
+
         if tipo in {"educativa", "otra"} and not naturaleza:
             self.add_error("naturaleza", "Debe seleccionar la naturaleza.")
+
+        if naturaleza and naturaleza not in dict(Institucion.NATURALEZA_CHOICES):
+            self.add_error("naturaleza", "Naturaleza inválida.")
 
         if tipo == "educativa" and subcategoria not in {
             key for key, _ in self.SUBCATEGORIAS_EDUCATIVA
         }:
-            self.add_error("subcategoria", "Seleccione una subcategoria educativa valida.")
+            self.add_error(
+                "subcategoria", "Seleccione una subcategoria educativa valida."
+            )
 
-        if tipo == "otra" and naturaleza == "privada" and subcategoria not in {
-            key for key, _ in self.SUBCATEGORIAS_OTRA_PRIVADA
-        }:
+        if (
+            tipo == "otra"
+            and naturaleza == "privada"
+            and subcategoria not in {key for key, _ in self.SUBCATEGORIAS_OTRA_PRIVADA}
+        ):
             self.add_error("subcategoria", "Seleccione una subcategoria valida.")
 
-        if tipo == "otra" and naturaleza == "publica" and not (dependencia or nueva_dependencia):
+        if (
+            tipo == "otra"
+            and naturaleza == "publica"
+            and not (dependencia or nueva_dependencia)
+        ):
             self.add_error(
                 "dependencia_existente",
                 "Debe seleccionar o crear una dependencia publica.",
             )
 
+        # Validar RIF letra
+        if rif_letra not in ["J", "G", "V", "E"]:
+            self.add_error("rif_letra", "Letra de RIF inválida.")
+
+        # Validar RIF número
         if not rif_numero.isdigit() or len(rif_numero) != 9:
-            self.add_error("rif_numero", "El RIF debe tener 9 dígitos (8 + 1 verificador).")
+            self.add_error(
+                "rif_numero", "El RIF debe tener 9 dígitos (8 + 1 verificador)."
+            )
 
         if tipo == "educativa":
             if f"{rif_letra}-{rif_numero[:8]}-{rif_numero[8]}" != "G-20000009-0":
@@ -221,19 +314,30 @@ class InstitucionRegistrationForm(forms.ModelForm):
             if not cleaned_data.get("codigo_mppe"):
                 self.add_error("codigo_mppe", "El codigo MPPE es obligatorio.")
 
-        if not codigo_area:
-            self.add_error("codigo_area", "Seleccione un codigo de operadora.")
+        # Validar código de área
+        if not codigo_area or codigo_area not in [
+            c[0] for c in self.CODIGO_AREA_CHOICES if c[0]
+        ]:
+            self.add_error("codigo_area", "Seleccione un codigo de operadora válido.")
 
+        # Validar número de teléfono
         if not numero_telefono.isdigit() or len(numero_telefono) != 7:
-            self.add_error("numero_telefono", "El numero debe tener 7 digitos.")
+            self.add_error(
+                "numero_telefono", "El numero debe tener exactamente 7 dígitos."
+            )
 
+        # Validar contraseña
         if len(password) < 8:
-            self.add_error("password", "La contrasena debe tener al menos 8 caracteres.")
+            self.add_error(
+                "password", "La contrasena debe tener al menos 8 caracteres."
+            )
+        if len(password) > 128:
+            self.add_error("password", "La contrasena es demasiado larga.")
         if not any(ch.isupper() for ch in password):
             self.add_error("password", "Debe incluir al menos una letra mayuscula.")
         if not any(ch.isdigit() for ch in password):
             self.add_error("password", "Debe incluir al menos un numero.")
-        if not any(ch in "!@#$%^&*(),.?\":{}|<>" for ch in password):
+        if not any(ch in '!@#$%^&*(),.?":{}|<>' for ch in password):
             self.add_error("password", "Debe incluir al menos un caracter especial.")
 
         if password != confirm_password:
@@ -261,12 +365,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
         # Nuevo flujo: el estado federado se gestiona como booleano (si/no).
         # Por defecto siempre se registra en False (No) hasta revision/aprobacion interna.
         instance.federado = False
-        
+
         # IMPORTANTE: Asegurar que las instituciones nuevas estén desactivadas por defecto
         # Solo el admin puede activarlas desde el panel de administración
         if not instance.pk:  # Si es una nueva institución
             instance.activa = False
-            instance.estatus = 'pendiente'
+            instance.estatus = "pendiente"
 
         dependencia = self.cleaned_data.get("dependencia_existente")
         nueva_dependencia = (self.cleaned_data.get("nueva_dependencia") or "").strip()
@@ -286,24 +390,31 @@ class InstitucionRegistrationForm(forms.ModelForm):
 class ClubRegistrationForm(forms.ModelForm):
     class Meta:
         model = Club
-        fields = ['nombre', 'descripcion', 'ubicacion', 'linea_1', 'linea_2', 'linea_3']
+        fields = ["nombre", "descripcion", "ubicacion", "linea_1", "linea_2", "linea_3"]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robotica "Simon Rodriguez"'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
-            'linea_1': forms.Select(attrs={'class': 'form-select'}),
-            'linea_2': forms.Select(attrs={'class': 'form-select'}),
-            'linea_3': forms.Select(attrs={'class': 'form-select'}),
+            "nombre": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": 'Ej: Club de Robotica "Simon Rodriguez"',
+                }
+            ),
+            "descripcion": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "ubicacion": forms.TextInput(attrs={"class": "form-control"}),
+            "linea_1": forms.Select(attrs={"class": "form-select"}),
+            "linea_2": forms.Select(attrs={"class": "form-select"}),
+            "linea_3": forms.Select(attrs={"class": "form-select"}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        l1 = cleaned_data.get('linea_1')
-        l2 = cleaned_data.get('linea_2')
-        l3 = cleaned_data.get('linea_3')
+        l1 = cleaned_data.get("linea_1")
+        l2 = cleaned_data.get("linea_2")
+        l3 = cleaned_data.get("linea_3")
 
         lineas = [l for l in [l1, l2, l3] if l]
         if len(lineas) != len(set(lineas)):
-            raise forms.ValidationError("No puedes seleccionar la misma linea de investigacion mas de una vez.")
+            raise forms.ValidationError(
+                "No puedes seleccionar la misma linea de investigacion mas de una vez."
+            )
 
         return cleaned_data

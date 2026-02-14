@@ -54,4 +54,3 @@ for user in User.objects.all():
         print(f"  → Perfil creado")
 
 exit()
-

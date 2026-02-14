@@ -1,7 +1,7 @@
 services:
+  # --- BASE DE DATOS ---
   db:
     image: postgres:15-alpine
-    
     volumes:
       - postgres_data:/var/lib/postgresql/data
     env_file:
@@ -10,6 +10,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # [CAMBIO PRODUCCIÓN]: Eliminar completamente la sección 'ports'.
+    # Solo debe usarse en desarrollo para conectar herramientas como DBeaver.
     ports:
       - "5433:5432"
     healthcheck:
@@ -18,12 +20,18 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- APLICACIÓN DJANGO ---
   web:
     build:
       context: .
       dockerfile: Dockerfile
+      # [CAMBIO PRODUCCIÓN]: Cambiar 'development' por 'production'.
+      # Esto activa la imagen ligera, sin GCC y con usuario no-root.
+      target: development
     image: sistema-registro-web:latest
     volumes:
+      # [CAMBIO PRODUCCIÓN]: ELIMINAR la línea de abajo (./SistemaRegistro:/app).
+      # En producción, el código debe ser inmutable y estar dentro de la imagen.
       - ./SistemaRegistro:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
@@ -38,10 +46,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # [CAMBIO PRODUCCIÓN]: ELIMINAR la línea 'command' de abajo.
+    # El Dockerfile ya tiene configurado Gunicorn para la etapa de producción.
     command: python manage.py runserver 0.0.0.0:8000
 
+# --- VOLÚMENES PERSISTENTES ---
 volumes:
-  postgres_data:  
+  postgres_data:
   static_volume:
   media_volume:
-

@@ -8,7 +8,6 @@ from .models import Dependencia, Estado, Institucion, Municipio, Parroquia, Part
 from django.contrib.admin.exceptions import NotRegistered
 
 
-
 @admin.register(Estado)
 class EstadoAdmin(admin.ModelAdmin):
     list_display = ("id", "nombre", "codigo")
@@ -133,7 +132,10 @@ def aprobar_registros(modeladmin, request, queryset):
     for institucion in queryset:
         if institucion.aprobar_y_generar_codigo():
             count += 1
-    modeladmin.message_user(request, f"Se han aprobado {count} instituciones correctamente.")
+    modeladmin.message_user(
+        request, f"Se han aprobado {count} instituciones correctamente."
+    )
+
 
 # 2. Intentamos desregistrar para evitar el error AlreadyRegistered
 try:
@@ -143,47 +145,116 @@ except NotRegistered:
 
 # 3. Registramos formalmente
 
+
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'tipo_institucion', 'naturaleza', 'rif', 'email', 'estado', 'activa', 'federado')
-    readonly_fields = ('codigo', 'fecha_registro')
-    exclude = ('tipo_federado',)
-    list_filter = ('estatus', 'activa', 'federado', 'estado', 'tipo_institucion', 'naturaleza')
-    search_fields = ('nombre', 'codigo', 'email', 'rif', 'codigo_mppe')
-    actions = ['aprobar_instituciones', 'exportar_excel']
-    
+    list_display = (
+        "codigo",
+        "nombre",
+        "tipo_institucion",
+        "naturaleza",
+        "rif",
+        "email",
+        "estado",
+        "activa",
+        "federado",
+    )
+    readonly_fields = ("codigo", "fecha_registro")
+    exclude = ("tipo_federado",)
+    list_filter = (
+        "estatus",
+        "activa",
+        "federado",
+        "estado",
+        "tipo_institucion",
+        "naturaleza",
+    )
+    search_fields = ("nombre", "codigo", "email", "rif", "codigo_mppe")
+    actions = ["aprobar_instituciones", "exportar_excel"]
+
     fieldsets = (
-        ('Identificación del Sistema', {'fields': ('codigo', 'fecha_registro')}),
-        ('Datos de Identificación Institucional', {'fields': ('tipo_institucion', 'naturaleza', 'subcategoria', 'dependencia', 'dependencia_rel')}),
-        ('Información General', {'fields': ('nombre', 'rif', 'codigo_mppe', 'federado', 'email', 'telefono')}),
-        ('Ubicación Geográfica', {'fields': ('estado', 'municipio', 'parroquia', 'direccion')}),
-        ('Estado de la Cuenta', {'fields': ('estatus', 'activa', 'eliminado')}),
+        ("Identificación del Sistema", {"fields": ("codigo", "fecha_registro")}),
+        (
+            "Datos de Identificación Institucional",
+            {
+                "fields": (
+                    "tipo_institucion",
+                    "naturaleza",
+                    "subcategoria",
+                    "dependencia",
+                    "dependencia_rel",
+                )
+            },
+        ),
+        (
+            "Información General",
+            {
+                "fields": (
+                    "nombre",
+                    "rif",
+                    "codigo_mppe",
+                    "federado",
+                    "email",
+                    "telefono",
+                )
+            },
+        ),
+        (
+            "Ubicación Geográfica",
+            {"fields": ("estado", "municipio", "parroquia", "direccion")},
+        ),
+        ("Estado de la Cuenta", {"fields": ("estatus", "activa", "eliminado")}),
     )
 
     def aprobar_instituciones(self, request, queryset):
         count = 0
-        for inst in queryset.filter(estatus='pendiente'):
+        for inst in queryset.filter(estatus="pendiente"):
             inst.activa = True
-            inst.estatus = 'aprobado'
+            inst.estatus = "aprobado"
             inst.save()
             count += 1
-        self.message_user(request, f"{count} instituciones han sido aprobadas y sus códigos RNR generados.")
+        self.message_user(
+            request,
+            f"{count} instituciones han sido aprobadas y sus códigos RNR generados.",
+        )
+
     aprobar_instituciones.short_description = "✅ Aprobar y generar códigos RNR"
-    
+
     def exportar_excel(self, request, queryset):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Instituciones"
-        
+
         # Encabezados
-        headers = ['Código', 'Nombre', 'Tipo', 'Naturaleza', 'Subcategoría', 'Dependencia', 'RIF', 'Código MPPE', 'Email', 'Teléfono', 'Estado', 'Municipio', 'Parroquia', 'Dirección', 'Activa', 'Federado', 'Estatus', 'Fecha Registro']
+        headers = [
+            "Código",
+            "Nombre",
+            "Tipo",
+            "Naturaleza",
+            "Subcategoría",
+            "Dependencia",
+            "RIF",
+            "Código MPPE",
+            "Email",
+            "Teléfono",
+            "Estado",
+            "Municipio",
+            "Parroquia",
+            "Dirección",
+            "Activa",
+            "Federado",
+            "Estatus",
+            "Fecha Registro",
+        ]
         ws.append(headers)
-        
+
         # Estilo encabezados
         for cell in ws[1]:
             cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-        
+            cell.fill = PatternFill(
+                start_color="4472C4", end_color="4472C4", fill_type="solid"
+            )
+
         # Datos
         for inst in queryset:
             # Obtener nombre de dependencia
@@ -192,36 +263,42 @@ class InstitucionAdmin(admin.ModelAdmin):
             elif inst.dependencia_rel:
                 dependencia_nombre = inst.dependencia_rel.nombre
             else:
-                dependencia_nombre = ''
-            
+                dependencia_nombre = ""
+
             # Obtener teléfono completo
-            telefono_completo = ''
+            telefono_completo = ""
             if inst.telefono_codigo and inst.telefono_numero:
                 telefono_completo = f"{inst.telefono_codigo}-{inst.telefono_numero}"
             elif inst.telefono:
                 telefono_completo = inst.telefono
-            
-            ws.append([
-                inst.codigo,
-                inst.nombre,
-                inst.get_tipo_institucion_display() if inst.tipo_institucion else '',
-                inst.get_naturaleza_display() if inst.naturaleza else '',
-                inst.subcategoria or '',
-                dependencia_nombre,
-                inst.rif or '',
-                inst.codigo_mppe or '',
-                inst.email,
-                telefono_completo,
-                inst.estado.nombre if inst.estado else '',
-                inst.municipio.nombre if inst.municipio else '',
-                inst.parroquia.nombre if inst.parroquia else '',
-                inst.direccion or '',
-                'Sí' if inst.activa else 'No',
-                'Sí' if inst.federado else 'No',
-                inst.get_estatus_display() if inst.estatus else '',
-                inst.fecha_registro.strftime('%d/%m/%Y %H:%M') if inst.fecha_registro else ''
-            ])
-        
+
+            ws.append(
+                [
+                    inst.codigo,
+                    inst.nombre,
+                    inst.get_tipo_institucion_display()
+                    if inst.tipo_institucion
+                    else "",
+                    inst.get_naturaleza_display() if inst.naturaleza else "",
+                    inst.subcategoria or "",
+                    dependencia_nombre,
+                    inst.rif or "",
+                    inst.codigo_mppe or "",
+                    inst.email,
+                    telefono_completo,
+                    inst.estado.nombre if inst.estado else "",
+                    inst.municipio.nombre if inst.municipio else "",
+                    inst.parroquia.nombre if inst.parroquia else "",
+                    inst.direccion or "",
+                    "Sí" if inst.activa else "No",
+                    "Sí" if inst.federado else "No",
+                    inst.get_estatus_display() if inst.estatus else "",
+                    inst.fecha_registro.strftime("%d/%m/%Y %H:%M")
+                    if inst.fecha_registro
+                    else "",
+                ]
+            )
+
         # Ajustar ancho columnas
         for column in ws.columns:
             max_length = 0
@@ -230,10 +307,15 @@ class InstitucionAdmin(admin.ModelAdmin):
                 if cell.value:
                     max_length = max(max_length, len(str(cell.value)))
             ws.column_dimensions[column_letter].width = min(max_length + 2, 50)
-        
+
         # Respuesta HTTP
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="instituciones_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response[
+            "Content-Disposition"
+        ] = f'attachment; filename="instituciones_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
         wb.save(response)
         return response
+
     exportar_excel.short_description = "⬇️ Exportar a Excel"

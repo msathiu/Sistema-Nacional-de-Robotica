@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0007_dependencia_institucion_categoria_and_more'),
+        ("registry", "0007_dependencia_institucion_categoria_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='institucion',
-            name='federado',
-            field=models.BooleanField(default=False, verbose_name='Federado'),
+            model_name="institucion",
+            name="federado",
+            field=models.BooleanField(default=False, verbose_name="Federado"),
         ),
     ]

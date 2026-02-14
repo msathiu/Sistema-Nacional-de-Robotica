@@ -1,46 +1,63 @@
 services:
+  # --- BASE DE DATOS ---
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     env_file: .env
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     restart: always
+    # [PRODUCCIÓN]: Eliminar estos puertos. La DB debe ser privada.
+    ports:
+      - "5433:5432"
 
+  # --- APLICACIÓN DJANGO ---
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # [PRODUCCIÓN]: Cambiar 'development' por 'production'
+      target: development
+    image: sistema-registro-web:dev
     env_file: .env
     volumes:
+      # [PRODUCCIÓN]: ELIMINAR el volumen de código fuente (./SistemaRegistro:/app)
       - ./SistemaRegistro:/app
-      # - static_volume:/app/static
       - media_volume:/app/media
-      - ./SistemaRegistro/staticfiles:/app/staticfiles
+      - static_volume:/app/staticfiles
     depends_on:
       - db
     restart: always
+    # [PRODUCCIÓN]: Eliminar puertos si usas Nginx como proxy inverso.
+    # En desarrollo los dejas para entrar a http://localhost:8000
+    ports:
+      - "8000:8000"
 
+  # --- PROXY INVERSO (NGINX) ---
+  # En desarrollo puedes comentar todo el bloque de Nginx y Certbot si prefieres
+  # entrar directo por el puerto 8000, o dejarlo para probar el flujo real.
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      # - ../test:/var/www/test
-      # - static_volume:/app/static
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-      - media_volume:/app/media
-      - ./SistemaRegistro/staticfiles:/app/staticfiles
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
     depends_on:
       - web
     restart: always
 
+  # --- SSL AUTOMÁTICO ---
   certbot:
     image: certbot/certbot
     volumes:
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
 
+# --- VOLÚMENES ---
 volumes:
   static_volume:
   media_volume:

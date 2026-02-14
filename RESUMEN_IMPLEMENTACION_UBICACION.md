@@ -198,6 +198,6 @@ Incluye:
 
 ---
 
-**Fecha**: 2025  
-**Django**: 5.2.6  
+**Fecha**: 2025
+**Django**: 5.2.6
 **Estado**: ✅ COMPLETADO

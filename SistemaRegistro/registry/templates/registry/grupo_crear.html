@@ -18,7 +18,7 @@
 
     <form method="POST" id="formGrupo">
         {% csrf_token %}
-        
+
         <!-- Sección 1: Datos del Grupo -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
@@ -151,12 +151,12 @@ function eliminarParticipante(btn) {
 function buscarParticipante(btn) {
     const card = btn.closest('.participante-card');
     const cedula = card.querySelector('.cedula-participante').value;
-    
+
     if (!cedula) {
         alert('Ingrese una cédula');
         return;
     }
-    
+
     fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {

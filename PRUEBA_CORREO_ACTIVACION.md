@@ -68,7 +68,7 @@ python manage.py runserver
    ```bash
    tail -f SistemaRegistro/logs/django.log
    ```
-   
+
    Deberías ver:
    ```
    INFO Activación detectada para [Nombre Institución]...
@@ -92,11 +92,11 @@ if inst:
     print(f"Email: {inst.email}")
     print(f"Código actual: {inst.codigo}")
     print(f"Activa: {inst.activa}")
-    
+
     # Activar la institución
     inst.activa = True
     inst.save()
-    
+
     print(f"\n✅ Institución activada")
     print(f"Nuevo código: {inst.codigo}")
     print(f"Verifica tu inbox de Mailtrap")
@@ -118,10 +118,10 @@ inst = Institucion.objects.filter(activa=True).first()
 
 if inst:
     print(f"Probando envío de correo a: {inst.email}")
-    
+
     # Enviar correo directamente
     resultado = inst.enviar_correo_activacion()
-    
+
     if resultado:
         print("✅ Correo enviado exitosamente")
     else:

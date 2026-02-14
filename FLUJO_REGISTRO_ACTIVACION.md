@@ -87,7 +87,7 @@ from registry.models import Institucion
 print("Señales post_save:")
 for receiver in post_save.receivers:
     print(f"  - {receiver}")
-    
+
 # Debe mostrar las funciones de señales
 ```
 
@@ -103,7 +103,7 @@ if inst:
     print(f"Institución: {inst.nombre}")
     print(f"Código: {inst.codigo}")
     print(f"Activa: {inst.activa}")
-    
+
     if inst.usuario:
         print(f"Username: {inst.usuario.username}")
         print(f"User.is_active: {inst.usuario.is_active}")

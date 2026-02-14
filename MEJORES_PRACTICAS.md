@@ -117,13 +117,13 @@ def crear_participante_completo(datos):
 class Participante(models.Model):
     """
     Modelo para representar participantes del sistema.
-    
+
     Attributes:
         cedula: Cédula de identidad venezolana
         nombres: Nombres del participante
         edad: Propiedad calculada que retorna la edad actual
     """
-    
+
     @property
     def edad(self):
         """Calcula y retorna la edad actual del participante."""
@@ -138,7 +138,7 @@ class Participante(models.Model):
 def clean(self):
     """Valida los datos del modelo antes de guardar."""
     super().clean()
-    
+
     if self.fecha_nacimiento:
         if self.edad < 4:
             raise ValidationError({
@@ -182,7 +182,7 @@ class ParticipanteForm(forms.ModelForm):
         if Participante.objects.filter(cedula=cedula).exists():
             raise ValidationError("Esta cédula ya está registrada")
         return cedula
-    
+
     def clean(self):
         cleaned_data = super().clean()
         # Validaciones que involucran múltiples campos
@@ -280,12 +280,12 @@ class ParticipanteModelTest(TestCase):
             apellidos="Pérez",
             fecha_nacimiento=date(2010, 1, 1)
         )
-    
+
     def test_edad_calculada_correctamente(self):
         """Verifica que la edad se calcule correctamente"""
         edad_esperada = date.today().year - 2010
         self.assertEqual(self.participante.edad, edad_esperada)
-    
+
     def test_validacion_edad_minima(self):
         """Verifica que no se permitan menores de 4 años"""
         participante = Participante(
@@ -304,7 +304,7 @@ class VistaParticipanteTest(TestCase):
         """Verifica que la vista requiera autenticación"""
         response = self.client.get('/participantes/')
         self.assertEqual(response.status_code, 302)  # Redirect a login
-    
+
     def test_crear_participante_exitoso(self):
         """Verifica la creación exitosa de un participante"""
         self.client.login(username='test', password='test123')
@@ -328,22 +328,22 @@ class VistaParticipanteTest(TestCase):
 def funcion_compleja(parametro1, parametro2, opcional=None):
     """
     Descripción breve de la función.
-    
+
     Descripción más detallada si es necesario, explicando
     el propósito y comportamiento de la función.
-    
+
     Args:
         parametro1 (str): Descripción del parámetro 1
         parametro2 (int): Descripción del parámetro 2
         opcional (bool, optional): Descripción del parámetro opcional.
             Defaults to None.
-    
+
     Returns:
         dict: Descripción del valor retornado
-        
+
     Raises:
         ValueError: Cuándo y por qué se lanza esta excepción
-        
+
     Example:
         >>> resultado = funcion_compleja("test", 42)
         >>> print(resultado)
@@ -499,5 +499,5 @@ logger.critical("Base de datos no disponible")
 
 ---
 
-**Última actualización:** Febrero 2026  
+**Última actualización:** Febrero 2026
 **Mantenido por:** Equipo de Desarrollo SNR

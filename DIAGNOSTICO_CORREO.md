@@ -69,9 +69,9 @@ if inst:
     print("\n=== PROBANDO ENVÍO DE CORREO ===")
     print(f"Institución: {inst.nombre}")
     print(f"Email: {inst.email}")
-    
+
     resultado = inst.enviar_correo_activacion()
-    
+
     if resultado:
         print("✅ Correo enviado exitosamente")
         print("📬 Revisa tu inbox de Mailtrap")
@@ -97,26 +97,26 @@ if inst:
     print(f"Institución: {inst.nombre}")
     print(f"Código actual: {inst.codigo}")
     print(f"Activa: {inst.activa}")
-    
+
     if inst.usuario:
         print(f"Username: {inst.usuario.username}")
         print(f"User.is_active: {inst.usuario.is_active}")
-    
+
     # Activar
     print("\n⚡ Activando...")
     inst.activa = True
     inst.save()
-    
+
     # Verificar
     inst.refresh_from_db()
     print(f"\n✅ Después de activar:")
     print(f"Código: {inst.codigo}")
     print(f"Activa: {inst.activa}")
-    
+
     if inst.usuario:
         print(f"Username: {inst.usuario.username}")
         print(f"User.is_active: {inst.usuario.is_active}")
-    
+
     print("\n📬 Verifica Mailtrap para el correo")
 else:
     print("No hay instituciones inactivas para probar")
