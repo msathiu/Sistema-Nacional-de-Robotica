@@ -1,6 +1,5 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_http_methods
 
 from .forms import InstitucionForm
 from .models import Municipio, Parroquia

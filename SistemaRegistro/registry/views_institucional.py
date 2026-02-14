@@ -1,21 +1,21 @@
 """Vistas para el módulo institucional de gestión de grupos, eventos y clubes."""
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Q
-from django.http import JsonResponse
-from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Count
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 from .models import (
-    Grupo,
-    Participante,
-    Evento,
     Club,
-    MembresiaClu,
+    Evento,
+    Grupo,
     InscripcionGrupoEvento,
-    Institucion,
+    MembresiaClu,
+    Participante,
 )
 
 
@@ -136,6 +136,7 @@ def ver_grupo(request, grupo_id):
 
 
 @login_required
+@require_http_methods(["POST"])
 def eliminar_grupo(request, grupo_id):
     """Eliminar un grupo (solo si está editable)."""
     if request.method == "POST":
