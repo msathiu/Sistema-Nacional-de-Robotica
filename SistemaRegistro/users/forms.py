@@ -261,6 +261,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
         # Nuevo flujo: el estado federado se gestiona como booleano (si/no).
         # Por defecto siempre se registra en False (No) hasta revision/aprobacion interna.
         instance.federado = False
+        
+        # IMPORTANTE: Asegurar que las instituciones nuevas estén desactivadas por defecto
+        # Solo el admin puede activarlas desde el panel de administración
+        if not instance.pk:  # Si es una nueva institución
+            instance.activa = False
+            instance.estatus = 'pendiente'
 
         dependencia = self.cleaned_data.get("dependencia_existente")
         nueva_dependencia = (self.cleaned_data.get("nueva_dependencia") or "").strip()

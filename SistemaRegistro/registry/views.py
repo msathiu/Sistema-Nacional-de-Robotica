@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_http_methods
 
 from .forms import InstitucionForm
 from .models import Municipio, Parroquia
@@ -25,15 +26,25 @@ def load_municipios(request):
 
 
 def cargar_municipios(request):
-    estado_id = request.GET.get("estado_id")
-    municipios = Municipio.objects.filter(estado_id=estado_id).order_by("nombre")
-    return JsonResponse(list(municipios.values("id", "nombre")), safe=False)
+    try:
+        estado_id = int(request.GET.get("estado_id", 0))
+        if estado_id <= 0:
+            return JsonResponse([], safe=False)
+        municipios = Municipio.objects.filter(estado_id=estado_id).order_by("nombre")
+        return JsonResponse(list(municipios.values("id", "nombre")), safe=False)
+    except (ValueError, TypeError):
+        return JsonResponse([], safe=False)
 
 
 def cargar_parroquias(request):
-    municipio_id = request.GET.get("municipio_id")
-    parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by("nombre")
-    return JsonResponse(list(parroquias.values("id", "nombre")), safe=False)
+    try:
+        municipio_id = int(request.GET.get("municipio_id", 0))
+        if municipio_id <= 0:
+            return JsonResponse([], safe=False)
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by("nombre")
+        return JsonResponse(list(parroquias.values("id", "nombre")), safe=False)
+    except (ValueError, TypeError):
+        return JsonResponse([], safe=False)
 
 
 def registro_institucion(

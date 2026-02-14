@@ -17,13 +17,14 @@ class Command(createsuperuser.Command):
             
             try:
                 user = User.objects.get(username=username)
-                # Crear o actualizar el perfil con tipo superusuario
-                UserProfile.objects.update_or_create(
-                    user=user,
-                    defaults={'user_type': 'superuser'}
-                )
-                self.stdout.write(
-                    self.style.SUCCESS(f'Perfil de superusuario creado para {username}')
-                )
+                # Actualizar el perfil (la señal ya lo creó)
+                if hasattr(user, 'userprofile'):
+                    profile = user.userprofile
+                    if profile.user_type != 'superuser':
+                        profile.user_type = 'superuser'
+                        profile.save()
+                    self.stdout.write(
+                        self.style.SUCCESS(f'Perfil de superusuario configurado para {username}')
+                    )
             except User.DoesNotExist:
                 raise CommandError(f'Usuario {username} no encontrado')

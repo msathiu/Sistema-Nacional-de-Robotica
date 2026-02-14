@@ -10,10 +10,15 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- SEGURIDAD ---
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-change-me")
-
-# DEBUG debe ser False por defecto por seguridad extrema
+# DEBUG debe cargarse PRIMERO para usarlo en SECRET_KEY
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY or SECRET_KEY == "django-insecure-default-change-me":
+    if DEBUG:
+        SECRET_KEY = "django-insecure-dev-key-only"
+    else:
+        raise ValueError("SECRET_KEY debe estar configurada en producción")
 
 # Manejo de Hosts dinámico y limpio
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -57,6 +62,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Middlewares de seguridad personalizados
+    "users.middleware.RateLimitMiddleware",
+    "users.middleware.SecurityHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "SistemaRegistro.urls"
@@ -136,19 +144,13 @@ EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND",
     "django.core.mail.backends.smtp.EmailBackend",
 )
-# EMAIL_HOST = os.getenv("EMAIL_HOST", "sandbox.smtp.mailtrap.io")
-# EMAIL_PORT = int(os.getenv("EMAIL_PORT", "2525"))
-# EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-# EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-# EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
-# EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
-# DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "registro@fvrc.org.ve")
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "sandbox.smtp.mailtrap.io"
-EMAIL_PORT = 2525
-EMAIL_HOST_USER = "470a7efaa47e40"
-EMAIL_HOST_PASSWORD = "d8db3ff41a57f4"
-DEFAULT_FROM_EMAIL = "registro@fvrc.org.ve"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "sandbox.smtp.mailtrap.io")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "2525"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "registro@fvrc.org.ve")
 
 # --- VARIABLES GLOBALES DEL SISTEMA ---
 SITE_NAME = "Registro Nacional para Robótica Creativa"
@@ -165,12 +167,21 @@ if not DEBUG:
     USE_X_FORWARDED_HOST = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict'
+    CSRF_COOKIE_SAMESITE = 'Strict'
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
+else:
+    # Configuraciones de desarrollo
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # --- CREAR CARPETA DE LOGS SI NO EXISTE ---
 LOGS_DIR = BASE_DIR / "logs"
@@ -223,15 +234,13 @@ LOGGING = {
 
 
 # --- CONFIGURACIÓN JAZZMIN (ADMIN PROFESIONAL) ---
-
-# --- CONFIGURACIÓN JAZZMIN (ADMIN PROFESIONAL) ---
 JAZZMIN_SETTINGS = {
     "site_title": "SNR Admin",
     "site_header": "Sistema Nacional de Robótica",
     "site_brand": "SNR-PRO",
     "site_logo": None,
     "welcome_sign": "Bienvenido al Panel de Administración",
-    "copyright": "MINCYT - Sistema Nacional de Robótica",
+    "copyright": "FVRC - Federación Venezolana de Robótica Creativa",
     
     "show_sidebar": True,
     "navigation_expanded": True,
@@ -273,20 +282,6 @@ JAZZMIN_UI_TWEAKS = {
     "brand_colour": "navbar-primary",
     "accent": "accent-primary",
     "navbar": "navbar-dark",
-    "navbar_fixed": True,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
-    "theme": "flatly",
-}
-
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-primary",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark",
     "no_navbar_border": False,
     "navbar_fixed": True,
     "layout_boxed": False,
@@ -310,3 +305,13 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success",
     },
 }
+
+# --- CONFIGURACIÓN PARA DOCKER Y POSTGRESQL ---
+# Configuración de cache para desarrollo con Docker
+if DEBUG:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }

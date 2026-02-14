@@ -48,11 +48,10 @@ class Command(BaseCommand):
             is_active=True
         )
         
-        # Crear perfil manualmente (sin señales)
-        UserProfile.objects.create(
-            user=user,
-            user_type='admin'
-        )
+        # Actualizar perfil (la señal ya lo creó automáticamente)
+        profile = UserProfile.objects.get(user=user)
+        profile.user_type = 'admin'
+        profile.save()
         
         self.stdout.write(self.style.SUCCESS(f'✅ Usuario administrador "{username}" creado exitosamente'))
         self.stdout.write(f'   📧 Email: {email}')

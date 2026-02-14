@@ -458,12 +458,14 @@
     if (tipo === 'educativa') {
       rifLetra.value = 'G';
       rifNumero.value = '20000009-0';
-      rifLetra.setAttribute('disabled', 'disabled');
+      rifLetra.style.pointerEvents = 'none';
+      rifLetra.style.opacity = '0.6';
       rifNumero.setAttribute('readonly', 'readonly');
       codigoMppe.setAttribute('required', 'required');
       codigoMppeLabel.classList.add('required');
     } else {
-      rifLetra.removeAttribute('disabled');
+      rifLetra.style.pointerEvents = '';
+      rifLetra.style.opacity = '';
       rifNumero.removeAttribute('readonly');
       codigoMppe.removeAttribute('required');
       codigoMppeLabel.classList.remove('required');
@@ -497,13 +499,14 @@
 
     if (!estadoId) return;
 
-    fetch(`{% url 'ajax_cargar_municipios' %}?estado_id=${estadoId}`)
+    fetch(`/registry/ajax/municipios/?estado_id=${estadoId}`)
       .then(r => r.json())
       .then(data => {
         data.forEach(item => {
           municipioSelect.add(new Option(item.nombre, item.id));
         });
-      });
+      })
+      .catch(err => console.error('Error cargando municipios:', err));
   }
 
   function cargarParroquias() {
@@ -513,13 +516,14 @@
     parroquiaSelect.innerHTML = '<option value="">Seleccione parroquia</option>';
     if (!municipioId) return;
 
-    fetch(`{% url 'ajax_cargar_parroquias' %}?municipio_id=${municipioId}`)
+    fetch(`/registry/ajax/parroquias/?municipio_id=${municipioId}`)
       .then(r => r.json())
       .then(data => {
         data.forEach(item => {
           parroquiaSelect.add(new Option(item.nombre, item.id));
         });
-      });
+      })
+      .catch(err => console.error('Error cargando parroquias:', err));
   }
 
   function setRuleState(ruleId, ok) {

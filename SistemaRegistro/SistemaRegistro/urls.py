@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth.decorators import login_required
 from registry.views import cargar_municipios, cargar_parroquias
 from users.admin_views import admin_dashboard
 from registry.admin_logs import ver_logs_sistema
@@ -15,6 +16,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('users.urls')),
     path('registry/', include('registry.urls')),
-    path('ajax/cargar-municipios/', cargar_municipios, name='ajax_cargar_municipios_admin'),
-    path('ajax/cargar-parroquias/', cargar_parroquias, name='ajax_cargar_parroquias_admin'),
+    path('ajax/cargar-municipios/', login_required(cargar_municipios), name='ajax_cargar_municipios_admin'),
+    path('ajax/cargar-parroquias/', login_required(cargar_parroquias), name='ajax_cargar_parroquias_admin'),
 ]

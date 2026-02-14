@@ -125,12 +125,27 @@
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
                             <td class="text-center" onclick="event.stopPropagation();">
-                                <div class="form-check form-switch d-inline-block">
-                                    <input class="form-check-input switch-status" type="checkbox" role="switch" 
-                                           {% if item.institucion.activa %}checked{% endif %}
-                                           onchange="confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
+                                {% if item.institucion.estatus == 'aprobado' and item.institucion.activa %}
+                                    <span class="badge bg-success px-3 py-2 rounded-pill">
+                                        <i class="bi bi-check-circle-fill me-1"></i> APROBADA
+                                    </span>
+                                {% elif item.institucion.estatus == 'rechazado' %}
+                                    <span class="badge bg-danger px-3 py-2 rounded-pill">
+                                        <i class="bi bi-x-circle-fill me-1"></i> RECHAZADA
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        <i class="bi bi-clock-fill me-1"></i> PENDIENTE
+                                    </span>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input switch-status" type="checkbox" role="switch" 
+                                               {% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}checked{% endif %}
+                                               onchange="confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
+                                    </div>
                                 </div>
-                                <span class="d-none status-hidden">{% if item.institucion.activa %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                                <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
                             </td>
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
@@ -424,11 +439,26 @@
         submit.innerText = "Confirmar Cambio";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
         submit.style.background = bgColor;
-        document.getElementById('modalForm').onsubmit = null;
-        document.getElementById('modalForm').action = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
         
+        const form = document.getElementById('modalForm');
+        form.onsubmit = function(e) {
+            e.preventDefault();
+            submit.disabled = true;
+            submit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+            
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(() => {
+                universalModal.hide();
+                location.reload();
+            });
+        };
+        
+        form.action = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
         universalModal.show();
-        document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', () => { location.reload(); }, {once: true});
     }
 
     function abrirModalEliminar(id, nombre) {

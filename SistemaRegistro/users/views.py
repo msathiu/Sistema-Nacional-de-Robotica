@@ -5,6 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_http_methods
 from .models import Estados, Municipios
 from registry.models import (
     Club,
@@ -28,6 +29,7 @@ from .forms import InstitucionRegistrationForm, CustomUserCreationForm, Particip
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
+from .decorators import admin_required, institucional_required, owns_institution
 
 from django.db.models.functions import ExtractMonth
 from datetime import datetime
@@ -325,7 +327,7 @@ def is_admin(user):
     """Verifica si el usuario es administrador"""
     return hasattr(user, 'userprofile') and user.userprofile.user_type == 'admin'
 
-@user_passes_test(is_admin)
+@admin_required
 def exportar_participantes_excel(request):
     # Obtenemos todos los registros
     participantes = Participante.objects.all().values()
@@ -339,7 +341,7 @@ def exportar_participantes_excel(request):
     df.to_excel(response, index=False, engine='openpyxl')
     return response
 
-@user_passes_test(is_admin)
+@admin_required
 def ver_logs_sistema(request):
     # Usamos LogEntry de Django para mostrar las últimas acciones del panel
     logs = LogEntry.objects.all().select_related('user', 'content_type')[:100]
@@ -350,8 +352,7 @@ def create_institutional_user(request):
     messages.info(request, 'Ahora el registro de instituciones incluye la creación de usuarios automáticamente.')
     return redirect('registrar_institucion')
 
-@login_required
-@user_passes_test(is_admin)
+@admin_required
 def lista_instituciones(request):
     """Vista para que el admin vea todas las instituciones con sus usuarios (sin las eliminadas)"""
     
@@ -421,20 +422,19 @@ def registrar_institucion(request):
                         institucion.activa = True
                         institucion.estatus = 'aprobado'
                     else:
+                        # Usuario normal: pendiente de aprobación
                         institucion.activa = False
                         institucion.estatus = 'pendiente'
                     
                     institucion.save()
 
                     # 2. Crear el Usuario asociado
-                    # El username inicial es el código generado (RNR...) o el email si aún no tiene código
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
                         username=institucion.codigo if institucion.codigo else institucion.email,
                         email=institucion.email,
                         password=password,
-                        # El usuario solo puede loguear si el admin lo registró o si ya fue activado
-                        is_active=True if es_administrador else False,
+                        is_active=False  # Siempre False hasta que admin apruebe
                     )
 
                     # 3. Vincular usuario e institución
@@ -509,8 +509,7 @@ def lista_participantes(request):
     
     return render(request, 'users/lista_participantes.html', context)
 
-@login_required
-@user_passes_test(is_admin)
+@admin_required
 def admin_crear_institucion(request):
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
@@ -561,11 +560,8 @@ class ParticipanteUpdateView(UpdateView):
 def estadisticas_por_estado(request):
     return render(request, "users/estadisticas_estados.html")
 
-@login_required
+@institucional_required
 def crear_evento(request):
-    if request.user.userprofile.user_type != "institucional":
-
-        return redirect("dashboard")
 
     institution = request.user.userprofile.institution
 
@@ -659,9 +655,13 @@ def inscripcion_evento_url(request, evento_id):
         'evento': evento
     })
 
+@login_required
 def buscar_usuarios(request):
-    q = request.GET.get('q', '')
-
+    q = request.GET.get('q', '').strip()[:50]  # Limitar longitud
+    
+    if len(q) < 2:  # Requerir mínimo 2 caracteres
+        return JsonResponse([], safe=False)
+    
     usuarios = User.objects.filter(
         username__icontains=q
     )[:10]
@@ -732,57 +732,59 @@ def ver_grupo(request, nombre_grupo):
     return render(request, 'users/ver_grupo.html', context)
 
 # 1. ACTIVAR / VALIDAR
-@login_required
+@admin_required
+@require_http_methods(["POST"])
 def aprobar_institucion(request, institucion_id):
-    # Solo permitimos que el admin realice esta acción
-    if request.user.userprofile.user_type != 'admin':
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
-        return redirect('home')
-
-    if request.method == 'POST':
-        with transaction.atomic(): # Usamos atomic para que se activen los dos o ninguno
-            institucion = get_object_or_404(Institucion, id=institucion_id)
+    with transaction.atomic():
+        institucion = get_object_or_404(Institucion, id=institucion_id)
+        
+        # Verificar si tiene código temporal
+        tiene_codigo_temporal = institucion.codigo.startswith('TEMP-')
+        
+        # 1. Activamos la institución (esto genera el código RNR en el save())
+        institucion.activa = True
+        institucion.estatus = 'aprobado'
+        institucion.save()
+        
+        # 2. Activamos el usuario de Django y actualizamos username
+        perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
+        if perfil and perfil.user:
+            perfil.user.is_active = True
+            perfil.user.username = institucion.codigo  # Ahora es el código RNR
+            perfil.user.save()
             
-            # 1. Activamos la institución (tu modelo)
-            institucion.activa = True
-            institucion.estatus = 'aprobado'
-            institucion.save()
+            # 3. Enviar correo solo si tenía código temporal (primera aprobación)
+            if tiene_codigo_temporal:
+                institucion.enviar_correo_activacion()
             
-            # 2. Activamos el usuario de Django (la cuenta de acceso)
-            # Buscamos el usuario asociado a través del UserProfile
-            perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
-            if perfil and perfil.user:
-                perfil.user.is_active = True # <--- ESTO ES LO QUE FALTABA
-                perfil.user.username = institucion.codigo
-                perfil.user.save()
-                messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
-            else:
-                messages.warning(request, f'Institución activada, pero no se encontró un usuario vinculado.')
+            messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
+        else:
+            messages.warning(request, f'Institución activada, pero no se encontró un usuario vinculado.')
     
     return redirect('lista_instituciones')
 
 # 2. SUSPENDER / DESACTIVAR
-@login_required
+@admin_required
+@require_http_methods(["POST"])
 def desactivar_institucion(request, institucion_id):
-    if request.method == 'POST':
-        with transaction.atomic():
-            inst = get_object_or_404(Institucion, id=institucion_id)
-            
-            # 1. Desactivamos institución
-            inst.activa = False
-            inst.save()
-            
-            # 2. Desactivamos usuario de Django
-            perfil = UserProfile.objects.filter(institution=inst).first()
-            if perfil and perfil.user:
-                perfil.user.is_active = False # <--- BLOQUEA EL LOGIN
-                perfil.user.save()
-            
-            messages.warning(request, f'La institución "{inst.nombre}" y su acceso han sido suspendidos.')
+    with transaction.atomic():
+        inst = get_object_or_404(Institucion, id=institucion_id)
+        
+        # 1. Desactivamos institución
+        inst.activa = False
+        inst.save()
+        
+        # 2. Desactivamos usuario de Django
+        perfil = UserProfile.objects.filter(institution=inst).first()
+        if perfil and perfil.user:
+            perfil.user.is_active = False # <--- BLOQUEA EL LOGIN
+            perfil.user.save()
+        
+        messages.warning(request, f'La institución "{inst.nombre}" y su acceso han sido suspendidos.')
     return redirect('lista_instituciones')
 
 # 3. GESTIONAR CREDENCIALES (Cambio de contraseña)
-@login_required
+@admin_required
 def gestionar_credenciales(request, institucion_id):
     inst = get_object_or_404(Institucion, id=institucion_id)
     usuario = inst.usuarios.first() # Suponiendo relación inversa
@@ -795,65 +797,65 @@ def gestionar_credenciales(request, institucion_id):
     return render(request, 'users/gestionar_credenciales.html', {'institucion': inst, 'usuario': usuario})
 
 
-@login_required
+@owns_institution
+@require_http_methods(["POST"])
 def editar_institucion_modal(request, institucion_id):
-    if request.method == 'POST':
-        inst = get_object_or_404(Institucion, id=institucion_id)
+    inst = get_object_or_404(Institucion, id=institucion_id)
+    
+    # 1. Intentamos localizar al usuario vinculado
+    # Buscamos al usuario cuyo username sea igual al código SNR de la institución
+    user = User.objects.filter(username=inst.codigo).first()
+
+    # 2. Actualizar datos básicos de la Institución
+    inst.nombre = request.POST.get('nombre', '').upper()
+    inst.email = request.POST.get('email', '')
+    inst.direccion = request.POST.get('direccion', '')
+
+    # Reconstrucción del RIF desde el modal
+    rif_letra = request.POST.get('rif_letra', '')
+    rif_num = request.POST.get('rif_numero', '')
+    if rif_letra and rif_num:
+        inst.rif = f"{rif_letra}-{rif_num}"
+
+    # Reconstrucción del Teléfono
+    cod_area = request.POST.get('modal_cod_area', '')
+    num_puro = request.POST.get('modal_num_puro', '')
+    if cod_area and num_puro:
+        inst.telefono = f"{cod_area}{num_puro}"
+    
+    # 3. Guardar cambios en la Institución
+    try:
+        inst.save()
         
-        # 1. Intentamos localizar al usuario vinculado
-        # Buscamos al usuario cuyo username sea igual al código SNR de la institución
-        user = User.objects.filter(username=inst.codigo).first()
-
-        # 2. Actualizar datos básicos de la Institución
-        inst.nombre = request.POST.get('nombre', '').upper()
-        inst.email = request.POST.get('email', '')
-        inst.direccion = request.POST.get('direccion', '')
-
-        # Reconstrucción del RIF desde el modal
-        rif_letra = request.POST.get('rif_letra', '')
-        rif_num = request.POST.get('rif_numero', '')
-        if rif_letra and rif_num:
-            inst.rif = f"{rif_letra}-{rif_num}"
-
-        # Reconstrucción del Teléfono
-        cod_area = request.POST.get('modal_cod_area', '')
-        num_puro = request.POST.get('modal_num_puro', '')
-        if cod_area and num_puro:
-            inst.telefono = f"{cod_area}{num_puro}"
-        
-        # 3. Guardar cambios en la Institución
-        try:
-            inst.save()
+        # 4. Si encontramos al usuario, actualizamos su clave y correo
+        if user:
+            # Actualizar email del usuario para que coincida con la institución
+            user.email = inst.email
             
-            # 4. Si encontramos al usuario, actualizamos su clave y correo
-            if user:
-                # Actualizar email del usuario para que coincida con la institución
-                user.email = inst.email
-                
-                nueva_clave = request.POST.get('new_password')
-                confirm_clave = request.POST.get('confirm_password')
+            nueva_clave = request.POST.get('new_password')
+            confirm_clave = request.POST.get('confirm_password')
 
-                if nueva_clave:
-                    if nueva_clave == confirm_clave:
-                        # set_password encripta la clave correctamente
-                        user.set_password(nueva_clave)
-                        user.save()
-                    else:
-                        messages.warning(request, f'La institución se actualizó, pero las contraseñas no coincidían.')
-                else:
-                    # Si no hay clave nueva, solo guardamos el posible cambio de email
+            if nueva_clave:
+                if nueva_clave == confirm_clave:
+                    # set_password encripta la clave correctamente
+                    user.set_password(nueva_clave)
                     user.save()
+                else:
+                    messages.warning(request, f'La institución se actualizó, pero las contraseñas no coincidían.')
+            else:
+                # Si no hay clave nueva, solo guardamos el posible cambio de email
+                user.save()
 
-            messages.success(request, f'Sede {inst.nombre} actualizada correctamente.')
-            
-        except Exception as e:
-            messages.error(request, f"Error al guardar los cambios: {e}")
-            
+        messages.success(request, f'Sede {inst.nombre} actualizada correctamente.')
+        
+    except Exception as e:
+        messages.error(request, f"Error al guardar los cambios: {e}")
+        
     return redirect('lista_instituciones')
     
 # ELIMINAR 
-@login_required
-@user_passes_test(is_admin)
+@admin_required
+@require_http_methods(["POST"])
 def eliminar_institucion(request, institucion_id):
     """
     Mueve la institución a la papelera (eliminado=True) 
@@ -934,11 +936,9 @@ def dashboard_mapa(request):
     
     return render(request, 'tu_template.html', {'mapa_data': mapa_data})
 
-@login_required
+@institucional_required
 def gestionar_eventos_institucion(request):
     """Lista todos los eventos creados por la institución actual"""
-    if request.user.userprofile.user_type != 'institucional':
-        return redirect('dashboard')
     
     institucion = request.user.userprofile.institution
     # Obtenemos eventos y contamos cuántos proyectos hay inscritos en cada uno
@@ -951,7 +951,7 @@ def gestionar_eventos_institucion(request):
         'institucion': institucion
     })
 
-@login_required
+@institucional_required
 def detalle_evento_institucion(request, evento_id):
     """Ver quiénes están inscritos en un evento específico y gestionar"""
     evento = get_object_or_404(Evento, id=evento_id, institucion=request.user.userprofile.institution)
@@ -964,8 +964,9 @@ def detalle_evento_institucion(request, evento_id):
         'inscripciones': inscripciones
     })
 
+@login_required
 def ajax_dependencias(request):
-    q = request.GET.get('q', '').strip()
+    q = request.GET.get('q', '').strip()[:100]  # Limitar longitud
     queryset = Dependencia.objects.filter(activa=True).order_by('nombre')
     if q:
         queryset = queryset.filter(nombre__icontains=q)
@@ -973,12 +974,17 @@ def ajax_dependencias(request):
     return JsonResponse(data, safe=False)
 
 
+@login_required
 def ajax_municipios(request):
-    estado_id = request.GET.get('estado_id')
-    # Filtramos los municipios por el ID del estado seleccionado
-    municipios = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
-    data = [{'id': m.id_municipio, 'nombre': m.municipio} for m in municipios]
-    return JsonResponse(data, safe=False)
+    try:
+        estado_id = int(request.GET.get('estado_id', 0))
+        if estado_id <= 0:
+            return JsonResponse([], safe=False)
+        municipios = Municipios.objects.filter(id_estado_id=estado_id).order_by('municipio')
+        data = [{'id': m.id_municipio, 'nombre': m.municipio} for m in municipios]
+        return JsonResponse(data, safe=False)
+    except (ValueError, TypeError):
+        return JsonResponse([], safe=False)
     
 def lista_grupos_institucion(request):
     # Filtramos por la institución del usuario actual

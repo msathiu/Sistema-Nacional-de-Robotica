@@ -32,10 +32,7 @@ class CustomUserAdmin(UserAdmin):
     
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        # Crear perfil si no existe
-        if not change:
-            user_type = 'superuser' if obj.is_superuser else 'participante'
-            UserProfile.objects.get_or_create(user=obj, defaults={'user_type': user_type})
+        # La señal post_save se encarga de crear/actualizar el perfil automáticamente
 
 # Registrar el modelo UserProfile en el admin
 @admin.register(UserProfile)
