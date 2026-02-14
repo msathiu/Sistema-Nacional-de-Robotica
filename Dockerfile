@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
-
+RUN pip install --no-cache-dir --upgrade pip
 # Copiar el archivo de requerimientos
 COPY SistemaRegistro/requirements.txt /app/
 
