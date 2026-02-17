@@ -1,10 +1,10 @@
 {% extends 'users/base_dashboard.html' %}
+{% load static %}
 
 {% block title %}Perfil Federación - RNR{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center mb-4">
@@ -38,7 +38,6 @@
                 <div style="height:4px;background:#00d4ff"></div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card border-0 shadow-lg text-white tech-kpi-card"
                  style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
@@ -50,7 +49,6 @@
                 <div style="height:4px;background:#10b981"></div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card border-0 shadow-lg text-white tech-kpi-card"
                  style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
@@ -79,7 +77,6 @@
                     <p class="text-muted small mb-4">
                         <i class="bi bi-at me-1"></i> {{ user.username }}
                     </p>
-                    
                     <div class="bg-light p-3 rounded-3 text-start mb-2">
                         <label class="small text-muted fw-bold text-uppercase d-block mb-1" style="font-size:0.6rem">Correo de Enlace</label>
                         <span class="small fw-bold text-primary">{{ user.email }}</span>
@@ -132,7 +129,7 @@
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" 
                          style="border-left:5px solid #8b5cf6; border-radius:15px;"
-                         onclick="window.location.href='{% url 'password_change' %}'">
+                         data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                         <div class="d-flex align-items-center">
                             <div class="bg-purple-subtle p-2 rounded-2 me-3" style="background:#f3e8ff">
                                 <i class="bi bi-shield-lock-fill" style="color:#8b5cf6"></i>
@@ -144,6 +141,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" style="border-left:5px solid #00d4ff; border-radius:15px;">
                         <div class="d-flex align-items-center">
@@ -162,7 +160,52 @@
     </div>
 </div>
 
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 text-white p-4" 
+                 style="background: linear-gradient(145deg, #051636, #0b2c6d); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold" id="changePasswordModalLabel">
+                    <i class="bi bi-key me-2 text-info"></i>Actualizar Credenciales
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="passwordChangeForm" method="POST" action="{% url 'password_change' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4 tech-field">
+                        <label>Contraseña Actual</label>
+                        <input type="password" name="old_password" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
+                    </div>
+
+                    <div class="mb-4 tech-field">
+                        <label>Nueva Contraseña</label>
+                        <input type="password" name="new_password1" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
+                        <div class="form-text small opacity-75">Mínimo 8 caracteres, letras y números.</div>
+                    </div>
+
+                    <div class="mb-4 tech-field">
+                        <label>Confirmar Nueva Contraseña</label>
+                        <input type="password" name="new_password2" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
+                            <i class="bi bi-shield-check me-2"></i> Confirmar Cambio
+                        </button>
+                        <button type="button" class="btn btn-link text-muted small text-decoration-none" data-bs-dismiss="modal">
+                            Cancelar operación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+    /* ... (Tus estilos originales se mantienen) ... */
     .tech-kpi-card { transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
     .tech-kpi-card:hover { transform: translateY(-5px); }
     
@@ -186,5 +229,9 @@
     }
 
     .form-control-sm { padding: 0.5rem 0; }
+
+    /* Estilo adicional para el Modal */
+    .modal-backdrop { background-color: #051636; }
+    .modal-backdrop.show { opacity: 0.8; }
 </style>
 {% endblock %}

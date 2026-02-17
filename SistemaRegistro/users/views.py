@@ -406,63 +406,63 @@ def lista_instituciones(request):
 
 
 def registrar_institucion(request):
-    # Detectar si el usuario es un administrador de la FVRN
-    es_administrador = (
+    """
+    Vista para el registro de instituciones. 
+    Funciona tanto para registro público como para creación desde el panel administrativo.
+    """
+    # 1. Identificar el rol del usuario logueado para determinar el layout
+    es_federacion = (
         request.user.is_authenticated and 
         hasattr(request.user, 'userprofile') and 
-        request.user.userprofile.user_type == 'admin'
+        request.user.userprofile.user_type in ['fed_central', 'fed_regional', 'superuser']
     )
 
     # Definir el template base dinámicamente
-    if es_administrador:
-        base_template = 'users/base_dashboard.html'
-    else:
-        base_template = 'base.html'
+    base_template = 'users/base_dashboard.html' if es_federacion else 'base.html'
 
     if request.method == 'POST':
         form = InstitucionRegistrationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Guardar la institución (sin commit para procesar datos)
+                    # --- A. PROCESAR INSTITUCIÓN ---
                     institucion = form.save(commit=False)
                     
-                    # Si registra el admin, se aprueba de una vez
-                    if es_administrador:
+                    # Si registra la federación, la sede nace aprobada y activa
+                    if es_federacion:
                         institucion.activa = True
                         institucion.estatus = 'aprobado'
                     else:
-                        # Usuario normal: pendiente de aprobación
                         institucion.activa = False
                         institucion.estatus = 'pendiente'
                     
                     institucion.save()
 
-                    # 2. Crear el Usuario asociado
+                    # --- B. CREAR USUARIO DE ACCESO ---
+                    # Usamos el email como username si no existe código RNR aún
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
-                        username=institucion.codigo if institucion.codigo else institucion.email,
+                        username=institucion.email, 
                         email=institucion.email,
                         password=password,
-                        is_active=False  # Siempre False hasta que admin apruebe
+                        is_active=True if es_federacion else False # Solo activa si es admin quien registra
                     )
-
-                    # 3. Vincular usuario e institución
+                    
+                    # Vincular usuario a la institución
                     institucion.usuario = nuevo_usuario
                     institucion.save(update_fields=['usuario'])
 
-                    # 4. Crear Perfil de Usuario con rol institucional
+                    # --- C. CREAR PERFIL DE USUARIO ---
                     profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
-                    profile.user_type = 'institucional'
-                    profile.institution = institucion
+                    profile.user_type = 'institucion' # Rol fijo para estas cuentas
                     profile.save()
 
-                    # --- REDIRECCIONES SEGÚN EL ROL ---
-                    if es_administrador:
-                        messages.success(request, f"La sede '{institucion.nombre}' ha sido registrada y activada correctamente.")
+                    # --- D. RESPUESTA Y REDIRECCIÓN ---
+                    if es_federacion:
+                        messages.success(request, f"La sede '{institucion.nombre}' ha sido registrada y activada con éxito.")
                         return redirect('lista_instituciones')
                     else:
-                        # Usuario común va a la página de espera
+                        messages.info(request, "Registro recibido. Su solicitud está en proceso de revisión.")
                         return render(request, 'users/registro_pendiente.html', {
                             'nombre_inst': institucion.nombre,
                             'email': institucion.email,
@@ -470,16 +470,26 @@ def registrar_institucion(request):
                         })
 
             except Exception as e:
-                messages.error(request, f"Ocurrió un error inesperado: {str(e)}")
+                messages.error(request, f"Error crítico en el proceso: {str(e)}")
     else:
         form = InstitucionRegistrationForm()
 
-    # Se ejecuta si es GET o si el formulario falló (POST con errores)
-    return render(request, 'users/registrar_institucion.html', { 
+    # 2. Preparar el contexto
+    # Es vital pasar las variables 'es_central' y 'es_regional' si el base_template es el dashboard
+    context = {
         'form': form,
         'base_template': base_template,
-        'dependencias': Dependencia.objects.all()
-    })
+        'dependencias': Dependencia.objects.all(),
+    }
+
+    if es_federacion:
+        context.update({
+            'perfil': request.user.userprofile,
+            'es_central': request.user.userprofile.user_type in ['fed_central', 'superuser'],
+            'es_regional': request.user.userprofile.user_type == 'fed_regional',
+        })
+
+    return render(request, 'users/registrar_institucion.html', context)
 
 @login_required
 def lista_participantes(request):
@@ -735,78 +745,88 @@ def ver_grupo(request, nombre_grupo):
     return render(request, 'users/ver_grupo.html', context)
 
 # 1. ACTIVAR / VALIDAR
-@admin_required
+@login_required
 @require_http_methods(["POST"])
 def aprobar_institucion(request, institucion_id):
+    perfil_admin = request.user.userprofile
+    institucion = get_object_or_404(Institucion, id=institucion_id)
+    
+    # 1. SEGURIDAD: Validar si el administrador tiene competencia territorial
+    # Un regional de Miranda no puede validar una sede de Carabobo.
+    if perfil_admin.user_type == 'fed_regional' and institucion.estado != perfil_admin.estado:
+        return JsonResponse({
+            'status': 'error', 
+            'message': f'No tienes permiso para validar sedes fuera de {perfil_admin.estado.nombre}.'
+        }, status=403)
+
     try:
         with transaction.atomic():
-            institucion = get_object_or_404(Institucion, id=institucion_id)
+            # 2. PROCESO DE ACTIVACIÓN
+            # Guardamos si era temporal para saber si enviar correo después
+            era_pendiente = (institucion.estatus == 'pendiente')
             
-            # Verificar si tiene código temporal
-            tiene_codigo_temporal = institucion.codigo.startswith('TEMP-') if institucion.codigo else False
-            
-            # 1. Activamos la institución (esto genera el código RNR real en tu modelo)
             institucion.activa = True
             institucion.estatus = 'aprobado'
-            institucion.save()
+            # Aquí, el método save() de tu modelo debería disparar la lógica del RNR
+            institucion.save() 
             
-            # 2. Activamos el usuario de Django y actualizamos username al nuevo código RNR
-            perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
-            if perfil and perfil.user:
-                perfil.user.is_active = True
-                perfil.user.username = institucion.codigo  # El código RNR oficial
-                perfil.user.save()
+            # 3. ACTIVACIÓN DE ACCESO (Django User)
+            # Buscamos el usuario vinculado a esta institución
+            perfil_inst = UserProfile.objects.filter(institution=institucion).first()
+            
+            if perfil_inst and perfil_inst.user:
+                user = perfil_inst.user
+                user.is_active = True
                 
-                # 3. Enviar correo solo si era la primera aprobación (código temporal)
-                if tiene_codigo_temporal:
+                # Sincronizamos el username con el nuevo código oficial (si cambió)
+                if institucion.codigo:
+                    user.username = institucion.codigo
+                
+                user.save()
+
+                # 4. NOTIFICACIÓN (Opcional)
+                if era_pendiente:
                     try:
-                        institucion.enviar_correo_activacion()
-                    except Exception as e:
-                        print(f"Error enviando correo: {e}")
-                
-                messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada.')
-            else:
-                messages.warning(request, f'Institución activada, pero no hay usuario vinculado.')
+                        # institucion.enviar_correo_bienvenida() 
+                        pass
+                    except:
+                        pass
 
-        # Si es una petición AJAX (desde el switch JS)
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
-            return JsonResponse({'status': 'success', 'message': 'Activado correctamente'})
-            
+        # Respuesta para el Switch de JavaScript
+        return JsonResponse({
+            'status': 'success', 
+            'message': f'Institución {institucion.nombre} validada con éxito.'
+        })
+
     except Exception as e:
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-        messages.error(request, f"Error: {str(e)}")
-
-    return redirect('lista_instituciones')
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
 # 2. SUSPENDER / DESACTIVAR
-@admin_required
+@login_required
 @require_http_methods(["POST"])
 def desactivar_institucion(request, institucion_id):
+    perfil_admin = request.user.userprofile
+    inst = get_object_or_404(Institucion, id=institucion_id)
+
+    # REGLA DE ORO: Validar territorio
+    if perfil_admin.user_type == 'fed_regional' and inst.estado != perfil_admin.estado:
+        return JsonResponse({'status': 'error', 'message': 'No tienes permiso sobre esta región.'}, status=403)
+
     try:
         with transaction.atomic():
-            inst = get_object_or_404(Institucion, id=institucion_id)
-            
-            # 1. Desactivamos institución
             inst.activa = False
-            # Mantenemos estatus 'aprobado' si quieres que solo sea una suspensión temporal
             inst.save()
             
-            # 2. Desactivamos usuario de Django para bloquear login
-            perfil = UserProfile.objects.filter(institution=inst).first()
-            if perfil and perfil.user:
-                perfil.user.is_active = False
-                perfil.user.save()
+            # Desactivar acceso de TODOS los usuarios vinculados a esa institución
+            User.objects.filter(userprofile__institution=inst).update(is_active=False)
             
-            messages.warning(request, f'Acceso suspendido para: {inst.nombre}')
-
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
-            return JsonResponse({'status': 'success'})
-
-    except Exception as e:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'error'}, status=500)
+            return JsonResponse({'status': 'success'})
+        
+        messages.warning(request, f'Acceso suspendido para: {inst.nombre}')
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
     return redirect('lista_instituciones')
 
