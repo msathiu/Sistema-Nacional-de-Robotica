@@ -1179,81 +1179,210 @@ def mi_perfil_institucional(request):
     }
     return render(request, 'users/mi_perfil.html', context)
 
-
 @login_required
 def mis_grupos(request):
     usuario = request.user
 
     if request.method == 'POST':
-        # 1. Capturar datos básicos del grupo
-        nombre_grupo = request.POST.get('nombre_grupo')
-        tutor_cedula = request.POST.get('tutor_cedula')
-        tutor_nombre = request.POST.get('tutor_nombre')
-        tutor_telefono = request.POST.get('tutor_telefono')
+        accion = request.POST.get('accion')
         
-        try:
-            with transaction.atomic():
-                # --- LÓGICA DE HERENCIA DINÁMICA ---
-                # Si el usuario NO escribió el nombre del tutor, lo buscamos en los participantes
-                if not tutor_nombre:
-                    # Buscamos en el diccionario POST cualquier clave que empiece con p_nombre_
-                    # para extraer el primer participante que se haya agregado dinámicamente.
-                    clave_nombre = next((k for k in request.POST if k.startswith('p_nombre_')), None)
-                    
-                    if clave_nombre:
-                        suffix = clave_nombre.split('_')[-1]
-                        p_nom = request.POST.get(f'p_nombre_{suffix}', '')
-                        p_ape = request.POST.get(f'p_apellido_{suffix}', '')
-                        
-                        tutor_nombre = f"{p_nom} {p_ape}".strip()
-                        tutor_cedula = request.POST.get(f'p_cedula_{suffix}', tutor_cedula)
-                        tutor_telefono = request.POST.get(f'p_telefono_{suffix}', tutor_telefono)
+        # ============================================
+        # ACCIÓN: ELIMINAR GRUPO
+        # ============================================
+        if accion == 'eliminar':
+            try:
+                grupo_id = request.POST.get('grupo_id')
+                grupo = Grupo.objects.get(id=grupo_id, usuario_creador=usuario)
                 
-                # --- VALIDACIÓN DE EMERGENCIA ---
-                # Si después de lo anterior sigue siendo None o vacío, la DB dará error.
-                # Como último recurso, usamos el nombre del usuario logueado.
-                if not tutor_nombre:
-                    tutor_nombre = f"{usuario.first_name} {usuario.last_name}".strip() or usuario.username
-                if not tutor_cedula:
-                    tutor_cedula = "0"
-
-                # 2. Crear el Grupo
-                nuevo_grupo = Grupo.objects.create(
-                    nombre=nombre_grupo,
-                    tutor_cedula=tutor_cedula,
-                    tutor_nombre=tutor_nombre,
-                    tutor_telefono=tutor_telefono or '',
-                    usuario_creador=usuario
-                )
-
-                # 3. Procesar y asociar participantes
-                for key in request.POST:
-                    if key.startswith('p_cedula_'):
-                        suffix = key.split('_')[-1]
-                        
-                        # Creamos el participante
-                        participante = Participante.objects.create(
-                            cedula=request.POST.get(f'p_cedula_{suffix}'),
-                            nombre=request.POST.get(f'p_nombre_{suffix}'),
-                            apellido=request.POST.get(f'p_apellido_{suffix}'),
-                            fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
-                            # Si Participante tiene FK a Grupo, se asigna aquí:
-                            # grupo=nuevo_grupo 
-                        )
-                        
-                        # Si tu modelo usa ManyToMany (según tu primer código), se añade así:
-                        nuevo_grupo.participantes.add(participante)
-
-                messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+                with transaction.atomic():
+                    # Eliminar relaciones de participantes primero (si es ManyToMany)
+                    grupo.participantes.clear()
+                    # Eliminar el grupo
+                    grupo.delete()
+                
+                messages.success(request, "El escuadrón ha sido eliminado correctamente.")
                 return redirect('mis_grupos')
+                
+            except Grupo.DoesNotExist:
+                messages.error(request, "El grupo no existe o no tienes permiso para eliminarlo.")
+                return redirect('mis_grupos')
+            except Exception as e:
+                print(f"DEBUG ERROR ELIMINAR: {str(e)}")
+                messages.error(request, f"Error al eliminar: {e}")
+                return redirect('mis_grupos')
+        
+        # ============================================
+        # ACCIÓN: EDITAR GRUPO
+        # ============================================
+        elif accion == 'editar':
+            try:
+                grupo_id = request.POST.get('grupo_id')
+                grupo = Grupo.objects.get(id=grupo_id, usuario_creador=usuario)
+                
+                with transaction.atomic():
+                    # 1. Actualizar nombre del grupo
+                    nuevo_nombre = request.POST.get('nombre_grupo')
+                    if nuevo_nombre:
+                        grupo.nombre = nuevo_nombre
+                    
+                    # 2. Mantener los datos del tutor (no se editan)
+                    tutor_nombre = request.POST.get('tutor_nombre')
+                    tutor_cedula = request.POST.get('tutor_cedula')
+                    
+                    if tutor_nombre:
+                        grupo.tutor_nombre = tutor_nombre
+                    if tutor_cedula:
+                        grupo.tutor_cedula = tutor_cedula
+                    
+                    grupo.save()
+                    
+                    # 3. Procesar participantes a ELIMINAR
+                    indices_eliminar = request.POST.getlist('eliminar_participante')
+                    if indices_eliminar:
+                        # Obtener lista de participantes actuales
+                        participantes_actuales = list(grupo.participantes.all())
+                        
+                        # Eliminar por índice (basado en el orden actual)
+                        for idx_str in indices_eliminar:
+                            try:
+                                idx = int(idx_str)
+                                if idx < len(participantes_actuales):
+                                    participante = participantes_actuales[idx]
+                                    grupo.participantes.remove(participante)
+                            except (ValueError, IndexError):
+                                pass
+                    
+                    # 4. Procesar NUEVOS participantes
+                    nuevas_cedulas = request.POST.getlist('nuevo_participante_cedula[]')
+                    
+                    for cedula in nuevas_cedulas:
+                        if cedula.strip():
+                            # Buscar si el participante ya existe
+                            try:
+                                participante = Participante.objects.get(cedula=cedula.strip())
+                            except Participante.DoesNotExist:
+                                # Si no existe, crear uno básico
+                                participante = Participante.objects.create(
+                                    cedula=cedula.strip(),
+                                    nombre="Pendiente",
+                                    apellido="Pendiente"
+                                )
+                            
+                            # Agregar al grupo
+                            grupo.participantes.add(participante)
+                    
+                    messages.success(request, f"El escuadrón '{grupo.nombre}' ha sido actualizado correctamente.")
+                    return redirect('mis_grupos')
+                    
+            except Grupo.DoesNotExist:
+                messages.error(request, "El grupo no existe o no tienes permiso para editarlo.")
+                return redirect('mis_grupos')
+            except Exception as e:
+                print(f"DEBUG ERROR EDITAR: {str(e)}")
+                messages.error(request, f"Error al editar: {e}")
+                return redirect('mis_grupos')
+        
+        # ============================================
+        # ACCIÓN: CREAR NUEVO GRUPO (código original)
+        # ============================================
+        else:
+            # 1. Capturar datos básicos del grupo
+            nombre_grupo = request.POST.get('nombre_grupo')
+            tutor_cedula = request.POST.get('tutor_cedula')
+            tutor_nombre = request.POST.get('tutor_nombre')
+            tutor_telefono = request.POST.get('tutor_telefono')
             
-        except Exception as e:
-            print(f"DEBUG ERROR: {str(e)}") # Esto saldrá en tu terminal
-            messages.error(request, f"Error al guardar: {e}")
-            return redirect('mis_grupos')
+            try:
+                with transaction.atomic():
+                    # --- LÓGICA DE HERENCIA DINÁMICA ---
+                    # Si el usuario NO escribió el nombre del tutor, lo buscamos en los participantes
+                    if not tutor_nombre:
+                        # Buscamos en el diccionario POST cualquier clave que empiece con p_nombre_
+                        clave_nombre = next((k for k in request.POST if k.startswith('p_nombre_')), None)
+                        
+                        if clave_nombre:
+                            suffix = clave_nombre.split('_')[-1]
+                            p_nom = request.POST.get(f'p_nombre_{suffix}', '')
+                            p_ape = request.POST.get(f'p_apellido_{suffix}', '')
+                            
+                            tutor_nombre = f"{p_nom} {p_ape}".strip()
+                            tutor_cedula = request.POST.get(f'p_cedula_{suffix}', tutor_cedula)
+                            tutor_telefono = request.POST.get(f'p_telefono_{suffix}', tutor_telefono)
+                    
+                    # --- VALIDACIÓN DE EMERGENCIA ---
+                    if not tutor_nombre:
+                        tutor_nombre = f"{usuario.first_name} {usuario.last_name}".strip() or usuario.username
+                    if not tutor_cedula:
+                        tutor_cedula = "0"
 
-    # Lógica GET (sin cambios)
+                    # 2. Crear el Grupo
+                    nuevo_grupo = Grupo.objects.create(
+                        nombre=nombre_grupo,
+                        tutor_cedula=tutor_cedula,
+                        tutor_nombre=tutor_nombre,
+                        tutor_telefono=tutor_telefono or '',
+                        usuario_creador=usuario
+                    )
+
+                    # 3. Procesar y asociar participantes (formato array)
+                    cedulas_participantes = request.POST.getlist('participante_cedulas[]')
+                    
+                    for cedula in cedulas_participantes:
+                        if cedula.strip():
+                            # Buscar si el participante ya existe
+                            try:
+                                participante = Participante.objects.get(cedula=cedula.strip())
+                            except Participante.DoesNotExist:
+                                # Si no existe, crear uno básico
+                                participante = Participante.objects.create(
+                                    cedula=cedula.strip(),
+                                    nombre="Pendiente",
+                                    apellido="Pendiente"
+                                )
+                            
+                            # Agregar al grupo
+                            nuevo_grupo.participantes.add(participante)
+                    
+                    # 4. Procesar formato anterior con sufijos (por compatibilidad)
+                    for key in request.POST:
+                        if key.startswith('p_cedula_'):
+                            suffix = key.split('_')[-1]
+                            cedula = request.POST.get(f'p_cedula_{suffix}')
+                            nombre = request.POST.get(f'p_nombre_{suffix}')
+                            apellido = request.POST.get(f'p_apellido_{suffix}')
+                            
+                            if cedula:
+                                try:
+                                    participante = Participante.objects.get(cedula=cedula)
+                                except Participante.DoesNotExist:
+                                    # Crear con los datos proporcionados
+                                    participante = Participante.objects.create(
+                                        cedula=cedula,
+                                        nombre=nombre or "Pendiente",
+                                        apellido=apellido or "Pendiente",
+                                        fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
+                                    )
+                                
+                                nuevo_grupo.participantes.add(participante)
+
+                    messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+                    return redirect('mis_grupos')
+                
+            except Exception as e:
+                print(f"DEBUG ERROR CREAR: {str(e)}")
+                messages.error(request, f"Error al guardar: {e}")
+                return redirect('mis_grupos')
+
+    # ============================================
+    # LÓGICA GET
+    # ============================================
     grupos = Grupo.objects.filter(usuario_creador=usuario).order_by('-fecha_registro')
+    
+    # Calcular total de participantes
+    total_participantes = 0
+    for grupo in grupos:
+        total_participantes += grupo.participantes.count()
+    
     estados_venezuela = [
         'Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 
         'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 
@@ -1263,6 +1392,7 @@ def mis_grupos(request):
 
     context = {
         'grupos': grupos,
+        'total_participantes': total_participantes,
         'estados': estados_venezuela,
     }
     return render(request, 'users/mis_grupos.html', context)
