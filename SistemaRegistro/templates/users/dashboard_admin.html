@@ -9,26 +9,17 @@
                     <i class="bi bi-shield-check fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Panel de Administración Central</h2>
-                    <p class="text-muted mb-0 small">Federación Venezolana de Robótica Creativa | Registro Nacional</p>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
+                        {% if es_central %}Panel de Administración Central{% else %}Sede Regional: {{ perfil.estado.nombre }}{% endif %}
+                    </h2>
+                    <p class="text-muted mb-0 small">Federación Venezolana de Robótica Creativa | {% if es_central %}Registro Nacional{% else %}Registro Regional{% endif %}</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
-            <!--
-            <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle fw-bold shadow-sm" type="button" data-bs-toggle="dropdown" style="border-radius: 12px; background: var(--blue-main);">
-                    <i class="bi bi-plus-circle me-2"></i>Crear Actividad
-                </button>
-                <ul class="dropdown-menu border-0 shadow-lg">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-trophy me-2"></i>Competición</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-mic me-2"></i>Conferencia / Foro</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-journal-code me-2"></i>Curso / Taller</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-megaphone me-2"></i>Feria / Divulgación</a></li>
-                </ul>
-            </div>
-            -->
+            
+
             <a href="{% url 'exportar_participantes_excel' %}" class="btn tech-report-btn shadow-sm">
                 <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
                 <span>Exportar Data</span>
@@ -114,7 +105,7 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Cobertura</div>
-                    <h3 class="fw-bold mb-0"><span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-6 text-white-50">/24</span></h3>
+                    <h3 class="fw-bold mb-0"><span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-6 text-white-50">/{% if es_central %}24{% else %}1{% endif %}</span></h3>
                     <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: #ef4444;"></div>
@@ -179,7 +170,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // --- ANIMACIÓN DE CONTADORES ---
         const counters = document.querySelectorAll('.counter');
         counters.forEach(counter => {
             const updateCount = () => {
@@ -194,7 +184,6 @@
             updateCount();
         });
 
-        // --- 1. GRÁFICO DE CRECIMIENTO (Línea) ---
         new Chart(document.getElementById('growthChart').getContext('2d'), {
             type: 'line',
             data: {
@@ -204,18 +193,12 @@
                     data: {{ data_crecimiento|safe|default:"[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]" }},
                     borderColor: '#00d4ff',
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    fill: true, tension: 0.4
                 }]
             },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
 
-        // --- 2. GRÁFICO GÉNERO (Dona Gauche) ---
         new Chart(document.getElementById('genderGauge').getContext('2d'), {
             type: 'doughnut',
             data: {
@@ -223,15 +206,12 @@
                 datasets: [{
                     data: [{{ porcentaje_hombres|default:50 }}, {{ porcentaje_mujeres|default:50 }}],
                     backgroundColor: ['#0b2c6d', '#f59e0b'],
-                    circumference: 180,
-                    rotation: 270,
-                    cutout: '85%'
+                    circumference: 180, rotation: 270, cutout: '85%'
                 }]
             },
             options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // --- 3. GRÁFICO CLUBES (Radar) ---
         new Chart(document.getElementById('clubsRadarChart').getContext('2d'), {
             type: 'radar',
             data: {
@@ -244,13 +224,9 @@
                     pointBackgroundColor: '#3b82f6'
                 }]
             },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } }
-            }
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // --- 4. GRÁFICO TUTORES (Barras Verticales) ---
         new Chart(document.getElementById('tutorsBarChart').getContext('2d'), {
             type: 'bar',
             data: {
@@ -262,11 +238,7 @@
                     borderRadius: 8
                 }]
             },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
     });
 </script>

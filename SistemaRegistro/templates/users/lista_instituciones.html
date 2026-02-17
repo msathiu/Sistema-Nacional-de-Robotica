@@ -125,19 +125,7 @@
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
                             <td class="text-center" onclick="event.stopPropagation();">
-                                {% if item.institucion.estatus == 'aprobado' and item.institucion.activa %}
-                                    <span class="badge bg-success px-3 py-2 rounded-pill">
-                                        <i class="bi bi-check-circle-fill me-1"></i> APROBADA
-                                    </span>
-                                {% elif item.institucion.estatus == 'rechazado' %}
-                                    <span class="badge bg-danger px-3 py-2 rounded-pill">
-                                        <i class="bi bi-x-circle-fill me-1"></i> RECHAZADA
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                        <i class="bi bi-clock-fill me-1"></i> PENDIENTE
-                                    </span>
-                                {% endif %}
+                               
                                 <div class="mt-2">
                                     <div class="form-check form-switch d-inline-block">
                                         <input class="form-check-input switch-status" type="checkbox" role="switch" 
@@ -416,48 +404,73 @@
 
     function confirmarAccionStatus(id, nombre, checkbox) {
         const activa = checkbox.checked;
-        const header = document.getElementById('modalHeader');
-        header.className = "modal-header border-0 pt-4 px-4 text-white shadow-sm";
-        const bgColor = activa ? "#10b981" : "#f59e0b";
-        const icon = activa ? "bi-check-circle-fill" : "bi-exclamation-octagon-fill";
-        header.style.background = bgColor;
-        document.getElementById('editErrorMsg').style.display = 'none';
+        const url = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
         
-        document.getElementById('modalTitle').innerHTML = `<i class="bi ${icon} me-2"></i> ${activa ? 'VALIDAR CUENTA' : 'SUSPENDER ACCESO'}`;
+        // Configurar Colores y Títulos del Modal
+        const header = document.getElementById('modalHeader');
+        header.style.background = activa ? "#10b981" : "#f59e0b";
+        document.getElementById('modalTitle').innerHTML = activa ? 
+            '<i class="bi bi-check-circle me-2"></i> VALIDAR SEDE' : 
+            '<i class="bi bi-pause-circle me-2"></i> SUSPENDER ACCESO';
         
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-3">
-                <div class="mb-3"><i class="bi ${icon}" style="font-size: 3rem; color: ${bgColor}; opacity: 0.2;"></i></div>
-                <p class="fs-5 mb-1">¿Confirmar cambio de estatus?</p>
-                <p class="text-muted small">Sede: <span class="fw-bold text-dark">${nombre}</span></p>
-                <div class="alert ${activa ? 'alert-success' : 'alert-warning'} small border-0 mt-3" style="border-radius: 10px;">
-                    ${activa ? 'La sede podrá acceder al sistema y gestionar sus eventos.' : 'La sede perderá acceso al sistema hasta que sea revalidada.'}
-                </div>
+                <p class="fs-5 mb-0">¿Confirmar cambio para <b>${nombre}</b>?</p>
+                <p class="text-muted small">Esta acción actualizará el acceso del usuario y las estadísticas.</p>
             </div>`;
-            
+                
         const submit = document.getElementById('modalSubmitBtn');
-        submit.innerText = "Confirmar Cambio";
+        submit.innerText = "Confirmar";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
-        submit.style.background = bgColor;
+        submit.style.background = activa ? "#10b981" : "#f59e0b";
+        submit.disabled = false; // Asegurar que esté habilitado
         
         const form = document.getElementById('modalForm');
-        form.onsubmit = function(e) {
+        
+        // IMPORTANTE: Limpiar cualquier evento submit anterior
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        newForm.onsubmit = function(e) {
             e.preventDefault();
-            submit.disabled = true;
-            submit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+            e.stopImmediatePropagation(); // Detiene cualquier otro proceso
             
-            fetch(form.action, {
+            submit.disabled = true;
+            submit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+            
+            fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
-            }).then(() => {
+            })
+            .then(async response => {
+                if (response.ok) {
+                    // Forzar recarga ignorando el caché para ver los KPIs actualizados
+                    const timestamp = new Date().getTime();
+                    window.location.href = window.location.pathname + '?v=' + timestamp;
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Error en el servidor');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Error: " + error.message);
+                checkbox.checked = !activa; // Revertir el switch si falla
                 universalModal.hide();
-                location.reload();
             });
         };
         
-        form.action = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
+        // Si cierran el modal sin confirmar, revertir el switch
+        document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', function () {
+            if (!submit.disabled) { 
+                checkbox.checked = !activa; 
+            }
+        }, {once: true});
+
         universalModal.show();
     }
 
