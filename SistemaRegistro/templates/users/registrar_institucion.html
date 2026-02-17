@@ -403,11 +403,6 @@
     return limpio.slice(0, 8) + '-' + limpio.slice(8, 9);
   }
 
-  function sincronizarRifHidden() {
-    // Función removida - ya no se usa
-    return true;
-  }
-
   function cargarSubcategorias() {
     const tipo = document.getElementById('tipoInstitucion').value;
     const naturaleza = document.getElementById('naturaleza').value;
@@ -454,7 +449,6 @@
       depContainer.classList.add('hidden');
     }
 
-    // Selección automática de letra RIF según tipo
     if (tipo === 'educativa') {
       rifLetra.value = 'G';
       rifNumero.value = '20000009-0';
@@ -505,6 +499,12 @@
         data.forEach(item => {
           municipioSelect.add(new Option(item.nombre, item.id));
         });
+        // Si hay un municipio previo (por error de form), seleccionarlo
+        const municipioPrevio = "{{ form.municipio.value|default:'' }}";
+        if (municipioPrevio) {
+            municipioSelect.value = municipioPrevio;
+            cargarParroquias();
+        }
       })
       .catch(err => console.error('Error cargando municipios:', err));
   }
@@ -522,6 +522,8 @@
         data.forEach(item => {
           parroquiaSelect.add(new Option(item.nombre, item.id));
         });
+        const parroquiaPrevia = "{{ form.parroquia.value|default:'' }}";
+        if (parroquiaPrevia) parroquiaSelect.value = parroquiaPrevia;
       })
       .catch(err => console.error('Error cargando parroquias:', err));
   }
@@ -602,6 +604,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Select2
     $('#dependenciaSelect').select2({
       tags: true,
       language: 'es',
@@ -614,6 +617,7 @@
       }
     });
 
+    // Eventos de Dependencia
     $('#dependenciaSelect').on('select2:select', function(e) {
       const data = e.params.data;
       const inputNueva = document.getElementById('nuevaDependencia');
@@ -633,6 +637,7 @@
       actualizarPreviewDependencia();
     });
 
+    // Eventos de Formulario
     document.getElementById('tipoInstitucion').addEventListener('change', aplicarTipoInstitucion);
     document.getElementById('naturaleza').addEventListener('change', aplicarTipoInstitucion);
     document.getElementById('estado').addEventListener('change', cargarMunicipios);
@@ -643,6 +648,7 @@
       e.target.value = formatearRifNumero(e.target.value);
     });
 
+    // Validacion al enviar
     document.getElementById('registroForm').addEventListener('submit', function(e) {
       limpiarErrorInline();
       const rifNum = document.getElementById('rifNumero').value.replace(/-/g, '');
@@ -668,6 +674,21 @@
       }
     });
 
+    // --- LOGICA DE SEDE REGIONAL ---
+    {% if es_regional and estado_fijo_id %}
+        const estadoSelect = document.getElementById('estado');
+        const estadoIdFijo = "{{ estado_fijo_id }}";
+        
+        if (estadoIdFijo) {
+            estadoSelect.value = estadoIdFijo;
+            estadoSelect.style.pointerEvents = 'none';
+            estadoSelect.style.backgroundColor = '#f1f5f9';
+            estadoSelect.setAttribute('tabindex', '-1');
+            cargarMunicipios(); 
+        }
+    {% endif %}
+
+    // Inicializaciones
     aplicarTipoInstitucion();
     actualizarPreviewDependencia();
     validarPasswordUI();
