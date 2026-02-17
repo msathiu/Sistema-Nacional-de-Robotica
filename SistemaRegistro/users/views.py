@@ -402,22 +402,18 @@ def lista_instituciones(request):
         'perfil': perfil,
     }
     return render(request, 'users/lista_instituciones.html', context)
-
-
-
 def registrar_institucion(request):
     """
-    Vista para el registro de instituciones. 
-    Funciona tanto para registro público como para creación desde el panel administrativo.
+    Registro de instituciones con detección de jurisdicción regional.
     """
-    # 1. Identificar el rol del usuario logueado para determinar el layout
-    es_federacion = (
-        request.user.is_authenticated and 
-        hasattr(request.user, 'userprofile') and 
-        request.user.userprofile.user_type in ['fed_central', 'fed_regional', 'superuser']
-    )
+    perfil_admin = getattr(request.user, 'userprofile', None) if request.user.is_authenticated else None
+    
+    # Roles y Permisos
+    es_central = perfil_admin.user_type in ['fed_central', 'superuser'] if perfil_admin else False
+    es_regional = perfil_admin.user_type == 'fed_regional' if perfil_admin else False
+    es_federacion = es_central or es_regional
 
-    # Definir el template base dinámicamente
+    # Template dinámico
     base_template = 'users/base_dashboard.html' if es_federacion else 'base.html'
 
     if request.method == 'POST':
@@ -425,44 +421,50 @@ def registrar_institucion(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # --- A. PROCESAR INSTITUCIÓN ---
                     institucion = form.save(commit=False)
                     
-                    # Si registra la federación, la sede nace aprobada y activa
-                    if es_federacion:
+                    # A. Lógica de Activación
+                    if es_central:
                         institucion.activa = True
                         institucion.estatus = 'aprobado'
                     else:
                         institucion.activa = False
                         institucion.estatus = 'pendiente'
                     
+                    # B. Forzar Estado si es Regional (Seguridad lado servidor)
+                    if es_regional and perfil_admin.estado:
+                        institucion.estado = perfil_admin.estado
+                    
                     institucion.save()
 
-                    # --- B. CREAR USUARIO DE ACCESO ---
-                    # Usamos el email como username si no existe código RNR aún
+                    # C. Usuario de Django
                     password = form.cleaned_data.get('password')
                     nuevo_usuario = User.objects.create_user(
                         username=institucion.email, 
                         email=institucion.email,
                         password=password,
-                        is_active=True if es_federacion else False # Solo activa si es admin quien registra
+                        is_active=True if es_central else False 
                     )
                     
-                    # Vincular usuario a la institución
                     institucion.usuario = nuevo_usuario
                     institucion.save(update_fields=['usuario'])
 
-                    # --- C. CREAR PERFIL DE USUARIO ---
-                    profile, created = UserProfile.objects.get_or_create(user=nuevo_usuario)
-                    profile.user_type = 'institucion' # Rol fijo para estas cuentas
+                    # D. Perfil Institucional
+                    profile, _ = UserProfile.objects.get_or_create(user=nuevo_usuario)
+                    profile.user_type = 'institucional'
+                    profile.institution = institucion
+                    # Si la sede nace en un estado, el perfil del usuario también
+                    profile.estado = institucion.estado 
                     profile.save()
 
-                    # --- D. RESPUESTA Y REDIRECCIÓN ---
-                    if es_federacion:
-                        messages.success(request, f"La sede '{institucion.nombre}' ha sido registrada y activada con éxito.")
+                    # E. Redirecciones
+                    if es_central:
+                        messages.success(request, f"Sede '{institucion.nombre}' activada con éxito.")
+                        return redirect('lista_instituciones')
+                    elif es_federacion:
+                        messages.info(request, f"Registro de '{institucion.nombre}' enviado a Sede Central para validación.")
                         return redirect('lista_instituciones')
                     else:
-                        messages.info(request, "Registro recibido. Su solicitud está en proceso de revisión.")
                         return render(request, 'users/registro_pendiente.html', {
                             'nombre_inst': institucion.nombre,
                             'email': institucion.email,
@@ -470,24 +472,24 @@ def registrar_institucion(request):
                         })
 
             except Exception as e:
-                messages.error(request, f"Error crítico en el proceso: {str(e)}")
+                messages.error(request, f"Error: {str(e)}")
     else:
-        form = InstitucionRegistrationForm()
+        # Inicialización del formulario con el estado predeterminado
+        initial_data = {}
+        if es_regional and perfil_admin.estado:
+            initial_data['estado'] = perfil_admin.estado.id
+        
+        form = InstitucionRegistrationForm(initial=initial_data)
 
-    # 2. Preparar el contexto
-    # Es vital pasar las variables 'es_central' y 'es_regional' si el base_template es el dashboard
     context = {
         'form': form,
         'base_template': base_template,
         'dependencias': Dependencia.objects.all(),
+        'es_federacion': es_federacion,
+        'es_central': es_central,
+        'es_regional': es_regional,
+        'estado_fijo_id': perfil_admin.estado.id if es_regional and perfil_admin.estado else None
     }
-
-    if es_federacion:
-        context.update({
-            'perfil': request.user.userprofile,
-            'es_central': request.user.userprofile.user_type in ['fed_central', 'superuser'],
-            'es_regional': request.user.userprofile.user_type == 'fed_regional',
-        })
 
     return render(request, 'users/registrar_institucion.html', context)
 
