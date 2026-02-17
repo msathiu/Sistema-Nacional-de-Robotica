@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required  
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -15,22 +14,23 @@ from registry.models import (
     Institucion,
     Municipio,
     Participante,
+    Evento,
 )
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Count
+from django.db.models import Count, Q
 import random
 import string
 from django.views.generic.edit import UpdateView 
 from django.urls import reverse
 from registry.models import Evento
 from django.db import transaction
-from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm, ClubRegistrationForm
+from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm, ClubRegistrationForm, SedeRegionalForm
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
 from .decorators import admin_required, institucional_required, owns_institution
-
+from django.views.decorators.cache import never_cache
 from django.db.models.functions import ExtractMonth
 from datetime import datetime
 
@@ -120,45 +120,55 @@ def custom_login(request):
         form = AuthenticationForm()
     
     return render(request, 'users/login.html', {'form': form})
-
-
 @login_required
 def dashboard(request):
-    """Router principal del dashboard con estadísticas completas para Admin"""
+    """Router principal del dashboard con soberanía territorial completa"""
     try:
         user_profile = request.user.userprofile
-    except UserProfile.DoesNotExist:
-        # Manejo de seguridad para usuarios sin perfil (como superusers de consola)
+        user_type = user_profile.user_type
+        user_estado = user_profile.estado  
+    except Exception: # Captura si no existe perfil
         if request.user.is_superuser:
-            user_type = 'admin'
+            user_type = 'superuser'
+            user_estado = None
+            user_profile = None
         else:
             messages.error(request, 'No tienes un perfil configurado.')
             return redirect('login')
-    else:
-        user_type = user_profile.user_type
 
-    if user_type == 'participante':
-        return redirect('dashboard_participante')
+    roles_administrativos = ['tecnologico', 'fed_central', 'fed_regional', 'superuser']
 
-    elif user_type == 'institucional':
-        return redirect('dashboard_institucional')
+    # --- LÓGICA PARA ADMINISTRADORES (CENTRAL Y REGIONAL) ---
+    if user_type in roles_administrativos:
+        # CONFIGURACIÓN DE FILTROS DINÁMICOS
+        filtros_inst = Q()
+        filtros_club = Q()
+        filtros_part = Q()
 
-    elif user_type == 'admin' or request.user.is_superuser:
-        # 1. MÉTRICAS BÁSICAS (TARJETAS)
-        total_participantes = Participante.objects.count()
-        total_instituciones = Institucion.objects.count()
-        total_clubes = Club.objects.count()
-        total_eventos = Evento.objects.count()
-        pendientes_aprobacion = Institucion.objects.filter(activa=False).count()
-        cobertura_nacional = Institucion.objects.values('estado').distinct().count()
+        # Soberanía Territorial: Filtrar por estado si es regional
+        if user_type == 'fed_regional' and user_estado:
+            filtros_inst &= Q(estado=user_estado)
+            filtros_club &= Q(institucion_creadora__estado=user_estado)
+            filtros_part &= Q(estado=user_estado)
         
-        # Conteo de Tutores (basado en cédulas únicas en la tabla Grupo)
-        total_tutores = Grupo.objects.values('tutor_cedula').distinct().count()
+        # 1. MÉTRICAS BÁSICAS
+        total_participantes = Participante.objects.filter(filtros_part).count()
+        total_instituciones = Institucion.objects.filter(filtros_inst).count()
+        total_clubes = Club.objects.filter(filtros_club).count()
+        total_eventos = Evento.objects.count()
+        
+        pendientes_aprobacion = Institucion.objects.filter(filtros_inst, activa=False).count()
+        cobertura_nacional = Institucion.objects.filter(filtros_inst).values('estado').distinct().count()
+        
+        # Contar tutores únicos basados en la cédula dentro del ámbito territorial
+        total_tutores = Grupo.objects.filter(
+            participantes__in=Participante.objects.filter(filtros_part)
+        ).values('tutor_cedula').distinct().count()
 
-        # 2. CURVA DE INSCRIPCIÓN MENSUAL (Instituciones)
+        # 2. CURVA DE INSCRIPCIÓN MENSUAL (Año Actual)
         year_actual = datetime.now().year
         registros_por_mes = (
-            Institucion.objects.filter(fecha_registro__year=year_actual)
+            Institucion.objects.filter(filtros_inst, fecha_registro__year=year_actual)
             .annotate(mes=ExtractMonth('fecha_registro'))
             .values('mes')
             .annotate(total=Count('id'))
@@ -166,54 +176,39 @@ def dashboard(request):
         )
         data_crecimiento = [0] * 12
         for r in registros_por_mes:
-            if r['mes']: data_crecimiento[r['mes'] - 1] = r['total']
+            if r['mes']: 
+                data_crecimiento[r['mes'] - 1] = r['total']
 
-        # 3. DISTRIBUCIÓN DE GÉNERO (Participantes)
-        total_p = Participante.objects.count() or 1
-        
-        # Cambiamos 'genero' por 'sexo' que es el nombre real en tu BD
-        mujeres = Participante.objects.filter(sexo='F').count() 
-        hombres = Participante.objects.filter(sexo='M').count()
-        
+        # 3. DISTRIBUCIÓN DE GÉNERO
+        total_p = total_participantes or 1
+        mujeres = Participante.objects.filter(filtros_part, sexo='F').count() 
+        hombres = Participante.objects.filter(filtros_part, sexo='M').count()
         porcentaje_mujeres = round((mujeres / total_p) * 100)
         porcentaje_hombres = round((hombres / total_p) * 100)
 
         # 4. ESPECIALIDADES DE CLUBES (Radar Chart)
-        # Contamos cuántas veces aparece cada opción en linea_1 (puedes ampliarlo a las 3)
-        clubes_stats = Club.objects.values('linea_1').annotate(total=Count('id')).order_by('-total')
-        
-        # Extraemos los nombres y los totales
-        # Si el campo está vacío, ponemos 'General'
+        clubes_stats = Club.objects.filter(filtros_club).values('linea_1').annotate(total=Count('id')).order_by('-total')
         clubes_labels = [c['linea_1'] if c['linea_1'] else 'General' for c in clubes_stats]
         clubes_data = [c['total'] for c in clubes_stats]
-
-        # Si no hay datos, enviamos valores por defecto para que no rompa el JS
         if not clubes_labels:
-            clubes_labels = ['Sin Líneas']
-            clubes_data = [0]
+            clubes_labels, clubes_data = ['Sin Datos'], [0]
 
-        # 5. DISTRIBUCIÓN GEOGRÁFICA DE TUTORES (Bar Chart)
-        # Obtenemos la ubicación de los tutores a través de los estados de sus participantes
+        # 5. DISTRIBUCIÓN DE TUTORES POR ESTADO (Barras)
         tutores_stats = (
-            Participante.objects.values('estado__nombre')
+            Participante.objects.filter(filtros_part).values('estado__nombre')
             .annotate(total=Count('grupos__tutor_cedula', distinct=True))
             .order_by('-total')[:5]
         )
-        
         tutores_labels = [t['estado__nombre'] for t in tutores_stats if t['estado__nombre']]
         tutores_data = [t['total'] for t in tutores_stats if t['estado__nombre']]
 
-        # Fallback si no hay datos
-        if not tutores_labels:
-            tutores_labels = ['Sin Datos']
-            tutores_data = [0]
-
-        # 6. DATOS DEL MAPA (Existente)
-        conteo_db = Institucion.objects.values('estado__nombre').annotate(total=Count('id'))
+        # 6. DATOS DEL MAPA
+        conteo_db = Institucion.objects.filter(filtros_inst).values('estado__nombre').annotate(total=Count('id'))
         mapa_data = {registro['estado__nombre']: registro['total'] for registro in conteo_db}
 
         context = {
-            'user': request.user,
+            'perfil': user_profile,
+            'user_type': user_type,
             'total_participantes': total_participantes,
             'total_instituciones': total_instituciones,
             'total_clubes': total_clubes,
@@ -222,7 +217,9 @@ def dashboard(request):
             'pendientes_aprobacion': pendientes_aprobacion,
             'cobertura_nacional': cobertura_nacional,
             
-            # Datos para Gráficas
+            'es_central': user_type in ['fed_central', 'superuser'], 
+            'es_regional': user_type == 'fed_regional',
+            
             'data_crecimiento': data_crecimiento,
             'meses_labels': ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
             'porcentaje_mujeres': porcentaje_mujeres,
@@ -235,9 +232,14 @@ def dashboard(request):
         }
         return render(request, 'users/dashboard_admin.html', context)
 
-    messages.error(request, 'Tipo de usuario no reconocido.')
-    return redirect('home')
+    # --- REDIRECCIÓN PARA USUARIOS NO ADMINISTRATIVOS ---
+    if user_type == 'institucional':
+        return redirect('dashboard_institucional')
+    elif user_type == 'participante':
+        return redirect('dashboard_participante')
 
+    messages.error(request, 'Tipo de usuario no reconocido o acceso denegado.')
+    return redirect('home')
 
 @login_required
 def dashboard_participante(request):
@@ -352,45 +354,53 @@ def create_institutional_user(request):
     messages.info(request, 'Ahora el registro de instituciones incluye la creación de usuarios automáticamente.')
     return redirect('registrar_institucion')
 
-@admin_required
+@never_cache
+@login_required
 def lista_instituciones(request):
-    """Vista para que el admin vea todas las instituciones con sus usuarios (sin las eliminadas)"""
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
     
-    # 1. Filtramos la base principal: Solo lo que NO está eliminado
-    # Usamos select_related para traer el estado de una vez y mejorar el rendimiento
-    instituciones_base = Institucion.objects.filter(eliminado=False).select_related('estado').order_by('nombre')
+    roles_admin = ['fed_central', 'fed_regional', 'superuser', 'tecnologico']
     
-    # 2. Estadísticas (KPIs) basadas solo en las instituciones NO eliminadas
-    total_instituciones = instituciones_base.count()
-    instituciones_activas = instituciones_base.filter(activa=True).count() # Corregido el nombre
-    instituciones_pendientes = instituciones_base.filter(activa=False).count()
-    
-    # 3. Datos para los filtros de la vista
-    estados = Estado.objects.all()
+    if user_type not in roles_admin:
+        messages.error(request, "No tienes permisos para gestionar instituciones.")
+        return redirect('dashboard')
 
-    # 4. Construcción de la lista con usuarios
+    # 1. Filtro base (Optimizado con select_related para evitar 1000 consultas)
+    if user_type == 'fed_regional':
+        instituciones_qs = Institucion.objects.filter(eliminado=False, estado=perfil.estado).select_related('estado', 'municipio')
+    else:
+        instituciones_qs = Institucion.objects.filter(eliminado=False).select_related('estado', 'municipio')
+
+    # 2. KPIs CORREGIDOS:
+    # Una institución está ACTIVA solo si activa=True Y estatus='aprobado'
+    total_instituciones = instituciones_qs.count()
+    instituciones_activas = instituciones_qs.filter(activa=True, estatus='aprobado').count()
+    
+    # Pendientes son todas las que NO cumplen lo anterior
+    instituciones_pendientes = total_instituciones - instituciones_activas
+    
+    # 3. Construcción eficiente de la lista (Evitando el loop lento)
+    # Es mejor usar un prefetch_related o buscar perfiles directamente
     instituciones_con_usuarios = []
-    for institucion in instituciones_base:
-        # Filtramos los usuarios asociados a esta institución específica
-        usuarios_institucionales = User.objects.filter(
-            userprofile__institution=institucion,
-            userprofile__user_type='institucional'
-        )
-        
+    for inst in instituciones_qs:
+        # Buscamos los usuarios asociados a través del perfil
+        usuarios = User.objects.filter(userprofile__institution=inst)
         instituciones_con_usuarios.append({
-            'institucion': institucion,
-            'usuarios': usuarios_institucionales
+            'institucion': inst, 
+            'usuarios': usuarios
         })
     
-    # 5. Contexto (Asegúrate de que los nombres coincidan con tu HTML)
     context = {
         'instituciones_con_usuarios': instituciones_con_usuarios,
         'total_instituciones': total_instituciones,
-        'instituciones_activas': instituciones_activas,       # Variable ya definida arriba
-        'instituciones_pendientes': instituciones_pendientes, # Variable ya definida arriba
-        'estados': estados,
+        'instituciones_activas': instituciones_activas,
+        'instituciones_pendientes': instituciones_pendientes,
+        'estados': Estado.objects.all(),
+        'es_central': user_type in ['fed_central', 'superuser'],
+        'es_regional': user_type == 'fed_regional',
+        'perfil': perfil,
     }
-    
     return render(request, 'users/lista_instituciones.html', context)
 
 
@@ -472,41 +482,34 @@ def registrar_institucion(request):
     })
 
 @login_required
-@login_required
 def lista_participantes(request):
-    """Vista inteligente: Admin ve todo, Institución ve lo suyo"""
-    user_profile = request.user.userprofile
+    """Vista inteligente: Federación (Central/Regional) e Instituciones"""
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
     
-    # 1. Definir el Queryset base según el rol
-    if user_profile.user_type == 'admin':
+    # 1. Definir el Queryset base
+    if user_type in ['fed_central', 'superuser', 'tecnologico']:
         participantes = Participante.objects.all()
-    elif user_profile.user_type == 'institucional':
-        # Filtro estricto: Solo lo que pertenece a su institución vinculada
-        participantes = Participante.objects.filter(institucion=user_profile.institution)
+    elif user_type == 'fed_regional':
+        participantes = Participante.objects.filter(estado=perfil.estado)
+    elif user_type == 'institucional':
+        participantes = Participante.objects.filter(institucion=perfil.institution)
     else:
-        # Si un participante intenta entrar aquí, lo sacamos
-        messages.error(request, "No tienes permiso para ver este listado.")
         return redirect('dashboard')
 
-    # 2. Aplicar filtros comunes (esto sirve para AMBOS)
-    estado_filter = request.GET.get('estado')
-    sexo_filter = request.GET.get('sexo')
+    # 2. Aplicar filtros de URL
+    estado_f = request.GET.get('estado')
+    if estado_f and user_type != 'fed_regional': # Regional no puede cambiar su estado
+        participantes = participantes.filter(estado_id=estado_f)
 
-    if estado_filter:
-        participantes = participantes.filter(estado_id=estado_filter)
-    if sexo_filter:
-        participantes = participantes.filter(sexo=sexo_filter)
-
-    # 3. Datos para los selectores del template
-    estados = Estado.objects.all().order_by('nombre')
-    
     context = {
         'participantes': participantes,
         'total_participantes': participantes.count(),
-        'estados': estados,
-        'is_admin': user_profile.user_type == 'admin', # Para mostrar/ocultar botones en el HTML
+        'estados': Estado.objects.all(),
+        'es_central': user_type in ['fed_central', 'superuser'],
+        'es_regional': user_type == 'fed_regional',
+        'perfil': perfil,
     }
-    
     return render(request, 'users/lista_participantes.html', context)
 
 @admin_required
@@ -735,52 +738,76 @@ def ver_grupo(request, nombre_grupo):
 @admin_required
 @require_http_methods(["POST"])
 def aprobar_institucion(request, institucion_id):
-    with transaction.atomic():
-        institucion = get_object_or_404(Institucion, id=institucion_id)
-        
-        # Verificar si tiene código temporal
-        tiene_codigo_temporal = institucion.codigo.startswith('TEMP-')
-        
-        # 1. Activamos la institución (esto genera el código RNR en el save())
-        institucion.activa = True
-        institucion.estatus = 'aprobado'
-        institucion.save()
-        
-        # 2. Activamos el usuario de Django y actualizamos username
-        perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
-        if perfil and perfil.user:
-            perfil.user.is_active = True
-            perfil.user.username = institucion.codigo  # Ahora es el código RNR
-            perfil.user.save()
+    try:
+        with transaction.atomic():
+            institucion = get_object_or_404(Institucion, id=institucion_id)
             
-            # 3. Enviar correo solo si tenía código temporal (primera aprobación)
-            if tiene_codigo_temporal:
-                institucion.enviar_correo_activacion()
+            # Verificar si tiene código temporal
+            tiene_codigo_temporal = institucion.codigo.startswith('TEMP-') if institucion.codigo else False
             
-            messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada correctamente.')
-        else:
-            messages.warning(request, f'Institución activada, pero no se encontró un usuario vinculado.')
-    
+            # 1. Activamos la institución (esto genera el código RNR real en tu modelo)
+            institucion.activa = True
+            institucion.estatus = 'aprobado'
+            institucion.save()
+            
+            # 2. Activamos el usuario de Django y actualizamos username al nuevo código RNR
+            perfil = UserProfile.objects.filter(institution=institucion).select_related('user').first()
+            if perfil and perfil.user:
+                perfil.user.is_active = True
+                perfil.user.username = institucion.codigo  # El código RNR oficial
+                perfil.user.save()
+                
+                # 3. Enviar correo solo si era la primera aprobación (código temporal)
+                if tiene_codigo_temporal:
+                    try:
+                        institucion.enviar_correo_activacion()
+                    except Exception as e:
+                        print(f"Error enviando correo: {e}")
+                
+                messages.success(request, f'La cuenta de {institucion.nombre} ha sido activada.')
+            else:
+                messages.warning(request, f'Institución activada, pero no hay usuario vinculado.')
+
+        # Si es una petición AJAX (desde el switch JS)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
+            return JsonResponse({'status': 'success', 'message': 'Activado correctamente'})
+            
+    except Exception as e:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        messages.error(request, f"Error: {str(e)}")
+
     return redirect('lista_instituciones')
+
 
 # 2. SUSPENDER / DESACTIVAR
 @admin_required
 @require_http_methods(["POST"])
 def desactivar_institucion(request, institucion_id):
-    with transaction.atomic():
-        inst = get_object_or_404(Institucion, id=institucion_id)
-        
-        # 1. Desactivamos institución
-        inst.activa = False
-        inst.save()
-        
-        # 2. Desactivamos usuario de Django
-        perfil = UserProfile.objects.filter(institution=inst).first()
-        if perfil and perfil.user:
-            perfil.user.is_active = False # <--- BLOQUEA EL LOGIN
-            perfil.user.save()
-        
-        messages.warning(request, f'La institución "{inst.nombre}" y su acceso han sido suspendidos.')
+    try:
+        with transaction.atomic():
+            inst = get_object_or_404(Institucion, id=institucion_id)
+            
+            # 1. Desactivamos institución
+            inst.activa = False
+            # Mantenemos estatus 'aprobado' si quieres que solo sea una suspensión temporal
+            inst.save()
+            
+            # 2. Desactivamos usuario de Django para bloquear login
+            perfil = UserProfile.objects.filter(institution=inst).first()
+            if perfil and perfil.user:
+                perfil.user.is_active = False
+                perfil.user.save()
+            
+            messages.warning(request, f'Acceso suspendido para: {inst.nombre}')
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
+            return JsonResponse({'status': 'success'})
+
+    except Exception as e:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error'}, status=500)
+
     return redirect('lista_instituciones')
 
 # 3. GESTIONAR CREDENCIALES (Cambio de contraseña)
@@ -993,16 +1020,38 @@ def lista_grupos_institucion(request):
 
 @login_required
 def mi_perfil(request):
-    # Obtenemos datos básicos del usuario
-    usuario = request.user
-    
-    # Si es una institución, podemos contar sus recursos para el resumen
-    context = {
-        'usuario': usuario,
-        'fecha_unido': usuario.date_joined,
-    }
-    
-    return render(request, 'users/mi_perfil.html', context)
+    try:
+        perfil = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        # Si no hay perfil, creamos uno básico de participante por seguridad
+        perfil = UserProfile.objects.create(user=request.user, user_type='participante')
+
+    # LÓGICA DE REDIRECCIÓN POR ROL
+    if perfil.user_type in ['fed_central', 'fed_regional', 'superuser', 'tecnologico']:
+        # Si el usuario es administrativo, usamos la vista de Federación
+        return mi_perfil_federacion_logic(request, perfil)
+    else:
+        # Si es institucional o participante, podrías redirigir o mostrar otra
+        return render(request, 'users/perfil_institucion.html', {'perfil': perfil})
+
+def mi_perfil_federacion_logic(request, perfil):
+    user = request.user
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.email = request.POST.get('email')
+        perfil.phone = request.POST.get('telefono')
+        
+        user.save()
+        perfil.save()
+        messages.success(request, "Perfil de Federación actualizado.")
+        return redirect('mi_perfil')
+
+    return render(request, 'users/perfil_federacion.html', {
+        'perfil': perfil, 
+        'user': user,
+        'estados': Estado.objects.all()
+    })
 
 @login_required
 def mi_perfil_institucional(request):
@@ -1154,3 +1203,111 @@ def registrar_club(request):
     
     return render(request, 'registrar_club.html', {'form': form})
 
+@login_required
+def registrar_sede(request):
+    # Obtenemos el perfil del usuario logueado
+    perfil_usuario = request.user.userprofile
+    
+    # Verificamos permisos de forma estricta
+    is_admin_central = perfil_usuario.user_type == 'fed_central' or request.user.is_superuser
+    
+    if not is_admin_central:
+        messages.error(request, "Acceso denegado: Se requiere nivel de Administración Central.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = SedeRegionalForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # 1. Crear el usuario
+                    user = User.objects.create_user(
+                        username=form.cleaned_data['username'],
+                        email=form.cleaned_data['email'],
+                        password=form.cleaned_data['password'],
+                        first_name=form.cleaned_data['nombres'],
+                        last_name=form.cleaned_data['apellidos']
+                    )
+
+                    # 2. Configurar perfil como Regional
+                    profile = user.userprofile
+                    profile.user_type = 'fed_regional'
+                    profile.estado = form.cleaned_data['estado']
+                    profile.cedula = form.cleaned_data['cedula']
+                    profile.phone = f"{form.cleaned_data['codigo_area']}{form.cleaned_data['numero_telefono']}"
+                    profile.save()
+
+                    messages.success(request, f"¡Éxito! Nodo Regional {profile.estado.nombre} activado.")
+                    return redirect('lista_instituciones')
+            except Exception as e:
+                messages.error(request, f"Error crítico: {str(e)}")
+    else:
+        form = SedeRegionalForm()
+
+    # IMPORTANTE: Pasar las variables que base_dashboard.html necesita
+    return render(request, 'users/registrar_sede.html', {
+        'form': form,
+        'es_central': is_admin_central,
+        'perfil': perfil_usuario,
+        'user_type': perfil_usuario.user_type
+    })
+
+@login_required
+def gestionar_usuarios_sedes(request):
+    if not request.user.is_superuser and request.user.userprofile.user_type != 'fed_central':
+        return redirect('dashboard')
+
+    sedes = UserProfile.objects.filter(user_type='fed_regional').select_related('user', 'estado')
+    estados = Estado.objects.all()
+
+    return render(request, 'users/gestionar_sedes.html', {
+        'sedes': sedes,
+        'estados': estados,
+        'es_central': True
+    })
+
+@login_required
+def mi_perfil_federacion(request):
+    perfil = request.user.userprofile
+    user = request.user
+    
+    if request.method == 'POST':
+        # Procesar actualización de datos básicos
+        user.first_name = request.POST.get('first_name')
+        user.last_name = request.POST.get('last_name')
+        user.email = request.POST.get('email')
+        
+        # Actualizar datos del perfil
+        perfil.phone = request.POST.get('telefono')
+        
+        # Solo el superusuario o central puede cambiarse de estado
+        if perfil.user_type in ['fed_central', 'superuser']:
+            nuevo_estado_id = request.POST.get('estado')
+            if nuevo_estado_id:
+                perfil.estado = Estado.objects.get(id=nuevo_estado_id)
+        
+        user.save()
+        perfil.save()
+        
+        messages.success(request, "Perfil actualizado correctamente.")
+        return redirect('mi_perfil_federacion')
+
+    context = {
+        'perfil': perfil,
+        'user': user,
+        'estados': Estado.objects.all(),
+        # Para el menú lateral
+        'es_central': perfil.user_type in ['fed_central', 'superuser'],
+        'es_regional': perfil.user_type == 'fed_regional',
+    }
+    return render(request, 'users/perfil_federacion.html', context)
+
+# Vista para eliminar (AJAX o POST directo)
+@login_required
+def eliminar_sede(request, user_id):
+    if request.user.is_superuser or request.user.userprofile.user_type == 'fed_central':
+        user_to_delete = get_object_or_404(User, id=user_id)
+        nombre = user_to_delete.get_full_name()
+        user_to_delete.delete()
+        messages.success(request, f"La sede de {nombre} ha sido eliminada permanentemente.")
+    return redirect('gestionar_sedes')
