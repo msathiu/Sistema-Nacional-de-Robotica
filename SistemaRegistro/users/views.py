@@ -15,6 +15,7 @@ from registry.models import (
     Municipio,
     Participante,
     Evento,
+    Parroquia,
 )
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -25,64 +26,127 @@ from django.views.generic.edit import UpdateView
 from django.urls import reverse
 from registry.models import Evento
 from django.db import transaction
-from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm, ClubRegistrationForm, SedeRegionalForm
+from .forms import InstitucionRegistrationForm, CustomUserCreationForm, ParticipanteRegistrationForm, ClubRegistrationForm, SedeRegionalForm, ParticipanteModalEditForm
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
 from .decorators import admin_required, institucional_required, owns_institution, admin_or_owner_required
 from django.views.decorators.cache import never_cache
 from django.db.models.functions import ExtractMonth
-from datetime import datetime
 from django.apps import apps  
+import secrets
+from datetime import date, datetime 
 
 def home(request):
     """Página principal con opciones de login y registro"""
     return render(request, 'users/home.html')
 
+
+
 def register(request):
-    """Vista de registro de participante con redirección al Dashboard Institucional"""
+    """Vista de registro de participante compatible con campos de 7 dígitos"""
+    
+    if not request.user.is_authenticated or request.user.userprofile.user_type != 'institucional':
+        messages.error(request, "No tienes permisos para registrar participantes.")
+        return redirect('login')
+
+    perfil_inst = request.user.userprofile.institution
+    estado_inst = perfil_inst.estado
+    municipios = Municipio.objects.filter(estado=estado_inst).order_by('nombre')
+
     if request.method == 'POST':
-        user_form = CustomUserCreationForm(request.POST)
         participante_form = ParticipanteRegistrationForm(request.POST)
         
-        if user_form.is_valid() and participante_form.is_valid():
-            with transaction.atomic():
-                # 1. Crear usuario
-                user = user_form.save(commit=False)
-                user.email = user_form.cleaned_data['email']
-                user.save()
-                
-                # 1.5 Crear perfil si no existe
-                UserProfile.objects.get_or_create(user=user, defaults={'user_type': 'participante'})
-                
-                # 2. Crear participante
-                participante = participante_form.save(commit=False)
-                participante.user = user
-                participante.email = user.email
-                
-                if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
-                    participante.institucion = request.user.userprofile.institution
-                
-                participante.save()
-            
-            messages.success(request, f'Participante {user.username} registrado exitosamente.')
-            
-            if request.user.is_authenticated and request.user.userprofile.user_type == 'institucional':
-                return redirect('dashboard_institucional')
-            
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Por favor corrige los errores en el formulario.')
-    else:
-        user_form = CustomUserCreationForm()
-        participante_form = ParticipanteRegistrationForm()
-    
-    return render(request, 'users/register.html', {
-        'user_form': user_form,
-        'participante_form': participante_form,
-    })
+        # Extracción de campos que no están en el form o requieren manejo manual
+        email = request.POST.get('email')
+        nacionalidad = request.POST.get('nacionalidad', 'V')
+        cedula_num = request.POST.get('cedula')
+        
+        # Códigos de área (Se guardan en sus propios campos de max_length=4)
+        cod_area_part = request.POST.get('codigo_area')
+        cod_area_rep = request.POST.get('codigo_area_representante')
+        
+        profesion = request.POST.get('profesion', '')
+        parroquia_id = request.POST.get('parroquia')
 
+        if participante_form.is_valid():
+            try:
+                with transaction.atomic():
+                    # 1. Formatear Cédula Principal (Max 20 chars, esto cabe bien)
+                    cedula_completa = f"{nacionalidad}-{cedula_num}"
+                    
+                    if User.objects.filter(username=cedula_completa).exists():
+                        messages.error(request, f"Ya existe un registro con la cédula {cedula_completa}")
+                        return render(request, 'users/register.html', {
+                            'participante_form': participante_form,
+                            'municipios': municipios,
+                            'institucion': perfil_inst
+                        })
+
+                    # 2. Crear Usuario
+                    password_aleatoria = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+                    user = User.objects.create_user(
+                        username=cedula_completa,
+                        email=email,
+                        password=password_aleatoria
+                    )
+                    
+                    UserProfile.objects.get_or_create(user=user, defaults={'user_type': 'participante'})
+                    
+                    # 3. Preparar Participante
+                    participante = participante_form.save(commit=False)
+                    participante.user = user
+                    participante.cedula = cedula_completa
+                    participante.email = email
+                    participante.institucion = perfil_inst
+                    participante.estado = estado_inst
+                    
+                    # ASIGNACIÓN CORRECTA DE TELÉFONOS (Sin concatenar para evitar el error de los 7 caracteres)
+                    if cod_area_part:
+                        participante.codigo_area = cod_area_part
+                    
+                    # Cédula del representante (Se concatena nacionalidad)
+                    rep_nac = request.POST.get('rep_nacionalidad', 'V')
+                    if participante.cedula_representante:
+                        participante.cedula_representante = f"{rep_nac}-{participante.cedula_representante}"
+
+                    # Teléfono del representante
+                    if cod_area_rep:
+                        participante.codigo_area_representante = cod_area_rep
+
+                    # La edad NO se asigna porque es una @property en tu modelo
+                    
+                    if profesion:
+                        # Si tu modelo no tiene el campo 'profesion', esto fallará. 
+                        # Si lo tiene, asegúrate de que exista en el model.
+                        pass 
+                    
+                    if parroquia_id:
+                        try:
+                            participante.parroquia = Parroquia.objects.get(id=parroquia_id)
+                        except:
+                            pass
+                    
+                    # 4. Guardar (Aquí se ejecuta el clean() del modelo que valida los 7 dígitos)
+                    participante.save()
+                
+                messages.success(request, f'Participante registrado exitosamente.')
+                return redirect('lista_participantes')
+
+            except Exception as e:
+                messages.error(request, f'Error crítico: {str(e)}')
+        else:
+            for field, errors in participante_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        participante_form = ParticipanteRegistrationForm()
+
+    return render(request, 'users/register.html', {
+        'participante_form': participante_form,
+        'municipios': municipios,
+        'institucion': perfil_inst
+    })
 
 def custom_login(request):
     """Vista de login personalizada con redirección para superusuarios"""
@@ -498,7 +562,7 @@ def lista_participantes(request):
     perfil = request.user.userprofile
     user_type = perfil.user_type
     
-    # 1. Definir el Queryset base
+    # 1. Definir el Queryset base según permisos
     if user_type in ['fed_central', 'superuser', 'tecnologico']:
         participantes = Participante.objects.all()
     elif user_type == 'fed_regional':
@@ -508,15 +572,41 @@ def lista_participantes(request):
     else:
         return redirect('dashboard')
 
-    # 2. Aplicar filtros de URL
+    # 2. Aplicar filtros de URL (Búsqueda y Filtros)
+    q = request.GET.get('q')
+    if q:
+        participantes = participantes.filter(
+            Q(nombres__icontains=q) | 
+            Q(apellidos__icontains=q) | 
+            Q(cedula__icontains=q)
+        )
+
     estado_f = request.GET.get('estado')
-    if estado_f and user_type != 'fed_regional': # Regional no puede cambiar su estado
+    if estado_f and user_type != 'fed_regional':
         participantes = participantes.filter(estado_id=estado_f)
 
+    sexo_f = request.GET.get('sexo')
+    if sexo_f:
+        participantes = participantes.filter(sexo=sexo_f)
+
+    # 3. Lógica para Menores de Edad (Evitar el FieldError de 'edad')
+    # Calculamos la fecha límite: hoy hace 18 años
+    hoy = date.today()
+    fecha_limite_menores = date(hoy.year - 18, hoy.month, hoy.day)
+
+    # 4. Construcción del Contexto
     context = {
-        'participantes': participantes,
+        'participantes': participantes.order_by('-fecha_registro'),
         'total_participantes': participantes.count(),
-        'estados': Estado.objects.all(),
+        'estados': Estado.objects.all().order_by('nombre'),
+        
+        # Estadísticas corregidas
+        'participantes_hombres': participantes.filter(sexo='M').count(),
+        'participantes_mujeres': participantes.filter(sexo='F').count(),
+        
+        # Filtramos por fecha_nacimiento (nacidos después de la fecha límite son menores)
+        'menores_edad': participantes.filter(fecha_nacimiento__gt=fecha_limite_menores).count(),
+        
         'es_central': user_type in ['fed_central', 'superuser'],
         'es_regional': user_type == 'fed_regional',
         'perfil': perfil,
@@ -1089,52 +1179,81 @@ def mi_perfil_institucional(request):
     }
     return render(request, 'users/mi_perfil.html', context)
 
+
 @login_required
 def mis_grupos(request):
     usuario = request.user
 
     if request.method == 'POST':
+        # 1. Capturar datos básicos del grupo
         nombre_grupo = request.POST.get('nombre_grupo')
         tutor_cedula = request.POST.get('tutor_cedula')
         tutor_nombre = request.POST.get('tutor_nombre')
         tutor_telefono = request.POST.get('tutor_telefono')
         
         try:
-            # 1. Crear el Grupo vinculado al usuario_creador
-            nuevo_grupo = Grupo.objects.create(
-                nombre=nombre_grupo,
-                tutor_cedula=tutor_cedula,
-                tutor_nombre=tutor_nombre,
-                tutor_telefono=tutor_telefono,
-                usuario_creador=usuario
-            )
-
-            # 2. Procesar participantes dinámicos
-            for key in request.POST:
-                if key.startswith('p_cedula_'):
-                    suffix = key.split('_')[-1]
+            with transaction.atomic():
+                # --- LÓGICA DE HERENCIA DINÁMICA ---
+                # Si el usuario NO escribió el nombre del tutor, lo buscamos en los participantes
+                if not tutor_nombre:
+                    # Buscamos en el diccionario POST cualquier clave que empiece con p_nombre_
+                    # para extraer el primer participante que se haya agregado dinámicamente.
+                    clave_nombre = next((k for k in request.POST if k.startswith('p_nombre_')), None)
                     
-                    Participante.objects.create(
-                        grupo=nuevo_grupo,
-                        cedula=request.POST.get(f'p_cedula_{suffix}'),
-                        nombre=request.POST.get(f'p_nombre_{suffix}'),
-                        apellido=request.POST.get(f'p_apellido_{suffix}'),
-                        fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
-                        # Si tu modelo tiene campo 'estado', puedes usar:
-                        # estado=request.POST.get(f'p_estado_{suffix}')
-                    )
-            
-            messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
-            return redirect('mis_grupos')
+                    if clave_nombre:
+                        suffix = clave_nombre.split('_')[-1]
+                        p_nom = request.POST.get(f'p_nombre_{suffix}', '')
+                        p_ape = request.POST.get(f'p_apellido_{suffix}', '')
+                        
+                        tutor_nombre = f"{p_nom} {p_ape}".strip()
+                        tutor_cedula = request.POST.get(f'p_cedula_{suffix}', tutor_cedula)
+                        tutor_telefono = request.POST.get(f'p_telefono_{suffix}', tutor_telefono)
+                
+                # --- VALIDACIÓN DE EMERGENCIA ---
+                # Si después de lo anterior sigue siendo None o vacío, la DB dará error.
+                # Como último recurso, usamos el nombre del usuario logueado.
+                if not tutor_nombre:
+                    tutor_nombre = f"{usuario.first_name} {usuario.last_name}".strip() or usuario.username
+                if not tutor_cedula:
+                    tutor_cedula = "0"
+
+                # 2. Crear el Grupo
+                nuevo_grupo = Grupo.objects.create(
+                    nombre=nombre_grupo,
+                    tutor_cedula=tutor_cedula,
+                    tutor_nombre=tutor_nombre,
+                    tutor_telefono=tutor_telefono or '',
+                    usuario_creador=usuario
+                )
+
+                # 3. Procesar y asociar participantes
+                for key in request.POST:
+                    if key.startswith('p_cedula_'):
+                        suffix = key.split('_')[-1]
+                        
+                        # Creamos el participante
+                        participante = Participante.objects.create(
+                            cedula=request.POST.get(f'p_cedula_{suffix}'),
+                            nombre=request.POST.get(f'p_nombre_{suffix}'),
+                            apellido=request.POST.get(f'p_apellido_{suffix}'),
+                            fecha_nacimiento=request.POST.get(f'p_fecha_{suffix}') or None,
+                            # Si Participante tiene FK a Grupo, se asigna aquí:
+                            # grupo=nuevo_grupo 
+                        )
+                        
+                        # Si tu modelo usa ManyToMany (según tu primer código), se añade así:
+                        nuevo_grupo.participantes.add(participante)
+
+                messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+                return redirect('mis_grupos')
             
         except Exception as e:
+            print(f"DEBUG ERROR: {str(e)}") # Esto saldrá en tu terminal
             messages.error(request, f"Error al guardar: {e}")
             return redirect('mis_grupos')
 
-    # Lógica GET
+    # Lógica GET (sin cambios)
     grupos = Grupo.objects.filter(usuario_creador=usuario).order_by('-fecha_registro')
-    
-    # Lista manual para evitar el ImportError de 'Estado'
     estados_venezuela = [
         'Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar', 
         'Carabobo', 'Cojedes', 'Delta Amacuro', 'Falcón', 'Guárico', 'Lara', 
@@ -1328,3 +1447,56 @@ def eliminar_sede(request, user_id):
         user_to_delete.delete()
         messages.success(request, f"La sede de {nombre} ha sido eliminada permanentemente.")
     return redirect('gestionar_sedes')
+
+def participante_detail(request, pk):
+    """Muestra el expediente detallado de un participante"""
+    participante = get_object_or_404(Participante, pk=pk)
+    return render(request, 'users/participante_detail.html', {'p': participante})
+
+def participante_edit(request, pk):
+    participante = get_object_or_404(Participante, pk=pk)
+    if request.method == 'POST':
+        form = ParticipanteModalEditForm(request.POST, instance=participante)
+        if form.is_valid():
+            form.save() # Aquí Django guarda automáticamente nombres, apellidos, etc.
+            messages.success(request, "Datos actualizados correctamente.")
+        else:
+            # Esto te dirá en consola o pantalla exactamente qué campo falló
+            for field, errors in form.errors.items():
+                messages.error(request, f"Error en {field}: {errors.as_text()}")
+    
+    return redirect('lista_participantes')
+
+def participante_delete(request, pk):
+    """Elimina el registro mediante POST"""
+    if request.method == 'POST':
+        participante = get_object_or_404(Participante, pk=pk)
+        nombre = f"{participante.nombres} {participante.apellidos}"
+        participante.delete()
+        messages.success(request, f"El registro de {nombre} ha sido eliminado.")
+    return redirect('lista_participantes')
+
+def load_parroquias(request):
+    municipio_id = request.GET.get('municipio_id')
+    # Validamos que llegue el ID para evitar errores
+    if municipio_id:
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by('nombre')
+    else:
+        parroquias = Parroquia.objects.none()
+        
+    # Retornamos los datos en formato JSON
+    return JsonResponse(list(parroquias.values('id', 'nombre')), safe=False)
+
+def api_buscar_participante(request, cedula):
+    try:
+        # Buscamos en el modelo Participante por la cédula
+        p = Participante.objects.get(cedula=cedula)
+        return JsonResponse({
+            'encontrado': True,
+            'id': p.id,
+            'nombre': p.nombres,
+            'apellido': p.apellidos,
+            'edad': p.edad, # Usando la @property edad que definimos antes
+        })
+    except Participante.DoesNotExist:
+        return JsonResponse({'encontrado': False})

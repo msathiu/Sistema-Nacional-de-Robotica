@@ -657,15 +657,18 @@ class Grupo(models.Model):
         on_delete=models.CASCADE,
         related_name="grupos_creados",
     )
-    tutor_nombre = models.CharField(max_length=200)
-    tutor_apellidos = models.CharField(max_length=200, default='')
-    tutor_cedula = models.CharField(max_length=20, db_index=True)
-    tutor_telefono = models.CharField(max_length=20, blank=True)
+    
+    # Cambiados a null=True para evitar el error de base de datos si fallara la lógica
+    tutor_nombre = models.CharField(max_length=200, blank=True, null=True)
+    tutor_apellidos = models.CharField(max_length=200, default='', blank=True, null=True)
+    tutor_cedula = models.CharField(max_length=20, db_index=True, blank=True, null=True)
+    tutor_telefono = models.CharField(max_length=20, blank=True, null=True)
+    
     participantes = models.ManyToManyField(
-        Participante, related_name="grupos", verbose_name="Integrantes del Grupo"
+        'Participante', related_name="grupos", verbose_name="Integrantes del Grupo"
     )
     evento = models.ForeignKey(
-        Evento,
+        'Evento',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -678,16 +681,9 @@ class Grupo(models.Model):
         verbose_name = "Grupo"
         verbose_name_plural = "Grupos"
         ordering = ["-fecha_registro"]
-        indexes = [
-            models.Index(
-                fields=["usuario_creador", "activo"], name="idx_grp_creador_activo"
-            ),
-            models.Index(fields=["evento"], name="idx_grp_evento"),
-        ]
 
     def save(self, *args, **kwargs):
         if not self.codigo:
-            # Generar código único para el grupo
             chars = string.ascii_uppercase + string.digits
             while True:
                 codigo = 'GRP-' + get_random_string(length=8, allowed_chars=chars)
@@ -698,12 +694,6 @@ class Grupo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - {self.usuario_creador.username}"
-
-    @property
-    def cantidad_participantes(self):
-        """Retorna la cantidad de participantes en el grupo."""
-        return self.participantes.count()
-
 
 class Club(models.Model):
     """Modelo para representar clubes de robótica."""

@@ -34,7 +34,10 @@ urlpatterns = [
     
     # --- Participantes ---
     path('participantes/', views.lista_participantes, name='lista_participantes'),
-    path('participante/editar/<int:pk>/', views.ParticipanteUpdateView.as_view(), name='participante_editar'),
+    path('participante/<int:pk>/', views.participante_detail, name='participante_detail'),
+    path('participante/editar/<int:pk>/', views.participante_edit, name='participante_edit'),
+    path('participante/eliminar/<int:pk>/', views.participante_delete, name='participante_delete'),
+    path('api/participante/<str:cedula>/', views.api_buscar_participante, name='api_buscar_participante'),
 
     # --- Analítica y Reportes ---
     path('dashboard/analitica/', views.estadisticas_por_estado, name='estadisticas_por_estado'),
@@ -64,6 +67,7 @@ urlpatterns = [
     # AJAX y Datos Dinámicos
     path('ajax/municipios/', views.ajax_municipios, name='ajax_municipios'),
     path('ajax/dependencias/', views.ajax_dependencias, name='ajax_dependencias'),
+    path('ajax/parroquias/', views.load_parroquias, name='ajax_load_parroquias'),
     path('buscar-usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
     path('create-institutional-user/', views.create_institutional_user, name='create_institutional_user'),
 
