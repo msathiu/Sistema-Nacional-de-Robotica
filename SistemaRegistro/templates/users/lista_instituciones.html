@@ -103,7 +103,9 @@
                             <th class="py-3">Razón Social</th>
                             <th class="py-3">Correo / Teléfono</th>
                             <th class="py-3">Ubicación</th>
+                            {% if es_central %}
                             <th class="py-3 text-center">Estatus</th>
+                            {% endif %}
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -124,8 +126,9 @@
                                 <div class="small fw-bold text-estado-val">{{ item.institucion.estado.nombre }}</div>
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
+                            
+                            {% if es_central %}
                             <td class="text-center" onclick="event.stopPropagation();">
-                               
                                 <div class="mt-2">
                                     <div class="form-check form-switch d-inline-block">
                                         <input class="form-check-input switch-status" type="checkbox" role="switch" 
@@ -135,16 +138,23 @@
                                 </div>
                                 <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
                             </td>
+                            {% else %}
+                                <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                            {% endif %}
+
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
                                     <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
                                             onclick="abrirModalEditar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.rif }}', '{{ item.institucion.email }}', '{{ item.institucion.telefono }}', '{{ item.institucion.direccion|escapejs }}')">
                                         <i class="bi bi-pencil-square me-1"></i> Editar
                                     </button>
+                                    
+                                    {% if es_central %}
                                     <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
                                             onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -155,6 +165,7 @@
         </div>
     </div>
 </div>
+
 
 <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -275,16 +286,16 @@
         const errorDiv = document.getElementById('editErrorMsg');
         errorDiv.style.display = 'none';
 
+        // Parsing de RIF
         let rifLetra = "J", rifNum = "";
         if(rifFull && rifFull.includes('-')) {
-            let partes = rifFull.split('-');
-            rifLetra = partes[0];
-            rifNum = partes[1];
+            [rifLetra, rifNum] = rifFull.split('-');
         } else if(rifFull) {
             rifLetra = rifFull.charAt(0).toUpperCase();
             rifNum = rifFull.substring(1);
         }
 
+        // Parsing de Teléfono
         let codArea = "0412", numResto = "";
         if(tel && tel.length >= 4) {
             codArea = tel.substring(0,4);
@@ -295,47 +306,47 @@
             <div class="row g-3">
                 <div class="col-12">
                     <label class="form-label small fw-bold">Razón Social</label>
-                    <input type="text" name="nombre" id="editNombre" class="form-control text-uppercase" value="${nombre}" required>
+                    <input type="text" name="nombre" class="form-control text-uppercase" value="${nombre}" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">RIF / Identificación</label>
                     <div class="d-flex gap-2">
-                        <select name="rif_letra" id="editRifLetra" class="form-select" style="max-width: 70px;">
+                        <select name="rif_letra" class="form-select" style="max-width: 70px;">
                             <option value="J" ${rifLetra == 'J' ? 'selected' : ''}>J</option>
                             <option value="V" ${rifLetra == 'V' ? 'selected' : ''}>V</option>
                             <option value="E" ${rifLetra == 'E' ? 'selected' : ''}>E</option>
                             <option value="G" ${rifLetra == 'G' ? 'selected' : ''}>G</option>
-                            <option value="P" ${rifLetra == 'P' ? 'selected' : ''}>P</option>
                         </select>
-                        <input type="text" name="rif_numero" id="editRifNum" class="form-control" value="${rifNum}" placeholder="Número" onkeypress="return /[0-9]/i.test(event.key)">
+                        <input type="text" name="rif_numero" class="form-control" value="${rifNum}" placeholder="Número">
                     </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold d-block">Teléfono</label>
                     <div class="input-group">
-                        <select name="modal_cod_area" id="editCodArea" class="form-select" style="max-width: 90px;">
+                        <select name="modal_cod_area" class="form-select" style="max-width: 90px;">
                             <option value="0412" ${codArea == '0412' ? 'selected' : ''}>0412</option>
+                            <option value="0422" ${codArea == '0422' ? 'selected' : ''}>0422</option>
                             <option value="0414" ${codArea == '0414' ? 'selected' : ''}>0414</option>
                             <option value="0424" ${codArea == '0424' ? 'selected' : ''}>0424</option>
                             <option value="0416" ${codArea == '0416' ? 'selected' : ''}>0416</option>
                             <option value="0426" ${codArea == '0426' ? 'selected' : ''}>0426</option>
                         </select>
-                        <input type="text" name="modal_num_puro" id="editNumPuro" class="form-control" value="${numResto}" maxlength="7" onkeypress="return /[0-9]/i.test(event.key)">
+                        <input type="text" name="modal_num_puro" class="form-control" value="${numResto}" maxlength="7">
                     </div>
                 </div>
                 <div class="col-12">
                     <label class="form-label small fw-bold">Correo Electrónico</label>
-                    <input type="email" name="email" id="editEmail" class="form-control" value="${emailOriginal}" required>
+                    <input type="email" name="email" class="form-control" value="${emailOriginal}" required>
                 </div>
                 <div class="col-12">
                     <label class="form-label small fw-bold">Dirección</label>
-                    <textarea name="direccion" id="editDir" class="form-control" rows="2">${dir}</textarea>
+                    <textarea name="direccion" class="form-control" rows="2">${dir}</textarea>
                 </div>
                 <div class="col-12 mt-3">
                     <div class="p-3 border rounded-3 bg-light">
                         <div class="d-flex align-items-center mb-2 text-primary x-small">
                             <i class="bi bi-shield-lock-fill me-2"></i>
-                            <span class="fw-bold text-uppercase">Cambio de Clave (Dejar en blanco para no cambiar)</span>
+                            <span class="fw-bold text-uppercase">Seguridad (Opcional)</span>
                         </div>
                         <div class="row g-2">
                             <div class="col-md-6">
@@ -351,51 +362,24 @@
                 </div>
             </div>`;
         
+        const form = document.getElementById('modalForm');
+        form.action = `/instituciones/editar/${id}/`;
+        
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Guardar Cambios";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 shadow-sm text-white";
         submit.style.background = "var(--blue-main)";
         
-        const form = document.getElementById('modalForm');
-        form.action = `/instituciones/editar/${id}/`;
-
-        // LÓGICA DE VALIDACIÓN CORREGIDA
+        // Validaciones al enviar
         form.onsubmit = function(e) {
-            const email = document.getElementById('editEmail').value.trim();
             const pass = document.getElementById('editPass').value;
             const conf = document.getElementById('editPassConf').value;
-            const errorText = document.getElementById('errorText');
             
-            // Función auxiliar para mostrar error
-            const showError = (msg) => {
+            if(pass && pass !== conf) {
                 e.preventDefault();
-                errorText.innerText = msg;
+                document.getElementById('errorText').innerText = "Las contraseñas no coinciden.";
                 errorDiv.style.display = 'block';
-                document.getElementById('modalUniversal').scrollTo({ top: 0, behavior: 'smooth' });
-            };
-
-            errorDiv.style.display = 'none';
-
-            // 1. Validar Email
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if(!emailRegex.test(email)) {
-                showError("El formato del correo electrónico es inválido.");
                 return false;
-            }
-
-            // 2. Validar Contraseña (si se escribió algo)
-            if(pass.length > 0) {
-                if(pass !== conf) {
-                    showError("Las contraseñas ingresadas no coinciden.");
-                    return false;
-                }
-                
-                // Regex: Mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula y 1 número
-                const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-                if(!passRegex.test(pass)) {
-                    showError("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número.");
-                    return false;
-                }
             }
         };
 
@@ -406,7 +390,6 @@
         const activa = checkbox.checked;
         const url = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
         
-        // Configurar Colores y Títulos del Modal
         const header = document.getElementById('modalHeader');
         header.style.background = activa ? "#10b981" : "#f59e0b";
         document.getElementById('modalTitle').innerHTML = activa ? 
@@ -416,88 +399,63 @@
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-3">
                 <p class="fs-5 mb-0">¿Confirmar cambio para <b>${nombre}</b>?</p>
-                <p class="text-muted small">Esta acción actualizará el acceso del usuario y las estadísticas.</p>
             </div>`;
                 
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Confirmar";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
         submit.style.background = activa ? "#10b981" : "#f59e0b";
-        submit.disabled = false; // Asegurar que esté habilitado
         
         const form = document.getElementById('modalForm');
+        form.action = ""; // Limpiar acción estándar para usar fetch
         
-        // IMPORTANTE: Limpiar cualquier evento submit anterior
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
-
-        newForm.onsubmit = function(e) {
+        form.onsubmit = function(e) {
             e.preventDefault();
-            e.stopImmediatePropagation(); // Detiene cualquier otro proceso
-            
             submit.disabled = true;
-            submit.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
             
             fetch(url, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
             })
-            .then(async response => {
-                if (response.ok) {
-                    // Forzar recarga ignorando el caché para ver los KPIs actualizados
-                    const timestamp = new Date().getTime();
-                    window.location.href = window.location.pathname + '?v=' + timestamp;
-                } else {
-                    const data = await response.json();
-                    throw new Error(data.message || 'Error en el servidor');
-                }
+            .then(response => {
+                if (response.ok) window.location.reload();
+                else throw new Error('Error en el servidor');
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert("Error: " + error.message);
-                checkbox.checked = !activa; // Revertir el switch si falla
+                alert("Error al procesar la solicitud.");
+                checkbox.checked = !activa;
                 universalModal.hide();
             });
         };
         
+        universalModal.show();
+        
         // Si cierran el modal sin confirmar, revertir el switch
         document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', function () {
-            if (!submit.disabled) { 
-                checkbox.checked = !activa; 
-            }
+            if (!submit.disabled) checkbox.checked = !activa;
         }, {once: true});
-
-        universalModal.show();
     }
 
     function abrirModalEliminar(id, nombre) {
         const header = document.getElementById('modalHeader');
-        header.className = "modal-header border-0 pt-4 px-4 text-white shadow-sm";
         header.style.background = "#ef4444";
-        document.getElementById('editErrorMsg').style.display = 'none';
         document.getElementById('modalTitle').innerHTML = `<i class="bi bi-trash3-fill me-2"></i> ELIMINAR REGISTRO`;
         
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-2">
-                <div class="mb-3"><i class="bi bi-x-circle-fill" style="font-size: 3.5rem; color: #ef4444; opacity: 0.15;"></i></div>
                 <h5 class="fw-bold text-danger">¡ACCIÓN IRREVERSIBLE!</h5>
-                <p class="text-muted">Se eliminarán permanentemente los datos de:<br><strong class="text-dark">${nombre}</strong></p>
-                <div class="bg-light p-3 rounded-3 border mb-3">
-                    <label class="small fw-bold text-uppercase d-block mb-2">Para continuar, escriba la palabra:</label>
-                    <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR" style="letter-spacing: 3px;">
-                </div>
+                <p class="text-muted">Escriba <b>CONFIRMAR</b> para eliminar:<br><strong>${nombre}</strong></p>
+                <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR">
             </div>`;
             
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Eliminar Definitivamente";
         submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow";
         submit.disabled = true;
-        document.getElementById('modalForm').onsubmit = null;
-        document.getElementById('modalForm').action = `/instituciones/eliminar/${id}/`;
+        
+        const form = document.getElementById('modalForm');
+        form.action = `/instituciones/eliminar/${id}/`;
+        form.onsubmit = null;
         
         universalModal.show();
         document.getElementById('confirmInput').addEventListener('input', (e) => {

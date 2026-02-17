@@ -29,12 +29,11 @@ from .forms import InstitucionRegistrationForm, CustomUserCreationForm, Particip
 import pandas as pd
 from django.contrib.admin.models import LogEntry
 from django.utils import timezone
-from .decorators import admin_required, institucional_required, owns_institution
+from .decorators import admin_required, institucional_required, owns_institution, admin_or_owner_required
 from django.views.decorators.cache import never_cache
 from django.db.models.functions import ExtractMonth
 from datetime import datetime
-
-
+from django.apps import apps  
 
 def home(request):
     """Página principal con opciones de login y registro"""
@@ -845,63 +844,59 @@ def gestionar_credenciales(request, institucion_id):
         return redirect('lista_instituciones')
     return render(request, 'users/gestionar_credenciales.html', {'institucion': inst, 'usuario': usuario})
 
-
-@owns_institution
-@require_http_methods(["POST"])
+@admin_or_owner_required
 def editar_institucion_modal(request, institucion_id):
+    Institucion = apps.get_model('registry', 'Institucion')
     inst = get_object_or_404(Institucion, id=institucion_id)
     
-    # 1. Intentamos localizar al usuario vinculado
-    # Buscamos al usuario cuyo username sea igual al código SNR de la institución
-    user = User.objects.filter(username=inst.codigo).first()
+    if request.method == 'POST':
+        try:
+            # 1. Actualización de datos de la Institución
+            # Usamos or inst.nombre por si el campo llega vacío en el formulario
+            inst.nombre = (request.POST.get('nombre') or inst.nombre).upper()
+            inst.email = (request.POST.get('email') or inst.email).lower()
+            inst.direccion = request.POST.get('direccion') or inst.direccion
 
-    # 2. Actualizar datos básicos de la Institución
-    inst.nombre = request.POST.get('nombre', '').upper()
-    inst.email = request.POST.get('email', '')
-    inst.direccion = request.POST.get('direccion', '')
+            # RIF (Letra + Número)
+            rif_letra = request.POST.get('rif_letra')
+            rif_num = request.POST.get('rif_numero')
+            if rif_letra and rif_num:
+                inst.rif = f"{rif_letra}-{rif_num}"
 
-    # Reconstrucción del RIF desde el modal
-    rif_letra = request.POST.get('rif_letra', '')
-    rif_num = request.POST.get('rif_numero', '')
-    if rif_letra and rif_num:
-        inst.rif = f"{rif_letra}-{rif_num}"
-
-    # Reconstrucción del Teléfono
-    cod_area = request.POST.get('modal_cod_area', '')
-    num_puro = request.POST.get('modal_num_puro', '')
-    if cod_area and num_puro:
-        inst.telefono = f"{cod_area}{num_puro}"
-    
-    # 3. Guardar cambios en la Institución
-    try:
-        inst.save()
-        
-        # 4. Si encontramos al usuario, actualizamos su clave y correo
-        if user:
-            # Actualizar email del usuario para que coincida con la institución
-            user.email = inst.email
+            # Teléfono (Código + Número)
+            cod_area = request.POST.get('modal_cod_area')
+            num_puro = request.POST.get('modal_num_puro')
+            if cod_area and num_puro:
+                inst.telefono = f"{cod_area}{num_puro}"
             
-            nueva_clave = request.POST.get('new_password')
-            confirm_clave = request.POST.get('confirm_password')
+            inst.save()
+            print(f"[VISTA] Institución {inst.id} guardada exitosamente.")
 
-            if nueva_clave:
-                if nueva_clave == confirm_clave:
-                    # set_password encripta la clave correctamente
-                    user.set_password(nueva_clave)
-                    user.save()
-                else:
-                    messages.warning(request, f'La institución se actualizó, pero las contraseñas no coincidían.')
-            else:
-                # Si no hay clave nueva, solo guardamos el posible cambio de email
-                user.save()
+            # 2. Sincronización con el Usuario de Django
+            user_vinculado = User.objects.filter(username=inst.codigo).first()
+            if user_vinculado:
+                user_vinculado.email = inst.email
+                
+                nueva_clave = request.POST.get('new_password')
+                confirm_clave = request.POST.get('confirm_password')
 
-        messages.success(request, f'Sede {inst.nombre} actualizada correctamente.')
-        
-    except Exception as e:
-        messages.error(request, f"Error al guardar los cambios: {e}")
-        
-    return redirect('lista_instituciones')
+                if nueva_clave:
+                    if nueva_clave == confirm_clave:
+                        user_vinculado.set_password(nueva_clave)
+                        messages.info(request, f'Contraseña de {user_vinculado.username} actualizada.')
+                    else:
+                        messages.warning(request, 'Sede guardada, pero las claves no coinciden.')
+                
+                user_vinculado.save()
+
+            messages.success(request, f'Sede {inst.nombre} actualizada correctamente.')
+            
+        except Exception as e:
+            print(f"[ERROR EN VISTA] {str(e)}")
+            messages.error(request, f"Error al guardar: {str(e)}")
     
+    return redirect('lista_instituciones')
+
 # ELIMINAR 
 @admin_required
 @require_http_methods(["POST"])
