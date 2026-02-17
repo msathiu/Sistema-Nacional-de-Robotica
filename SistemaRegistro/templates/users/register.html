@@ -10,7 +10,7 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Registro de Nuevo Participante</h2>
-                    <p class="text-muted mb-0 small">Registro Nacional de Federados</p>
+                    <p class="text-muted mb-0 small">Sede: {{ request.user.userprofile.institution.nombre }}</p>
                 </div>
             </div>
             <hr class="mt-4 opacity-10">
@@ -20,19 +20,17 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-shield-lock text-white me-2"></i>
-                        <h5 class="fw-bold mb-0 text-white uppercase small tracking-wider">Formulario de Inscripción Master</h5>
-                    </div>
-                    <span class="badge rounded-pill" style="background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">Paso Único</span>
+                <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+                    <h5 class="fw-bold mb-0 text-white uppercase small tracking-wider">
+                        <i class="bi bi-person-vcard me-2"></i> Expediente de Inscripción
+                    </h5>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
                     {% if messages %}
                         {% for message in messages %}
                             <div class="alert border-0 shadow-sm alert-{{ message.tags }} alert-dismissible fade show rounded-4" role="alert">
-                                <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+                                {{ message }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         {% endfor %}
@@ -44,70 +42,9 @@
                         <div class="mb-5">
                             <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
                                 <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</span>
-                                Credenciales de Acceso
+                                Información Personal
                             </h5>
                             <div class="row g-4">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombre de Usuario</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-at text-primary"></i></span>
-                                        {{ user_form.username }}
-                                    </div>
-                                    {% if user_form.username.errors %}<div class="text-danger x-small mt-1">{{ user_form.username.errors }}</div>{% endif %}
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
-                                        {{ user_form.email }}
-                                    </div>
-                                    {% if user_form.email.errors %}<div class="text-danger x-small mt-1">{{ user_form.email.errors }}</div>{% endif %}
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Contraseña</label>
-                                    <div class="input-group mb-2">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-key text-primary"></i></span>
-                                        {{ user_form.password1 }}
-                                    </div>
-                                    <div id="password-requirements" class="p-3 rounded-3 bg-light border border-dashed">
-                                        <p class="fw-bold x-small text-uppercase text-muted mb-2">Seguridad de la clave:</p>
-                                        <ul class="list-unstyled mb-0 row x-small">
-                                            <li id="min-length" class="col-6 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>8+ caracteres</li>
-                                            <li id="has-uppercase" class="col-6 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Mayúscula</li>
-                                            <li id="has-lowercase" class="col-6 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Minúscula</li>
-                                            <li id="has-number" class="col-6 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Número</li>
-                                            <li id="has-symbol" class="col-12 text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Carácter especial</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Confirmar Contraseña</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-shield-check text-primary"></i></span>
-                                        {{ user_form.password2 }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-5">
-                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</span>
-                                Perfil del Participante
-                            </h5>
-                            <div class="row g-4">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Cédula</label>
-                                    {{ participante_form.cedula }}
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Fecha de Nacimiento</label>
-                                    {{ participante_form.fecha_nacimiento }}
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Edad</label>
-                                    {{ participante_form.edad }}
-                                </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombres</label>
                                     {{ participante_form.nombres }}
@@ -116,14 +53,47 @@
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
                                     {{ participante_form.apellidos }}
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
+                                        <input type="email" name="email" class="form-control" placeholder="ejemplo@correo.com" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Cédula / Escolar</label>
+                                    <div class="input-group">
+                                        <select name="nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #e2e8f0 !important;">
+                                            <option value="V">V</option>
+                                            <option value="E">E</option>
+                                        </select>
+                                        {{ participante_form.cedula }}
+                                    </div>
+                                </div>
                                 <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Fecha de Nacimiento</label>
+                                    {{ participante_form.fecha_nacimiento }}
+                                    <div id="edad-error" class="text-danger x-small mt-1 d-none">Mínimo 3 años de edad.</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Edad</label>
+                                    <input type="text" id="id_edad_display" class="form-control bg-light" readonly placeholder="0">
+                                    <input type="hidden" name="edad" id="id_edad">
+                                </div>
+                                <div class="col-md-3">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Sexo</label>
                                     {{ participante_form.sexo }}
                                 </div>
-                                <div class="col-md-8">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono de Contacto</label>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono</label>
                                     <div class="input-group">
-                                        <div style="width: 30%;">{{ participante_form.codigo_area }}</div>
+                                        <select name="codigo_area" class="form-select" style="max-width: 90px; background-color: #fff !important;">
+                                            <option value="0412">0412</option>
+                                            <option value="0414">0414</option>
+                                            <option value="0424">0424</option>
+                                            <option value="0416">0416</option>
+                                            <option value="0426">0426</option>
+                                        </select>
                                         {{ participante_form.numero_telefono }}
                                     </div>
                                 </div>
@@ -132,37 +102,54 @@
 
                         <div class="mb-5">
                             <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
+                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</span>
+                                Residencia
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Estado (Asignado)</label>
+                                    <input type="text" class="form-control fw-bold" style="background: #e0f7fa; color: #006064;" value="{{ request.user.userprofile.institution.estado.nombre }}" readonly>
+                                    <input type="hidden" name="estado" value="{{ request.user.userprofile.institution.estado.id }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
+                                    <select name="municipio" id="id_municipio" class="form-select" required>
+                                        <option value="">Seleccione...</option>
+                                        {% for muni in municipios %}
+                                            <option value="{{ muni.id }}">{{ muni.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Parroquia</label>
+                                    <select name="parroquia" id="id_parroquia" class="form-select" required>
+                                        <option value="">Esperando municipio...</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Dirección de Vivienda</label>
+                                    {{ participante_form.direccion }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
                                 <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</span>
-                                Ubicación e Institución
+                                Nivel Educativo
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Estado</label>
-                                    {{ participante_form.estado }}
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
-                                    {{ participante_form.municipio }}
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Dirección Exacta</label>
-                                    {{ participante_form.direccion }}
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nivel Educativo / Grado</label>
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Grado / Nivel</label>
                                     {{ participante_form.grado_escolar }}
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Nombre de la Escuela/Universidad</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-mortarboard text-primary"></i></span>
-                                        {{ participante_form.nombre_escuela }}
-                                    </div>
+                                <div class="col-md-6" id="profesion_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Especifique Título / Estudios</label>
+                                    <input type="text" name="profesion" class="form-control border-primary shadow-sm" placeholder="Ej: Ingeniería, Licenciatura, etc.">
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Institución o Grupo de Robótica</label>
-                                    {{ participante_form.institucion }}
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Plantel / Universidad</label>
+                                    {{ participante_form.nombre_escuela }}
                                 </div>
                             </div>
                         </div>
@@ -170,37 +157,49 @@
                         <div id="representanteSection" class="representante-section mb-5">
                             <div class="p-4 rounded-4" style="background: #fff9f0; border: 2px dashed #ffc107;">
                                 <h5 class="fw-bold text-warning-emphasis mb-4 d-flex align-items-center">
-                                    <i class="bi bi-shield-fill-exclamation me-2"></i> Datos del Representante (Menores de Edad)
+                                    <i class="bi bi-shield-fill-check me-2"></i> Datos del Representante Legal (Menor de Edad)
                                 </h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="small fw-bold text-muted text-uppercase">Nombre del Representante</label>
+                                        <label class="small fw-bold text-muted text-uppercase">Nombre Completo</label>
                                         {{ participante_form.nombre_representante }}
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="small fw-bold text-muted text-uppercase">Cédula del Representante</label>
-                                        {{ participante_form.cedula_representante }}
+                                        <label class="small fw-bold text-muted text-uppercase">Cédula</label>
+                                        <div class="input-group">
+                                            <select name="rep_nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #fff !important;">
+                                                <option value="V">V</option>
+                                                <option value="E">E</option>
+                                            </select>
+                                            {{ participante_form.cedula_representante }}
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="small fw-bold text-muted text-uppercase">Teléfono del Representante</label>
+                                        <label class="small fw-bold text-muted text-uppercase">Teléfono de Contacto</label>
                                         <div class="input-group">
-                                            <div style="width: 30%;">{{ participante_form.codigo_area_representante }}</div>
+                                            <select name="codigo_area_representante" class="form-select" style="max-width: 90px; background-color: #fff !important;">
+                                                <option value="0412">0412</option>
+                                                <option value="0414">0414</option>
+                                                <option value="0424">0424</option>
+                                                <option value="0416">0416</option>
+                                                <option value="0426">0426</option>
+                                            </select>
                                             {{ participante_form.numero_telefono_representante }}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="small fw-bold text-muted text-uppercase">Email del Representante</label>
+                                        <label class="small fw-bold text-muted text-uppercase">Email</label>
                                         {{ participante_form.email_representante }}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-grid gap-3 pt-4">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg" style="border-radius: 15px; background: var(--blue-main); border: none;">
-                                <i class="bi bi-cloud-check-fill me-2"></i> Finalizar Registro
+                        <div class="d-grid pt-4">
+                            <button type="submit" id="btnFinalizar" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg rounded-pill" style="background: var(--blue-main); border: none;">
+                                GUARDAR REGISTRO NACIONAL
                             </button>
-                            
+                            <button type="reset" class="btn btn-link text-muted mt-2 small">Limpiar formulario</button>
                         </div>
                     </form>
                 </div>
@@ -210,115 +209,88 @@
 </div>
 
 <style>
-    /* Estilos para que los widgets de Django se vean como el tema Tech */
-    input[type="text"], input[type="email"], input[type="password"], input[type="date"], select, textarea {
-        display: block;
-        width: 100%;
-        padding: 10px 15px;
-        font-size: 1rem;
-        font-weight: 400;
-        line-height: 1.5;
-        color: #1e293b;
-        background-color: #f8fafc !important;
-        background-clip: padding-box;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        background-color: #fff !important;
-        border-color: var(--accent-cyan) !important;
-        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.1) !important;
-        outline: 0;
-    }
-
-    .x-small { font-size: 0.72rem; }
+    input, select, textarea { border-radius: 12px !important; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
     .required-field::after { content: " *"; color: #ef4444; }
-    
-    .representante-section {
-        display: none;
-        animation: slideDown 0.4s ease-out;
-    }
-
-    @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .representante-section { display: none; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Lógica de Municipios
-    const estadoSelect = document.getElementById('id_estado');
-    const municipioSelect = document.getElementById('id_municipio');
+    const registroForm = document.getElementById('registroForm');
+    const fechaNac = document.getElementById('id_fecha_nacimiento');
+    const edadDisp = document.getElementById('id_edad_display');
+    const edadHid = document.getElementById('id_edad');
+    const repSec = document.getElementById('representanteSection');
+    const gradoSel = document.getElementById('id_grado_escolar');
+    const profesionCont = document.getElementById('profesion_container');
 
-    estadoSelect.addEventListener('change', function() {
-        const estadoId = this.value;
-        if (estadoId) {
-            fetch(`/registry/load-municipios/?estado_id=${estadoId}`)
-                .then(response => response.json())
-                .then(data => {
-                    municipioSelect.innerHTML = '<option value="">Seleccione un municipio</option>';
-                    data.forEach(m => {
-                        municipioSelect.innerHTML += `<option value="${m.id}">${m.nombre}</option>`;
-                    });
-                });
-        }
-    });
-
-    // Lógica de Edad y Representante
-    const fechaNacInput = document.getElementById('id_fecha_nacimiento');
-    const edadInput = document.getElementById('id_edad');
-    const repSection = document.getElementById('representanteSection');
-
-    function calcularEdad() {
-        if (!fechaNacInput.value) return;
-        const nac = new Date(fechaNacInput.value);
-        const hoy = new Date();
-        let edad = hoy.getFullYear() - nac.getFullYear();
-        if (hoy.getMonth() < nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) {
-            edad--;
-        }
-        edadInput.value = edad;
+    // 1. Lógica de Edad y Representante
+    fechaNac.addEventListener('change', () => {
+        const born = new Date(fechaNac.value);
+        const now = new Date();
+        let edad = now.getFullYear() - born.getFullYear();
+        if (now.getMonth() < born.getMonth() || (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) edad--;
         
-        if (edad < 18) {
-            repSection.style.display = 'block';
-            document.querySelectorAll('#representanteSection input').forEach(i => i.required = true);
+        edadDisp.value = edad;
+        edadHid.value = edad;
+
+        // Validación de edad mínima (3 años)
+        if (edad < 3) {
+            document.getElementById('edad-error').classList.remove('d-none');
+            document.getElementById('btnFinalizar').disabled = true;
         } else {
-            repSection.style.display = 'none';
-            document.querySelectorAll('#representanteSection input').forEach(i => i.required = false);
+            document.getElementById('edad-error').classList.add('d-none');
+            document.getElementById('btnFinalizar').disabled = false;
         }
-    }
 
-    fechaNacInput.addEventListener('change', calcularEdad);
-
-    // Validador de Contraseña
-    const pass1 = document.getElementById('id_password1');
-    const reqs = {
-        'min-length': /.{8,}/,
-        'has-uppercase': /[A-Z]/,
-        'has-lowercase': /[a-z]/,
-        'has-number': /[0-9]/,
-        'has-symbol': /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-    };
-
-    pass1.addEventListener('input', () => {
-        const val = pass1.value;
-        for (const [id, regex] of Object.entries(reqs)) {
-            const el = document.getElementById(id);
-            const icon = el.querySelector('i');
-            if (regex.test(val)) {
-                el.classList.replace('text-danger', 'text-success');
-                icon.classList.replace('bi-x-circle', 'bi-check-circle-fill');
-            } else {
-                el.classList.replace('text-success', 'text-danger');
-                icon.classList.replace('bi-check-circle-fill', 'bi-x-circle');
-            }
+        // Mostrar sección de representante si es menor de 18
+        if (edad >= 3 && edad < 18) {
+            repSec.style.display = 'block';
+            document.querySelectorAll('#representanteSection input, #representanteSection select').forEach(i => i.required = true);
+        } else {
+            repSec.style.display = 'none';
+            document.querySelectorAll('#representanteSection input, #representanteSection select').forEach(i => i.required = false);
         }
     });
 
-    document.addEventListener('DOMContentLoaded', calcularEdad);
+    // 2. Lógica de Nivel Educativo
+    gradoSel.addEventListener('change', () => {
+        const val = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
+        if (val.includes('universitario') || val.includes('graduado') || val.includes('profesional') || val.includes('otros')) {
+            profesionCont.style.display = 'block';
+        } else {
+            profesionCont.style.display = 'none';
+        }
+    });
+
+    // 3. Lógica AJAX Municipios y Parroquias
+    document.getElementById('id_municipio').addEventListener('change', function() {
+        const muniId = this.value;
+        const parroquiaSelect = document.getElementById('id_parroquia');
+        parroquiaSelect.innerHTML = '<option value="">Cargando...</option>';
+        fetch(`/ajax/parroquias/?municipio_id=${muniId}`)
+            .then(response => response.json())
+            .then(data => {
+                parroquiaSelect.innerHTML = '<option value="">Seleccione Parroquia</option>';
+                data.forEach(item => {
+                    parroquiaSelect.innerHTML += `<option value="${item.id}">${item.nombre}</option>`;
+                });
+            });
+    });
+
+    // 4. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
+    registroForm.addEventListener('reset', () => {
+        setTimeout(() => { 
+            edadDisp.value = "0";
+            edadHid.value = "0";
+            repSec.style.display = 'none';
+            profesionCont.style.display = 'none';
+            document.getElementById('id_parroquia').innerHTML = '<option value="">Esperando municipio...</option>';
+            document.getElementById('edad-error').classList.add('d-none');
+            document.getElementById('btnFinalizar').disabled = false;
+        }, 10);
+    });
 </script>
 {% endblock %}

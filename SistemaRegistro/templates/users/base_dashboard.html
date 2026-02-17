@@ -24,7 +24,6 @@
             overflow-x: hidden;
         }
 
-        /* Estructura Lateral */
         #sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -49,7 +48,6 @@
             background: rgba(255,255,255,0.05);
         }
 
-        /* Enlaces del Menú */
         .nav-link-custom {
             color: rgba(255,255,255,0.7);
             padding: 1rem 1.5rem;
@@ -78,10 +76,6 @@
             padding: 1.5rem;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-
-        /* Ajustes de scrollbar para sidebar */
-        #sidebar::-webkit-scrollbar { width: 4px; }
-        #sidebar::-webkit-scrollbar-thumb { background: var(--accent-cyan); }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -95,49 +89,39 @@
         </div>
 
         <div class="mt-4">
-            {# --- MENÚ PARA FEDERACIÓN / ADMINISTRADORES --- #}
             {% if es_central or es_regional or user.is_superuser %}
-                
                 <a href="{% url 'dashboard' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i> Inicio
                 </a>
-
-                {# Botón de Perfil de Federación #}
                 <a href="{% url 'mi_perfil_federacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mi_perfil_federacion' %}active{% endif %}">
                     <i class="bi bi-person-badge"></i> Mi Perfil Profesional
                 </a>
-
                 <a href="{% url 'lista_instituciones' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_instituciones' %}active{% endif %}">
                     <i class="bi bi-building"></i> Instituciones
                 </a>
-
                 <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
                     <i class="bi bi-people"></i> Participantes
                 </a>
-
                 {% if es_central or user.is_superuser %}
                 <a href="{% url 'gestionar_sedes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_sedes' %}active{% endif %}">
                     <i class="bi bi-shield-lock"></i> Gestionar Sedes
                 </a>
                 {% endif %}
-
-            {# --- MENÚ PARA INSTITUCIONES / SEDES --- #}
             {% else %}
                 <a href="{% url 'dashboard' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-house-door"></i> Inicio
                 </a>
-                
-                {# Botón de Perfil de Institución #}
                 <a href="{% url 'mi_perfil_institucional' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mi_perfil_institucional' %}active{% endif %}">
                     <i class="bi bi-building-gear"></i> Perfil Sede
                 </a>
-
                 <a href="{% url 'gestionar_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_eventos_inst' %}active{% endif %}">
                     <i class="bi bi-calendar-event"></i> Eventos
                 </a>
-                
                 <a href="{% url 'mis_grupos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_grupos' %}active{% endif %}">
                     <i class="bi bi-microsoft-teams"></i> Mis Grupos
+                </a>
+                <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
+                    <i class="bi bi-people"></i> Participantes
                 </a>
             {% endif %}
         </div>
@@ -196,11 +180,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Tooltip initialization if needed
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
