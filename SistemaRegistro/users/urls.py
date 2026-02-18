@@ -45,12 +45,18 @@ urlpatterns = [
     path('exportar/excel/', views.exportar_participantes_excel, name='exportar_participantes_excel'),
     path('sistema/logs/', views.ver_logs_sistema, name='ver_logs_sistema'),
 
-    # --- Gestión de Eventos ---
+    # --- Gestión de Eventos---
     path('eventos/', views.eventos_disponibles, name='eventos_disponibles'),
     path('eventos/<int:evento_id>/inscribirse/', views.inscripcion_evento_url, name='inscribirse_evento'),
     path('institucion/eventos/crear/', views.crear_evento, name='crear_evento'),
     path('institucion/gestionar-eventos/', views.gestionar_eventos_institucion, name='gestionar_eventos_inst'),
     path('institucion/eventos/<int:evento_id>/detalle/', views.detalle_evento_institucion, name='detalle_evento_gestion'),
+    path('eventos/inscribir-proyecto/<int:evento_id>/', views.inscribir_grupo_evento, name='inscribir_grupo_evento'),
+
+    # --- NUEVAS URLs PARA ACCIONES DE EVENTOS ---
+    path('eventos/editar/<int:evento_id>/', views.editar_evento, name='editar_evento'),
+    path('eventos/eliminar/<int:evento_id>/', views.eliminar_evento, name='eliminar_evento'),
+    path('eventos/detalle/<int:evento_id>/', views.detalle_evento_gestion, name='detalle_evento_gestion_admin'),
 
     # --- Grupos y Clubes ---
     path('grupos/agregar/', views.agregar_grupo, name='agregar_grupo'),
@@ -59,7 +65,6 @@ urlpatterns = [
     path('obtener-datos-persona/', views.obtener_datos_persona, name='obtener_datos_persona'),
 
     # --- Perfil y Utilidades ---
-    # La vista principal 'mi_perfil' ahora decidirá si mostrar Perfil Federación o Institución
     path('perfil/', views.mi_perfil, name='mi_perfil'),
     path('perfil/configuracion/', views.mi_perfil_federacion, name='mi_perfil_federacion'),
     path('institucion/perfil/', views.mi_perfil_institucional, name='mi_perfil_institucional'),
@@ -76,4 +81,21 @@ urlpatterns = [
     path('sedes/nueva/', views.registrar_sede, name='registrar_sede_fvrn'), 
     path('sedes/gestionar/', views.gestionar_usuarios_sedes, name='gestionar_sedes'),
     path('sedes/eliminar/<int:user_id>/', views.eliminar_sede, name='eliminar_sede'),
+
+    # URLs para eventos
+    path('eventos/crear/', views.crear_evento, name='crear_evento'),
+    path('eventos/disponibles/', views.eventos_disponibles, name='eventos_disponibles'),
+    path('eventos/gestionar/', views.gestionar_eventos_institucion, name='gestionar_eventos_inst'),
+    path('eventos/editar/<int:evento_id>/', views.editar_evento, name='editar_evento'),
+    path('eventos/cambiar-estado/<int:evento_id>/', views.cambiar_estado_evento, name='cambiar_estado_evento'),
+    path('eventos/cancelar/<int:evento_id>/', views.cancelar_evento, name='cancelar_evento'),
+    path('eventos/eliminar/<int:evento_id>/', views.eliminar_evento, name='eliminar_evento'),
+    path('eventos/detalle/<int:evento_id>/', views.detalle_evento, name='detalle_evento'),
+    
+    # URLs AJAX
+    path('ajax/municipios-por-estado/', views.ajax_municipios_por_estado, name='ajax_municipios_por_estado'),
+    path('ajax/parroquias-por-municipio/', views.ajax_parroquias_por_municipio, name='ajax_parroquias_por_municipio'),
+    path('eventos/detalle/<int:evento_id>/', views.detalle_evento_inscripcion, name='detalle_evento_inscripcion'),
+    path('eventos/inscribir/<int:evento_id>/', views.inscribir_grupo_evento, name='inscribir_grupo_evento'),
+
 ]

@@ -16,6 +16,7 @@ from registry.models import (
     Participante,
     Evento,
     Parroquia,
+    InscripcionGrupoEvento,
 )
 from .models import UserProfile  
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -36,6 +37,88 @@ from django.db.models.functions import ExtractMonth
 from django.apps import apps  
 import secrets
 from datetime import date, datetime 
+
+
+@login_required
+def detalle_evento_inscripcion(request, evento_id):
+    """
+    Vista para ver detalles de un evento e inscribir grupos
+    """
+    evento = get_object_or_404(
+        Evento.objects.select_related('estado', 'municipio', 'parroquia'),
+        id=evento_id,
+        activo=True
+    )
+    
+    # Obtener grupos del usuario actual que no están inscritos en este evento
+    grupos_disponibles = Grupo.objects.filter(
+        usuario_creador=request.user,
+        activo=True
+    ).exclude(
+        inscripciones__evento=evento
+    )
+    
+    # Obtener grupos ya inscritos
+    grupos_inscritos = InscripcionGrupoEvento.objects.filter(
+        evento=evento,
+        activo=True
+    ).select_related('grupo')
+    
+    hoy = date.today()
+    
+    context = {
+        'evento': evento,
+        'grupos_disponibles': grupos_disponibles,
+        'grupos_inscritos': grupos_inscritos,
+        'hoy': hoy,
+    }
+    return render(request, 'users/detalle_evento_inscripcion.html', context)
+
+
+@login_required
+@transaction.atomic
+def inscribir_grupo_evento(request, evento_id):
+    """
+    Vista para inscribir un grupo en un evento
+    """
+    if request.method == 'POST':
+        evento = get_object_or_404(Evento, id=evento_id, activo=True)
+        grupo_id = request.POST.get('grupo_id')
+        rol = request.POST.get('rol', 'participante')
+        
+        try:
+            grupo = Grupo.objects.get(id=grupo_id, usuario_creador=request.user)
+        except Grupo.DoesNotExist:
+            messages.error(request, "❌ El grupo seleccionado no existe o no te pertenece.")
+            return redirect('detalle_evento_inscripcion', evento_id=evento_id)
+        
+        # Verificar que el evento esté abierto
+        if evento.estado_evento != 'abierto':
+            messages.error(request, "❌ El evento no está abierto para inscripciones.")
+            return redirect('detalle_evento_inscripcion', evento_id=evento_id)
+        
+        # Verificar fecha
+        if evento.fecha < date.today():
+            messages.error(request, "❌ No puedes inscribirte en un evento que ya pasó.")
+            return redirect('detalle_evento_inscripcion', evento_id=evento_id)
+        
+        # Verificar que el grupo no esté ya inscrito
+        if InscripcionGrupoEvento.objects.filter(evento=evento, grupo=grupo).exists():
+            messages.warning(request, "⚠️ Este grupo ya está inscrito en el evento.")
+            return redirect('detalle_evento_inscripcion', evento_id=evento_id)
+        
+        # Crear inscripción
+        InscripcionGrupoEvento.objects.create(
+            evento=evento,
+            grupo=grupo,
+            rol_participacion=rol,
+            activo=True
+        )
+        
+        messages.success(request, f"✅ Grupo '{grupo.nombre}' inscrito exitosamente en el evento.")
+        return redirect('detalle_evento_inscripcion', evento_id=evento_id)
+    
+    return redirect('eventos_disponibles')
 
 def home(request):
     """Página principal con opciones de login y registro"""
@@ -335,55 +418,69 @@ def crear_usuario_institucional(request, institucion_id):
     # Aquí iría la lógica para crear el usuario asociado a la institución
     # Por ahora, puedes poner un pass o un return básico para que el servidor arranque
     return render(request, 'users/algun_template.html')
-
 @login_required
 def dashboard_institucional(request):
+    """
+    Vista principal del panel para usuarios institucionales.
+    Muestra métricas clave y listas rápidas de eventos y grupos.
+    """
+    # 1. Validación de perfil y tipo de usuario
     try:
         user_profile = request.user.userprofile
     except AttributeError:
+        # Si el usuario no tiene perfil (ej. superuser sin perfil creado)
+        messages.error(request, "No se encontró un perfil asociado a tu cuenta.")
         return redirect('dashboard')
 
     if user_profile.user_type != 'institucional' or not user_profile.institution:
+        messages.warning(request, "Acceso restringido a cuentas institucionales.")
         return redirect('dashboard')
 
+    # 2. Configuración de datos básicos
     institution = user_profile.institution
     usuario = request.user
     hoy = timezone.now().date()
 
-    # 1. Métricas de Grupos y Participantes
-    mis_grupos = Grupo.objects.filter(usuario_creador=usuario)
+    # 3. Métricas de Grupos y Participantes
+    # Obtenemos los grupos creados por el usuario actual
+    mis_grupos = Grupo.objects.filter(usuario_creador=usuario, activo=True)
     total_mis_grupos = mis_grupos.count()
     
-    # Participantes de esta institución
+    # Participantes vinculados a la institución del usuario
     total_mis_participantes = Participante.objects.filter(institucion=institution).count()
     
-    # 2. Métricas de Eventos (Campos confirmados: fecha, grupos_inscritos)
-    total_eventos = Evento.objects.count()
+    # 4. Métricas de Eventos
+    # Eventos globales que están por venir y están activos
+    eventos_disponibles_qs = Evento.objects.filter(
+        fecha__gte=hoy, 
+        activo=True,
+        estado_evento='abierto'
+    )
+    total_eventos_disponibles = eventos_disponibles_qs.count()
     
-    # Eventos futuros
-    total_activos = Evento.objects.filter(fecha__gte=hoy).count()
-    
-    # CORRECCIÓN: Eventos donde mis grupos están inscritos
-    # Usamos 'grupos_inscritos' que es el nombre que nos dio el error
+    # Eventos donde el usuario ya tiene grupos inscritos
+    # Usamos distinct() para evitar contar el mismo evento varias veces si tiene varios grupos
     eventos_asignados = Evento.objects.filter(
-        grupos_inscritos__usuario_creador=usuario
+        grupos_inscritos__usuario_creador=usuario,
+        activo=True
     ).distinct().count()
 
-    # 3. Listas para las tablas
-    proximos_eventos = Evento.objects.filter(fecha__gte=hoy).order_by('fecha')[:5]
+    # 5. Listas para las tablas del dashboard
+    # Limitamos a los 5 eventos más cercanos y los 3 grupos más recientes
+    proximos_eventos = eventos_disponibles_qs.order_by('fecha')[:5]
     grupos_recientes = mis_grupos.order_by('-fecha_registro')[:3]
 
+    # 6. Construcción del contexto
     context = {
         'user_profile': user_profile,
         'institution': institution,
         'total_mis_grupos': total_mis_grupos,
         'total_mis_participantes': total_mis_participantes,
-        'total_eventos': total_eventos,
-        'total_activos': total_activos,
+        'eventos_disponibles': total_eventos_disponibles, 
         'eventos_asignados': eventos_asignados,
-        'total_certificados': 0,
         'proximos_eventos': proximos_eventos,
         'grupos_recientes': grupos_recientes,
+        'hoy': hoy,
     }
 
     return render(request, 'users/dashboard_institucional.html', context)
@@ -664,59 +761,468 @@ class ParticipanteUpdateView(UpdateView):
 def estadisticas_por_estado(request):
     return render(request, "users/estadisticas_estados.html")
 
+
 @institucional_required
 def crear_evento(request):
-
+    """
+    Vista mejorada para crear eventos - Toma el estado de la institución por defecto
+    """
     institution = request.user.userprofile.institution
-
-
-    # Obtener lista de estados para el select
-    from registry.models import Estado
+    
+    # Obtener el estado de la institución (si tiene)
+    estado_institucion = institution.estado if hasattr(institution, 'estado') else None
+    
+    # Obtener listas para los selects
     estados = Estado.objects.all().order_by("nombre")
-
+    hoy = date.today().isoformat()
+    
+    # Categorías predefinidas
+    categorias = [
+        'Competencia',
+        'Taller',
+        'Seminario',
+        'Conferencia',
+        'Exhibición',
+        'Hackathon',
+        'Feria',
+        'Encuentro',
+        'Capacitación',
+        'Otro'
+    ]
+    
     if request.method == "POST":
         nombre = request.POST.get("nombre")
-        fecha = request.POST.get("fecha")
+        categoria = request.POST.get("categoria")
+        fecha_str = request.POST.get("fecha")
         descripcion = request.POST.get("descripcion")
+        modalidad = request.POST.get("modalidad", "presencial")
+        ubicacion = request.POST.get("ubicacion", "")
         estado_id = request.POST.get("estado")
-
-        estado = Estado.objects.get(id=estado_id)
-
-        Evento.objects.create(
-            nombre=nombre,
-            fecha=fecha,
-            descripcion=descripcion,
-            institucion=institution,
-            estado=estado
-        )
-        return redirect("dashboard_institucional")
-
+        municipio_id = request.POST.get("municipio")
+        parroquia_id = request.POST.get("parroquia")
+        direccion = request.POST.get("direccion", "")
+        requisitos = request.POST.get("requisitos")
+        estado_evento = request.POST.get("estado_evento", "abierto")
+        
+        # Validar que la fecha no sea anterior a hoy
+        try:
+            fecha_evento = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            if fecha_evento < date.today():
+                messages.error(request, "❌ La fecha del evento no puede ser anterior a la fecha actual.")
+                return render(request, "users/crear_evento.html", {
+                    "estados": estados,
+                    "hoy": hoy,
+                    "categorias": categorias,
+                    "estado_institucion": estado_institucion,
+                    "valores_previos": request.POST
+                })
+        except ValueError:
+            messages.error(request, "❌ Formato de fecha inválido.")
+            return render(request, "users/crear_evento.html", {
+                "estados": estados,
+                "hoy": hoy,
+                "categorias": categorias,
+                "estado_institucion": estado_institucion,
+                "valores_previos": request.POST
+            })
+        
+        try:
+            estado_obj = Estado.objects.get(id=estado_id) if estado_id else None
+            municipio_obj = Municipio.objects.get(id=municipio_id) if municipio_id else None
+            parroquia_obj = Parroquia.objects.get(id=parroquia_id) if parroquia_id else None
+            
+            # Construir ubicación completa
+            ubicacion_completa = direccion
+            if parroquia_obj:
+                ubicacion_completa = f"{direccion}, {parroquia_obj.nombre}"
+            elif municipio_obj:
+                ubicacion_completa = f"{direccion}, {municipio_obj.nombre}"
+            elif estado_obj:
+                ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
+            
+            evento = Evento.objects.create(
+                nombre=nombre,
+                tipo=categoria,  # Usamos el campo tipo para almacenar la categoría
+                fecha=fecha_evento,
+                descripcion=descripcion,
+                modalidad=modalidad,
+                ubicacion=ubicacion_completa,
+                estado=estado_obj,
+                municipio=municipio_obj,
+                parroquia=parroquia_obj,
+                direccion=direccion,
+                requisitos=requisitos,
+                institucion=institution,
+                estado_evento=estado_evento,
+                activo=True
+            )
+            
+            messages.success(request, f"✅ Evento '{nombre}' creado exitosamente.")
+            return redirect("gestionar_eventos_inst")
+            
+        except Exception as e:
+            messages.error(request, f"❌ Error al crear el evento: {str(e)}")
+            return render(request, "users/crear_evento.html", {
+                "estados": estados,
+                "hoy": hoy,
+                "categorias": categorias,
+                "estado_institucion": estado_institucion,
+                "valores_previos": request.POST
+            })
+    
+    # Valores por defecto para el formulario
+    valores_default = {
+        'estado_evento': 'abierto',
+        'modalidad': 'presencial',
+    }
+    
     return render(request, "users/crear_evento.html", {
-        "estados": estados
+        "estados": estados,
+        "hoy": hoy,
+        "categorias": categorias,
+        "estado_institucion": estado_institucion,
+        "valores_default": valores_default
     })
+
+
 
 @login_required
 def eventos_disponibles(request):
-    from registry.models import Estado, Evento
-
-    # Obtener todos los estados que tienen eventos
-    estados = Estado.objects.all().order_by("nombre")
-
+    """
+    Vista para mostrar eventos disponibles según el perfil del usuario
+    """
+    from django.utils import timezone
+    from datetime import date
+    
+    hoy = date.today()
+    
+    # Obtener parámetros de filtro
+    estado_filtro = request.GET.get('estado')
+    tipo_filtro = request.GET.get('tipo')
+    modalidad_filtro = request.GET.get('modalidad')
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    # Query base: eventos activos, no cancelados
+    eventos = Evento.objects.filter(
+        activo=True,
+        cancelado=False
+    ).select_related('estado', 'municipio', 'parroquia', 'institucion')
+    
+    # Aplicar filtros
+    if estado_filtro:
+        eventos = eventos.filter(estado_id=estado_filtro)
+    
+    if tipo_filtro:
+        eventos = eventos.filter(tipo=tipo_filtro)
+    
+    if modalidad_filtro:
+        eventos = eventos.filter(modalidad=modalidad_filtro)
+    
+    if fecha_desde:
+        eventos = eventos.filter(fecha__gte=fecha_desde)
+    
+    if fecha_hasta:
+        eventos = eventos.filter(fecha__lte=fecha_hasta)
+    
+    # Separar eventos por estado (activos/hoy/pasados)
+    eventos_activos = eventos.filter(fecha__gte=hoy, estado_evento='abierto').order_by('fecha')
+    eventos_hoy = eventos.filter(fecha=hoy, estado_evento='abierto').order_by('fecha')
+    eventos_proximos = eventos.filter(fecha__gt=hoy, estado_evento='abierto').order_by('fecha')
+    eventos_pasados = eventos.filter(fecha__lt=hoy).order_by('-fecha')[:10]
+    
+    # Agrupar por estado geográfico
     estados_con_eventos = []
-
-    for estado in estados:
-        eventos_estado = Evento.objects.filter(estado=estado).order_by("fecha")
+    for estado in Estado.objects.all().order_by('nombre'):
+        eventos_estado = eventos_activos.filter(estado=estado)
         if eventos_estado.exists():
             estados_con_eventos.append({
-                "estado": estado,
-                "eventos": eventos_estado
+                'estado': estado,
+                'eventos': eventos_estado
             })
-
+    
+    # Estadísticas
+    total_eventos = eventos.count()
+    total_activos = eventos_activos.count()
+    
     context = {
-        "estados_con_eventos": estados_con_eventos
+        'estados_con_eventos': estados_con_eventos,
+        'eventos_activos': eventos_activos,
+        'eventos_hoy': eventos_hoy,
+        'eventos_proximos': eventos_proximos,
+        'eventos_pasados': eventos_pasados,
+        'total_eventos': total_eventos,
+        'total_activos': total_activos,
+        'hoy': hoy,
+        'filtros': {
+            'estado': estado_filtro,
+            'tipo': tipo_filtro,
+            'modalidad': modalidad_filtro,
+            'fecha_desde': fecha_desde,
+            'fecha_hasta': fecha_hasta,
+        },
+        'tipos': Evento.TIPO_CHOICES,
+        'modalidades': Evento.MODALIDAD_CHOICES,
     }
-
+    
     return render(request, "users/eventos_disponibles.html", context)
+
+@login_required
+@institucional_required
+def gestionar_eventos_institucion(request):
+    """
+    Vista para que las instituciones gestionen sus eventos
+    """
+    institution = request.user.userprofile.institution
+    hoy = date.today()
+    
+    # Filtros
+    estado_filtro = request.GET.get('estado')
+    tipo_filtro = request.GET.get('tipo')
+    estado_evento_filtro = request.GET.get('estado_evento')
+    
+    eventos = Evento.objects.filter(institucion=institution).select_related('estado')
+    
+    if estado_filtro:
+        eventos = eventos.filter(estado_id=estado_filtro)
+    
+    if tipo_filtro:
+        eventos = eventos.filter(tipo=tipo_filtro)
+    
+    if estado_evento_filtro:
+        eventos = eventos.filter(estado_evento=estado_evento_filtro)
+    else:
+        # Por defecto, mostrar todos excepto cancelados
+        eventos = eventos.exclude(cancelado=True)
+    
+    # Obtener todos los grupos disponibles de la institución
+    grupos_disponibles = Grupo.objects.filter(
+        usuario_creador=request.user
+    ).order_by('nombre')
+    
+    # Calcular total de inscripciones para las estadísticas
+    total_inscripciones = 0
+    for evento in eventos:
+        # CORREGIDO: usar inscripciones_grupo en lugar de inscripciones
+        total_inscripciones += evento.inscripciones_grupo.count()
+    
+    # Calcular eventos activos (próximas fechas)
+    eventos_activos = eventos.filter(
+        fecha__gte=hoy, 
+        estado_evento='abierto', 
+        cancelado=False
+    ).count()
+    
+    # Estadísticas
+    stats = {
+        'total': eventos.count(),
+        'activos': eventos.filter(estado_evento='abierto', fecha__gte=hoy, cancelado=False).count(),
+        'pausados': eventos.filter(estado_evento='pausado', cancelado=False).count(),
+        'cerrados': eventos.filter(estado_evento='cerrado', cancelado=False).count(),
+        'finalizados': eventos.filter(estado_evento='finalizado', cancelado=False).count(),
+        'cancelados': eventos.filter(cancelado=True).count(),
+        'hoy': eventos.filter(fecha=hoy, cancelado=False).count(),
+        'proximos': eventos.filter(fecha__gt=hoy, estado_evento='abierto', cancelado=False).count(),
+    }
+    
+    context = {
+        'eventos': eventos.order_by('-fecha'),
+        'grupos_disponibles': grupos_disponibles,
+        'total_inscripciones': total_inscripciones,
+        'eventos_activos': eventos_activos,
+        'stats': stats,
+        'hoy': hoy,
+        'estados': Estado.objects.all().order_by('nombre'),
+        'tipos': Evento.TIPO_CHOICES,
+        'estados_evento': Evento.ESTADO_CHOICES,
+    }
+    
+    # Para depuración - imprime en la consola
+    print(f"Total grupos encontrados: {grupos_disponibles.count()}")
+    for grupo in grupos_disponibles:
+        print(f"Grupo: {grupo.nombre} - ID: {grupo.id}")
+    
+    return render(request, 'users/gestionar_eventos.html', context)
+
+@login_required
+@institucional_required
+def editar_evento(request, evento_id):
+    """
+    Vista para editar un evento existente con validacion de integridad
+    """
+    evento = get_object_or_404(
+        Evento, 
+        id=evento_id, 
+        institucion=request.user.userprofile.institution
+    )
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        
+        # Validacion para evitar IntegrityError por campo nulo
+        if not nombre:
+            messages.error(request, "El nombre del evento es obligatorio.")
+        else:
+            evento.nombre = nombre
+            evento.tipo = request.POST.get('tipo')
+            evento.fecha = request.POST.get('fecha')
+            evento.descripcion = request.POST.get('descripcion')
+            evento.modalidad = request.POST.get('modalidad')
+            evento.ubicacion = request.POST.get('ubicacion')
+            evento.estado_id = request.POST.get('estado')
+            evento.municipio_id = request.POST.get('municipio')
+            evento.parroquia_id = request.POST.get('parroquia')
+            evento.direccion = request.POST.get('direccion')
+            
+            # Manejo de capacidad maxima
+            capacidad = request.POST.get('capacidad_maxima')
+            if capacidad and capacidad.strip():
+                evento.capacidad_maxima = capacidad
+            else:
+                evento.capacidad_maxima = None
+                
+            evento.requisitos = request.POST.get('requisitos')
+            evento.estado_evento = request.POST.get('estado_evento')
+            
+            try:
+                evento.save()
+                messages.success(request, f"Evento '{evento.nombre}' actualizado correctamente.")
+                return redirect('gestionar_eventos_inst')
+            except Exception as e:
+                messages.error(request, f"Error al guardar los cambios: {e}")
+    
+    # GET - Preparar datos para el formulario
+    estados = Estado.objects.all().order_by('nombre')
+    municipios = Municipio.objects.filter(estado=evento.estado) if evento.estado else []
+    parroquias = Parroquia.objects.filter(municipio=evento.municipio) if evento.municipio else []
+    
+    context = {
+        'evento': evento,
+        'estados': estados,
+        'municipios': municipios,
+        'parroquias': parroquias,
+        'tipos': Evento.TIPO_CHOICES,
+        'modalidades': Evento.MODALIDAD_CHOICES,
+        'estados_evento': Evento.ESTADO_CHOICES,
+    }
+    return render(request, 'users/editar_evento.html', context)
+
+@login_required
+@institucional_required
+def cambiar_estado_evento(request, evento_id):
+    """
+    Vista para cambiar el estado de un evento (abierto/pausado/cerrado/finalizado)
+    """
+    if request.method == 'POST':
+        evento = get_object_or_404(
+            Evento, 
+            id=evento_id, 
+            institucion=request.user.userprofile.institution
+        )
+        
+        nuevo_estado = request.POST.get('estado_evento')
+        if nuevo_estado in dict(Evento.ESTADO_CHOICES).keys():
+            evento.estado_evento = nuevo_estado
+            evento.save()
+            messages.success(request, f"✅ Estado del evento cambiado a '{evento.get_estado_evento_display()}'.")
+        else:
+            messages.error(request, "❌ Estado no válido.")
+    
+    return redirect('gestionar_eventos_inst')
+
+
+@login_required
+@institucional_required
+def cancelar_evento(request, evento_id):
+    """
+    Vista para cancelar un evento
+    """
+    if request.method == 'POST':
+        evento = get_object_or_404(
+            Evento, 
+            id=evento_id, 
+            institucion=request.user.userprofile.institution
+        )
+        
+        motivo = request.POST.get('motivo', '')
+        
+        if not evento.cancelado:
+            evento.cancelado = True
+            evento.activo = False
+            evento.estado_evento = 'cerrado'
+            evento.motivo_cancelacion = motivo
+            evento.save()
+            
+            messages.warning(request, f"⚠️ Evento '{evento.nombre}' ha sido cancelado.")
+        else:
+            messages.info(request, f"ℹ️ El evento ya estaba cancelado.")
+    
+    return redirect('gestionar_eventos_inst')
+
+
+@login_required
+@institucional_required
+def eliminar_evento(request, evento_id):
+    """
+    Vista para eliminar un evento (solo si no tiene inscritos)
+    """
+    if request.method == 'POST':
+        evento = get_object_or_404(
+            Evento, 
+            id=evento_id, 
+            institucion=request.user.userprofile.institution
+        )
+        
+        # Verificar si tiene proyectos inscritos (asumiendo relación)
+        if hasattr(evento, 'proyectos') and evento.proyectos.exists():
+            messages.warning(request, "❌ No se puede eliminar el evento porque tiene proyectos inscritos.")
+            return redirect('gestionar_eventos_inst')
+        
+        nombre_evento = evento.nombre
+        evento.delete()
+        messages.success(request, f"✅ Evento '{nombre_evento}' eliminado correctamente.")
+    
+    return redirect('gestionar_eventos_inst')
+
+
+@login_required
+def detalle_evento(request, evento_id):
+    """
+    Vista para ver detalles de un evento
+    """
+    evento = get_object_or_404(
+        Evento.objects.select_related('estado', 'municipio', 'parroquia', 'institucion'),
+        id=evento_id,
+        activo=True
+    )
+    
+    context = {
+        'evento': evento,
+        'puede_inscribirse': evento.puede_inscribirse if hasattr(evento, 'puede_inscribirse') else False,
+    }
+    return render(request, 'users/detalle_evento.html', context)
+
+
+# ============================================
+# VISTAS AJAX
+# ============================================
+
+def ajax_municipios_por_estado(request):
+    """Vista AJAX para cargar municipios según el estado"""
+    estado_id = request.GET.get('estado_id')
+    if estado_id:
+        municipios = Municipio.objects.filter(estado_id=estado_id).order_by('nombre').values('id', 'nombre')
+        return JsonResponse(list(municipios), safe=False)
+    return JsonResponse([], safe=False)
+
+
+def ajax_parroquias_por_municipio(request):
+    """Vista AJAX para cargar parroquias según el municipio"""
+    municipio_id = request.GET.get('municipio_id')
+    if municipio_id:
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by('nombre').values('id', 'nombre')
+        return JsonResponse(list(parroquias), safe=False)
+    return JsonResponse([], safe=False)
 
 
 @login_required
@@ -1070,20 +1576,6 @@ def dashboard_mapa(request):
     
     return render(request, 'tu_template.html', {'mapa_data': mapa_data})
 
-@institucional_required
-def gestionar_eventos_institucion(request):
-    """Lista todos los eventos creados por la institución actual"""
-    
-    institucion = request.user.userprofile.institution
-    # Obtenemos eventos y contamos cuántos proyectos hay inscritos en cada uno
-    eventos = Evento.objects.filter(institucion=institucion).annotate(
-        total_inscritos=Count('inscripcion') 
-    ).order_by('-fecha')
-
-    return render(request, 'users/gestionar_eventos.html', {
-        'eventos': eventos,
-        'institucion': institucion
-    })
 
 @institucional_required
 def detalle_evento_institucion(request, evento_id):
@@ -1630,3 +2122,133 @@ def api_buscar_participante(request, cedula):
         })
     except Participante.DoesNotExist:
         return JsonResponse({'encontrado': False})
+    
+
+    # ============================================
+# VISTAS PARA ACCIONES DE EVENTOS (AGREGAR AL FINAL DE views.py)
+# ============================================
+
+@login_required
+def editar_evento(request, evento_id):
+    """
+    Vista para editar un evento existente
+    """
+    try:
+        # Verificar que el evento pertenezca a la institución del usuario
+        evento = Evento.objects.get(
+            id=evento_id, 
+            institucion__usuario=request.user
+        )
+        
+        if request.method == 'POST':
+            # Actualizar datos del evento
+            evento.nombre = request.POST.get('nombre')
+            evento.descripcion = request.POST.get('descripcion')
+            evento.fecha = request.POST.get('fecha')
+            evento.estado_id = request.POST.get('estado')
+            evento.municipio_id = request.POST.get('municipio')
+            evento.parroquia_id = request.POST.get('parroquia')
+            evento.direccion = request.POST.get('direccion')
+            evento.capacidad_maxima = request.POST.get('capacidad_maxima') or None
+            evento.requisitos = request.POST.get('requisitos')
+            evento.save()
+            
+            messages.success(request, f"Evento '{evento.nombre}' actualizado correctamente.")
+            return redirect('gestionar_eventos_inst')
+        
+        # GET - Mostrar formulario de edición
+        estados = Estado.objects.all().order_by('nombre')
+        
+        # Obtener municipios y parroquias para el select
+        municipios = Municipio.objects.filter(estado_id=evento.estado_id) if evento.estado_id else []
+        parroquias = Parroquia.objects.filter(municipio_id=evento.municipio_id) if evento.municipio_id else []
+        
+        context = {
+            'evento': evento,
+            'estados': estados,
+            'municipios': municipios,
+            'parroquias': parroquias,
+        }
+        return render(request, 'users/editar_evento.html', context)
+        
+    except Evento.DoesNotExist:
+        messages.error(request, "El evento no existe o no tienes permiso para editarlo.")
+        return redirect('gestionar_eventos_inst')
+
+
+@login_required
+def eliminar_evento(request, evento_id):
+    """
+    Vista para eliminar un evento
+    """
+    if request.method == 'POST':
+        try:
+            evento = Evento.objects.get(
+                id=evento_id, 
+                institucion__usuario=request.user
+            )
+            
+            # Verificar si tiene proyectos inscritos
+            if evento.proyectos.exists():
+                messages.warning(request, "No se puede eliminar el evento porque tiene proyectos inscritos.")
+                return redirect('gestionar_eventos_inst')
+            
+            nombre_evento = evento.nombre
+            evento.delete()
+            messages.success(request, f"Evento '{nombre_evento}' eliminado correctamente.")
+            
+        except Evento.DoesNotExist:
+            messages.error(request, "El evento no existe o no tienes permiso para eliminarlo.")
+    
+    return redirect('gestionar_eventos_inst')
+
+
+
+
+# ============================================
+# VISTA AUXILIAR PARA CARGAR MUNICIPIOS (AJAX)
+# ============================================
+def cargar_municipios_evento(request):
+    """
+    Vista AJAX para cargar municipios en el modal de edición
+    """
+    estado_id = request.GET.get('estado_id')
+    if estado_id:
+        municipios = Municipio.objects.filter(estado_id=estado_id).order_by('nombre').values('id', 'nombre')
+        return JsonResponse(list(municipios), safe=False)
+    return JsonResponse([], safe=False)
+
+
+def cargar_parroquias_evento(request):
+    """
+    Vista AJAX para cargar parroquias en el modal de edición
+    """
+    municipio_id = request.GET.get('municipio_id')
+    if municipio_id:
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by('nombre').values('id', 'nombre')
+        return JsonResponse(list(parroquias), safe=False)
+    return JsonResponse([], safe=False)
+
+@login_required
+def detalle_evento_gestion(request, evento_id):
+    """
+    Vista para ver detalles del evento y gestionar inscritos
+    """
+    try:
+        evento = Evento.objects.get(
+            id=evento_id, 
+            institucion__usuario=request.user
+        )
+        # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
+        inscripciones = evento.inscripciones_grupo.all().select_related('grupo')
+        
+        context = {
+            'evento': evento,
+            'inscripciones': inscripciones,
+            'total_inscritos': inscripciones.count(),
+        }
+        return render(request, 'users/detalle_evento_gestion.html', context)
+        
+    except Evento.DoesNotExist:
+        messages.error(request, "El evento no existe o no tienes permiso para verlo.")
+        return redirect('gestionar_eventos_inst')

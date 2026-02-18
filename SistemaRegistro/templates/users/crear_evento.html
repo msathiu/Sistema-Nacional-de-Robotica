@@ -1,126 +1,323 @@
 {% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ evento.nombre }} - RNR{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex align-items-center">
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
-                    <i class="bi bi-calendar-plus fs-2 text-white"></i>
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                        <i class="bi bi-calendar-event fs-2 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Detalle del Evento</h2>
+                        <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Configuración de Evento</h2>
-                    <p class="text-muted mb-0 small">Planificación y despliegue territorial de actividades</p>
-                </div>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary px-4 fw-bold rounded-pill">
+                    <i class="bi bi-arrow-left me-2"></i> Volver
+                </a>
             </div>
             <hr class="mt-4 opacity-10">
         </div>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
-                    <i class="bi bi-gear-wide-connected text-white me-2"></i>
-                    <h5 class="fw-bold mb-0 text-white">NUEVO REGISTRO</h5>
+    {% if messages %}
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-triangle-fill{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Columna izquierda: Información del evento -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+                <div class="card-header border-0 py-4 px-4" style="background: linear-gradient(135deg, var(--blue-main), #1e3a8a);">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 rounded-3 bg-white bg-opacity-20 me-3">
+                            <i class="bi bi-info-circle text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-white">INFORMACIÓN DEL EVENTO</h5>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="card-body p-4 p-md-5">
-                    <form method="POST">
-                        {% csrf_token %}
-
-                        <div class="row g-4">
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Evento</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0"><i class="bi bi-bookmark-star"></i></span>
-                                    <input type="text" class="form-control border-0 bg-light p-2" name="nombre" 
-                                           placeholder="Ej: Feria Regional de Robótica 2024" required style="border-radius: 0 10px 10px 0;">
+                <div class="card-body p-5">
+                    <div class="row g-4">
+                        <!-- Nombre -->
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-bookmark-star fs-4 text-primary"></i>
                                 </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Fecha Programada</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0"><i class="bi bi-calendar-event"></i></span>
-                                    <input type="date" class="form-control border-0 bg-light p-2" name="fecha" 
-                                           required style="border-radius: 0 10px 10px 0;">
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Estado Sede</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0"><i class="bi bi-geo-alt"></i></span>
-                                    <select name="estado" class="form-select border-0 bg-light p-2" required style="border-radius: 0 10px 10px 0;">
-                                        <option value="" selected disabled>Seleccione...</option>
-                                        {% for estado in estados %}
-                                        <option value="{{ estado.id }}">{{ estado.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Descripción del Evento (Opcional)</label>
-                                <textarea class="form-control border-0 bg-light p-3" rows="3" name="descripcion" 
-                                          placeholder="Detalles adicionales, objetivos o locación específica..." 
-                                          style="border-radius: 15px;"></textarea>
-                            </div>
-
-                            <div class="col-12 pt-3">
-                                <div class="row g-2">
-                                    <div class="col-md-8">
-                                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" 
-                                                style="border-radius: 12px; background: var(--blue-main); border: none;">
-                                            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Publicar Evento
-                                        </button>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <a href="{% url 'dashboard_institucional' %}" class="btn btn-light w-100 py-3 fw-bold text-muted" 
-                                           style="border-radius: 12px; border: 1px solid #e2e8f0;">
-                                            Cancelar
-                                        </a>
-                                    </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Nombre del Evento</small>
+                                    <h4 class="fw-bold mb-0">{{ evento.nombre }}</h4>
                                 </div>
                             </div>
                         </div>
-                    </form>
+
+                        <!-- Categoría -->
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-tags fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Categoría</small>
+                                    <h5 class="fw-bold mb-0">{{ evento.tipo }}</h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fecha y Modalidad -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-calendar-check fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Fecha y Modalidad</small>
+                                    <h5 class="fw-bold mb-0">{{ evento.fecha|date:"d M, Y" }}</h5>
+                                    <span class="badge bg-info mt-2">{{ evento.get_modalidad_display }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado del Evento -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-activity fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Estado</small>
+                                    <h5 class="fw-bold mb-0">
+                                        <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success
+                                                           {% elif evento.estado_evento == 'pausado' %}bg-warning
+                                                           {% elif evento.estado_evento == 'cerrado' %}bg-secondary
+                                                           {% else %}bg-info{% endif %} fs-6">
+                                            {{ evento.get_estado_evento_display|upper }}
+                                        </span>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ubicación -->
+                        <div class="col-12">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-geo-alt fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Ubicación</small>
+                                    <h5 class="fw-bold mb-1">{{ evento.estado.nombre }}</h5>
+                                    {% if evento.municipio %}
+                                    <p class="mb-0">{{ evento.municipio.nombre }}{% if evento.parroquia %}, {{ evento.parroquia.nombre }}{% endif %}</p>
+                                    {% endif %}
+                                    {% if evento.direccion %}
+                                    <p class="text-muted mt-2"><i class="bi bi-signpost me-2"></i>{{ evento.direccion }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        {% if evento.descripcion %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-text-paragraph fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Descripción</small>
+                                    <p class="mb-0">{{ evento.descripcion|linebreaks }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Requisitos -->
+                        {% if evento.requisitos %}
+                        <div class="col-12">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                                    <i class="bi bi-card-checklist fs-4 text-primary"></i>
+                                </div>
+                                <div>
+                                    <small class="text-muted text-uppercase fw-bold">Requisitos</small>
+                                    <p class="mb-0">{{ evento.requisitos|linebreaks }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: Formulario de inscripción y grupos inscritos -->
+        <div class="col-lg-4">
+            <!-- Formulario de inscripción -->
+            <div class="card border-0 shadow-lg mb-4" style="border-radius: 24px; overflow: hidden;">
+                <div class="card-header border-0 py-4 px-4" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 rounded-3 bg-white bg-opacity-20 me-3">
+                            <i class="bi bi-plus-circle text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-white">INSCRIBIR GRUPO</h5>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if evento.estado_evento == 'abierto' and evento.fecha >= hoy %}
+                        <form method="POST" action="{% url 'inscribir_grupo_evento' evento.id %}">
+                            {% csrf_token %}
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold text-muted">
+                                    <i class="bi bi-people-fill me-1 text-primary"></i> Seleccionar Grupo
+                                </label>
+                                <select name="grupo_id" class="form-select form-select-lg" required>
+                                    <option value="" selected disabled>-- Seleccione un grupo --</option>
+                                    {% for grupo in grupos_disponibles %}
+                                    <option value="{{ grupo.id }}">
+                                        {{ grupo.nombre }} ({{ grupo.participantes.count }} miembros) - Tutor: {{ grupo.tutor_nombre }}
+                                    </option>
+                                    {% empty %}
+                                    <option value="" disabled>No tienes grupos disponibles</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Se inscribirá todo el equipo con su tutor y participantes.
+                                </div>
+                            </div>
+
+                            {% if grupos_disponibles %}
+                            <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm" 
+                                    style="border-radius: 12px;">
+                                <i class="bi bi-send-check-fill me-2"></i> Inscribir Grupo
+                            </button>
+                            {% else %}
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                No tienes grupos disponibles para inscribir. 
+                                <a href="{% url 'mis_grupos' %}" class="alert-link">Crea un grupo primero</a>.
+                            </div>
+                            {% endif %}
+                        </form>
+                    {% elif evento.estado_evento == 'cerrado' or evento.estado_evento == 'finalizado' %}
+                        <div class="alert alert-secondary">
+                            <i class="bi bi-lock-fill me-2"></i>
+                            Este evento está {{ evento.get_estado_evento_display|lower }}. No se aceptan inscripciones.
+                        </div>
+                    {% elif evento.fecha < hoy %}
+                        <div class="alert alert-secondary">
+                            <i class="bi bi-calendar-x me-2"></i>
+                            Este evento ya pasó. Las inscripciones están cerradas.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="mt-4 p-3 rounded-4 d-flex align-items-center" style="background: rgba(0, 212, 255, 0.05); border: 1px dashed var(--accent-cyan);">
-                <i class="bi bi-info-circle-fill text-primary me-3 fs-4"></i>
-                <p class="mb-0 small text-muted">
-                    Al guardar este evento, se habilitará automáticamente para que los participantes puedan inscribir sus proyectos en el estado seleccionado.
-                </p>
+            <!-- Grupos inscritos -->
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+                <div class="card-header border-0 py-4 px-4" style="background: linear-gradient(135deg, var(--blue-main), #1e3a8a);">
+                    <div class="d-flex align-items-center">
+                        <div class="p-2 rounded-3 bg-white bg-opacity-20 me-3">
+                            <i class="bi bi-people text-white fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-white">GRUPOS INSCRITOS</h5>
+                            <p class="text-white-50 small mb-0">{{ grupos_inscritos.count }} grupo(s)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if grupos_inscritos %}
+                        <div class="list-group list-group-flush">
+                            {% for inscripcion in grupos_inscritos %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ inscripcion.grupo.nombre }}</h6>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-person-badge me-1"></i> Tutor: {{ inscripcion.grupo.tutor_nombre }}
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-people me-1"></i> {{ inscripcion.grupo.participantes.count }} participantes
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-calendar me-1"></i> Inscrito: {{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-success">Inscrito</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-3 mb-0">No hay grupos inscritos en este evento</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Efectos de enfoque personalizados */
-    .form-control:focus, .form-select:focus {
-        background-color: #fff !important;
-        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.15);
-        border: 1px solid var(--accent-cyan) !important;
+    :root {
+        --blue-main: #0b2c6d;
+        --accent-cyan: #00d4ff;
     }
-
-    /* Estilo de los iconos en los inputs */
-    .input-group-text {
-        color: var(--blue-main);
-        font-size: 1.1rem;
+    
+    .bg-opacity-10 {
+        background-color: rgba(11, 44, 109, 0.1);
     }
-
-    /* Animación de entrada */
-    .card {
-        animation: slideUp 0.5s ease-out;
+    
+    .bg-opacity-20 {
+        background-color: rgba(255, 255, 255, 0.2);
     }
-
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+    
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+    }
+    
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3) !important;
     }
 </style>
 {% endblock %}

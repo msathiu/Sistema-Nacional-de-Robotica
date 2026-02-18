@@ -580,9 +580,17 @@ class Evento(models.Model):
     estado = models.ForeignKey(
         "Estado", on_delete=models.SET_NULL, null=True, blank=True
     )
+    municipio = models.ForeignKey("Municipio", on_delete=models.SET_NULL, null=True, blank=True)
+    parroquia = models.ForeignKey("Parroquia", on_delete=models.SET_NULL, null=True, blank=True)
+    direccion = models.CharField(max_length=300, blank=True)
+    capacidad_maxima = models.PositiveIntegerField(null=True, blank=True)
+    requisitos = models.TextField(blank=True)
     institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(default=timezone.now, editable=False)
     activo = models.BooleanField(default=True, db_index=True)
+    cancelado = models.BooleanField(default=False)
+    motivo_cancelacion = models.TextField(blank=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Evento"
@@ -599,8 +607,29 @@ class Evento(models.Model):
     @property
     def esta_vigente(self):
         """Verifica si el evento aún está vigente."""
-        return self.activo and self.fecha >= date.today()
+        return self.activo and not self.cancelado and self.fecha >= date.today()
 
+    @property
+    def inscripciones_abiertas(self):
+        """Verifica si las inscripciones están abiertas."""
+        return (self.activo and 
+                not self.cancelado and 
+                self.estado_evento == 'abierto' and 
+                self.fecha >= date.today())
+
+    @property
+    def cupos_disponibles(self):
+        """Calcula cupos disponibles."""
+        if not self.capacidad_maxima:
+            return float('inf')
+        # Asumiendo que tienes un modelo Proyecto relacionado
+        inscritos = self.proyectos.count() if hasattr(self, 'proyectos') else 0
+        return max(0, self.capacidad_maxima - inscritos)
+
+    @property
+    def puede_inscribirse(self):
+        """Verifica si se pueden hacer inscripciones."""
+        return self.inscripciones_abiertas and self.cupos_disponibles > 0
 
 class Inscripcion(models.Model):
     MODALIDAD_CHOICES = (

@@ -1,4 +1,7 @@
 {% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestión de Eventos - RNR{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -36,9 +39,9 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Proyectos Inscritos</div>
-                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_proyectos|default:0 }}">0</h2>
-                    <i class="bi bi-rocket-takeoff position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Grupos Inscritos</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_inscripciones|default:0 }}">0</h2>
+                    <i class="bi bi-people-fill position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>
             </div>
@@ -67,8 +70,8 @@
                 <div class="col-md-3">
                     <select name="estado" class="form-select border-0 bg-light">
                         <option value="">Cualquier Estado</option>
-                        <option value="activo">Activos</option>
-                        <option value="finalizado">Finalizados</option>
+                        <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
+                        <option value="finalizado" {% if request.GET.estado == 'finalizado' %}selected{% endif %}>Finalizados</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex gap-2">
@@ -102,7 +105,7 @@
                     </thead>
                     <tbody>
                         {% for evento in eventos %}
-                        <tr>
+                        <tr class="evento-row" data-id="{{ evento.id }}">
                             <td class="px-4">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle-event me-3">
@@ -115,29 +118,55 @@
                                 </div>
                             </td>
                             <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Proyectos</div>
+                                <div class="fw-bold text-primary">{{ evento.inscripciones_grupo.count }}</div>
+                                <div class="x-small text-muted text-uppercase">Grupos</div>
                             </td>
                             <td>
                                 <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.fecha|date:"d M, Y" }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {{ evento.estado.nombre }}</div>
+                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {{ evento.estado.nombre|default:"No especificado" }}</div>
+                                {% if evento.direccion %}
+                                <div class="x-small text-muted">{{ evento.direccion|truncatechars:30 }}</div>
+                                {% endif %}
                             </td>
                             <td>
-                                {% if evento.fecha >= today %}
-                                <span class="status-pill-mini bg-blue">Activo</span>
-                                {% else %}
+                                {% if evento.cancelado %}
+                                <span class="status-pill-mini bg-danger">Cancelado</span>
+                                {% elif evento.estado_evento == 'abierto' and evento.fecha >= hoy %}
+                                <span class="status-pill-mini bg-success">Abierto</span>
+                                {% elif evento.estado_evento == 'pausado' %}
+                                <span class="status-pill-mini bg-warning">Pausado</span>
+                                {% elif evento.estado_evento == 'cerrado' %}
+                                <span class="status-pill-mini bg-secondary">Cerrado</span>
+                                {% elif evento.estado_evento == 'finalizado' or evento.fecha < hoy %}
                                 <span class="status-pill-mini bg-gray">Finalizado</span>
                                 {% endif %}
                             </td>
                             <td class="text-center px-4">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-gray" title="Gestionar Inscritos">
+                                    <button class="btn-action btn-gray btn-gestionar-inscripcion" 
+                                            data-id="{{ evento.id }}"
+                                            title="Gestionar Inscritos">
                                         <i class="bi bi-people-fill"></i>
+                                    </button>
+                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-gray" title="Ver Detalle del Evento">
+                                        <i class="bi bi-eye-fill"></i>
                                     </a>
-                                    <button class="btn-action btn-gray" title="Editar Evento">
+                                    <button class="btn-action btn-gray btn-editar-evento" 
+                                            data-id="{{ evento.id }}"
+                                            data-nombre="{{ evento.nombre|escapejs }}"
+                                            data-fecha="{{ evento.fecha|date:'Y-m-d' }}"
+                                            data-descripcion="{{ evento.descripcion|escapejs }}"
+                                            data-requisitos="{{ evento.requisitos|escapejs }}"
+                                            data-estado-evento="{{ evento.estado_evento }}"
+                                            data-direccion="{{ evento.direccion|escapejs }}"
+                                            data-estado="{{ evento.estado_id }}"
+                                            title="Editar Evento">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
-                                    <button class="btn-action btn-red" title="Eliminar">
+                                    <button class="btn-action btn-red btn-eliminar-evento" 
+                                            data-id="{{ evento.id }}"
+                                            data-nombre="{{ evento.nombre|escapejs }}"
+                                            title="Eliminar">
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
                                 </div>
@@ -154,6 +183,185 @@
                 <a href="{% url 'crear_evento' %}" class="btn btn-link">Comenzar ahora</a>
             </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE EDICIÓN SIMPLIFICADO -->
+<div class="modal fade" id="modalEditarEvento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i> EDITAR EVENTO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form id="formEditarEvento" method="POST" action="">
+                {% csrf_token %}
+                <input type="hidden" name="evento_id" id="edit_evento_id">
+                <!-- Campos ocultos obligatorios -->
+                <input type="hidden" name="nombre" id="edit_nombre_hidden">
+                <input type="hidden" name="direccion" id="edit_direccion_hidden">
+                <input type="hidden" name="estado" id="edit_estado_hidden">
+                <input type="hidden" name="tipo" id="edit_tipo_hidden">
+                <input type="hidden" name="modalidad" id="edit_modalidad_hidden">
+                
+                <div class="modal-body p-4">
+                    <div id="alertaErrorEditar" class="alert alert-danger d-none mb-3 rounded-4 fw-bold">
+                        <i class="bi bi-exclamation-octagon me-2"></i> <span id="errorMsgTextEditar"></span>
+                    </div>
+
+                    <!-- Mostrar el nombre del evento (solo lectura) -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-bookmark-star me-1 text-primary"></i> Nombre del Evento
+                        </label>
+                        <input type="text" class="form-control bg-light" id="edit_nombre_display" readonly disabled>
+                        <small class="text-muted">El nombre no se puede modificar</small>
+                    </div>
+
+                    <!-- Fecha del Evento -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-calendar-event me-1 text-primary"></i> Fecha del Evento
+                        </label>
+                        <input type="date" name="fecha" id="edit_fecha" class="form-control" required>
+                    </div>
+
+                    <!-- Estatus del Evento -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-activity me-1 text-primary"></i> Estatus del Evento
+                        </label>
+                        <select name="estado_evento" id="edit_estado_evento" class="form-select" required>
+                            <option value="abierto">Abierto - En inscripciones</option>
+                            <option value="pausado">Pausado - Inscripciones detenidas</option>
+                            <option value="cerrado">Cerrado - Inscripciones cerradas</option>
+                            <option value="finalizado">Finalizado - Evento realizado</option>
+                            <option value="cancelado">Cancelado - Evento no se realizará</option>
+                        </select>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-text-paragraph me-1 text-primary"></i> Descripción
+                        </label>
+                        <textarea name="descripcion" id="edit_descripcion" class="form-control" rows="3" placeholder="Descripción del evento..."></textarea>
+                    </div>
+
+                    <!-- Requisitos -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-card-checklist me-1 text-primary"></i> Requisitos
+                        </label>
+                        <textarea name="requisitos" id="edit_requisitos" class="form-control" rows="3" placeholder="Requisitos para participar..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" 
+                            style="background: var(--blue-main); color: white;">
+                        <i class="bi bi-check-circle me-2"></i> GUARDAR CAMBIOS
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE GESTIÓN DE INSCRIPCIONES -->
+<div class="modal fade" id="modalGestionInscripcion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-people-fill me-2"></i> INSCRIBIR PROYECTO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <form id="formInscripcion" method="POST" action="">
+                {% csrf_token %}
+                <input type="hidden" name="evento_id" id="inscripcion_evento_id">
+                
+                <div class="modal-body p-4">
+                    <div id="alertaErrorInscripcion" class="alert alert-danger d-none mb-3 rounded-4 fw-bold">
+                        <i class="bi bi-exclamation-octagon me-2"></i> <span id="errorMsgInscripcion"></span>
+                    </div>
+
+                    <!-- Select de Grupos -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-robot me-1 text-primary"></i> Seleccionar Grupo
+                        </label>
+                        <select name="grupo_id" id="select_grupo" class="form-select" required>
+                            <option value="" selected disabled>-- Seleccione un grupo --</option>
+                            {% for grupo in grupos_disponibles %}
+                            <option value="{{ grupo.id }}">
+                                {{ grupo.nombre }} - Tutor: {{ grupo.tutor_nombre }} ({{ grupo.participantes.count }} miembros)
+                            </option>
+                            {% empty %}
+                            <option value="" disabled>No hay grupos disponibles</option>
+                            {% endfor %}
+                        </select>
+                        {% if not grupos_disponibles %}
+                        <div class="form-text text-warning mt-2">
+                            <i class="bi bi-exclamation-triangle me-1"></i> No tienes grupos disponibles. 
+                            <a href="{% url 'mis_grupos' %}" class="text-primary">Crear un grupo</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Nombre del Proyecto -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-bookmark-star me-1 text-primary"></i> Nombre del Proyecto
+                        </label>
+                        <input type="text" name="nombre_proyecto" id="nombre_proyecto" class="form-control" placeholder="Ej: Robot Sumo Autónomo" required>
+                    </div>
+
+                    <!-- Descripción del Proyecto -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-muted">
+                            <i class="bi bi-file-text me-1 text-primary"></i> Descripción del Proyecto
+                        </label>
+                        <textarea name="descripcion_proyecto" id="descripcion_proyecto" class="form-control" rows="4" placeholder="Describe brevemente el proyecto que presentarán..." required></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" 
+                            style="background: #10b981; color: white;">
+                        <i class="bi bi-send-check-fill me-2"></i> INSCRIBIR PROYECTO
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE ELIMINACIÓN DE EVENTO -->
+<div class="modal fade" id="modalEliminarEvento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: #ef4444; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-trash3-fill me-2"></i> ELIMINAR EVENTO</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEliminarEvento" method="POST" action="">
+                {% csrf_token %}
+                <input type="hidden" name="evento_id" id="eliminar_evento_id">
+                <div class="modal-body px-4 py-4 text-center">
+                    <h5 class="fw-bold text-danger">¿ESTÁS SEGURO?</h5>
+                    <p class="text-muted">Esta acción eliminará permanentemente el evento:<br><strong id="eliminar_nombre"></strong></p>
+                    <p class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Solo se puede eliminar si no tiene grupos inscritos.</p>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
+                    <button type="submit" id="btnEliminarConfirmar" class="btn btn-danger rounded-pill px-5 fw-bold shadow">ELIMINAR</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -182,8 +390,11 @@
         display: inline-block;
     }
 
-    .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .bg-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .bg-warning { background: #fed7aa; color: #92400e; border: 1px solid #fcd34d; }
+    .bg-secondary { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
     .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .bg-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 
     .btn-action { 
         width: 36px; height: 36px; 
@@ -191,6 +402,8 @@
         border-radius: 10px; border: 1px solid #e2e8f0; 
         background: white; transition: all 0.2s; color: #64748b;
         text-decoration: none;
+        cursor: pointer;
+        border: none;
     }
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .btn-red:hover { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
@@ -198,23 +411,124 @@
     
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }
+    
+    .modal-content { border: none; }
+    .form-control, .form-select { border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
+    .form-control:focus, .form-select:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 0.25rem rgba(0,212,255,0.15); }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const counters = document.querySelectorAll('.counter');
-        counters.forEach(counter => {
+    document.addEventListener("DOMContentLoaded", function() {
+        // Inicializar modales
+        const modalEditar = new bootstrap.Modal(document.getElementById('modalEditarEvento'));
+        const modalInscripcion = new bootstrap.Modal(document.getElementById('modalGestionInscripcion'));
+        const modalEliminar = new bootstrap.Modal(document.getElementById('modalEliminarEvento'));
+        
+        // Contadores animados
+        document.querySelectorAll('.counter').forEach(counter => {
             const updateCount = () => {
                 const target = parseInt(counter.getAttribute('data-target')) || 0;
                 const count = parseInt(counter.innerText);
                 if (count < target) {
                     counter.innerText = count + Math.ceil(target / 40);
                     setTimeout(updateCount, 25);
-                } else { counter.innerText = target; }
+                } else { 
+                    counter.innerText = target; 
+                }
             };
             updateCount();
+        });
+        
+        // ============================================
+        // BOTONES DE EDICIÓN
+        // ============================================
+        document.querySelectorAll('.btn-editar-evento').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Obtener datos del botón
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                const fecha = this.dataset.fecha;
+                const descripcion = this.dataset.descripcion;
+                const requisitos = this.dataset.requisitos;
+                const estadoEvento = this.dataset.estadoEvento;
+                const direccion = this.dataset.direccion || '';
+                const estadoId = this.dataset.estado;
+                
+                // Valores por defecto para campos obligatorios
+                const tipo = 'competencia';
+                const modalidad = 'presencial';
+                
+                // Llenar el formulario
+                document.getElementById('edit_evento_id').value = id;
+                document.getElementById('edit_nombre_display').value = nombre;
+                document.getElementById('edit_nombre_hidden').value = nombre;
+                document.getElementById('edit_direccion_hidden').value = direccion;
+                document.getElementById('edit_estado_hidden').value = estadoId;
+                document.getElementById('edit_tipo_hidden').value = tipo;
+                document.getElementById('edit_modalidad_hidden').value = modalidad;
+                document.getElementById('edit_fecha').value = fecha;
+                document.getElementById('edit_descripcion').value = descripcion || '';
+                document.getElementById('edit_requisitos').value = requisitos || '';
+                
+                // Seleccionar el estado correcto
+                const selectEstado = document.getElementById('edit_estado_evento');
+                if (estadoEvento) {
+                    selectEstado.value = estadoEvento;
+                } else {
+                    selectEstado.value = 'abierto';
+                }
+                
+                // Establecer acción del formulario
+                document.getElementById('formEditarEvento').action = `/eventos/editar/${id}/`;
+                
+                modalEditar.show();
+            });
+        });
+        
+        // ============================================
+        // BOTONES DE GESTIÓN DE INSCRIPCIONES
+        // ============================================
+        document.querySelectorAll('.btn-gestionar-inscripcion').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const id = this.dataset.id;
+                
+                document.getElementById('inscripcion_evento_id').value = id;
+                document.getElementById('formInscripcion').action = `/eventos/inscribir-proyecto/${id}/`;
+                
+                // Limpiar campos
+                document.getElementById('nombre_proyecto').value = '';
+                document.getElementById('descripcion_proyecto').value = '';
+                document.getElementById('select_grupo').value = '';
+                
+                modalInscripcion.show();
+            });
+        });
+        
+        // ============================================
+        // BOTONES DE ELIMINACIÓN
+        // ============================================
+        document.querySelectorAll('.btn-eliminar-evento').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                
+                document.getElementById('eliminar_evento_id').value = id;
+                document.getElementById('eliminar_nombre').innerText = nombre;
+                
+                // Actualizar acción del formulario
+                const form = document.getElementById('formEliminarEvento');
+                form.action = `/eventos/eliminar/${id}/`;
+                
+                modalEliminar.show();
+            });
         });
     });
 </script>
