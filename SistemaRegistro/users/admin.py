@@ -31,22 +31,24 @@ class UserProfileInline(admin.StackedInline):
     verbose_name_plural = 'Información de Perfil / Sede'
     fk_name = 'user'
     form = UserProfileForm
-    # Campos que se pueden editar directamente en el usuario
     fields = ('user_type', 'estado', 'institution', 'phone')
     
-    # Este método evita que se intente crear un nuevo perfil si ya existe
-    def has_add_permission(self, request, obj=None):
-        """Evitar crear nuevos perfiles desde el inline"""
-        if obj and hasattr(obj, 'userprofile'):
-            # Si el usuario ya tiene perfil, no permitir agregar otro
-            return False
-        return True
-    
+    # TRUCO PROFESIONAL: 
+    # Si estamos creando un usuario nuevo (obj es None), 
+    # forzamos a que no se muestre el Inline para que no choque con la señal.
     def get_extra(self, request, obj=None):
-        """No permitir agregar perfiles adicionales"""
+        if obj is None:
+            return 0 # No mostrar campos extra al crear
+        return 0 if hasattr(obj, 'userprofile') else 1
+
+    def has_add_permission(self, request, obj=None):
+        # Si el usuario ya existe y ya tiene perfil, prohibido añadir otro
         if obj and hasattr(obj, 'userprofile'):
-            return 0
-        return 1
+            return False
+        # Si es un usuario nuevo, dejamos que la SEÑAL se encargue, no el Admin
+        if obj is None:
+            return False 
+        return True
 
 # 3. Nuevo Admin de Usuarios
 @admin.register(User)
