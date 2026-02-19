@@ -572,6 +572,7 @@ class Evento(models.Model):
 
     nombre = models.CharField(max_length=255, db_index=True)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='competencia')
+    categoria = models.CharField(max_length=100, blank=True)
     fecha = models.DateField(db_index=True)
     descripcion = models.TextField(blank=True)
     modalidad = models.CharField(max_length=20, choices=MODALIDAD_CHOICES, default='presencial')

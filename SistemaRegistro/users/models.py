@@ -1,3 +1,5 @@
+import logging
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
@@ -72,20 +74,42 @@ def sync_user_permissions(sender, instance, **kwargs):
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     """Crea o actualiza el perfil automáticamente al tocar el usuario"""
-    if created:
-        user_type = 'superuser' if instance.is_superuser else 'participante'
-        UserProfile.objects.create(user=instance, user_type=user_type)
-    else:
-        if hasattr(instance, 'userprofile'):
-            profile = instance.userprofile
-            # Sincronización inversa: si se activa superuser en admin, se refleja en el perfil
-            if instance.is_active and instance.is_staff and instance.is_superuser:
-                if profile.user_type != 'superuser':
-                    profile.user_type = 'superuser'
-                    profile.save(update_fields=['user_type'])
-        else:
+    logger = logging.getLogger(__name__)
+    
+    try:
+        if created:
+            # Si se marca para saltar creación (ej. desde admin), no crear
+            if hasattr(instance, '_skip_profile_creation') and instance._skip_profile_creation:
+                return
             user_type = 'superuser' if instance.is_superuser else 'participante'
-            UserProfile.objects.create(user=instance, user_type=user_type)
+            # Usar get_or_create para evitar errores de duplicado
+            profile, was_created = UserProfile.objects.get_or_create(
+                user=instance, 
+                defaults={'user_type': user_type}
+            )
+            if not was_created:
+                logger.warning(f"El perfil para el usuario {instance.username} ya existía")
+        else:
+            # Actualizar perfil existente si el usuario se modifica
+            try:
+                profile = instance.userprofile
+                # Sincronización inversa: si se activa superuser en admin, se refleja en el perfil
+                if instance.is_active and instance.is_staff and instance.is_superuser:
+                    if profile.user_type != 'superuser':
+                        profile.user_type = 'superuser'
+                        profile.save(update_fields=['user_type'])
+            except UserProfile.DoesNotExist:
+                # Si el perfil no existe, crearlo
+                user_type = 'superuser' if instance.is_superuser else 'participante'
+                UserProfile.objects.get_or_create(
+                    user=instance, 
+                    defaults={'user_type': user_type}
+                )
+            except Exception as e:
+                logger.error(f"Error al actualizar perfil de usuario {instance.username}: {e}")
+    except Exception as e:
+        # Manejar cualquier error de integridad de base de datos
+        logger.error(f"Error en señal create_or_update_user_profile para {instance.username}: {e}")
 
 # Modelos de referencia para la base de datos externa (Managed=False)
 class Estados(models.Model):

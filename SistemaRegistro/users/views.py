@@ -2252,3 +2252,95 @@ def detalle_evento_gestion(request, evento_id):
     except Evento.DoesNotExist:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
         return redirect('gestionar_eventos_inst')
+
+
+# ============================================
+# VISTAS AJAX PARA CARGAR UBICACIONES
+# ============================================
+
+def ajax_municipios(request):
+    """
+    Vista AJAX para cargar municipios de un estado
+    """
+    estado_id = request.GET.get('estado_id')
+    if estado_id:
+        municipios = Municipio.objects.filter(estado_id=estado_id).order_by('nombre')
+        data = [{'id': m.id, 'nombre': m.nombre} for m in municipios]
+        return JsonResponse(data, safe=False)
+    return JsonResponse([], safe=False)
+
+
+def load_parroquias(request):
+    """
+    Vista AJAX para cargar parroquias de un municipio
+    """
+    municipio_id = request.GET.get('municipio_id')
+    if municipio_id:
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by('nombre')
+        data = [{'id': p.id, 'nombre': p.nombre} for p in parroquias]
+        return JsonResponse(data, safe=False)
+    return JsonResponse([], safe=False)
+
+
+@login_required
+@institucional_required
+def crear_evento(request):
+    """
+    Vista para crear un nuevo evento
+    """
+    usuario = request.user
+    institucion = usuario.userprofile.institution
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Crear el evento
+                evento = Evento.objects.create(
+                    nombre=request.POST.get('nombre'),
+                    descripcion=request.POST.get('descripcion'),
+                    fecha=request.POST.get('fecha'),
+                    modalidad=request.POST.get('modalidad'),
+                    estado_evento=request.POST.get('estado_evento'),
+                    categoria=request.POST.get('categoria'),
+                    estado_id=request.POST.get('estado'),
+                    municipio_id=request.POST.get('municipio'),
+                    parroquia_id=request.POST.get('parroquia'),
+                    direccion=request.POST.get('direccion'),
+                    requisitos=request.POST.get('requisitos'),
+                    institucion=institucion,
+                    capacidad_maxima=request.POST.get('capacidad_maxima') or None,
+                )
+                
+                messages.success(request, f"Evento '{evento.nombre}' creado exitosamente.")
+                return redirect('gestionar_eventos_inst')
+                
+        except Exception as e:
+            messages.error(request, f"Error al crear el evento: {str(e)}")
+            # En caso de error, devolver con valores previos
+            valores_previos = request.POST.dict()
+    
+    # GET - Mostrar formulario
+    estados = Estado.objects.all().order_by('nombre')
+    categorias = [
+        'Robótica',
+        'Programación',
+        'Inteligencia Artificial',
+        'Electrónica',
+        'Mecatrónica',
+        'Innovación Tecnológica',
+        'Ciencias de la Computación',
+        'Otro'
+    ]
+    
+    hoy = date.today().isoformat()
+    estado_institucion = institucion.estado if institucion else None
+    
+    context = {
+        'estados': estados,
+        'categorias': categorias,
+        'hoy': hoy,
+        'estado_institucion': estado_institucion,
+        'valores_previos': locals().get('valores_previos', {}),
+    }
+    
+    return render(request, 'users/crear_evento.html', context)

@@ -325,6 +325,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // URLs para AJAX
+    const urlMunicipios = "{% url 'ajax_municipios' %}";
+    const urlParroquias = "{% url 'ajax_load_parroquias' %}";
+    
     // Validación de fecha
     const fechaInput = document.getElementById('fecha_evento');
     const hoy = new Date().toISOString().split('T')[0];
@@ -351,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function cargarMunicipios(estadoId) {
         if (!estadoId) return;
         
-        fetch(`/ajax/municipios/?estado_id=${estadoId}`)
+        fetch(`${urlMunicipios}?estado_id=${estadoId}`)
             .then(response => response.json())
             .then(data => {
                 const municipioSelect = document.getElementById('municipio');
@@ -374,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const municipioId = this.value;
         if (!municipioId) return;
         
-        fetch(`/ajax/parroquias/?municipio_id=${municipioId}`)
+        fetch(`${urlParroquias}?municipio_id=${municipioId}`)
             .then(response => response.json())
             .then(data => {
                 const parroquiaSelect = document.getElementById('parroquia');
