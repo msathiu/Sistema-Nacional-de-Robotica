@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from .models import UserProfile
 from django import forms
+from .models import UserProfile
 
 # 1. Limpieza de registros previos
 try:
@@ -11,18 +11,20 @@ try:
 except admin.sites.NotRegistered:
     pass
 
-from django import forms
-
 # 1. Formulario personalizado para el perfil
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ('user_type', 'estado', 'institution', 'phone')
+        fields = ('user_type', 'institution', 'phone', 'estado', 'municipio', 'parroquia', 'ubicacion')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Hacer user_type requerido
         self.fields['user_type'].required = True
+        
+        # Hacer municipio y parroquia opcionales
+        self.fields['municipio'].required = False
+        self.fields['parroquia'].required = False
 
 # 2. Inline para editar perfil dentro de Usuario
 class UserProfileInline(admin.StackedInline):
@@ -31,23 +33,18 @@ class UserProfileInline(admin.StackedInline):
     verbose_name_plural = 'Información de Perfil / Sede'
     fk_name = 'user'
     form = UserProfileForm
-    fields = ('user_type', 'estado', 'institution', 'phone')
+    fields = ('user_type', 'institution', 'phone', 'estado', 'municipio', 'parroquia', 'ubicacion')
+    extra = 1
     
-    # TRUCO PROFESIONAL: 
-    # Si estamos creando un usuario nuevo (obj es None), 
-    # forzamos a que no se muestre el Inline para que no choque con la señal.
     def get_extra(self, request, obj=None):
+        # Mostrar 1 campo extra solo si estamos creando un usuario nuevo
         if obj is None:
-            return 0 # No mostrar campos extra al crear
-        return 0 if hasattr(obj, 'userprofile') else 1
+            return 1  # Mostrar campos al crear usuario
+        # Si el usuario existe, no mostrar campos extra (el perfil ya debe existir)
+        return 0
 
     def has_add_permission(self, request, obj=None):
-        # Si el usuario ya existe y ya tiene perfil, prohibido añadir otro
-        if obj and hasattr(obj, 'userprofile'):
-            return False
-        # Si es un usuario nuevo, dejamos que la SEÑAL se encargue, no el Admin
-        if obj is None:
-            return False 
+        # Permitir crear/editar perfiles en admin
         return True
 
 # 3. Nuevo Admin de Usuarios
@@ -60,10 +57,42 @@ class CustomUserAdmin(UserAdmin):
     ordering = ("username",)
     
     def save_model(self, request, obj, form, change):
-        """Guardar el usuario y marcar para evitar creación duplicada de perfil"""
-        if not change:  # Creando nuevo usuario
-            obj._skip_profile_creation = True
+        """Guardar el usuario. La señal creará automáticamente el perfil"""
         super().save_model(request, obj, form, change)
+    
+    def save_formset(self, request, form, formset, change):
+        """Manejar el guardado del formset para evitar duplicados de perfil"""
+        if formset.model == UserProfile:
+            # Obtener el usuario base
+            user = form.instance
+            instances = formset.save(commit=False)
+            
+            for instance in instances:
+                # Usar get_or_create para evitar duplicados
+                profile, created = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'user_type': instance.user_type,
+                        'institution': instance.institution,
+                        'phone': instance.phone,
+                        'estado': instance.estado,
+                        'municipio': instance.municipio,
+                        'parroquia': instance.parroquia,
+                        'ubicacion': instance.ubicacion,
+                    }
+                )
+                # Si ya existe, actualizar los campos
+                if not created:
+                    profile.user_type = instance.user_type
+                    profile.institution = instance.institution
+                    profile.phone = instance.phone
+                    profile.estado = instance.estado
+                    profile.municipio = instance.municipio
+                    profile.parroquia = instance.parroquia
+                    profile.ubicacion = instance.ubicacion
+                    profile.save()
+        else:
+            super().save_formset(request, form, formset, change)
     
     @admin.display(description="Rol")
     def get_user_type(self, obj):
