@@ -1160,15 +1160,33 @@ def estadisticas_por_estado(request):
     return render(request, "users/estadisticas_estados.html")
 
 
-@institucional_required
+@login_required
 def crear_evento(request):
     """
-    Vista mejorada para crear eventos - Toma el estado de la institución por defecto
+    Vista unificada para crear eventos.
+    - Federación: Publica directamente (estado: publicado)
+    - Instituciones: Crea en borrador
     """
-    institution = request.user.userprofile.institution
-
-    # Obtener el estado de la institución (si tiene)
-    estado_institucion = institution.estado if hasattr(institution, "estado") else None
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
+    
+    # Validar permisos
+    roles_permitidos = ['institucional', 'fed_central', 'fed_regional', 'superuser']
+    if user_type not in roles_permitidos:
+        messages.error(request, "No tienes permisos para crear eventos.")
+        return redirect('dashboard')
+    
+    # Determinar si es federación
+    es_federacion = user_type in ['fed_central', 'fed_regional', 'superuser']
+    
+    # Obtener institución (solo si es institucional)
+    institution = perfil.institution if user_type == 'institucional' else None
+    
+    # Obtener el estado según el tipo de usuario
+    if es_federacion:
+        estado_institucion = perfil.estado  # Estado de la federación regional
+    else:
+        estado_institucion = institution.estado if institution and hasattr(institution, "estado") else None
 
     # Obtener listas para los selects
     estados = Estado.objects.all().order_by("nombre")
@@ -1252,10 +1270,16 @@ def crear_evento(request):
                 ubicacion_completa = f"{direccion}, {municipio_obj.nombre}"
             elif estado_obj:
                 ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
+            
+            # Determinar estado inicial según rol
+            if es_federacion:
+                estado_inicial = 'publicado'  # Federación publica directo
+            else:
+                estado_inicial = 'borrador'  # Instituciones en borrador
 
             evento = Evento.objects.create(
                 nombre=nombre,
-                tipo=categoria,  # Usamos el campo tipo para almacenar la categoría
+                tipo=categoria,
                 fecha=fecha_evento,
                 descripcion=descripcion,
                 modalidad=modalidad,
@@ -1265,13 +1289,17 @@ def crear_evento(request):
                 parroquia=parroquia_obj,
                 direccion=direccion,
                 requisitos=requisitos,
-                institucion=institution,
-                estado_evento=estado_evento,
+                institucion=institution,  # None si es federación
+                estado_evento=estado_inicial,
                 activo=True,
             )
-
-            messages.success(request, f"✅ Evento '{nombre}' creado exitosamente.")
-            return redirect("gestionar_eventos_inst")
+            
+            if es_federacion:
+                messages.success(request, f"✅ Evento '{nombre}' publicado exitosamente y visible para todos.")
+                return redirect("dashboard")  # Federación vuelve a su dashboard
+            else:
+                messages.success(request, f"✅ Evento '{nombre}' creado en borrador. Envíalo a revisión para publicarlo.")
+                return redirect("gestionar_eventos_inst")  # Institución a gestión de eventos
 
         except Exception as e:
             messages.error(request, f"❌ Error al crear el evento: {str(e)}")
@@ -1302,6 +1330,7 @@ def crear_evento(request):
             "categorias": categorias,
             "estado_institucion": estado_institucion,
             "valores_default": valores_default,
+            "es_federacion": es_federacion,
         },
     )
 
@@ -2886,69 +2915,3 @@ def load_parroquias(request):
         data = [{"id": p.id, "nombre": p.nombre} for p in parroquias]
         return JsonResponse(data, safe=False)
     return JsonResponse([], safe=False)
-
-
-@login_required
-@institucional_required
-def crear_evento(request):
-    """
-    Vista para crear un nuevo evento
-    """
-    usuario = request.user
-    institucion = usuario.userprofile.institution
-
-    if request.method == "POST":
-        try:
-            with transaction.atomic():
-                # Crear el evento
-                evento = Evento.objects.create(
-                    nombre=request.POST.get("nombre"),
-                    descripcion=request.POST.get("descripcion"),
-                    fecha=request.POST.get("fecha"),
-                    modalidad=request.POST.get("modalidad"),
-                    estado_evento=request.POST.get("estado_evento"),
-                    categoria=request.POST.get("categoria"),
-                    estado_id=request.POST.get("estado"),
-                    municipio_id=request.POST.get("municipio"),
-                    parroquia_id=request.POST.get("parroquia"),
-                    direccion=request.POST.get("direccion"),
-                    requisitos=request.POST.get("requisitos"),
-                    institucion=institucion,
-                    capacidad_maxima=request.POST.get("capacidad_maxima") or None,
-                )
-
-                messages.success(
-                    request, f"Evento '{evento.nombre}' creado exitosamente."
-                )
-                return redirect("gestionar_eventos_inst")
-
-        except Exception as e:
-            messages.error(request, f"Error al crear el evento: {str(e)}")
-            # En caso de error, devolver con valores previos
-            valores_previos = request.POST.dict()
-
-    # GET - Mostrar formulario
-    estados = Estado.objects.all().order_by("nombre")
-    categorias = [
-        "Robótica",
-        "Programación",
-        "Inteligencia Artificial",
-        "Electrónica",
-        "Mecatrónica",
-        "Innovación Tecnológica",
-        "Ciencias de la Computación",
-        "Otro",
-    ]
-
-    hoy = date.today().isoformat()
-    estado_institucion = institucion.estado if institucion else None
-
-    context = {
-        "estados": estados,
-        "categorias": categorias,
-        "hoy": hoy,
-        "estado_institucion": estado_institucion,
-        "valores_previos": locals().get("valores_previos", {}),
-    }
-
-    return render(request, "users/crear_evento.html", context)

@@ -84,7 +84,7 @@
 
     <!-- Tarjetas de Clubes -->
     <div class="row g-4 mb-5">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
                 <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                     <div class="card-body p-4 position-relative z-1">
@@ -98,7 +98,7 @@
             </a>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
                 <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                     <div class="card-body p-4 position-relative z-1">
@@ -110,6 +110,32 @@
                     <div style="height: 4px; background: #10b981;"></div>
                 </div>
             </a>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg overflow-hidden" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
+                <div class="card-body p-4 text-center text-white">
+                    <i class="bi bi-calendar-event-fill fs-1 mb-3"></i>
+                    <h6 class="fw-bold mb-3">Eventos de Club</h6>
+                    <p class="small mb-3 opacity-75">Crea eventos exclusivos para tus clubes aprobados</p>
+                    {% if mis_clubes_aprobados > 0 %}
+                        <a href="{% url 'clubes_lista' %}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px;">
+                            <i class="bi bi-plus-circle me-1"></i> Crear Evento de Club
+                        </a>
+                        <div class="mt-2">
+                            <small class="opacity-75">Selecciona tu club para continuar</small>
+                        </div>
+                    {% else %}
+                        <button class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px; opacity: 0.5;" disabled>
+                            <i class="bi bi-lock me-1"></i> Sin clubes aprobados
+                        </button>
+                        <div class="mt-2">
+                            <small class="opacity-75">Necesitas un club aprobado</small>
+                        </div>
+                    {% endif %}
+                </div>
+                <div style="height: 4px; background: #a78bfa;"></div>
+            </div>
         </div>
     </div>
 

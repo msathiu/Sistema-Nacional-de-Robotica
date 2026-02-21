@@ -34,21 +34,44 @@ def crear_evento_club(request, club_id):
     if request.method == 'POST':
         try:
             with transaction.atomic():
+                from registry.models import Estado, Municipio, Parroquia
+                
+                estado_id = request.POST.get('estado')
+                municipio_id = request.POST.get('municipio')
+                parroquia_id = request.POST.get('parroquia')
+                direccion = request.POST.get('direccion', '')
+                
+                estado_obj = Estado.objects.get(id=estado_id) if estado_id else None
+                municipio_obj = Municipio.objects.get(id=municipio_id) if municipio_id else None
+                parroquia_obj = Parroquia.objects.get(id=parroquia_id) if parroquia_id else None
+                
+                ubicacion_completa = direccion
+                if parroquia_obj:
+                    ubicacion_completa = f"{direccion}, {parroquia_obj.nombre}"
+                elif municipio_obj:
+                    ubicacion_completa = f"{direccion}, {municipio_obj.nombre}"
+                elif estado_obj:
+                    ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
+                
                 evento = Evento.objects.create(
                     nombre=request.POST.get('nombre'),
-                    tipo=request.POST.get('tipo', 'competencia'),
+                    tipo=request.POST.get('categoria', 'competencia'),
                     categoria=request.POST.get('categoria', ''),
                     descripcion=request.POST.get('descripcion', ''),
                     fecha=request.POST.get('fecha'),
                     modalidad=request.POST.get('modalidad', 'presencial'),
-                    ubicacion=request.POST.get('ubicacion', ''),
-                    direccion=request.POST.get('direccion', ''),
+                    ubicacion=ubicacion_completa,
+                    estado=estado_obj,
+                    municipio=municipio_obj,
+                    parroquia=parroquia_obj,
+                    direccion=direccion,
                     capacidad_maxima=request.POST.get('capacidad_maxima') or None,
                     requisitos=request.POST.get('requisitos', ''),
                     tipo_evento='club',
                     club_organizador=club,
                     creado_por=request.user,
-                    estado_evento='borrador'
+                    estado_evento='borrador',
+                    activo=True
                 )
                 
                 messages.success(
@@ -60,12 +83,43 @@ def crear_evento_club(request, club_id):
         except Exception as e:
             messages.error(request, f"Error al crear evento: {str(e)}")
     
+    # Obtener datos para el formulario
+    from registry.models import Estado
+    from datetime import date
+    
+    estados = Estado.objects.all().order_by('nombre')
+    hoy = date.today().isoformat()
+    
+    # Obtener estado del club (si tiene)
+    estado_club = None
+    if club.institucion_creadora and hasattr(club.institucion_creadora, 'estado'):
+        estado_club = club.institucion_creadora.estado
+    
+    # Categorías predefinidas
+    categorias = [
+        "Competencia",
+        "Taller",
+        "Seminario",
+        "Conferencia",
+        "Exhibición",
+        "Hackathon",
+        "Feria",
+        "Encuentro",
+        "Capacitación",
+        "Otro",
+    ]
+    
     context = {
         'club': club,
         'tipos': Evento.TIPO_CHOICES,
         'modalidades': Evento.MODALIDAD_CHOICES,
+        'estados': estados,
+        'hoy': hoy,
+        'estado_club': estado_club,
+        'categorias': categorias,
+        'valores_previos': {},
     }
-    return render(request, 'registry/evento_club_crear.html', context)
+    return render(request, 'registry/evento_club_crear_nuevo.html', context)
 
 
 @login_required

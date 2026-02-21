@@ -18,7 +18,10 @@
         </div>
         
         <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
-            
+            <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
+               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                <i class="bi bi-plus-circle-fill me-2"></i> Crear Evento
+            </a>
 
             <a href="{% url 'exportar_participantes_excel' %}" class="btn tech-report-btn shadow-sm">
                 <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
@@ -116,7 +119,7 @@
     <!-- Métricas adicionales de Clubes -->
     <div class="row g-4 mb-4">
         <div class="col-md-4">
-            <a href="{% url 'revisar_clubes' %}" class="text-decoration-none">
+            <a href="{% url 'directorio_clubes_aprobados' %}" class="text-decoration-none">
                 <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
                     <div class="card-body p-3 position-relative z-1">
                         <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Clubes Aprobados</div>

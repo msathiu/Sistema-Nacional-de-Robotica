@@ -4,40 +4,49 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-star"></i> Mis Membresías a Clubes
-                    </h4>
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border: 1px solid #a78bfa;">
+                    <i class="bi bi-star-fill fs-2 text-white"></i>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card bg-success text-white text-center">
-                                <div class="card-body">
-                                    <h2 class="mb-0">{{ total_clubes }}</h2>
-                                    <small>Clubes Activos</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-warning text-dark text-center">
-                                <div class="card-body">
-                                    <h2 class="mb-0">{{ membresias_pendientes.count }}</h2>
-                                    <small>Solicitudes Pendientes</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-danger text-white text-center">
-                                <div class="card-body">
-                                    <h2 class="mb-0">{{ membresias_rechazadas.count }}</h2>
-                                    <small>Solicitudes Rechazadas</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Mis Membresías a Clubes</h2>
+                    <p class="text-muted mb-0 small">Gestión de Participación en Clubes</p>
                 </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes Activos</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_clubes|default:0 }}">0</h2>
+                    <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #34d399;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Solicitudes Pendientes</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ membresias_pendientes.count|default:0 }}">0</h2>
+                    <i class="bi bi-hourglass-split position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #fbbf24;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #dc2626, #991b1b); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Solicitudes Rechazadas</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ membresias_rechazadas.count|default:0 }}">0</h2>
+                    <i class="bi bi-x-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #f87171;"></div>
             </div>
         </div>
     </div>
@@ -45,40 +54,42 @@
     <!-- Clubes Activos -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Mis Clubes Activos</h5>
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-check-circle me-2"></i>Mis Clubes Activos</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     {% if membresias_aprobadas %}
-                        <div class="row">
+                        <div class="row g-4">
                             {% for membresia in membresias_aprobadas %}
-                            <div class="col-md-6 mb-3">
-                                <div class="card border-success h-100">
-                                    <div class="card-body">
-                                        <h5 class="card-title">{{ membresia.club.nombre }}</h5>
-                                        <p class="card-text">
-                                            <strong>Institución Anfitriona:</strong> {{ membresia.club.institucion_creadora.nombre_publico }}<br>
-                                            <strong>Miembro desde:</strong> {{ membresia.fecha_respuesta|date:"d/m/Y" }}<br>
-                                            <strong>Líneas:</strong>
-                                            {% for linea in membresia.club.lineas_investigacion %}
-                                                <span class="badge bg-primary">{{ linea }}</span>
-                                            {% endfor %}
-                                        </p>
-                                        <div class="d-flex gap-2">
-                                            <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm btn-primary">
-                                                <i class="bi bi-eye"></i> Ver Detalles
+                            <div class="col-md-6">
+                                <div class="card h-100 border-success" style="border-width: 2px !important; border-radius: 15px;">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title fw-bold">{{ membresia.club.nombre }}</h5>
+                                        <div class="mb-3">
+                                            <div class="small mb-1"><i class="bi bi-building text-muted me-2"></i><strong>Institución:</strong> {{ membresia.club.institucion_creadora.nombre_publico }}</div>
+                                            <div class="small mb-1"><i class="bi bi-calendar-check text-muted me-2"></i><strong>Miembro desde:</strong> {{ membresia.fecha_respuesta|date:"d/m/Y" }}</div>
+                                            <div class="small"><i class="bi bi-lightbulb text-muted me-2"></i><strong>Líneas:</strong></div>
+                                            <div class="mt-2">
+                                                {% for linea in membresia.club.lineas_investigacion %}
+                                                    <span class="badge rounded-pill me-1 mb-1" style="background: var(--blue-main);">{{ linea }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                                <i class="bi bi-eye me-1"></i>Detalles
                                             </a>
-                                            <a href="{% url 'detalle_club' membresia.club.id %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-info-circle"></i> Info del Club
+                                            <a href="{% url 'detalle_club' membresia.club.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-info-circle me-1"></i>Info Club
                                             </a>
                                             {% if membresia.club.institucion_creadora != membresia.institucion %}
-                                            <a href="{% url 'salir_club' membresia.id %}" class="btn btn-sm btn-warning">
-                                                <i class="bi bi-box-arrow-right"></i> Salir
+                                            <a href="{% url 'salir_club' membresia.id %}" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-box-arrow-right me-1"></i>Salir
                                             </a>
                                             {% else %}
-                                            <span class="badge bg-info text-dark" title="Eres el propietario de este club">
-                                                <i class="bi bi-shield-check"></i> Propietario
+                                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill" title="Eres el propietario de este club">
+                                                <i class="bi bi-shield-check me-1"></i>Propietario
                                             </span>
                                             {% endif %}
                                         </div>
@@ -88,9 +99,13 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> No eres miembro de ningún club aún.
-                            <a href="{% url 'clubes_lista' %}" class="alert-link">Explorar clubes disponibles</a>
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
+                            <h5 class="text-muted">No eres miembro de ningún club aún</h5>
+                            <p class="text-muted small mb-3">Explora clubes disponibles y postula para unirte.</p>
+                            <a href="{% url 'clubes_lista' %}" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-search me-2"></i>Explorar Clubes
+                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -102,28 +117,28 @@
     {% if membresias_pendientes %}
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Solicitudes Pendientes</h5>
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #d97706, #b45309);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-hourglass-split me-2"></i>Solicitudes Pendientes</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Club</th>
-                                    <th>Institución Anfitriona</th>
-                                    <th>Fecha Solicitud</th>
-                                    <th>Estado</th>
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-uppercase x-small fw-bold text-muted">
+                                    <th class="px-4 py-3">Club</th>
+                                    <th class="py-3">Institución Anfitriona</th>
+                                    <th class="py-3">Fecha Solicitud</th>
+                                    <th class="py-3 text-center">Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for membresia in membresias_pendientes %}
                                 <tr>
-                                    <td><strong>{{ membresia.club.nombre }}</strong></td>
-                                    <td>{{ membresia.club.institucion_creadora.nombre_publico }}</td>
-                                    <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
-                                    <td><span class="badge bg-warning text-dark">En Revisión</span></td>
+                                    <td class="px-4"><span class="fw-bold small">{{ membresia.club.nombre }}</span></td>
+                                    <td><span class="small">{{ membresia.club.institucion_creadora.nombre_publico }}</span></td>
+                                    <td><span class="small text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</span></td>
+                                    <td class="text-center"><span class="badge bg-warning text-dark rounded-pill px-3">En Revisión</span></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -139,16 +154,16 @@
     {% if membresias_rechazadas %}
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-x-circle"></i> Solicitudes Rechazadas</h5>
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-x-circle me-2"></i>Solicitudes Rechazadas</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     {% for membresia in membresias_rechazadas %}
-                    <div class="alert alert-danger">
-                        <h6><strong>{{ membresia.club.nombre }}</strong></h6>
-                        <p class="mb-1"><strong>Motivo:</strong> {{ membresia.observaciones|default:"No especificado" }}</p>
-                        <small class="text-muted">Rechazado el: {{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</small>
+                    <div class="alert alert-danger border-0 shadow-sm mb-3" style="border-left: 5px solid #dc2626 !important; border-radius: 12px;">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle me-2"></i>{{ membresia.club.nombre }}</h6>
+                        <p class="mb-1 small"><strong>Motivo:</strong> {{ membresia.observaciones|default:"No especificado" }}</p>
+                        <small class="text-muted"><i class="bi bi-calendar-x me-1"></i>Rechazado el: {{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</small>
                     </div>
                     {% endfor %}
                 </div>
@@ -157,4 +172,25 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .counter { font-family: 'Space Grotesk', sans-serif; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('.counter').forEach(c => {
+        const target = +c.getAttribute('data-target');
+        const update = () => {
+            const now = +c.innerText;
+            const inc = target / 30;
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            else c.innerText = target;
+        };
+        update();
+    });
+});
+</script>
 {% endblock %}

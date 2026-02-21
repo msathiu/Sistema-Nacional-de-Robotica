@@ -647,12 +647,17 @@ class Evento(models.Model):
     ESTADO_CHOICES = [
         ('borrador', 'Borrador'),
         ('pendiente', 'Pendiente Aprobación'),
+        ('en_revision', 'En Revisión'),
         ('aprobado', 'Aprobado'),
+        ('publicado', 'Publicado'),
+        ('en_proceso', 'En Proceso'),
+        ('finalizado', 'Finalizado'),
         ('rechazado', 'Rechazado'),
+        ('cancelado', 'Cancelado'),
+        # Mantener compatibilidad con estados antiguos
         ("abierto", "Abierto"),
         ("pausado", "Pausado"),
         ("cerrado", "Cerrado"),
-        ("finalizado", "Finalizado"),
     ]
     
     TIPO_EVENTO_CHOICES = [

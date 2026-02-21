@@ -2,47 +2,68 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Revisar Solicitudes de Eliminación de Clubes</h4>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-trash3 fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Solicitudes de Eliminación</h2>
+                    <p class="text-muted mb-0 small">Revisión de Solicitudes de Eliminación de Clubes</p>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Solicitudes Pendientes</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ solicitudes_pendientes|length }}</span>
+        </div>
+        <div class="card-body p-0">
             {% if solicitudes_pendientes %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Club</th>
-                                <th>Institución</th>
-                                <th>Motivo</th>
-                                <th>Fecha Solicitud</th>
-                                <th>Acciones</th>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Club</th>
+                                <th class="py-3">Institución</th>
+                                <th class="py-3">Motivo</th>
+                                <th class="py-3">Fecha Solicitud</th>
+                                <th class="py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for solicitud in solicitudes_pendientes %}
                             <tr>
-                                <td>
-                                    <strong>{{ solicitud.club.nombre }}</strong><br>
-                                    <small class="text-muted">{{ solicitud.club.siglas }}</small>
+                                <td class="px-4">
+                                    <div class="fw-bold small text-dark">{{ solicitud.club.nombre }}</div>
+                                    <div class="x-small text-muted">{{ solicitud.club.siglas }}</div>
                                 </td>
-                                <td>{{ solicitud.institucion_solicitante.nombre }}</td>
+                                <td><span class="small">{{ solicitud.institucion_solicitante.nombre }}</span></td>
                                 <td>
-                                    <div style="max-width: 300px;">
+                                    <div style="max-width: 300px;" class="small">
                                         {{ solicitud.motivo|truncatewords:20 }}
                                     </div>
                                 </td>
-                                <td>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</td>
-                                <td>
-                                    <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
-                                       class="btn btn-sm btn-success">
-                                        <i class="bi bi-check-circle"></i> Aprobar
-                                    </a>
-                                    <a href="{% url 'rechazar_eliminacion_club' solicitud.id %}" 
-                                       class="btn btn-sm btn-danger">
-                                        <i class="bi bi-x-circle"></i> Rechazar
-                                    </a>
+                                <td><span class="small text-muted">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span></td>
+                                <td class="text-center px-4">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
+                                           class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-check-circle me-1"></i>Aprobar
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                                onclick="rechazarSolicitud('{{ solicitud.id }}', '{{ solicitud.club.nombre|escapejs }}')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -50,12 +71,26 @@
                     </table>
                 </div>
             {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i>
-                    No hay solicitudes de eliminación pendientes.
+                <div class="text-center py-5">
+                    <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+                    <h5 class="text-muted">No hay solicitudes de eliminación pendientes</h5>
+                    <p class="text-muted small">Todas las solicitudes han sido procesadas.</p>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+
+<script>
+function rechazarSolicitud(solicitudId, clubNombre) {
+    if(confirm(`¿Está seguro de rechazar la solicitud de eliminación del club "${clubNombre}"?`)) {
+        window.location.href = `/clubes/solicitudes-eliminacion/rechazar/${solicitudId}/`;
+    }
+}
+</script>
 {% endblock %}

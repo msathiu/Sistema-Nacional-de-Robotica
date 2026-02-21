@@ -5,46 +5,59 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-people-fill"></i> Gestión de Clubes</h2>
-        <div>
-            <a href="{% url 'directorio_clubes_aprobados' %}" class="btn btn-success me-2">
-                <i class="bi bi-award"></i> Ver Directorio Completo
-            </a>
-            <a href="{% url 'crear_club' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Crear Club
-            </a>
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-robot fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Clubes</h2>
+                    <p class="text-muted mb-0 small">Mis Clubes y Postulaciones</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'directorio_clubes_aprobados' %}" class="btn btn-outline-success shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                    <i class="bi bi-award me-2"></i> Directorio
+                </a>
+                <a href="{% url 'crear_club' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Crear Club
+                </a>
+            </div>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     <!-- SECCIÓN 1: MIS CLUBES CREADOS -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-folder"></i> Mis Clubes Creados
-                <span class="badge bg-light text-dark">{{ total_creados }}</span>
-            </h5>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-folder-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Mis Clubes Creados</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_creados }}</span>
         </div>
         <div class="card-body">
             {% if mis_clubes_creados %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Estado</th>
-                                <th>Fecha Creación</th>
-                                <th>Cupos</th>
-                                <th>Acciones</th>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Nombre</th>
+                                <th class="py-3">Estado</th>
+                                <th class="py-3">Fecha Creación</th>
+                                <th class="py-3 text-center">Cupos</th>
+                                <th class="py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for club in mis_clubes_creados %}
                             <tr>
-                                <td>
-                                    <strong>{{ club.nombre }}</strong>
+                                <td class="px-4">
+                                    <div class="fw-bold small text-dark">{{ club.nombre }}</div>
                                     {% if club.siglas %}
-                                        <small class="text-muted">({{ club.siglas }})</small>
+                                        <div class="x-small text-muted">{{ club.siglas }}</div>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -60,57 +73,66 @@
                                         <span class="badge bg-danger">Rechazado</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ club.fecha_creacion|date:"d/m/Y" }}</td>
-                                <td>
-                                    <span class="badge bg-info">
+                                <td><span class="small">{{ club.fecha_creacion|date:"d/m/Y" }}</span></td>
+                                <td class="text-center">
+                                    <span class="badge" style="background: var(--accent-cyan); color: var(--blue-main);">
                                         {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-center px-4">
                                     {% if club.status == 'borrador' %}
-                                        <a href="{% url 'editar_club' club.id %}" 
-                                           class="btn btn-sm btn-primary">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </a>
-                                        <a href="{% url 'enviar_club_revision' club.id %}" 
-                                           class="btn btn-sm btn-success">
-                                            <i class="bi bi-send"></i> Enviar
-                                        </a>
-                                        <a href="{% url 'eliminar_club' club.id %}" 
-                                           class="btn btn-sm btn-danger">
-                                            <i class="bi bi-trash"></i> Eliminar
-                                        </a>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'editar_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-pencil me-1"></i> Editar
+                                            </a>
+                                            <a href="{% url 'enviar_club_revision' club.id %}" 
+                                               class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-send me-1"></i> Enviar
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     {% elif club.status == 'rechazado' %}
-                                        <a href="{% url 'ver_historial_club' club.id %}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="bi bi-clock-history"></i> Ver Motivo
-                                        </a>
-                                        <a href="{% url 'editar_club' club.id %}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="bi bi-arrow-repeat"></i> Corregir
-                                        </a>
-                                        <a href="{% url 'eliminar_club' club.id %}" 
-                                           class="btn btn-sm btn-danger">
-                                            <i class="bi bi-trash"></i> Eliminar
-                                        </a>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'ver_historial_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-clock-history me-1"></i> Motivo
+                                            </a>
+                                            <a href="{% url 'editar_club' club.id %}" 
+                                               class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-arrow-repeat me-1"></i> Corregir
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     {% elif club.status == 'pendiente' or club.status == 'en_revision' %}
-                                        <a href="{% url 'ver_historial_club' club.id %}" 
-                                           class="btn btn-sm btn-info">
-                                            <i class="bi bi-clock-history"></i> Ver Estado
-                                        </a>
-                                        <span class="text-muted">En proceso...</span>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'ver_historial_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-clock-history me-1"></i> Ver Estado
+                                            </a>
+                                            <span class="text-muted small">En proceso...</span>
+                                        </div>
                                     {% elif club.status == 'aprobado' %}
-                                        <a href="{% url 'ver_historial_club' club.id %}" 
-                                           class="btn btn-sm btn-success">
-                                            <i class="bi bi-clock-history"></i> Historial
-                                        </a>
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> Activo
-                                        </span>
-                                        <a href="{% url 'eliminar_club' club.id %}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="bi bi-send"></i> Solicitar Eliminación
-                                        </a>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'eventos_club' club.id %}" 
+                                               class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                                <i class="bi bi-calendar-event me-1"></i> Eventos
+                                            </a>
+                                            <a href="{% url 'ver_historial_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-clock-history me-1"></i> Historial
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-warning rounded-circle" 
+                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -129,12 +151,13 @@
     </div>
 
     <!-- SECCIÓN 2: MIS CLUBES APROBADOS -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-check-circle"></i> Mis Clubes Aprobados
-                <span class="badge bg-light text-dark">{{ total_aprobados }}</span>
-            </h5>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Mis Clubes Aprobados</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_aprobados }}</span>
         </div>
         <div class="card-body">
             {% if mis_clubes_aprobados %}
@@ -175,12 +198,13 @@
     </div>
 
     <!-- SECCIÓN 3: CLUBES DISPONIBLES PARA POSTULAR -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-globe"></i> Clubes Disponibles para Postular
-                <span class="badge bg-light text-dark">{{ total_disponibles }}</span>
-            </h5>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-globe text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Clubes Disponibles para Postular</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_disponibles }}</span>
         </div>
         <div class="card-body">
             {% if clubes_disponibles %}
@@ -261,4 +285,17 @@
         </div>
     </div>
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+
+<script>
+function confirmarEliminar(clubId, clubNombre) {
+    if(confirm(`¿Estás seguro de eliminar el club "${clubNombre}"?`)) {
+        window.location.href = `/clubes/eliminar/${clubId}/`;
+    }
+}
+</script>
 {% endblock %}

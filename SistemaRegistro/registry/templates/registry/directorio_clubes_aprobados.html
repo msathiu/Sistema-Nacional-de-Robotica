@@ -5,25 +5,36 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="bi bi-award-fill"></i> Directorio de Clubes Aprobados</h2>
-            <p class="text-muted">Todos los clubes aprobados por la Federación</p>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #059669, #047857); border: 1px solid #34d399;">
+                    <i class="bi bi-award-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Directorio de Clubes Aprobados</h2>
+                    <p class="text-muted mb-0 small">Todos los clubes aprobados por la Federación</p>
+                </div>
+            </div>
         </div>
-        <div>
-            <span class="badge bg-success fs-5">
-                <i class="bi bi-check-circle"></i> {{ total_clubes }} Club(es) Aprobado(s)
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+            <span class="badge bg-success fs-5 px-4 py-2 rounded-pill shadow-sm">
+                <i class="bi bi-check-circle me-2"></i>{{ total_clubes }} Club(es) Aprobado(s)
             </span>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     {% if clubes_aprobados %}
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #059669, #047857);">
+                <h5 class="fw-bold mb-0 text-white"><i class="bi bi-list-check me-2"></i>Clubes Activos</h5>
+            </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
-                            <tr>
+                            <tr class="text-uppercase x-small fw-bold text-muted">
                                 <th class="px-4 py-3">Club</th>
                                 <th class="py-3">Institución</th>
                                 <th class="py-3">Líneas de Investigación</th>
@@ -38,63 +49,61 @@
                             <tr>
                                 <td class="px-4">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
-                                            <i class="bi bi-robot text-primary fs-5"></i>
+                                        <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
+                                            <i class="bi bi-robot fs-5" style="color: #059669;"></i>
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold">{{ club.nombre }}</h6>
+                                            <div class="fw-bold small text-dark">{{ club.nombre }}</div>
                                             {% if club.siglas %}
-                                                <small class="text-muted">{{ club.siglas }}</small>
+                                                <div class="x-small text-muted">{{ club.siglas }}</div>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div>
-                                        <div class="fw-semibold">{{ club.institucion_creadora.nombre_publico|truncatewords:5 }}</div>
-                                        <small class="text-muted">
-                                            <i class="bi bi-geo-alt"></i> {{ club.institucion_creadora.estado.nombre }}
-                                        </small>
+                                    <div class="small fw-semibold">{{ club.institucion_creadora.nombre_publico|truncatewords:5 }}</div>
+                                    <div class="x-small text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ club.institucion_creadora.estado.nombre }}
                                     </div>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
                                         {% for linea in club.lineas_investigacion %}
-                                            <span class="badge bg-info bg-opacity-10 text-info border border-info" style="font-size: 0.75rem;">
+                                            <span class="badge rounded-pill" style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main); font-size: 0.7rem;">
                                                 {{ linea|truncatewords:2 }}
                                             </span>
                                         {% endfor %}
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge {% if club.cupos_disponibles > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <span class="badge {% if club.cupos_disponibles > 0 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3">
                                         {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
                                     </span>
                                 </td>
                                 <td class="text-center">
                                     {% if club.estado_vinculacion == 'abierto' %}
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-unlock"></i> Abierto
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="bi bi-unlock me-1"></i>Abierto
                                         </span>
                                     {% elif club.estado_vinculacion == 'cerrado' %}
-                                        <span class="badge bg-danger">
-                                            <i class="bi bi-lock"></i> Cerrado
+                                        <span class="badge bg-danger rounded-pill">
+                                            <i class="bi bi-lock me-1"></i>Cerrado
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-warning">
-                                            <i class="bi bi-envelope"></i> Invitación
+                                        <span class="badge bg-warning text-dark rounded-pill">
+                                            <i class="bi bi-envelope me-1"></i>Invitación
                                         </span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <small class="text-muted">
+                                    <span class="small text-muted">
                                         {{ club.fecha_aprobacion|date:"d/m/Y" }}
-                                    </small>
+                                    </span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center px-4">
                                     <a href="{% url 'detalle_club' club.id %}" 
-                                       class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye"></i> Ver Detalles
+                                       class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                        <i class="bi bi-eye me-1"></i>Ver Detalles
                                     </a>
                                 </td>
                             </tr>
@@ -108,54 +117,59 @@
         <!-- Estadísticas Rápidas -->
         <div class="row g-4 mt-4">
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center">
-                        <i class="bi bi-unlock-fill text-success fs-1"></i>
-                        <h3 class="mt-2 mb-0">
-                            {{ clubes_aprobados|length }}
-                        </h3>
-                        <p class="text-muted small mb-0">Clubes Abiertos</p>
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1 text-center">
+                        <i class="bi bi-unlock-fill fs-1 mb-2"></i>
+                        <h3 class="fw-bold mb-0">{{ clubes_aprobados|length }}</h3>
+                        <p class="small mb-0 text-white-50">Clubes Abiertos</p>
                     </div>
+                    <div style="height: 4px; background: #34d399;"></div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center">
-                        <i class="bi bi-people-fill text-primary fs-1"></i>
-                        <h3 class="mt-2 mb-0">
-                            {{ total_instituciones_participantes }}
-                        </h3>
-                        <p class="text-muted small mb-0">Instituciones Participantes</p>
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1 text-center">
+                        <i class="bi bi-people-fill fs-1 mb-2"></i>
+                        <h3 class="fw-bold mb-0">{{ total_instituciones_participantes }}</h3>
+                        <p class="small mb-0 text-white-50">Instituciones Participantes</p>
                     </div>
+                    <div style="height: 4px; background: var(--accent-cyan);"></div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center">
-                        <i class="bi bi-lightbulb-fill text-warning fs-1"></i>
-                        <h3 class="mt-2 mb-0">8</h3>
-                        <p class="text-muted small mb-0">Líneas de Investigación</p>
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1 text-center">
+                        <i class="bi bi-lightbulb-fill fs-1 mb-2"></i>
+                        <h3 class="fw-bold mb-0">8</h3>
+                        <p class="small mb-0 text-white-50">Líneas de Investigación</p>
                     </div>
+                    <div style="height: 4px; background: #fbbf24;"></div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body text-center">
-                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
-                        <h3 class="mt-2 mb-0">100%</h3>
-                        <p class="text-muted small mb-0">Aprobados</p>
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1 text-center">
+                        <i class="bi bi-check-circle-fill fs-1 mb-2"></i>
+                        <h3 class="fw-bold mb-0">100%</h3>
+                        <p class="small mb-0 text-white-50">Aprobados</p>
                     </div>
+                    <div style="height: 4px; background: #34d399;"></div>
                 </div>
             </div>
         </div>
     {% else %}
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm" style="border-radius: 20px;">
             <div class="card-body text-center py-5">
-                <i class="bi bi-inbox display-1 text-muted"></i>
-                <h4 class="mt-4">No hay clubes aprobados aún</h4>
+                <i class="bi bi-inbox display-1 text-muted mb-4"></i>
+                <h4 class="fw-bold">No hay clubes aprobados aún</h4>
                 <p class="text-muted">Los clubes aprobados por la federación aparecerán aquí.</p>
             </div>
         </div>
     {% endif %}
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
 {% endblock %}

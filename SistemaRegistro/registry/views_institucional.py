@@ -854,10 +854,12 @@ def buscar_participante(request):
 @login_required
 def directorio_clubes_aprobados(request):
     """Directorio público de todos los clubes aprobados."""
-    if (
-        not hasattr(request.user, "userprofile")
-        or request.user.userprofile.user_type != "institucional"
-    ):
+    if not hasattr(request.user, "userprofile"):
+        messages.error(request, "No tienes acceso a esta sección.")
+        return redirect("dashboard")
+    
+    user_type = request.user.userprofile.user_type
+    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -953,6 +955,7 @@ def detalle_club(request, club_id):
         "es_propietario": es_propietario,
         "es_miembro": es_miembro,
         "eventos_vinculados": eventos_vinculados,
+        "user_type": user_type,
     }
     return render(request, "registry/detalle_club.html", context)
 
