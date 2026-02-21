@@ -4,61 +4,98 @@
 {% block title %}Clubes Eliminados - Papelera{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0"><i class="bi bi-trash"></i> Papelera de Clubes</h4>
-        <a href="{% url 'revisar_clubes' %}" class="btn btn-light btn-sm">
-            <i class="bi bi-arrow-left"></i> Volver
-        </a>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #dc2626, #991b1b); border: 1px solid #f87171;">
+                    <i class="bi bi-trash3-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Papelera de Clubes</h2>
+                    <p class="text-muted mb-0 small">Clubes Eliminados - Recuperación o Eliminación Permanente</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+            <a href="{% url 'revisar_clubes' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i>Volver
+            </a>
+        </div>
     </div>
-    <div class="card-body">
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- KPI -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #dc2626, #991b1b); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes en Papelera</div>
+                            <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ clubes|length }}">0</h2>
+                        </div>
+                        <i class="bi bi-trash position-absolute opacity-10" style="font-size: 5rem; right: 20px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
+                </div>
+                <div style="height: 4px; background: #f87171;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
+            <h5 class="mb-0 text-white fw-bold"><i class="bi bi-list-ul me-2"></i>Clubes Eliminados</h5>
+        </div>
+        <div class="card-body p-0">
         {% if not clubes %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No hay clubes eliminados en la papelera.
+        <div class="text-center py-5">
+            <i class="bi bi-trash text-muted fs-1 mb-3"></i>
+            <h5 class="text-muted">No hay clubes eliminados en la papelera</h5>
+            <p class="text-muted small">Los clubes eliminados aparecerán aquí.</p>
         </div>
         {% else %}
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Club</th>
-                        <th>Institución Creadora</th>
-                        <th>Fecha Eliminación</th>
-                        <th>Eliminado Por</th>
-                        <th>Motivo</th>
-                        <th>Acciones</th>
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr class="text-uppercase x-small fw-bold text-muted">
+                        <th class="px-4 py-3">Club</th>
+                        <th class="py-3">Institución Creadora</th>
+                        <th class="py-3">Fecha Eliminación</th>
+                        <th class="py-3">Eliminado Por</th>
+                        <th class="py-3">Motivo</th>
+                        <th class="py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for club in clubes %}
                     <tr>
-                        <td>
-                            <strong>{{ club.nombre }}</strong>
-                            {% if club.siglas %}<br><small class="text-muted">{{ club.siglas }}</small>{% endif %}
+                        <td class="px-4">
+                            <div class="fw-bold small text-dark">{{ club.nombre }}</div>
+                            {% if club.siglas %}<div class="x-small text-muted">{{ club.siglas }}</div>{% endif %}
                         </td>
-                        <td>{{ club.institucion_creadora.nombre|default:"N/A" }}</td>
-                        <td>{{ club.fecha_eliminacion|date:"d/m/Y H:i" }}</td>
-                        <td>{{ club.eliminado_por.username|default:"Sistema" }}</td>
+                        <td><span class="small">{{ club.institucion_creadora.nombre|default:"N/A" }}</span></td>
+                        <td><span class="small text-muted">{{ club.fecha_eliminacion|date:"d/m/Y H:i" }}</span></td>
+                        <td><span class="small">{{ club.eliminado_por.username|default:"Sistema" }}</span></td>
                         <td>
                             {% if club.motivo_eliminacion %}
-                            <small>{{ club.motivo_eliminacion|truncatewords:10 }}</small>
+                            <span class="small">{{ club.motivo_eliminacion|truncatewords:10 }}</span>
                             {% else %}
-                            <small class="text-muted">Sin motivo especificado</small>
+                            <span class="small text-muted">Sin motivo</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
+                        <td class="text-center px-4">
+                            <div class="d-flex justify-content-center gap-2">
                                 <a href="{% url 'restaurar_club' club.id %}" 
-                                   class="btn btn-success" 
+                                   class="btn btn-sm btn-success rounded-pill px-3 fw-bold" 
                                    title="Restaurar">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
                                 </a>
-                                <a href="{% url 'eliminar_permanente_club' club.id %}" 
-                                   class="btn btn-danger" 
-                                   title="Eliminar Permanentemente"
-                                   onclick="return confirm('¿Está seguro? Esta acción NO se puede deshacer.')">
+                                <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                        onclick="confirmarEliminacion('{{ club.id }}', '{{ club.nombre|escapejs }}')"
+                                        title="Eliminar Permanentemente">
                                     <i class="bi bi-trash"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -67,6 +104,34 @@
             </table>
         </div>
         {% endif %}
+        </div>
     </div>
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .counter { font-family: 'Space Grotesk', sans-serif; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+
+<script>
+function confirmarEliminacion(clubId, clubNombre) {
+    if(confirm(`¿Está seguro de eliminar PERMANENTEMENTE el club "${clubNombre}"?\n\nEsta acción NO se puede deshacer.`)) {
+        window.location.href = `/clubes/eliminar-permanente/${clubId}/`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('.counter').forEach(c => {
+        const target = +c.getAttribute('data-target');
+        const update = () => {
+            const now = +c.innerText;
+            const inc = target / 30;
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            else c.innerText = target;
+        };
+        update();
+    });
+});
+</script>
 {% endblock %}
