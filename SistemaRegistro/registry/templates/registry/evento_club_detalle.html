@@ -1,0 +1,131 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}{{ evento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ evento.nombre }}</h2>
+            <p class="text-muted mb-0">{{ evento.club_organizador.nombre }}</p>
+        </div>
+        <a href="{% url 'eventos_club' evento.club_organizador.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5>Información del Evento</h5>
+                        <span class="badge 
+                            {% if evento.estado_evento == 'borrador' %}bg-secondary
+                            {% elif evento.estado_evento == 'pendiente' %}bg-warning
+                            {% elif evento.estado_evento == 'aprobado' %}bg-success
+                            {% elif evento.estado_evento == 'rechazado' %}bg-danger
+                            {% endif %} fs-6">
+                            {{ evento.get_estado_evento_display }}
+                        </span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Tipo:</strong> {{ evento.get_tipo_display }}</p>
+                            <p><strong>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
+                            <p><strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Ubicación:</strong> {{ evento.ubicacion|default:"No especificada" }}</p>
+                            <p><strong>Capacidad:</strong> {{ evento.capacidad_maxima|default:"Sin límite" }}</p>
+                            <p><strong>Cupos disponibles:</strong> {{ evento.cupos_disponibles }}</p>
+                        </div>
+                    </div>
+
+                    {% if evento.descripcion %}
+                        <hr>
+                        <h6>Descripción</h6>
+                        <p>{{ evento.descripcion }}</p>
+                    {% endif %}
+
+                    {% if evento.observaciones_aprobacion %}
+                        <hr>
+                        <div class="alert alert-info">
+                            <strong>Observaciones de la Federación:</strong><br>
+                            {{ evento.observaciones_aprobacion }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if inscripciones %}
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Grupos Inscritos ({{ inscripciones.count }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Grupo</th>
+                                        <th>Institución</th>
+                                        <th>Rol</th>
+                                        <th>Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inscripcion in inscripciones %}
+                                        <tr>
+                                            <td>{{ inscripcion.grupo.nombre }}</td>
+                                            <td>{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
+                                            <td><span class="badge bg-primary">{{ inscripcion.get_rol_participacion_display }}</span></td>
+                                            <td>{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Acciones</h6>
+                </div>
+                <div class="card-body">
+                    {% if es_propietario and evento.estado_evento in 'borrador,rechazado' %}
+                        <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn btn-warning w-100 mb-2">
+                            <i class="bi bi-send"></i> Enviar a Revisión
+                        </a>
+                    {% endif %}
+                    
+                    {% if puede_inscribir %}
+                        <a href="{% url 'inscribir_grupo_evento_club' evento.id %}" class="btn btn-success w-100">
+                            <i class="bi bi-plus-circle"></i> Inscribir Grupo
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0">Información</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2"><strong>Creado por:</strong><br>{{ evento.creado_por.get_full_name|default:evento.creado_por.username }}</p>
+                    <p class="small mb-0"><strong>Fecha de creación:</strong><br>{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    {% if evento.fecha_aprobacion %}
+                        <hr>
+                        <p class="small mb-0"><strong>Aprobado:</strong><br>{{ evento.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Aprobar Evento{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Aprobar Evento de Club</h4>
+                </div>
+                <div class="card-body">
+                    <h5>{{ evento.nombre }}</h5>
+                    <p class="text-muted">Club: {{ evento.club_organizador.nombre }}</p>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Tipo:</strong> {{ evento.get_tipo_display }}</p>
+                            <p><strong>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}</p>
+                            <p><strong>Capacidad:</strong> {{ evento.capacidad_maxima|default:"Sin límite" }}</p>
+                        </div>
+                    </div>
+
+                    {% if evento.descripcion %}
+                        <p><strong>Descripción:</strong></p>
+                        <p>{{ evento.descripcion }}</p>
+                    {% endif %}
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Comentario de Aprobación *</label>
+                            <textarea name="observaciones" class="form-control" rows="4" required 
+                                placeholder="Ej: Evento aprobado, cumple con los requisitos establecidos..."></textarea>
+                        </div>
+
+                        <div class="alert alert-success">
+                            <i class="bi bi-info-circle"></i>
+                            Al aprobar, el club podrá comenzar a recibir inscripciones de sus miembros.
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'revisar_eventos_club' %}" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Aprobar Evento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

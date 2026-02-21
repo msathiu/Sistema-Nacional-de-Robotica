@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Salir del Club{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="bi bi-box-arrow-right"></i> Salir del Club</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atención:</strong> Estás a punto de salir de este club. Esta acción liberará tu cupo y podrás volver a postular en el futuro si lo deseas.
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Información del Club</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="text-primary">{{ membresia.club.nombre }}</h4>
+                                {% if membresia.club.siglas %}
+                                <p class="text-muted">{{ membresia.club.siglas }}</p>
+                                {% endif %}
+                                <hr>
+                                <p><strong>Institución Propietaria:</strong><br>{{ membresia.club.institucion_creadora.nombre }}</p>
+                                <p><strong>Ubicación:</strong> {{ membresia.club.ubicacion }}</p>
+                                <p><strong>Fecha de Ingreso:</strong> {{ membresia.fecha_respuesta|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="motivo" class="form-label">
+                                <strong>Motivo de Salida (Opcional)</strong>
+                            </label>
+                            <textarea 
+                                name="motivo" 
+                                id="motivo" 
+                                class="form-control" 
+                                rows="4" 
+                                placeholder="Puedes indicar el motivo de tu salida (opcional)..."
+                            ></textarea>
+                            <small class="text-muted">Este motivo será visible para el propietario del club.</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>¿Qué sucederá?</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Tu membresía será cancelada inmediatamente</li>
+                                <li>Se liberará un cupo en el club</li>
+                                <li>Podrás volver a postular en el futuro</li>
+                                <li>El propietario será notificado de tu salida</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'mis_membresias' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-box-arrow-right"></i> Confirmar Salida
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,16 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Estado, Institucion, Municipio, Parroquia, Participante
+from .models import (
+    Club,
+    ClubLineaInvestigacion,
+    Estado,
+    Institucion,
+    LineaInvestigacion,
+    Municipio,
+    Parroquia,
+    Participante,
+)
 
 
 class ParticipanteForm(forms.ModelForm):
@@ -135,3 +144,148 @@ class InstitucionForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class ClubForm(forms.ModelForm):
+    """Formulario para crear/editar clubes con líneas de investigación dinámicas."""
+    
+    # Campos para líneas de investigación (hasta 3)
+    linea_investigacion_1 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
+        required=True,
+        label="Línea de Investigación 1 (Principal)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_2 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
+        required=False,
+        label="Línea de Investigación 2 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_3 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
+        required=False,
+        label="Línea de Investigación 3 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Si estamos editando, cargar las líneas existentes
+        if self.instance and self.instance.pk:
+            lineas_existentes = self.instance.club_lineas.select_related('linea').order_by('orden')
+            
+            for idx, club_linea in enumerate(lineas_existentes, start=1):
+                field_name = f'linea_investigacion_{idx}'
+                if field_name in self.fields:
+                    self.fields[field_name].initial = club_linea.linea
+    
+    class Meta:
+        model = Club
+        fields = [
+            'nombre',
+            'siglas',
+            'descripcion',
+            'ubicacion',
+            'fecha_fundacion',
+            'estado_vinculacion',
+            'cupo_maximo',
+            'requisitos',
+            'documento_legal',
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robótica Educativa'}),
+            'siglas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: CRE', 'maxlength': '10'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe los objetivos y actividades del club...'}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección física del club'}),
+            'fecha_fundacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'estado_vinculacion': forms.Select(attrs={'class': 'form-select'}),
+            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'value': '10', 'min': '1', 'max': '100'}),
+            'requisitos': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Requisitos para que una institución pueda ser miembro...'}),
+            'documento_legal': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Número de documento legal, resolución, etc.'}),
+        }
+    
+    def save(self, commit=True):
+        club = super().save(commit=False)
+        
+        # Guardar el club primero si commit=True
+        if commit:
+            club.save()
+            
+            # Limpiar líneas existentes
+            club.club_lineas.all().delete()
+            
+            # Guardar nuevas líneas
+            from registry.models import ClubLineaInvestigacion
+            
+            lineas = [
+                (self.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
+                (self.cleaned_data.get('linea_investigacion_2'), 'soporte', 2),
+                (self.cleaned_data.get('linea_investigacion_3'), 'afines', 3),
+            ]
+            
+            for linea, tipo, orden in lineas:
+                if linea:
+                    ClubLineaInvestigacion.objects.create(
+                        club=club,
+                        linea=linea,
+                        tipo_linea=tipo,
+                        orden=orden
+                    )
+        
+        return club
+    
+    def __init__(self, *args, **kwargs):
+        self.instance_id = kwargs.get('instance').pk if kwargs.get('instance') else None
+        super().__init__(*args, **kwargs)
+        
+        # Si estamos editando, cargar líneas existentes
+        if self.instance.pk:
+            lineas = self.instance.club_lineas.select_related('linea').order_by('orden')
+            if lineas.exists():
+                for i, club_linea in enumerate(lineas[:3], start=1):
+                    field_name = f'linea_investigacion_{i}'
+                    if field_name in self.fields:
+                        self.fields[field_name].initial = club_linea.linea
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        linea_1 = cleaned_data.get('linea_investigacion_1')
+        linea_2 = cleaned_data.get('linea_investigacion_2')
+        linea_3 = cleaned_data.get('linea_investigacion_3')
+        
+        # Validar que no se repitan líneas
+        lineas = [l for l in [linea_1, linea_2, linea_3] if l]
+        if len(lineas) != len(set(lineas)):
+            raise ValidationError("No puede seleccionar la misma línea de investigación más de una vez.")
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        club = super().save(commit=commit)
+        
+        if commit:
+            # Eliminar líneas existentes
+            ClubLineaInvestigacion.objects.filter(club=club).delete()
+            
+            # Agregar nuevas líneas
+            lineas_data = [
+                (self.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
+                (self.cleaned_data.get('linea_investigacion_2'), 'soporte', 2),
+                (self.cleaned_data.get('linea_investigacion_3'), 'afines', 3),
+            ]
+            
+            for linea, tipo, orden in lineas_data:
+                if linea:
+                    ClubLineaInvestigacion.objects.create(
+                        club=club,
+                        linea=linea,
+                        tipo_linea=tipo,
+                        orden=orden
+                    )
+        
+        return club

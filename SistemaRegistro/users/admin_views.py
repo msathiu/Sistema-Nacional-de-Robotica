@@ -17,7 +17,8 @@ def admin_dashboard(request):
         'total_participantes': Participante.objects.count(),
         'total_eventos': Evento.objects.count(),
         'total_grupos': Grupo.objects.count(),
-        'total_clubes': Club.objects.count(),
+        # Solo contar clubes APROBADOS según especificación
+        'total_clubes': Club.objects.filter(status='aprobado', activo=True).count(),
         'total_usuarios': UserProfile.objects.count(),
         
         # Distribución por tipo de usuario

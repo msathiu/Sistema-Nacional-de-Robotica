@@ -1,0 +1,60 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Rechazar Club{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-header bg-danger text-white" style="border-radius: 20px 20px 0 0;">
+                    <h4 class="mb-0">
+                        <i class="fas fa-times-circle me-2"></i>Rechazar Club
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Información del Club -->
+                    <div class="alert alert-light border mb-4">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-robot me-2"></i>{{ club.nombre }}
+                            {% if club.siglas %}<span class="text-muted">({{ club.siglas }})</span>{% endif %}
+                        </h5>
+                        <hr>
+                        <p class="mb-1"><strong>Institución Creadora:</strong> {{ club.institucion_creadora.nombre }}</p>
+                        <p class="mb-1"><strong>Estado actual:</strong> {{ club.get_status_display }}</p>
+                        <p class="mb-0"><strong>Fecha de Creación:</strong> {{ club.fecha_creacion|date:"d/m/Y" }}</p>
+                    </div>
+
+                    <p>Está a punto de RECHAZAR el club <strong>"{{ club.nombre }}"</strong>.</p>
+                    
+                    <p class="text-muted">Por favor, indique las razones del rechazo para que la institución pueda corregir y volver a enviar el club.</p>
+
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label fw-bold">Observaciones *</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" 
+                                      rows="4" placeholder="Indique las razones del rechazo..." required></textarea>
+                            <small class="text-muted">Estas observaciones serán visibles para la institución creadora</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between gap-3">
+                            <a href="{% url 'revisar_clubes' %}" class="btn btn-outline-secondary flex-grow-1">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger flex-grow-1">
+                                <i class="fas fa-times-circle me-2"></i>Confirmar Rechazo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

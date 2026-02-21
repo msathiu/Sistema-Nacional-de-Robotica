@@ -1,0 +1,63 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Revisar Eventos de Club{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Revisar Eventos de Club Pendientes</h4>
+        </div>
+        <div class="card-body">
+            {% if eventos_pendientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Evento</th>
+                                <th>Club</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Creado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for evento in eventos_pendientes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ evento.nombre }}</strong><br>
+                                        <small class="text-muted">{{ evento.get_modalidad_display }}</small>
+                                    </td>
+                                    <td>{{ evento.club_organizador.nombre }}</td>
+                                    <td><span class="badge bg-info">{{ evento.get_tipo_display }}</span></td>
+                                    <td>{{ evento.fecha|date:"d/m/Y" }}</td>
+                                    <td>{{ evento.fecha_creacion|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-outline-primary" title="Ver">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'aprobar_evento_club' evento.id %}" class="btn btn-success" title="Aprobar">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                            <a href="{% url 'rechazar_evento_club' evento.id %}" class="btn btn-danger" title="Rechazar">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    No hay eventos pendientes de revisión.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-success shadow">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0"><i class="bi bi-check-circle"></i> Aprobar Eliminación de Club</h4>
+        </div>
+        <div class="card-body">
+            <h5>{{ solicitud.club.nombre }}</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Institución:</strong> {{ solicitud.institucion_solicitante.nombre }}</p>
+                    <p><strong>Fecha Solicitud:</strong> {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Estado Club:</strong> <span class="badge bg-secondary">{{ solicitud.club.get_status_display }}</span></p>
+                    <p><strong>Cupos:</strong> {{ solicitud.club.cupos_disponibles }}/{{ solicitud.club.cupo_maximo }}</p>
+                </div>
+            </div>
+            
+            <div class="alert alert-light border">
+                <strong>Motivo de la solicitud:</strong>
+                <p class="mb-0 mt-2">{{ solicitud.motivo }}</p>
+            </div>
+            
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Atención:</strong> Al aprobar esta solicitud, el club será marcado como eliminado (soft delete). 
+                Se mantendrá en la base de datos para auditoría pero no será visible para los usuarios.
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <p class="mb-4">¿Estás seguro de que deseas aprobar la eliminación de este club?</p>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Aprobar Eliminación
+                </button>
+                <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

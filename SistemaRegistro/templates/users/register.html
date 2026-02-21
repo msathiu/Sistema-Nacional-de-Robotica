@@ -10,7 +10,7 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Registro de Nuevo Participante</h2>
-                    <p class="text-muted mb-0 small">Sede: {{ request.user.userprofile.institution.nombre }}</p>
+                    <p class="text-muted mb-0 small">Sede: {% if nombre_sede %}{{ nombre_sede }}{% else %}No asignada{% endif %}</p>
                 </div>
             </div>
             <hr class="mt-4 opacity-10">
@@ -107,9 +107,19 @@
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-4">
+                                    {% if es_admin_central %}
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Estado</label>
+                                    <select name="estado" id="id_estado" class="form-select" required>
+                                        <option value="">Seleccione...</option>
+                                        {% for est in todos_estados %}
+                                            <option value="{{ est.id }}" {% if estado_id == est.id %}selected{% endif %}>{{ est.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
                                     <label class="form-label fw-bold text-muted small text-uppercase">Estado (Asignado)</label>
-                                    <input type="text" class="form-control fw-bold" style="background: #e0f7fa; color: #006064;" value="{{ request.user.userprofile.institution.estado.nombre }}" readonly>
-                                    <input type="hidden" name="estado" value="{{ request.user.userprofile.institution.estado.id }}">
+                                    <input type="text" class="form-control fw-bold" style="background: #e0f7fa; color: #006064;" value="{{ estado.nombre|default:"" }}" readonly>
+                                    <input type="hidden" name="estado" value="{{ estado_id|default:"" }}">
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
@@ -280,7 +290,31 @@
             });
     });
 
-    // 4. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
+    // 4. Lógica para Admin Central: cambiar municipios cuando cambia el estado
+    const estadoSelect = document.getElementById('id_estado');
+    if (estadoSelect) {
+        estadoSelect.addEventListener('change', function() {
+            const estadoId = this.value;
+            const municipioSelect = document.getElementById('id_municipio');
+            const parroquiaSelect = document.getElementById('id_parroquia');
+            
+            if (estadoId) {
+                municipioSelect.innerHTML = '<option value="">Cargando...</option>';
+                fetch(`/ajax/municipios/?estado_id=${estadoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        municipioSelect.innerHTML = '<option value="">Seleccione Municipio</option>';
+                        data.forEach(item => {
+                            municipioSelect.innerHTML += `<option value="${item.id}">${item.nombre}</option>`;
+                        });
+                    });
+                // Limpiar parroquias
+                parroquiaSelect.innerHTML = '<option value="">Seleccione primero un municipio</option>';
+            }
+        });
+    }
+
+    // 5. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
     registroForm.addEventListener('reset', () => {
         setTimeout(() => { 
             edadDisp.value = "0";

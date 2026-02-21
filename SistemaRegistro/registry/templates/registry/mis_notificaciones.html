@@ -1,0 +1,74 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-bell"></i> Mis Notificaciones</h4>
+            {% if no_leidas > 0 %}
+            <form method="post" action="{% url 'marcar_todas_leidas' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-light">
+                    <i class="bi bi-check-all"></i> Marcar todas como leídas
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if notificaciones %}
+                <div class="list-group list-group-flush">
+                    {% for notif in notificaciones %}
+                    <div class="list-group-item {% if not notif.leida %}bg-light{% endif %}">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if notif.tipo == 'club_aprobado' %}
+                                        <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
+                                    {% elif notif.tipo == 'club_rechazado' %}
+                                        <i class="bi bi-x-circle-fill text-danger fs-4 me-2"></i>
+                                    {% elif notif.tipo == 'solicitud_eliminacion' %}
+                                        <i class="bi bi-trash-fill text-warning fs-4 me-2"></i>
+                                    {% elif notif.tipo == 'eliminacion_aprobada' %}
+                                        <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
+                                    {% elif notif.tipo == 'eliminacion_rechazada' %}
+                                        <i class="bi bi-x-circle-fill text-danger fs-4 me-2"></i>
+                                    {% else %}
+                                        <i class="bi bi-info-circle-fill text-info fs-4 me-2"></i>
+                                    {% endif %}
+                                    <h6 class="mb-0">{{ notif.titulo }}</h6>
+                                    {% if not notif.leida %}
+                                        <span class="badge bg-primary ms-2">Nueva</span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-2">{{ notif.mensaje }}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> {{ notif.fecha_creacion|date:"d/m/Y H:i" }}
+                                    {% if notif.club %}
+                                        | <i class="bi bi-building"></i> {{ notif.club.nombre }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="ms-3">
+                                {% if not notif.leida %}
+                                <a href="{% url 'marcar_notificacion_leida' notif.id %}" 
+                                   class="btn btn-sm btn-outline-primary"
+                                   title="Marcar como leída">
+                                    <i class="bi bi-check"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="bi bi-bell-slash fs-1"></i>
+                    <p class="mt-3">No tienes notificaciones</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

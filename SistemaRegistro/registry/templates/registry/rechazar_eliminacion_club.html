@@ -1,0 +1,53 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-danger shadow">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-x-circle"></i> Rechazar Eliminación de Club</h4>
+        </div>
+        <div class="card-body">
+            <h5>{{ solicitud.club.nombre }}</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Institución:</strong> {{ solicitud.institucion_solicitante.nombre }}</p>
+                    <p><strong>Fecha Solicitud:</strong> {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Estado Club:</strong> <span class="badge bg-secondary">{{ solicitud.club.get_status_display }}</span></p>
+                </div>
+            </div>
+            
+            <div class="alert alert-light border">
+                <strong>Motivo de la solicitud:</strong>
+                <p class="mb-0 mt-2">{{ solicitud.motivo }}</p>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="observaciones" class="form-label">
+                        Observaciones <span class="text-muted">(Opcional)</span>
+                    </label>
+                    <textarea 
+                        name="observaciones" 
+                        id="observaciones" 
+                        class="form-control" 
+                        rows="5"
+                        placeholder="Explica por qué se rechaza la solicitud de eliminación. Esta información será enviada a la institución."
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle"></i> Rechazar Solicitud
+                </button>
+                <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

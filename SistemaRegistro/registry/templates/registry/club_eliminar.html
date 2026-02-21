@@ -1,0 +1,78 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-danger shadow">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-trash"></i> Eliminar Club</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="mb-3">{{ club.nombre }}</h5>
+            <p class="text-muted">Estado actual: <span class="badge bg-secondary">{{ club.get_status_display }}</span></p>
+            
+            {% if puede_eliminar_directo %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Atención:</strong> Este club está en estado <strong>{{ club.get_status_display|upper }}</strong> 
+                    y será eliminado permanentemente de la base de datos.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <p class="mb-4">¿Estás seguro de que deseas eliminar este club? Esta acción no se puede deshacer.</p>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Eliminar Permanentemente
+                    </button>
+                    <a href="{% url 'clubes_lista' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </form>
+            
+            {% elif requiere_aprobacion %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Información:</strong> Este club está <strong>{{ club.get_status_display|upper }}</strong>. 
+                    Debes enviar una solicitud de eliminación a la federación explicando el motivo.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="motivo" class="form-label">
+                            Motivo de la eliminación <span class="text-danger">*</span>
+                        </label>
+                        <textarea 
+                            name="motivo" 
+                            id="motivo" 
+                            class="form-control" 
+                            rows="6" 
+                            required
+                            placeholder="Explica detalladamente por qué deseas eliminar este club. Esta información será revisada por la federación."
+                        ></textarea>
+                        <small class="form-text text-muted">
+                            La federación revisará tu solicitud y te notificará la decisión.
+                        </small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-send"></i> Enviar Solicitud de Eliminación
+                    </button>
+                    <a href="{% url 'clubes_lista' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </form>
+            
+            {% else %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i>
+                    No se puede eliminar este club en su estado actual.
+                </div>
+                <a href="{% url 'clubes_lista' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

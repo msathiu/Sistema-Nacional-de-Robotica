@@ -1,0 +1,447 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border: 1px solid #a78bfa;">
+                    <i class="bi bi-people fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
+                        Revisión de Membresías
+                    </h2>
+                    <p class="text-muted mb-0 small">Administra las solicitudes de membresía a clubes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i>Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Pendientes</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ membresias_pendientes|length|default:0 }}">0</h3>
+                    <i class="bi bi-hourglass-split position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #fbbf24;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">En Revisión</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ membresias_en_revision|length|default:0 }}">0</h3>
+                    <i class="bi bi-arrow-repeat position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #a78bfa;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Total por Revisar</div>
+                    <h3 class="fw-bold mb-0">
+                        <span class="counter" data-target="{{ membresias_pendientes|length|default:0 }}">0</span>
+                        <span class="fs-5 text-white-50">+</span>
+                        <span class="counter" data-target="{{ membresias_en_revision|length|default:0 }}">0</span>
+                    </h3>
+                    <i class="bi bi-clipboard-check position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #34d399;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Membresías Pendientes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                <div class="card-header bg-white border-0 p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-hourglass-split text-warning me-2"></i>Membresías Pendientes
+                        </h5>
+                        <span class="badge bg-warning text-dark fs-6">{{ membresias_pendientes|length }} pendiente(s)</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if membresias_pendientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 py-3">Institución</th>
+                                    <th class="py-3">Club</th>
+                                    <th class="py-3">Tipo Línea</th>
+                                    <th class="py-3">Fecha Solicitud</th>
+                                    <th class="py-3 text-end px-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for membresia in membresias_pendientes %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                                <i class="bi bi-building text-primary fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</h6>
+                                                {% if membresia.institucion.estado %}
+                                                <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <strong>{{ membresia.club.nombre }}</strong>
+                                        {% if membresia.club.siglas %}
+                                        <br><small class="text-muted">{{ membresia.club.siglas }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-info">{{ membresia.get_tipo_linea_display }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <small class="text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td class="py-3 text-end px-4">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleMembresia{{ membresia.id }}">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </button>
+                                            <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
+                                                <i class="bi bi-check-circle"></i> Aprobar
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rechazarMembresia{{ membresia.id }}">
+                                                <i class="bi bi-x-circle"></i> Rechazar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+                        <h5 class="text-muted">No hay membresías pendientes</h5>
+                        <p class="text-muted small">Todas las solicitudes han sido procesadas.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Membresías En Revisión -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                <div class="card-header bg-white border-0 p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-arrow-repeat text-purple me-2"></i>Membresías En Revisión
+                        </h5>
+                        <span class="badge bg-purple text-white fs-6" style="background: #7c3aed;">{{ membresias_en_revision|length }} en revisión</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if membresias_en_revision %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 py-3">Institución</th>
+                                    <th class="py-3">Club</th>
+                                    <th class="py-3">Tipo Línea</th>
+                                    <th class="py-3">Fecha Solicitud</th>
+                                    <th class="py-3 text-end px-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for membresia in membresias_en_revision %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-purple bg-opacity-10 p-2 rounded-3 me-3" style="background: rgba(124, 58, 237, 0.1);">
+                                                <i class="bi bi-building text-purple fs-5" style="color: #7c3aed;"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</h6>
+                                                {% if membresia.institucion.estado %}
+                                                <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <strong>{{ membresia.club.nombre }}</strong>
+                                        {% if membresia.club.siglas %}
+                                        <br><small class="text-muted">{{ membresia.club.siglas }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-info">{{ membresia.get_tipo_linea_display }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <small class="text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td class="py-3 text-end px-4">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleMembresia{{ membresia.id }}">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </button>
+                                            <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
+                                                <i class="bi bi-check-circle"></i> Aprobar
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rechazarMembresia{{ membresia.id }}">
+                                                <i class="bi bi-x-circle"></i> Rechazar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
+                        <h5 class="text-muted">No hay membresías en revisión</h5>
+                        <p class="text-muted small">No hay solicitudes siendo evaluadas actualmente.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales de Detalle para Membresías Pendientes -->
+{% for membresia in membresias_pendientes %}
+<div class="modal fade" id="detalleMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-people me-2"></i>Detalle de Membresía
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
+                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
+                        {% if membresia.institucion.estado %}
+                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">CLUB</label>
+                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
+                        {% if membresia.club.siglas %}
+                        <small class="text-muted">{{ membresia.club.siglas }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
+                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">FECHA DE SOLICITUD</label>
+                        <p class="mb-0">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
+                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
+                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">REPRESENTANTE LEGAL</label>
+                        <p class="mb-0">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
+                    <i class="bi bi-check-circle me-2"></i>Aprobar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rechazo -->
+<div class="modal fade" id="rechazarMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <form method="post" action="{% url 'rechazar_membresia' membresia.id %}">
+                {% csrf_token %}
+                <div class="modal-header" style="background: #dc3545; border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="bi bi-x-circle me-2"></i>Rechazar Membresía
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Está a punto de RECHAZAR la membresía de: <strong>{{ membresia.institucion.nombre }}</strong></p>
+                    <p class="text-muted">al club: <strong>{{ membresia.club.nombre }}</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones (opcional)</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modales de Detalle para Membresías En Revisión -->
+{% for membresia in membresias_en_revision %}
+<div class="modal fade" id="detalleMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-people me-2"></i>Detalle de Membresía
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
+                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
+                        {% if membresia.institucion.estado %}
+                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">CLUB</label>
+                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
+                        {% if membresia.club.siglas %}
+                        <small class="text-muted">{{ membresia.club.siglas }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
+                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">FECHA DE SOLICITUD</label>
+                        <p class="mb-0">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
+                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
+                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">REPRESENTANTE LEGAL</label>
+                        <p class="mb-0">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
+                    <i class="bi bi-check-circle me-2"></i>Aprobar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rechazo para En Revisión -->
+<div class="modal fade" id="rechazarMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <form method="post" action="{% url 'rechazar_membresia' membresia.id %}">
+                {% csrf_token %}
+                <div class="modal-header" style="background: #dc3545; border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="bi bi-x-circle me-2"></i>Rechazar Membresía
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Está a punto de RECHAZAR la membresía de: <strong>{{ membresia.institucion.nombre }}</strong></p>
+                    <p class="text-muted">al club: <strong>{{ membresia.club.nombre }}</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones (opcional)</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .counter { font-family: 'Space Grotesk', sans-serif; }
+    .x-small { font-size: 0.75rem; }
+    .text-purple { color: #7c3aed !important; }
+    .bg-purple { background-color: #7c3aed !important; }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Contador animado
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                const count = parseInt(counter.innerText);
+                const increment = Math.max(Math.trunc(target / 20), 1);
+                if (count < target) {
+                    counter.innerText = count + increment;
+                    setTimeout(updateCount, 30);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+            updateCount();
+        });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,90 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-search"></i> Búsqueda Avanzada de Clubes</h4>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Búsqueda por nombre</label>
+                    <input type="text" name="q" class="form-control" placeholder="Nombre del club o institución" value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Línea de Investigación</label>
+                    <select name="linea" class="form-select">
+                        <option value="">Todas</option>
+                        {% for linea in lineas %}
+                        <option value="{{ linea.id }}" {% if request.GET.linea|stringformat:"s" == linea.id|stringformat:"s" %}selected{% endif %}>{{ linea.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estado de Vinculación</label>
+                    <select name="estado_vinculacion" class="form-select">
+                        <option value="">Todos</option>
+                        {% for codigo, nombre in estados_vinculacion %}
+                        <option value="{{ codigo }}" {% if request.GET.estado_vinculacion == codigo %}selected{% endif %}>{{ nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cupos mínimos</label>
+                    <input type="number" name="cupos_min" class="form-control" min="1" value="{{ request.GET.cupos_min }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'buscar_clubes' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+            
+            <hr>
+            
+            <h5 class="mb-3">Resultados: <span class="badge bg-info">{{ total_resultados }}</span></h5>
+            
+            {% if clubes %}
+                <div class="row">
+                    {% for club in clubes %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ club.nombre }}</h5>
+                                <p class="text-muted small">
+                                    <i class="bi bi-building"></i> {{ club.institucion_creadora.nombre_publico }}<br>
+                                    <i class="bi bi-geo-alt"></i> {{ club.institucion_creadora.estado.nombre }}
+                                </p>
+                                <div class="mb-2">
+                                    {% for linea in club.lineas_investigacion %}
+                                        <span class="badge bg-primary">{{ linea }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-people"></i> {{ club.cupos_disponibles }} cupos
+                                    </span>
+                                    <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm btn-primary">
+                                        Ver Detalles
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    No se encontraron clubes con los criterios especificados.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

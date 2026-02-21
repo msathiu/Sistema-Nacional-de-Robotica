@@ -1,0 +1,61 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Revisar Solicitudes de Eliminación de Clubes</h4>
+        </div>
+        <div class="card-body">
+            {% if solicitudes_pendientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Club</th>
+                                <th>Institución</th>
+                                <th>Motivo</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for solicitud in solicitudes_pendientes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ solicitud.club.nombre }}</strong><br>
+                                    <small class="text-muted">{{ solicitud.club.siglas }}</small>
+                                </td>
+                                <td>{{ solicitud.institucion_solicitante.nombre }}</td>
+                                <td>
+                                    <div style="max-width: 300px;">
+                                        {{ solicitud.motivo|truncatewords:20 }}
+                                    </div>
+                                </td>
+                                <td>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-circle"></i> Aprobar
+                                    </a>
+                                    <a href="{% url 'rechazar_eliminacion_club' solicitud.id %}" 
+                                       class="btn btn-sm btn-danger">
+                                        <i class="bi bi-x-circle"></i> Rechazar
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    No hay solicitudes de eliminación pendientes.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

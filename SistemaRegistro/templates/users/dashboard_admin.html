@@ -113,6 +113,46 @@
         </div>
     </div>
 
+    <!-- Métricas adicionales de Clubes -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <a href="{% url 'revisar_clubes' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                    <div class="card-body p-3 position-relative z-1">
+                        <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Clubes Aprobados</div>
+                        <h3 class="fw-bold mb-0 counter" data-target="{{ clubes_aprobados|default:0 }}">0</h3>
+                        <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #34d399;"></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'revisar_clubes' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+                    <div class="card-body p-3 position-relative z-1">
+                        <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Clubes Pendientes</div>
+                        <h3 class="fw-bold mb-0 counter" data-target="{{ clubes_pendientes|default:0 }}">0</h3>
+                        <i class="bi bi-hourglass-split position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #fbbf24;"></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'revisar_membresias' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
+                    <div class="card-body p-3 position-relative z-1">
+                        <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Membresías Pendientes</div>
+                        <h3 class="fw-bold mb-0 counter" data-target="{{ membresias_pendientes|default:0 }}">0</h3>
+                        <i class="bi bi-person-plus position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #a78bfa;"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: white;">

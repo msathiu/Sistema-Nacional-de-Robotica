@@ -6,160 +6,258 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-trophy"></i> Clubes de Robótica</h2>
-        <a href="{% url 'crear_club' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Crear Club
-        </a>
+        <h2><i class="bi bi-people-fill"></i> Gestión de Clubes</h2>
+        <div>
+            <a href="{% url 'directorio_clubes_aprobados' %}" class="btn btn-success me-2">
+                <i class="bi bi-award"></i> Ver Directorio Completo
+            </a>
+            <a href="{% url 'crear_club' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Crear Club
+            </a>
+        </div>
     </div>
 
-    <!-- Mis Clubes -->
-    <div class="mb-5">
-        <h4 class="mb-3"><i class="fas fa-star text-warning"></i> Mis Clubes</h4>
-        <div class="row g-4">
-            {% for club in mis_clubes %}
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">{{ club.nombre }}</h5>
-                        {% if club.siglas %}
-                        <small class="text-muted">{{ club.siglas }}</small>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text small">{{ club.descripcion|truncatewords:15 }}</p>
-                        
-                        <div class="mb-3">
-                            <h6 class="small text-muted mb-2">Líneas de Investigación:</h6>
-                            {% for linea in club.lineas_investigacion %}
-                            <span class="badge bg-primary me-1 mb-1">{{ linea }}</span>
+    <!-- SECCIÓN 1: MIS CLUBES CREADOS -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-folder"></i> Mis Clubes Creados
+                <span class="badge bg-light text-dark">{{ total_creados }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if mis_clubes_creados %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Fecha Creación</th>
+                                <th>Cupos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for club in mis_clubes_creados %}
+                            <tr>
+                                <td>
+                                    <strong>{{ club.nombre }}</strong>
+                                    {% if club.siglas %}
+                                        <small class="text-muted">({{ club.siglas }})</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if club.status == 'borrador' %}
+                                        <span class="badge bg-secondary">Borrador</span>
+                                    {% elif club.status == 'pendiente' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif club.status == 'en_revision' %}
+                                        <span class="badge bg-info">En Revisión</span>
+                                    {% elif club.status == 'aprobado' %}
+                                        <span class="badge bg-success">Aprobado</span>
+                                    {% elif club.status == 'rechazado' %}
+                                        <span class="badge bg-danger">Rechazado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ club.fecha_creacion|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if club.status == 'borrador' %}
+                                        <a href="{% url 'editar_club' club.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </a>
+                                        <a href="{% url 'enviar_club_revision' club.id %}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-send"></i> Enviar
+                                        </a>
+                                        <a href="{% url 'eliminar_club' club.id %}" 
+                                           class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    {% elif club.status == 'rechazado' %}
+                                        <a href="{% url 'ver_historial_club' club.id %}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="bi bi-clock-history"></i> Ver Motivo
+                                        </a>
+                                        <a href="{% url 'editar_club' club.id %}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="bi bi-arrow-repeat"></i> Corregir
+                                        </a>
+                                        <a href="{% url 'eliminar_club' club.id %}" 
+                                           class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    {% elif club.status == 'pendiente' or club.status == 'en_revision' %}
+                                        <a href="{% url 'ver_historial_club' club.id %}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="bi bi-clock-history"></i> Ver Estado
+                                        </a>
+                                        <span class="text-muted">En proceso...</span>
+                                    {% elif club.status == 'aprobado' %}
+                                        <a href="{% url 'ver_historial_club' club.id %}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-clock-history"></i> Historial
+                                        </a>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Activo
+                                        </span>
+                                        <a href="{% url 'eliminar_club' club.id %}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="bi bi-send"></i> Solicitar Eliminación
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% endfor %}
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge 
-                                {% if club.estado_vinculacion == 'abierto' %}bg-success
-                                {% elif club.estado_vinculacion == 'cerrado' %}bg-danger
-                                {% else %}bg-info{% endif %}">
-                                {{ club.get_estado_vinculacion_display }}
-                            </span>
-                            <small class="text-muted">
-                                <i class="fas fa-users"></i> {{ club.cupos_disponibles }}/{{ club.cupo_maximo }} cupos
-                            </small>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white border-0">
-                        <div class="btn-group w-100">
-                            <button class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-eye"></i> Ver
-                            </button>
-                            <button class="btn btn-outline-warning btn-sm">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                        </div>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            {% empty %}
-            <div class="col-12">
+            {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> 
-                    No has creado ningún club aún. <a href="{% url 'crear_club' %}">Crear el primero</a>
+                    <i class="bi bi-info-circle"></i> 
+                    No has creado ningún club aún.
+                    <a href="{% url 'crear_club' %}" class="alert-link">Crear mi primer club</a>
                 </div>
-            </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </div>
 
-    <!-- Directorio de Clubes -->
-    <div>
-        <h4 class="mb-3"><i class="fas fa-globe"></i> Directorio de Clubes</h4>
-        
-        <!-- Filtros -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <select class="form-select" id="filtroLinea">
-                            <option value="">Todas las líneas</option>
-                            <option value="electronica">Electrónica y Circuitos</option>
-                            <option value="programacion">Programación y Algoritmos</option>
-                            <option value="mecanica">Mecánica y Estructuras</option>
-                            <option value="ia">Inteligencia Artificial</option>
-                            <option value="iot">Internet de las Cosas</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <select class="form-select" id="filtroVinculacion">
-                            <option value="">Todos los estados</option>
-                            <option value="abierto">Abierto</option>
-                            <option value="invitacion">Bajo Invitación</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+    <!-- SECCIÓN 2: MIS CLUBES APROBADOS -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-check-circle"></i> Mis Clubes Aprobados
+                <span class="badge bg-light text-dark">{{ total_aprobados }}</span>
+            </h5>
         </div>
-
-        <!-- Grid de Clubes Disponibles -->
-        <div class="row g-4">
-            {% for club in clubes_disponibles %}
-            <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">{{ club.nombre }}</h5>
-                        {% if club.siglas %}
-                        <small>{{ club.siglas }}</small>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-2">
-                            <i class="fas fa-building"></i> {{ club.institucion_creadora.nombre }}
-                        </p>
-                        <p class="card-text small">{{ club.descripcion|truncatewords:15 }}</p>
-                        
-                        <div class="mb-3">
-                            <h6 class="small text-muted mb-2">Líneas de Investigación:</h6>
-                            {% for linea in club.lineas_investigacion %}
-                            <span class="badge bg-info me-1 mb-1">{{ linea }}</span>
-                            {% endfor %}
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge 
-                                {% if club.estado_vinculacion == 'abierto' %}bg-success
-                                {% elif club.estado_vinculacion == 'cerrado' %}bg-danger
-                                {% else %}bg-warning{% endif %}">
-                                {{ club.get_estado_vinculacion_display }}
-                            </span>
-                            <small class="text-muted">
-                                <i class="fas fa-users"></i> {{ club.cupos_disponibles }} cupos
-                            </small>
+        <div class="card-body">
+            {% if mis_clubes_aprobados %}
+                <div class="row">
+                    {% for club in mis_clubes_aprobados %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ club.nombre }}</h5>
+                                <p class="card-text text-muted">{{ club.descripcion|truncatewords:20 }}</p>
+                                <div class="mb-2">
+                                    <strong>Líneas:</strong>
+                                    {% for linea in club.lineas_investigacion %}
+                                        <span class="badge bg-primary me-1">{{ linea }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-people"></i> 
+                                        {{ club.cupos_disponibles }} cupos disponibles
+                                    </span>
+                                    <span class="text-muted small">
+                                        {{ club.fecha_aprobacion|date:"d/m/Y" }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-footer bg-white border-0">
-                        {% if club.estado_vinculacion == 'abierto' and club.cupos_disponibles > 0 %}
-                            <a href="{% url 'postular_club' club.id %}" class="btn btn-success w-100">
-                                <i class="fas fa-paper-plane"></i> Postular
-                            </a>
-                        {% elif club.estado_vinculacion == 'invitacion' %}
-                            <button class="btn btn-warning w-100" disabled>
-                                <i class="fas fa-envelope"></i> Solo por Invitación
-                            </button>
-                        {% else %}
-                            <button class="btn btn-secondary w-100" disabled>
-                                <i class="fas fa-lock"></i> No Disponible
-                            </button>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
                 </div>
-            </div>
-            {% empty %}
-            <div class="col-12">
-                <div class="alert alert-secondary">
-                    <i class="fas fa-search"></i> 
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    Aún no tienes clubes aprobados. Los clubes deben ser revisados por la federación.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- SECCIÓN 3: CLUBES DISPONIBLES PARA POSTULAR -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-globe"></i> Clubes Disponibles para Postular
+                <span class="badge bg-light text-dark">{{ total_disponibles }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if clubes_disponibles %}
+                <div class="row">
+                    {% for club in clubes_disponibles %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 {% if club.mi_estado_membresia %}border-warning{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">{{ club.nombre }}</h5>
+                                    {% if club.mi_estado_membresia %}
+                                        {% if club.mi_estado_membresia == 'pendiente' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock"></i> Pendiente
+                                            </span>
+                                        {% elif club.mi_estado_membresia == 'aprobada' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Miembro
+                                            </span>
+                                        {% elif club.mi_estado_membresia == 'rechazada' %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle"></i> Rechazada
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small">
+                                    <i class="bi bi-building"></i> 
+                                    {{ club.institucion_creadora.nombre_publico }}
+                                </p>
+                                <p class="card-text">{{ club.descripcion|truncatewords:15 }}</p>
+                                <div class="mb-2">
+                                    <strong>Líneas de Investigación:</strong>
+                                    <ul class="list-unstyled">
+                                        {% for linea in club.lineas_investigacion %}
+                                            <li><i class="bi bi-check"></i> {{ linea }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-info">
+                                        {{ club.cupos_disponibles }} cupos
+                                    </span>
+                                    {% if club.mi_estado_membresia %}
+                                        {% if club.mi_estado_membresia == 'pendiente' %}
+                                            <button class="btn btn-sm btn-secondary" disabled>
+                                                <i class="bi bi-clock"></i> Ya Postulaste
+                                            </button>
+                                        {% elif club.mi_estado_membresia == 'aprobada' %}
+                                            <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm btn-success">
+                                                <i class="bi bi-eye"></i> Ver Club
+                                            </a>
+                                        {% elif club.mi_estado_membresia == 'rechazada' %}
+                                            <a href="{% url 'postular_club' club.id %}" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-arrow-repeat"></i> Re-postular
+                                            </a>
+                                        {% endif %}
+                                    {% elif club.puede_postularse %}
+                                        <a href="{% url 'postular_club' club.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-send"></i> Postular
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No disponible</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
                     No hay clubes disponibles para postular en este momento.
                 </div>
-            </div>
-            {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>

@@ -82,6 +82,37 @@
         </div>
     </div>
 
+    <!-- Tarjetas de Clubes -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Clubes</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_clubes|default:0 }}">0</h2>
+                        <p class="text-white-50 small mb-0">Club(es) creado(s) por mi institución</p>
+                        <i class="bi bi-people-robot position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #3b82f6;"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6">
+            <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes Aprobados</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
+                        <p class="text-white-50 small mb-0">Club(es) con aprobación vigente</p>
+                        <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #10b981;"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <!-- Sección de Información de la Institución -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
         <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">

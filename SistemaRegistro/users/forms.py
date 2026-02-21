@@ -29,7 +29,11 @@ class SedeRegionalForm(forms.Form):
     )
     password = forms.CharField(
         label="Contraseña", 
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'id': 'id_password1'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control', 
+            'id': 'id_password1',
+            'autocomplete': 'new-password'
+        })
     )
     
     # Datos Personales del Encargado

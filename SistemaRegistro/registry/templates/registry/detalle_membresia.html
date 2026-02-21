@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Membresía{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-card-list"></i> Detalle de Membresía</h2>
+                <a href="{% if es_propietario_club %}{% url 'gestionar_membresias_club' membresia.club.id %}{% else %}{% url 'mis_membresias' %}{% endif %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <div class="row">
+                <!-- Información del Club -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-building"></i> Información del Club</h5>
+                        </div>
+                        <div class="card-body">
+                            <h4>{{ membresia.club.nombre }}</h4>
+                            {% if membresia.club.siglas %}
+                            <p class="text-muted">{{ membresia.club.siglas }}</p>
+                            {% endif %}
+                            <hr>
+                            <p><strong>Institución Creadora:</strong><br>{{ membresia.club.institucion_creadora.nombre }}</p>
+                            <p><strong>Ubicación:</strong><br>{{ membresia.club.ubicacion }}</p>
+                            <p><strong>Estado:</strong> 
+                                <span class="badge bg-success">{{ membresia.club.get_status_display }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de la Institución Miembro -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="bi bi-bank"></i> Institución Miembro</h5>
+                        </div>
+                        <div class="card-body">
+                            <h4>{{ membresia.institucion.nombre }}</h4>
+                            <p class="text-muted">{{ membresia.institucion.codigo }}</p>
+                            <hr>
+                            <p><strong>Tipo:</strong> {{ membresia.institucion.get_tipo_institucion_display }}</p>
+                            <p><strong>Ubicación:</strong><br>
+                                {{ membresia.institucion.estado.nombre }}, {{ membresia.institucion.municipio.nombre }}
+                            </p>
+                            <p><strong>Email:</strong> {{ membresia.institucion.email }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles de la Membresía -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Detalles de la Membresía</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong> 
+                                {% if membresia.estado == 'aprobada' %}
+                                    <span class="badge bg-success">{{ membresia.get_estado_display }}</span>
+                                {% elif membresia.estado == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">{{ membresia.get_estado_display }}</span>
+                                {% elif membresia.estado == 'rechazada' %}
+                                    <span class="badge bg-danger">{{ membresia.get_estado_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ membresia.get_estado_display }}</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Tipo de Línea:</strong> {{ membresia.get_tipo_linea_display }}</p>
+                            <p><strong>Fecha de Solicitud:</strong> {{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if membresia.fecha_respuesta %}
+                            <p><strong>Fecha de Respuesta:</strong> {{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            <p><strong>Representante Legal:</strong> {{ membresia.representante_legal }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carta de Intención -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-envelope"></i> Carta de Intención</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-justify">{{ membresia.carta_intencion|linebreaks }}</p>
+                </div>
+            </div>
+
+            <!-- Propuesta Técnica -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Propuesta Técnica</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-justify">{{ membresia.propuesta_tecnica|linebreaks }}</p>
+                </div>
+            </div>
+
+            <!-- Observaciones (si existen) -->
+            {% if membresia.observaciones %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Observaciones</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-justify">{{ membresia.observaciones|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Acciones (solo para propietario del club y si está pendiente) -->
+            {% if es_propietario_club and membresia.estado == 'pendiente' %}
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Acciones</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'aprobar_membresia_club' membresia.id %}" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Aprobar Membresía
+                        </a>
+                        <a href="{% url 'rechazar_membresia_club' membresia.id %}" class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Rechazar Membresía
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

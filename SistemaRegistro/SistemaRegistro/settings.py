@@ -81,8 +81,12 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # Procesador personalizado para datos globales del sitio
-                # "registry.context_processors.site_info",
+                # Context processor para notificaciones no leídas
+                "registry.context_processors.notificaciones_no_leidas",
+                # Context processor para roles de usuario
+                "registry.context_processors.user_roles",
+                # Context processor para clubes pendientes (federación)
+                "registry.context_processors.clubes_pendientes_federacion",
             ],
         },
     },

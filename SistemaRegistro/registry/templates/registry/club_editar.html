@@ -1,0 +1,233 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Editar Club de Robótica{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-edit text-warning"></i> Editar Club</h2>
+            <p class="text-muted mb-0">Actualice los datos del club</p>
+        </div>
+        <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a Clubes
+        </a>
+    </div>
+
+    <!-- Estado actual del club -->
+    <div class="alert 
+        {% if club.status == 'borrador' %}alert-secondary
+        {% elif club.status == 'pendiente' %}alert-warning
+        {% elif club.status == 'aprobado' %}alert-success
+        {% elif club.status == 'rechazado' %}alert-danger
+        {% else %}alert-info{% endif %} mb-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle me-2"></i>
+            <div>
+                <strong>Estado actual:</strong> {{ club.get_status_display }}
+                {% if club.status == 'borrador' %}
+                - El club no será visible hasta que sea aprobado
+                {% elif club.status == 'rechazado' %}
+                - Puede editar y reenviar a revisión
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Información Básica -->
+                        <h5 class="fw-bold mb-4">
+                            <i class="fas fa-info-circle text-primary me-2"></i>Información Básica
+                        </h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label for="nombre" class="form-label fw-bold">Nombre del Club *</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" 
+                                       value="{{ club.nombre }}" required>
+                                <div class="invalid-feedback">Por favor ingrese el nombre del club</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="siglas" class="form-label fw-bold">Siglas</label>
+                                <input type="text" class="form-control" id="siglas" name="siglas" 
+                                       value="{{ club.siglas|default:'' }}" maxlength="10">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="descripcion" class="form-label fw-bold">Descripción *</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" 
+                                      rows="4" required>{{ club.descripcion|default:'' }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="ubicacion" class="form-label fw-bold">Ubicación</label>
+                            <input type="text" class="form-control" id="ubicacion" name="ubicacion" 
+                                   value="{{ club.ubicacion|default:'' }}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="fecha_fundacion" class="form-label fw-bold">Fecha de Fundación</label>
+                            <input type="date" class="form-control" id="fecha_fundacion" name="fecha_fundacion" 
+                                   value="{{ club.fecha_fundacion|date:'Y-m-d'|default:'' }}">
+                        </div>
+
+                        <!-- Líneas de Investigación -->
+                        <h5 class="fw-bold mb-4 mt-5">
+                            <i class="fas fa-microscope text-info me-2"></i>Líneas de Investigación
+                        </h5>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                {{ form.linea_investigacion_1.label_tag }}
+                                {{ form.linea_investigacion_1 }}
+                                {% if form.linea_investigacion_1.errors %}
+                                    <div class="text-danger small">{{ form.linea_investigacion_1.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.linea_investigacion_2.label_tag }}
+                                {{ form.linea_investigacion_2 }}
+                                {% if form.linea_investigacion_2.errors %}
+                                    <div class="text-danger small">{{ form.linea_investigacion_2.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.linea_investigacion_3.label_tag }}
+                                {{ form.linea_investigacion_3 }}
+                                {% if form.linea_investigacion_3.errors %}
+                                    <div class="text-danger small">{{ form.linea_investigacion_3.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Configuración -->
+                        <h5 class="fw-bold mb-4 mt-5">
+                            <i class="fas fa-cog text-secondary me-2"></i>Configuración
+                        </h5>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="estado_vinculacion" class="form-label fw-bold">Estado de Vinculación *</label>
+                                <select class="form-select" id="estado_vinculacion" name="estado_vinculacion" required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for value, label in estados_vinculacion %}
+                                    <option value="{{ value }}" {% if club.estado_vinculacion == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">
+                                    "Abierto": Cualquier institución puede postular<br>
+                                    "Por Invitación": Solo instituciones invitadas pueden postular
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cupo_maximo" class="form-label fw-bold">Cupo Máximo *</label>
+                                <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo" 
+                                       value="{{ club.cupo_maximo }}" min="1" max="100" required>
+                                <small class="text-muted">Número máximo de instituciones miembro</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="requisitos" class="form-label fw-bold">Requisitos de Membresía</label>
+                            <textarea class="form-control" id="requisitos" name="requisitos" 
+                                      rows="3">{{ club.requisitos|default:'' }}</textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="documento_legal" class="form-label fw-bold">Documento Legal</label>
+                            <textarea class="form-control" id="documento_legal" name="documento_legal" 
+                                      rows="2">{{ club.documento_legal|default:'' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Información del Club -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+                <div class="card-header bg-primary text-white" style="border-radius: 20px 20px 0 0;">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Institución Creadora</small>
+                        <strong>{{ club.institucion_creadora.nombre }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Coordinador</small>
+                        <strong>{{ club.coordinador.get_full_name|default:club.coordinador.username }}</strong>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fecha de Creación</small>
+                        <strong>{{ club.fecha_creacion|date:"d/m/Y" }}</strong>
+                    </div>
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Membresías</small>
+                        <strong>{{ club.membresias.count }}</strong> instituciones miembro
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Disponibles -->
+            {% if club.status == 'borrador' or club.status == 'rechazado' %}
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-header bg-success text-white" style="border-radius: 20px 20px 0 0;">
+                    <h5 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Acciones</h5>
+                </div>
+                <div class="card-body">
+                    {% if club.status == 'borrador' %}
+                    <p class="small mb-3">El club está en estado borrador. ¿Desea enviarlo a revisión?</p>
+                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn btn-success w-100">
+                        <i class="fas fa-paper-plane me-2"></i>Enviar a Revisión
+                    </a>
+                    {% elif club.status == 'rechazado' %}
+                    <p class="small mb-3">El club fue rechazado. Corrija los datos y envíelo nuevamente.</p>
+                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn btn-success w-100">
+                        <i class="fas fa-redo me-2"></i>Reenviar a Revisión
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Validación del formulario
+    (function() {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}
+

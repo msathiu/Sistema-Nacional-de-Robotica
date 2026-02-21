@@ -1,0 +1,161 @@
+{% extends "users/base_dashboard.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary btn-sm mb-3">
+                <i class="bi bi-arrow-left"></i> Volver a Mis Clubes
+            </a>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people"></i> Gestión de Membresías: {{ club.nombre }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">{{ total_miembros }}</h3>
+                                    <small>Miembros Activos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">{{ membresias_pendientes.count }}</h3>
+                                    <small>Solicitudes Pendientes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">{{ cupos_disponibles }}</h3>
+                                    <small>Cupos Disponibles</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-0">{{ club.cupo_maximo }}</h3>
+                                    <small>Cupo Máximo</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solicitudes Pendientes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hourglass-split"></i> Solicitudes Pendientes
+                        <span class="badge bg-dark">{{ membresias_pendientes.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if membresias_pendientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Institución</th>
+                                        <th>Fecha Solicitud</th>
+                                        <th>Carta de Intención</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for membresia in membresias_pendientes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ membresia.institucion.nombre }}</strong><br>
+                                            <small class="text-muted">{{ membresia.institucion.estado.nombre }}</small>
+                                        </td>
+                                        <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                                        <td>
+                                            {% if membresia.carta_intencion %}
+                                                <a href="{{ membresia.carta_intencion.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-file-pdf"></i> Ver Carta
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">Sin carta</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check-circle"></i> Aprobar
+                                            </a>
+                                            <a href="{% url 'rechazar_membresia' membresia.id %}" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-x-circle"></i> Rechazar
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No hay solicitudes pendientes.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Miembros Activos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Miembros Activos
+                        <span class="badge bg-light text-dark">{{ membresias_aprobadas.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if membresias_aprobadas %}
+                        <div class="row">
+                            {% for membresia in membresias_aprobadas %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-success">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ membresia.institucion.nombre }}</h6>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                <i class="bi bi-geo-alt"></i> {{ membresia.institucion.estado.nombre }}<br>
+                                                <i class="bi bi-calendar-check"></i> Miembro desde: {{ membresia.fecha_aprobacion|date:"d/m/Y" }}
+                                            </small>
+                                        </p>
+                                        <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Ver Detalles
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Aún no tienes miembros en este club.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

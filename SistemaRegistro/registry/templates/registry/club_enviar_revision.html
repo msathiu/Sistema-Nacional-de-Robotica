@@ -1,0 +1,151 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{% if es_reenvio %}Reenviar{% else %}Enviar{% endif %} Club a Revisión{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-header {% if es_reenvio %}bg-warning{% else %}bg-primary{% endif %} text-white" style="border-radius: 20px 20px 0 0;">
+                    <h4 class="mb-0">
+                        <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} me-2"></i>
+                        {% if es_reenvio %}Reenviar Club a Revisión{% else %}Enviar Club a Revisión{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Información del Club -->
+                    <div class="alert alert-light border mb-4">
+                        <h5 class="alert-heading">{{ club.nombre }}</h5>
+                        {% if club.siglas %}
+                        <p class="mb-0 text-muted"><strong>Siglas:</strong> {{ club.siglas }}</p>
+                        {% endif %}
+                        <p class="mb-0 text-muted"><strong>Estado actual:</strong> {{ club.get_status_display }}</p>
+                    </div>
+
+                    {% if es_reenvio %}
+                    <!-- FASE 2: Información de Reenvío -->
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> Reenvío de Club Rechazado
+                        </h6>
+                        <p class="mb-2">
+                            <strong>Intentos realizados:</strong> {{ num_reenvios }} / {{ max_reenvios }}<br>
+                            <strong>Intentos restantes:</strong> {{ intentos_restantes }}
+                        </p>
+                        {% if ultimo_rechazo %}
+                        <hr>
+                        <p class="mb-1"><strong>Motivo del último rechazo:</strong></p>
+                        <div class="bg-light p-3 rounded">
+                            <small>{{ ultimo_rechazo.observaciones }}</small>
+                        </div>
+                        <p class="mb-0 mt-2 text-danger">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Asegúrate de haber corregido todos los puntos antes de reenviar.</strong>
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- FASE 2: Checklist de Correcciones -->
+                    <div class="card border-primary mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-check2-square"></i> Checklist de Correcciones
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">Confirma que has realizado las siguientes correcciones:</p>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="correccion_documentacion" id="check1" required>
+                                <label class="form-check-label" for="check1">
+                                    He corregido la documentación y datos del club
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="correccion_lineas" id="check2" required>
+                                <label class="form-check-label" for="check2">
+                                    He actualizado las líneas de investigación según feedback
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="correccion_descripcion" id="check3" required>
+                                <label class="form-check-label" for="check3">
+                                    He mejorado la descripción y objetivos del club
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p>Está a punto de enviar el club <strong>"{{ club.nombre }}"</strong> a revisión.</p>
+                    <p class="text-muted">Una vez enviado, el equipo de la Federación revisará los datos y aprobará o rechazará el club.</p>
+                    {% endif %}
+
+                    <hr>
+
+                    <h6 class="fw-bold">Resumen del Club:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-building text-muted me-2"></i>
+                            <strong>Institución:</strong> {{ club.institucion_creadora.nombre }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-lightbulb text-muted me-2"></i>
+                            <strong>Líneas de Investigación:</strong>
+                            {% for linea in club.lineas_investigacion %}
+                                <span class="badge bg-primary">{{ linea }}</span>
+                            {% endfor %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-people text-muted me-2"></i>
+                            <strong>Cupo Máximo:</strong> {{ club.cupo_maximo }} instituciones
+                        </li>
+                        <li class="mb-0">
+                            <i class="bi bi-link-45deg text-muted me-2"></i>
+                            <strong>Estado de Vinculación:</strong> {{ club.get_estado_vinculacion_display }}
+                        </li>
+                    </ul>
+
+                    <hr>
+
+                    <form method="post" id="formEnviar">
+                        {% csrf_token %}
+                        
+                        <div class="d-flex justify-content-between gap-3">
+                            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary flex-grow-1">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn {% if es_reenvio %}btn-warning{% else %}btn-success{% endif %} flex-grow-1">
+                                <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} me-2"></i>
+                                {% if es_reenvio %}Reenviar a Revisión{% else %}Enviar a Revisión{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if es_reenvio %}
+<script>
+// Validación del checklist
+document.getElementById('formEnviar').addEventListener('submit', function(e) {
+    const checks = document.querySelectorAll('input[type="checkbox"][required]');
+    let allChecked = true;
+    
+    checks.forEach(check => {
+        if (!check.checked) {
+            allChecked = false;
+        }
+    });
+    
+    if (!allChecked) {
+        e.preventDefault();
+        alert('Debes confirmar que has realizado todas las correcciones antes de reenviar.');
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
+

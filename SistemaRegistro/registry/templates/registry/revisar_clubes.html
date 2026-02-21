@@ -1,0 +1,146 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-clipboard-check"></i> Revisar Clubes Pendientes</h4>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#pendientes">
+                        Pendientes <span class="badge bg-warning">{{ clubes_pendientes.count }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#revision">
+                        En Revisión <span class="badge bg-info">{{ clubes_en_revision.count }}</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="tab-content">
+                <!-- Tab Pendientes -->
+                <div class="tab-pane fade show active" id="pendientes">
+                    {% if clubes_pendientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Club</th>
+                                        <th>Institución</th>
+                                        <th>Líneas</th>
+                                        <th>Fecha Solicitud</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for club in clubes_pendientes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ club.nombre }}</strong><br>
+                                            <small class="text-muted">{{ club.siglas }}</small>
+                                        </td>
+                                        <td>{{ club.institucion_creadora.nombre }}</td>
+                                        <td>
+                                            {% for linea in club.lineas_investigacion %}
+                                                <span class="badge bg-primary">{{ linea }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>{{ club.fecha_creacion|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'detalle_club' club.id %}" 
+                                                   class="btn btn-outline-primary" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'tomar_en_revision_club' club.id %}" 
+                                                   class="btn btn-info" title="Tomar en Revisión">
+                                                    <i class="bi bi-clipboard-check"></i> Revisar
+                                                </a>
+                                                <a href="{% url 'aprobar_club' club.id %}" 
+                                                   class="btn btn-success" title="Aprobar">
+                                                    <i class="bi bi-check-circle"></i> Aprobar
+                                                </a>
+                                                <a href="{% url 'rechazar_club' club.id %}" 
+                                                   class="btn btn-danger" title="Rechazar">
+                                                    <i class="bi bi-x-circle"></i> Rechazar
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            No hay clubes pendientes de revisión.
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Tab En Revisión -->
+                <div class="tab-pane fade" id="revision">
+                    {% if clubes_en_revision %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Club</th>
+                                        <th>Institución</th>
+                                        <th>Líneas</th>
+                                        <th>Fecha Solicitud</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for club in clubes_en_revision %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ club.nombre }}</strong><br>
+                                            <small class="text-muted">{{ club.siglas }}</small>
+                                        </td>
+                                        <td>{{ club.institucion_creadora.nombre }}</td>
+                                        <td>
+                                            {% for linea in club.lineas_investigacion %}
+                                                <span class="badge bg-primary">{{ linea }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>{{ club.fecha_creacion|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'detalle_club' club.id %}" 
+                                                   class="btn btn-outline-primary" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'aprobar_club' club.id %}" 
+                                                   class="btn btn-success" title="Aprobar">
+                                                    <i class="bi bi-check-circle"></i> Aprobar
+                                                </a>
+                                                <a href="{% url 'rechazar_club' club.id %}" 
+                                                   class="btn btn-danger" title="Rechazar">
+                                                    <i class="bi bi-x-circle"></i> Rechazar
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            No hay clubes en revisión.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Restaurar Club{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-undo"></i> Restaurar Club</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Confirmación requerida:</strong> Está a punto de restaurar un club eliminado.
+                    </div>
+                    
+                    <h5 class="mb-3">{{ club.nombre }}</h5>
+                    
+                    <div class="mb-3">
+                        <strong>Institución Creadora:</strong> {{ club.institucion_creadora.nombre|default:"N/A" }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Fecha de Eliminación:</strong> {{ club.fecha_eliminacion|date:"d/m/Y H:i" }}
+                    </div>
+                    
+                    {% if club.motivo_eliminacion %}
+                    <div class="mb-3">
+                        <strong>Motivo de Eliminación:</strong>
+                        <p class="text-muted">{{ club.motivo_eliminacion }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Al restaurar, el club volverá a su estado anterior y estará activo nuevamente.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Confirmar Restauración
+                            </button>
+                            <a href="{% url 'clubes_eliminados' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

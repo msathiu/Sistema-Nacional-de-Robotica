@@ -172,6 +172,9 @@ def crear_participante(request):
         )
         return redirect("dashboard")
 
+    # Determinar si el usuario es admin central (puede elegir cualquier estado)
+    es_admin_central = user_type in ["fed_central", "superuser", "tecnologico"]
+
     # Obtener el estado de la institución
     if institucion and hasattr(institucion, "estado"):
         estado_inst = institucion.estado
@@ -179,16 +182,59 @@ def crear_participante(request):
         # Si es admin central/regional, puede no tener institución
         estado_inst = getattr(perfil, "estado", None)
 
-    if not estado_inst:
+    if not estado_inst and not es_admin_central:
         messages.error(request, "No se pudo determinar el estado de la institución.")
         return redirect("dashboard")
 
-    # Obtener municipios del estado
-    municipios = (
-        Municipio.objects.filter(estado=estado_inst).order_by("nombre")
-        if estado_inst
-        else []
-    )
+    # Obtener la lista de estados según el tipo de usuario
+    if es_admin_central:
+        # Admin central puede ver todos los estados
+        todos_estados = Estado.objects.all().order_by("nombre")
+    else:
+        # Otros usuarios solo ven su estado
+        todos_estados = [estado_inst] if estado_inst else []
+
+    # ============================================
+    # FIX: Obtener nombre de sede para mostrar en el template
+    # ============================================
+    nombre_sede = None
+    if institucion:
+        nombre_sede = institucion.nombre
+        # Si la institución tiene estado, agregarlo al nombre
+        if hasattr(institucion, "estado") and institucion.estado:
+            nombre_sede = f"{institucion.nombre} ({institucion.estado.nombre})"
+    else:
+        # Intentar obtener desde el perfil directamente
+        perfil = request.user.userprofile
+        if hasattr(perfil, "institution") and perfil.institution:
+            nombre_sede = perfil.institution.nombre
+            if hasattr(perfil.institution, "estado") and perfil.institution.estado:
+                nombre_sede = (
+                    f"{perfil.institution.nombre} ({perfil.institution.estado.nombre})"
+                )
+
+    # Obtener municipios del estado (o del estado seleccionado en el formulario)
+    estado_seleccionado_id = request.POST.get("estado")
+    if estado_seleccionado_id:
+        try:
+            estado_seleccionado = Estado.objects.get(id=estado_seleccionado_id)
+            municipios = Municipio.objects.filter(estado=estado_seleccionado).order_by(
+                "nombre"
+            )
+        except Estado.DoesNotExist:
+            estado_seleccionado = estado_inst
+            municipios = (
+                Municipio.objects.filter(estado=estado_inst).order_by("nombre")
+                if estado_inst
+                else []
+            )
+    else:
+        estado_seleccionado = estado_inst
+        municipios = (
+            Municipio.objects.filter(estado=estado_inst).order_by("nombre")
+            if estado_inst
+            else []
+        )
 
     if request.method == "POST":
         participante_form = ParticipanteRegistrationForm(request.POST)
@@ -217,13 +263,35 @@ def crear_participante(request):
                             request,
                             f"Ya existe un registro con la cédula {cedula_completa}",
                         )
+                        # Recalcular municipios si hay error y se seleccionó un estado
+                        estado_error_id = request.POST.get("estado")
+                        if estado_error_id:
+                            try:
+                                estado_error = Estado.objects.get(id=estado_error_id)
+                                municipios_error = Municipio.objects.filter(
+                                    estado=estado_error
+                                ).order_by("nombre")
+                            except Estado.DoesNotExist:
+                                municipios_error = municipios
+                        else:
+                            municipios_error = municipios
+
                         return render(
                             request,
                             "users/register.html",
                             {
                                 "participante_form": participante_form,
-                                "municipios": municipios,
+                                "municipios": municipios_error,
                                 "institucion": institucion,
+                                "nombre_sede": nombre_sede,
+                                "estado": estado_error
+                                if estado_error_id
+                                else estado_inst,
+                                "estado_id": estado_error_id
+                                if estado_error_id
+                                else (estado_inst.id if estado_inst else None),
+                                "todos_estados": todos_estados,
+                                "es_admin_central": es_admin_central,
                             },
                         )
 
@@ -256,7 +324,17 @@ def crear_participante(request):
                     elif institucion:
                         participante.institucion = institucion
 
-                    participante.estado = estado_inst
+                    # Asignar estado: si es admin central y seleccionó un estado del formulario, usarlo
+                    estado_seleccionado_id = request.POST.get("estado")
+                    if es_admin_central and estado_seleccionado_id:
+                        try:
+                            participante.estado = Estado.objects.get(
+                                id=estado_seleccionado_id
+                            )
+                        except Estado.DoesNotExist:
+                            participante.estado = estado_inst
+                    else:
+                        participante.estado = estado_inst
 
                     # Teléfono del participante
                     if cod_area_part:
@@ -307,6 +385,15 @@ def crear_participante(request):
             "participante_form": participante_form,
             "municipios": municipios,
             "institucion": institucion,
+            "nombre_sede": nombre_sede,
+            "estado": estado_seleccionado if estado_seleccionado else estado_inst,
+            "estado_id": (
+                estado_seleccionado.id if estado_seleccionado else estado_inst.id
+            )
+            if (estado_seleccionado or estado_inst)
+            else None,
+            "todos_estados": todos_estados,
+            "es_admin_central": es_admin_central,
         },
     )
 
@@ -324,6 +411,15 @@ def register(request):
     perfil_inst = request.user.userprofile.institution
     estado_inst = perfil_inst.estado
     municipios = Municipio.objects.filter(estado=estado_inst).order_by("nombre")
+
+    # ============================================
+    # FIX: Obtener nombre de sede para mostrar en el template
+    # ============================================
+    nombre_sede = None
+    if perfil_inst:
+        nombre_sede = perfil_inst.nombre
+        if hasattr(perfil_inst, "estado") and perfil_inst.estado:
+            nombre_sede = f"{perfil_inst.nombre} ({perfil_inst.estado.nombre})"
 
     if request.method == "POST":
         participante_form = ParticipanteRegistrationForm(request.POST)
@@ -358,6 +454,7 @@ def register(request):
                                 "participante_form": participante_form,
                                 "municipios": municipios,
                                 "institucion": perfil_inst,
+                                "nombre_sede": nombre_sede,
                             },
                         )
 
@@ -436,6 +533,9 @@ def register(request):
             "participante_form": participante_form,
             "municipios": municipios,
             "institucion": perfil_inst,
+            "nombre_sede": nombre_sede,
+            "estado": estado_inst,
+            "estado_id": estado_inst.id if estado_inst else None,
         },
     )
 
@@ -511,7 +611,25 @@ def dashboard(request):
         # 1. MÉTRICAS BÁSICAS
         total_participantes = Participante.objects.filter(filtros_part).count()
         total_instituciones = Institucion.objects.filter(filtros_inst).count()
-        total_clubes = Club.objects.filter(filtros_club).count()
+        # Solo contar clubes APROBADOS según especificación
+        total_clubes = Club.objects.filter(filtros_club, status="aprobado", activo=True).count()
+
+        # Métricas adicionales de Clubes
+        clubes_aprobados = Club.objects.filter(
+            filtros_club, status="aprobado", activo=True
+        ).count()
+        clubes_pendientes = Club.objects.filter(
+            filtros_club, status="pendiente"
+        ).count()
+        try:
+            from registry.models import MembresiaClu
+
+            membresias_pendientes = MembresiaClu.objects.filter(
+                estado="pendiente"
+            ).count()
+        except ImportError:
+            membresias_pendientes = 0
+
         total_eventos = Evento.objects.count()
 
         pendientes_aprobacion = Institucion.objects.filter(
@@ -594,6 +712,9 @@ def dashboard(request):
             "total_participantes": total_participantes,
             "total_instituciones": total_instituciones,
             "total_clubes": total_clubes,
+            "clubes_aprobados": clubes_aprobados,
+            "clubes_pendientes": clubes_pendientes,
+            "membresias_pendientes": membresias_pendientes,
             "total_tutores": total_tutores,
             "total_eventos": total_eventos,
             "pendientes_aprobacion": pendientes_aprobacion,
@@ -671,7 +792,7 @@ def crear_usuario_institucional(request, institucion_id):
 def dashboard_institucional(request):
     """
     Vista principal del panel para usuarios institucionales.
-    Muestra métricas clave y listas rápidas de eventos y grupos.
+    Muestra métricas clave y listas rápidas de eventos, grupos y clubes.
     """
     # 1. Validación de perfil y tipo de usuario
     try:
@@ -715,30 +836,26 @@ def dashboard_institucional(request):
         .count()
     )
 
-    # 5. Listas para las tablas del dashboard
-    # Limitamos a los 5 eventos más cercanos y los 3 grupos más recientes
-    proximos_eventos = eventos_disponibles_qs.order_by("fecha")[:5]
-    grupos_recientes = mis_grupos.order_by("-fecha_registro")[:3]
+    # 5. Métricas de Clubes
+    # Clubes creados por la institución
+    mis_clubes = Club.objects.filter(institucion_creadora=institution)
+    total_mis_clubes = mis_clubes.count()
 
-    # 6. Construcción del contexto
+    # Clubes aprovados creados por la institución
+    mis_clubes_aprobados = mis_clubes.filter(status="aprobado", activo=True).count()
+
+    # 6. Render del template con el contexto
     context = {
-        "user_profile": user_profile,
         "institution": institution,
         "total_mis_grupos": total_mis_grupos,
         "total_mis_participantes": total_mis_participantes,
         "eventos_disponibles": total_eventos_disponibles,
         "eventos_asignados": eventos_asignados,
-        "proximos_eventos": proximos_eventos,
-        "grupos_recientes": grupos_recientes,
-        "hoy": hoy,
+        # Métricas de Clubes
+        "total_mis_clubes": total_mis_clubes,
+        "mis_clubes_aprobados": mis_clubes_aprobados,
     }
-
     return render(request, "users/dashboard_institucional.html", context)
-
-
-def is_admin(user):
-    """Verifica si el usuario es administrador"""
-    return hasattr(user, "userprofile") and user.userprofile.user_type == "admin"
 
 
 @admin_required
@@ -2432,11 +2549,17 @@ def registrar_sede(request):
 
                     messages.success(
                         request,
-                        f"¡Éxito! Nodo Regional {profile.estado.nombre} activado.",
+                        f"✅ ¡Éxito! Nodo Regional {profile.estado.nombre} activado correctamente.",
                     )
-                    return redirect("lista_instituciones")
+                    return redirect("gestionar_sedes")
             except Exception as e:
-                messages.error(request, f"Error crítico: {str(e)}")
+                messages.error(request, f"❌ Error al crear la sede: {str(e)}")
+                # Mantener los datos del formulario
+        else:
+            # Mostrar errores de validación
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = SedeRegionalForm()
 
