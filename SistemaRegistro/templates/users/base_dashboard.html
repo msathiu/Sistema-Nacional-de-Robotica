@@ -144,6 +144,16 @@
             padding: 1.5rem;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
+
+        .nav-section {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 0.5rem;
+        }
+
+        .nav-link-custom .ms-auto {
+            margin-left: auto;
+            font-size: 0.9rem;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -188,12 +198,27 @@
                 <a href="{% url 'revisar_eventos_club' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_eventos_club' %}active{% endif %}">
                     <i class="bi bi-calendar-check"></i> Revisar Eventos Club
                 </a>
-                <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_solicitudes_eliminacion' %}active{% endif %}">
-                    <i class="bi bi-trash3"></i> Solicitudes Eliminación
+                <a href="{% url 'revisar_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_membresias' %}active{% endif %}">
+                    <i class="bi bi-person-check"></i> Revisar Membresías
                 </a>
-                <a href="{% url 'clubes_eliminados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_eliminados' %}active{% endif %}">
-                    <i class="bi bi-trash-restore"></i> Papelera
-                </a>
+                
+                <!-- Submenú: Gestión de Eliminaciones -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('eliminacionesSubmenu')">
+                        <i class="bi bi-archive"></i> 
+                        <span>Gestión de Eliminaciones</span>
+                        <i class="bi bi-chevron-down ms-auto" id="eliminacionesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="eliminacionesSubmenu" style="display: none;">
+                        <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_solicitudes_eliminacion' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-x"></i> Solicitudes Pendientes
+                        </a>
+                        <a href="{% url 'clubes_eliminados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_eliminados' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-trash3"></i> Papelera de Clubes
+                        </a>
+                    </div>
+                </div>
+                
                 <a href="{% url 'dashboard_metricas_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard_metricas_clubes' %}active{% endif %}">
                     <i class="bi bi-graph-up"></i> Métricas Clubes
                 </a>
@@ -349,6 +374,34 @@
                     });
                 });
             }
+        });
+
+        // Toggle Submenu Function
+        function toggleSubmenu(submenuId) {
+            const submenu = document.getElementById(submenuId);
+            const chevron = document.getElementById(submenuId.replace('Submenu', 'Chevron'));
+            
+            if (submenu.style.display === 'none' || submenu.style.display === '') {
+                submenu.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                submenu.style.display = 'none';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Auto-expand submenu if active page is inside
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeLinks = document.querySelectorAll('.nav-link-custom.active');
+            activeLinks.forEach(link => {
+                const parentSubmenu = link.closest('[id$="Submenu"]');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                    const chevronId = parentSubmenu.id.replace('Submenu', 'Chevron');
+                    const chevron = document.getElementById(chevronId);
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                }
+            });
         });
     </script>
     {% block extra_js %}{% endblock %}
