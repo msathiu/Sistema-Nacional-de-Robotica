@@ -137,12 +137,186 @@
             margin-right: 1rem;
         }
 
-        .logout-section {
+        /* User Dropdown Styles */
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(11, 44, 109, 0.3);
+        }
+
+        .user-dropdown-toggle:hover {
+            background: linear-gradient(135deg, #0d3a8a 0%, var(--blue-main) 100%);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(11, 44, 109, 0.4);
+        }
+
+        .user-dropdown-toggle .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-toggle .user-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .user-dropdown-toggle .user-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-toggle .user-role {
+            font-size: 0.65rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .user-dropdown-toggle .chevron {
+            transition: transform 0.3s ease;
+            font-size: 0.75rem;
+        }
+
+        .user-dropdown.open .user-dropdown-toggle .chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
             position: absolute;
-            bottom: 0;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 240px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1050;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .user-dropdown.open .user-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            padding: 1.25rem 1rem;
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 100%);
+            color: white;
+            border-bottom: 3px solid var(--accent-cyan);
+        }
+
+        .user-dropdown-menu .dropdown-header .user-fullname {
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-menu .dropdown-header .user-email {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.85);
+            margin-top: 0.25rem;
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.25rem;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
             width: 100%;
-            padding: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .user-dropdown-menu .dropdown-item:hover {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.08) 0%, rgba(11, 44, 109, 0.05) 100%);
+            color: var(--blue-main);
+            padding-left: 1.5rem;
+        }
+
+        .user-dropdown-menu .dropdown-item i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+            color: var(--blue-main);
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item {
+            color: #dc3545;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 0.5rem;
+            padding-top: 0.875rem;
+            background: #fffafa;
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item:hover {
+            background: #fff0f0;
+            color: #dc3545;
+            padding-left: 1.5rem;
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item i {
+            color: #dc3545;
+        }
+
+        .user-dropdown-menu .dropdown-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+            margin: 0.5rem 0;
+        }
+
+        /* Overlay for closing dropdown */
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1040;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
         }
 
         .nav-section {
@@ -313,16 +487,10 @@
                 </a>
             {% endif %}
         </div>
-
-        <div class="logout-section">
-            <form action="{% url 'logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger w-100 d-flex align-items-center justify-content-center py-2 shadow-sm">
-                    <i class="bi bi-power me-2"></i> CERRAR SESIÓN
-                </button>
-            </form>
-        </div>
     </nav>
+
+    <!-- Overlay for closing dropdowns -->
+    <div class="dropdown-overlay" id="dropdownOverlay"></div>
 
     <div id="content">
         <header class="bg-white shadow-sm py-3 px-4 d-flex justify-content-between align-items-center">
@@ -338,15 +506,49 @@
                 </h5>
             </div>
             
-            <div class="user-info d-flex align-items-center">
-                <div class="text-end me-3">
-                    <div class="small fw-bold text-dark lh-1">{{ user.get_full_name|default:user.username }}</div>
-                    <div class="x-small text-muted" style="font-size: 0.65rem;">
-                        {% if es_central or user.is_superuser %}SUPERADMIN{% elif es_regional %}AUDITOR{% else %}SEDE{% endif %}
+            <!-- User Dropdown - Top Right -->
+            <div class="user-dropdown" id="userDropdown">
+                <a href="#" class="user-dropdown-toggle" id="userDropdownToggle">
+                    <div class="user-avatar">{{ user.username|first|upper }}</div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="user-role">
+                            {% if es_central or user.is_superuser %}SUPERADMIN
+                            {% elif es_regional %}AUDITOR
+                            {% else %}SEDE{% endif %}
+                        </span>
                     </div>
-                </div>
-                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; border: 2px solid white; background: var(--blue-main) !important;">
-                    <span class="fw-bold">{{ user.username|first|upper }}</span>
+                    <i class="bi bi-chevron-down chevron"></i>
+                </a>
+                
+                <div class="user-dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="user-fullname">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="user-email">{{ user.email|default:user.username }}</div>
+                    </div>
+                    
+                    {% if es_central or user.is_superuser %}
+                    <a href="{% url 'mi_perfil_federacion' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% elif es_regional %}
+                    <a href="{% url 'mi_perfil_federacion' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% else %}
+                    <a href="{% url 'mi_perfil_institucional' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% endif %}
+                    
+                    <div class="dropdown-divider"></div>
+                    
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item logout-item w-100 text-start">
+                            <i class="bi bi-power"></i> Cerrar Sesión
+                        </button>
+                    </form>
                 </div>
             </div>
         </header>
@@ -436,6 +638,36 @@
                     if (chevron) chevron.style.transform = 'rotate(180deg)';
                 }
             });
+        });
+
+        // User Dropdown Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userDropdown = document.getElementById('userDropdown');
+            const userDropdownToggle = document.getElementById('userDropdownToggle');
+            const dropdownOverlay = document.getElementById('dropdownOverlay');
+
+            if (userDropdown && userDropdownToggle) {
+                userDropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('open');
+                    dropdownOverlay.classList.toggle('active');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!userDropdown.contains(e.target)) {
+                        userDropdown.classList.remove('open');
+                        dropdownOverlay.classList.remove('active');
+                    }
+                });
+
+                if (dropdownOverlay) {
+                    dropdownOverlay.addEventListener('click', function() {
+                        userDropdown.classList.remove('open');
+                        dropdownOverlay.classList.remove('active');
+                    });
+                }
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}

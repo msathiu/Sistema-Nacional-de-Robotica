@@ -106,7 +106,7 @@
                     
                     {% if puede_inscribir %}
                         <a href="{% url 'inscribir_grupo_evento_club' evento.id %}" class="btn btn-success w-100">
-                            <i class="bi bi-plus-circle"></i> Inscribir Grupo
+                            <i class="bi bi-plus-circle"></i> Asociar Grupo Creado
                         </a>
                     {% endif %}
                 </div>
@@ -117,7 +117,13 @@
                     <h6 class="mb-0">Información</h6>
                 </div>
                 <div class="card-body">
-                    <p class="small mb-2"><strong>Creado por:</strong><br>{{ evento.creado_por.get_full_name|default:evento.creado_por.username }}</p>
+                    <p class="small mb-2"><strong>Creado por:</strong><br>
+                        {% if evento.creado_por.userprofile.institution %}
+                            {{ evento.creado_por.userprofile.institution.nombre }}
+                        {% else %}
+                            {{ evento.creado_por.get_full_name|default:evento.creado_por.username }}
+                        {% endif %}
+                    </p>
                     <p class="small mb-0"><strong>Fecha de creación:</strong><br>{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</p>
                     {% if evento.fecha_aprobacion %}
                         <hr>

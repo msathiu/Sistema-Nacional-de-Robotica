@@ -1,6 +1,6 @@
 {% extends 'users/base_dashboard.html' %}
 
-{% block title %}Inscribir Grupo{% endblock %}
+{% block title %}Asociar Grupo al Evento{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -8,7 +8,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Inscribir Grupo al Evento</h4>
+                    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Asociar Grupo al Evento</h4>
                 </div>
                 <div class="card-body">
                     <h5>{{ evento.nombre }}</h5>
@@ -51,21 +51,23 @@
                                     Cancelar
                                 </a>
                                 <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-check-circle"></i> Inscribir Grupo
+                                    <i class="bi bi-check-circle"></i> Asociar Grupo
                                 </button>
                             </div>
                         </form>
                     {% else %}
                         <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle"></i>
-                            No tienes grupos disponibles para inscribir. Los grupos deben estar en estado "editable".
+                            <strong>No tienes grupos disponibles para asociar.</strong><br>
+                            Los grupos deben estar en estado "editable" para poder inscribirlos a un evento.
                             <hr>
-                            <a href="{% url 'crear_grupo' %}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-plus"></i> Crear Grupo
+                            <p class="mb-2">Dirígete a <strong>"Mis Grupos"</strong> para crear un nuevo grupo o escuadrón antes de inscribirlo al evento.</p>
+                            <a href="{% url 'mis_grupos' %}" class="btn btn-primary">
+                                <i class="bi bi-people"></i> Ir a Mis Grupos
                             </a>
                         </div>
                         <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-outline-secondary">
-                            Volver
+                            Volver al Evento
                         </a>
                     {% endif %}
                 </div>

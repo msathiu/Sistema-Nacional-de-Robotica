@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views, views_institucional, views_reportes, views_avanzadas, views_eventos
 
@@ -8,9 +9,10 @@ urlpatterns = [
     path("load-municipios/", views.load_municipios, name="load_municipios"),
     path("ajax/municipios/", views.cargar_municipios, name="ajax_cargar_municipios"),
     path("ajax/parroquias/", views.cargar_parroquias, name="ajax_cargar_parroquias"),
-    # Gestión de Grupos
-    path("grupos/", views_institucional.grupos_institucion, name="grupos_institucion"),
-    path("grupos/crear/", views_institucional.crear_grupo, name="crear_grupo"),
+    # Gestión de Grupos - REDIRECCIONES a mis_grupos (consolidación)
+    # Estas rutas redirigen a la vista unificada en users/mis_grupos
+    path("grupos/", RedirectView.as_view(pattern_name='mis_grupos', permanent=False), name="grupos_institucion"),
+    path("grupos/crear/", RedirectView.as_view(pattern_name='mis_grupos', permanent=False), name="crear_grupo"),
     path("grupos/<int:grupo_id>/", views_institucional.ver_grupo, name="ver_grupo"),
     path(
         "grupos/<int:grupo_id>/editar/",

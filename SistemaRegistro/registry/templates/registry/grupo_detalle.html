@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'grupos_institucion' %}">Grupos</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Grupos</a></li>
             <li class="breadcrumb-item active">{{ grupo.nombre }}</li>
         </ol>
     </nav>
@@ -41,7 +41,7 @@
                 <i class="fas fa-trash"></i> Eliminar
             </button>
             {% endif %}
-            <a href="{% url 'grupos_institucion' %}" class="btn btn-secondary">
+            <a href="{% url 'mis_grupos' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Volver
             </a>
         </div>

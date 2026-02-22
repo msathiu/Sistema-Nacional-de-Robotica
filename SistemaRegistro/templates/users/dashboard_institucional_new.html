@@ -128,7 +128,7 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-users text-success"></i> Grupos Recientes</h5>
-                    <a href="{% url 'grupos_institucion' %}" class="btn btn-sm btn-outline-success">Ver todos</a>
+                    <a href="{% url 'mis_grupos' %}" class="btn btn-sm btn-outline-success">Ver todos</a>
                 </div>
                 <div class="card-body">
                     {% if grupos_recientes %}
@@ -169,7 +169,7 @@
     <!-- Acciones Rápidas -->
     <div class="row g-3 mt-4">
         <div class="col-md-4">
-            <a href="{% url 'crear_grupo' %}" class="card border-0 shadow-sm text-decoration-none hover-shadow">
+            <a href="{% url 'mis_grupos' %}" class="card border-0 shadow-sm text-decoration-none hover-shadow">
                 <div class="card-body text-center py-4">
                     <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
                     <h5 class="mb-0">Crear Grupo</h5>

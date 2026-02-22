@@ -10,7 +10,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'grupos_institucion' %}">Grupos</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Grupos</a></li>
                 <li class="breadcrumb-item active">Crear</li>
             </ol>
         </nav>
@@ -117,7 +117,7 @@
 
         <!-- Botones de Acción -->
         <div class="d-flex justify-content-end gap-2">
-            <a href="{% url 'grupos_institucion' %}" class="btn btn-secondary">
+            <a href="{% url 'mis_grupos' %}" class="btn btn-secondary">
                 <i class="fas fa-times"></i> Cancelar
             </a>
             <button type="submit" class="btn btn-primary">

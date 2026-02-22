@@ -289,7 +289,11 @@ def rechazar_evento_club(request, evento_id):
 def detalle_evento_club(request, evento_id):
     """Ver detalle de un evento de club."""
     evento = get_object_or_404(
-        Evento.objects.select_related('club_organizador', 'creado_por'),
+        Evento.objects.select_related(
+            'club_organizador', 
+            'creado_por',
+            'creado_por__userprofile__institution'
+        ),
         id=evento_id,
         tipo_evento='club'
     )
