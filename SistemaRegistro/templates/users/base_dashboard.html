@@ -189,18 +189,32 @@
                 <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
                     <i class="bi bi-people"></i> Participantes
                 </a>
-                <a href="{% url 'revisar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_clubes' %}active{% endif %} position-relative">
-                    <i class="bi bi-shield-check"></i> Revisar Clubes
-                    {% if tiene_clubes_pendientes %}
-                    <span class="position-absolute badge rounded-pill bg-danger" style="font-size: 0.65rem; top: 0.5rem; right: 1rem;">{{ clubes_pendientes_count }}</span>
-                    {% endif %}
-                </a>
-                <a href="{% url 'revisar_eventos_club' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_eventos_club' %}active{% endif %}">
-                    <i class="bi bi-calendar-check"></i> Revisar Eventos Club
-                </a>
-                <a href="{% url 'revisar_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_membresias' %}active{% endif %}">
-                    <i class="bi bi-person-check"></i> Revisar Membresías
-                </a>
+                
+                <!-- Submenú: Gestión de Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('gestionClubesSubmenu')">
+                        <i class="bi bi-robot"></i> 
+                        <span>Gestión de Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="gestionClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="gestionClubesSubmenu" style="display: none;">
+                        <a href="{% url 'revisar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-shield-check"></i> Revisar Clubes Pendientes
+                            {% if tiene_clubes_pendientes %}
+                            <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.65rem;">{{ clubes_pendientes_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'revisar_eventos_club' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_eventos_club' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-calendar-check"></i> Revisar Eventos Club
+                        </a>
+                        <a href="{% url 'revisar_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_membresias' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-person-check"></i> Revisar Membresías
+                        </a>
+                        <a href="{% url 'dashboard_metricas_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard_metricas_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-graph-up"></i> Métricas de Clubes
+                        </a>
+                    </div>
+                </div>
                 
                 <!-- Submenú: Gestión de Eliminaciones -->
                 <div class="nav-section mt-2">
@@ -219,9 +233,6 @@
                     </div>
                 </div>
                 
-                <a href="{% url 'dashboard_metricas_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard_metricas_clubes' %}active{% endif %}">
-                    <i class="bi bi-graph-up"></i> Métricas Clubes
-                </a>
                 <a href="{% url 'gestionar_sedes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_sedes' %}active{% endif %}">
                     <i class="bi bi-shield-lock"></i> Gestionar Sedes
                 </a>
@@ -256,21 +267,44 @@
                     <span class="position-absolute badge rounded-pill bg-danger" style="font-size: 0.65rem; top: 0.5rem; right: 1rem;">{{ notificaciones_no_leidas }}</span>
                     {% endif %}
                 </a>
-                <a href="{% url 'clubes_lista' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_lista' %}active{% endif %}">
-                    <i class="bi bi-robot"></i> Mis Clubes
-                </a>
-                <a href="{% url 'mis_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_membresias' %}active{% endif %}">
-                    <i class="bi bi-star"></i> Mis Membresías
-                </a>
-                <a href="{% url 'directorio_clubes_aprobados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'directorio_clubes_aprobados' %}active{% endif %}">
-                    <i class="bi bi-search"></i> Directorio Clubes
-                </a>
-                <a href="{% url 'buscar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'buscar_clubes' %}active{% endif %}">
-                    <i class="bi bi-funnel"></i> Búsqueda Avanzada
-                </a>
-                <a href="{% url 'gestionar_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_eventos_inst' %}active{% endif %}">
-                    <i class="bi bi-calendar-event"></i> Eventos
-                </a>
+                
+                <!-- Submenú: Mis Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('misClubesSubmenu')">
+                        <i class="bi bi-robot"></i> 
+                        <span>Mis Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="misClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="misClubesSubmenu" style="display: none;">
+                        <a href="{% url 'clubes_lista' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_lista' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-folder2-open"></i> Clubes Creados
+                        </a>
+                        <a href="{% url 'mis_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_membresias' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-star"></i> Mis Membresías
+                        </a>
+                        <a href="{% url 'gestionar_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_eventos_inst' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-calendar-event"></i> Eventos de Clubes
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Submenú: Explorar Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('explorarClubesSubmenu')">
+                        <i class="bi bi-search"></i> 
+                        <span>Explorar Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="explorarClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="explorarClubesSubmenu" style="display: none;">
+                        <a href="{% url 'directorio_clubes_aprobados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'directorio_clubes_aprobados' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-book"></i> Directorio Completo
+                        </a>
+                        <a href="{% url 'buscar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'buscar_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-funnel"></i> Búsqueda Avanzada
+                        </a>
+                    </div>
+                </div>
+                
                 <a href="{% url 'mis_grupos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_grupos' %}active{% endif %}">
                     <i class="bi bi-microsoft-teams"></i> Mis Grupos
                 </a>
