@@ -4,6 +4,74 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.apps import apps 
 
+
+def not_superuser_required(view_func):
+    """
+    Decorador que bloquea el acceso de superusuarios a vistas de usuarios normales.
+    Los superusuarios solo deben acceder al admin de Django.
+    """
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if request.user.is_superuser:
+            messages.warning(
+                request, 
+                'Los superusuarios solo pueden acceder al panel de administración.'
+            )
+            return redirect('/admin/')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def role_required(allowed_roles):
+    """
+    Decorador que verifica que el usuario tenga uno de los roles permitidos.
+    
+    Uso:
+        @role_required(['institucional', 'fed_central'])
+        def mi_vista(request):
+            ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            try:
+                user_profile = request.user.userprofile
+                user_type = user_profile.user_type
+                
+                if user_type in allowed_roles:
+                    return view_func(request, *args, **kwargs)
+                else:
+                    messages.error(
+                        request,
+                        f'No tienes permiso para acceder a esta página. Tu rol: {user_profile.get_user_type_display()}'
+                    )
+                    return redirect('dashboard')
+            except:
+                messages.error(request, 'No tienes un perfil de usuario configurado.')
+                return redirect('dashboard')
+        return wrapper
+    return decorator
+
+
+def admin_access_required(view_func):
+    """
+    Decorador que restringe el acceso solo a superusuarios.
+    SOLO el superuser puede acceder al panel de administración de Django.
+    """
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        # Solo permitir si es superuser de Django
+        if request.user.is_superuser and request.user.is_staff:
+            return view_func(request, *args, **kwargs)
+        
+        messages.error(request, 'No tienes permiso para acceder al panel de administración. Solo superusuarios pueden acceder.')
+        return redirect('dashboard')
+    return wrapper
+
+
 def admin_or_owner_required(view_func):
     @wraps(view_func)
     @login_required

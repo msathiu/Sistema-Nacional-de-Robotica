@@ -28,6 +28,7 @@ from .notificaciones import (
     notificar_eliminacion_rechazada,
     notificar_salida_club,
 )
+from .services import AdmissionService
 
 
 @login_required
@@ -59,14 +60,17 @@ def crear_grupo(request):
     if request.method == "POST":
         try:
             with transaction.atomic():
+                # Obtener valores del tutor, asegurando que no sean None
+                tutor_telefono = request.POST.get("tutor_telefono", "").strip()
+                
                 # Crear grupo
                 grupo = Grupo.objects.create(
                     nombre=request.POST.get("nombre"),
                     criterio=request.POST.get("criterio"),
-                    tutor_nombre=request.POST.get("tutor_nombre"),
-                    tutor_apellidos=request.POST.get("tutor_apellidos"),
-                    tutor_cedula=request.POST.get("tutor_cedula"),
-                    tutor_telefono=request.POST.get("tutor_telefono"),
+                    tutor_nombre=request.POST.get("tutor_nombre", "").strip() or None,
+                    tutor_apellidos=request.POST.get("tutor_apellidos", "").strip() or None,
+                    tutor_cedula=request.POST.get("tutor_cedula", "").strip() or None,
+                    tutor_telefono=tutor_telefono if tutor_telefono else None,
                     usuario_creador=request.user,
                 )
 
@@ -99,6 +103,29 @@ def crear_grupo(request):
         "criterios": Grupo.CRITERIO_CHOICES,
     }
     return render(request, "registry/grupo_crear.html", context)
+
+
+def _dividir_nombre_completo(nombre_completo):
+    """
+    Divide un nombre completo en nombres y apellidos.
+    Utiliza heurística: las últimas 2 palabras como apellidos.
+    """
+    if not nombre_completo:
+        return "", ""
+    
+    partes = nombre_completo.strip().split()
+    
+    if len(partes) == 0:
+        return "", ""
+    elif len(partes) == 1:
+        return partes[0], ""
+    elif len(partes) == 2:
+        return partes[0], partes[1]
+    elif len(partes) == 3:
+        return partes[0], partes[1] + " " + partes[2]
+    else:
+        # Más de 4 palabras: primeras 2 como nombres, resto como apellidos
+        return " ".join(partes[:2]), " ".join(partes[2:])
 
 
 @login_required
@@ -138,8 +165,48 @@ def editar_grupo(request, grupo_id):
     institucion = request.user.userprofile.institution
     participantes = Participante.objects.filter(institucion=institucion, activo=True)
 
+    # CORRECCIÓN: Si tutor_apellidos está vacío pero tutor_nombre tiene el nombre completo,
+    # dividirlo en nombres y apellidos para mostrar correctamente en el formulario
+    tutor_nombre_mostrar = grupo.tutor_nombre or ""
+    tutor_apellidos_mostrar = grupo.tutor_apellidos or ""
+    
+    # Si los apellidos están vacíos pero hay un nombre completo, dividirlo
+    if not tutor_apellidos_mostrar and tutor_nombre_mostrar:
+        tutor_nombre_mostrar, tutor_apellidos_mostrar = _dividir_nombre_completo(tutor_nombre_mostrar)
+
+    # Crear un objeto temporal con los datos corregidos para el template
+    # Aseguramos que todos los campos del tutor tengan valores válidos
+    from types import SimpleNamespace
+    
+    # Debug: registrar los valores originales para diagnóstico
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"DEBUG - tutor_telefono original: '{grupo.tutor_telefono}' (tipo: {type(grupo.tutor_telefono)})")
+    
+    # Manejar tutor_telefono correctamente - convertir a string solo si tiene valor
+    tutor_telefono_valor = ""
+    if grupo.tutor_telefono:
+        tutor_telefono_valor = str(grupo.tutor_telefono).strip()
+        # Verificar que no sea la cadena "None"
+        if tutor_telefono_valor == "None" or tutor_telefono_valor == "":
+            tutor_telefono_valor = ""
+    
+    grupo_para_template = SimpleNamespace(
+        id=grupo.id,
+        nombre=grupo.nombre,
+        criterio=grupo.criterio,
+        estado_grupo=grupo.estado_grupo,
+        tutor_cedula=grupo.tutor_cedula if grupo.tutor_cedula else "",
+        tutor_nombre=tutor_nombre_mostrar,
+        tutor_apellidos=tutor_apellidos_mostrar,
+        tutor_telefono=tutor_telefono_valor,
+        fecha_registro=grupo.fecha_registro,
+    )
+    
+    logger.info(f"DEBUG - tutor_telefono para template: '{grupo_para_template.tutor_telefono}'")
+
     context = {
-        "grupo": grupo,
+        "grupo": grupo_para_template,
         "participantes": participantes,
         "criterios": Grupo.CRITERIO_CHOICES,
     }
@@ -295,7 +362,7 @@ def clubes_lista(request):
         )
         .exclude(institucion_creadora=institucion)
         .annotate(
-            num_membresias=Count("membresias", filter=Q(membresias__estado="aprobada")),
+            num_membresias=Count("membresias", filter=Q(membresias__estado="miembro_activo")),
             # Anotar el estado de membresía del usuario actual
             mi_estado_membresia=Subquery(
                 MembresiaClu.objects.filter(
@@ -560,7 +627,7 @@ def postular_club(request, club_id):
 
     # Verificar si ya existe una solicitud activa
     if MembresiaClu.objects.filter(
-        club=club, institucion=institucion, estado__in=["pendiente", "revision"]
+        club=club, institucion=institucion, estado__in=["pendiente_filtro", "visto_bueno_fundadora"]
     ).exists():
         messages.warning(request, "Ya tienes una solicitud activa para este club.")
         return redirect("clubes_lista")
@@ -651,14 +718,16 @@ def aprobar_club(request, club_id):
                     club=club,
                     institucion=club.institucion_creadora,
                     defaults={
-                        'estado': 'aprobada',
+                        'estado': 'miembro_activo',
                         'fecha_solicitud': timezone.now(),
                         'fecha_respuesta': timezone.now(),
                         'tipo_linea': 'principal',
                         'carta_intencion': 'Membresía automática como institución creadora del club',
                         'propuesta_tecnica': 'Institución fundadora y coordinadora del club',
                         'representante_legal': club.coordinador.get_full_name() or club.coordinador.username,
-                        'observaciones': 'Membresía automática otorgada al aprobar el club'
+                        'observaciones': 'Membresía automática otorgada al aprobar el club',
+                        'visto_bueno_fundadora': True,
+                        'aprobacion_ente_rector': True,
                     }
                 )
                 
@@ -752,69 +821,91 @@ def tomar_en_revision_club(request, club_id):
 
 @staff_member_required
 def revisar_membresias(request):
-    """Vista para revisar membresías de clubes."""
-    # Membresías pendientes
-    membresias_pendientes = (
-        MembresiaClu.objects.filter(estado="pendiente")
+    """
+    Vista para que el Ente Rector revise membresías con visto bueno de la Fundadora.
+    
+    Solo muestra membresías que ya tienen el visto bueno de la Institución Fundadora
+    y están esperando la aprobación final del Ente Rector.
+    """
+    # Membresías pendientes del filtro inicial (Fundadora aún no ha dado visto bueno)
+    membresias_pendientes_filtro = (
+        MembresiaClu.objects.filter(estado="pendiente_filtro")
         .select_related("club", "institucion")
         .order_by("-fecha_solicitud")
     )
 
-    # Membresías en revisión
-    membresias_en_revision = (
-        MembresiaClu.objects.filter(estado="revision")
+    # Membresías con visto bueno de la Fundadora (esperando aprobación del Ente Rector)
+    membresias_con_visto_bueno = (
+        MembresiaClu.objects.filter(estado="visto_bueno_fundadora")
         .select_related("club", "institucion")
         .order_by("-fecha_solicitud")
     )
 
     context = {
-        "membresias_pendientes": membresias_pendientes,
-        "membresias_en_revision": membresias_en_revision,
+        "membresias_pendientes_filtro": membresias_pendientes_filtro,
+        "membresias_con_visto_bueno": membresias_con_visto_bueno,
     }
     return render(request, "registry/revisar_membresias.html", context)
 
 
 @staff_member_required
 def aprobar_membresia(request, membresia_id):
-    """Aprueba una membresía."""
+    """
+    Aprobación final de membresía por el Ente Rector (Federación Central).
+    
+    Solo se pueden aprobar membresías que tengan el visto bueno de la Fundadora.
+    """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
 
-    if membresia.estado not in ["pendiente", "revision"]:
-        messages.error(request, "Esta membresía no puede ser aprobada.")
+    # Solo se pueden aprobar membresías con visto bueno de la fundadora
+    if membresia.estado != "visto_bueno_fundadora":
+        messages.error(
+            request, 
+            "Esta membresía no puede ser aprobada. Debe tener el visto bueno de la Institución Fundadora."
+        )
         return redirect("revisar_membresias")
 
-    try:
-        with transaction.atomic():
-            membresia.estado = "aprobada"
-            membresia.fecha_respuesta = timezone.now()
-            membresia.save(update_fields=["estado", "fecha_respuesta"])
-
-            # Guardar para activar el método save() que cierra cupos si es necesario
-            membresia.club.save()
-
-        messages.success(
-            request, f'Membresía de "{membresia.institucion.nombre}" APROBADA.'
-        )
-    except Exception as e:
-        messages.error(request, f"Error al aprobar membresía: {str(e)}")
-
-    return redirect("revisar_membresias")
+    if request.method == "POST":
+        observaciones = request.POST.get("observaciones", "").strip()
+        
+        try:
+            # Usar el servicio de admisión para aprobación del Ente Rector
+            AdmissionService.aprobar_ente_rector(membresia, request.user, observaciones)
+            messages.success(
+                request, f'Membresía de "{membresia.institucion.nombre}" APROBADA como Miembro Activo.'
+            )
+        except Exception as e:
+            messages.error(request, f"Error al aprobar membresía: {str(e)}")
+        
+        return redirect("revisar_membresias")
+    
+    context = {"membresia": membresia}
+    return render(request, "registry/aprobar_membresia_ente_rector.html", context)
 
 
 @staff_member_required
 def rechazar_membresia(request, membresia_id):
-    """Rechaza una membresía."""
+    """
+    Rechaza una membresía por el Ente Rector.
+    
+    El Ente Rector puede rechazar membresías en cualquier estado del flujo federado.
+    """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
 
     if request.method == "POST":
-        observaciones = request.POST.get("observaciones", "")
+        motivo = request.POST.get("observaciones", "").strip()
+        if not motivo:
+            messages.error(request, "Debes proporcionar un motivo de rechazo.")
+            context = {"membresia": membresia}
+            return render(request, "registry/rechazar_membresia.html", context)
 
-        membresia.estado = "rechazada"
-        membresia.observaciones = observaciones
-        membresia.fecha_respuesta = timezone.now()
-        membresia.save()
-
-        messages.success(request, "Membresía RECHAZADA.")
+        try:
+            # Usar el servicio de admisión para rechazar
+            AdmissionService.rechazar_ente_rector(membresia, request.user, motivo)
+            messages.success(request, "Membresía RECHAZADA.")
+        except Exception as e:
+            messages.error(request, f"Error al rechazar membresía: {str(e)}")
+        
         return redirect("revisar_membresias")
 
     context = {
@@ -871,7 +962,7 @@ def directorio_clubes_aprobados(request):
         )
         .select_related("institucion_creadora")
         .annotate(
-            num_membresias=Count("membresias", filter=Q(membresias__estado="aprobada"))
+            num_membresias=Count("membresias", filter=Q(membresias__estado="miembro_activo"))
         )
         .order_by("-fecha_aprobacion")
     )
@@ -881,7 +972,7 @@ def directorio_clubes_aprobados(request):
     instituciones_miembros = set(
         MembresiaClu.objects.filter(
             club__in=clubes_aprobados,
-            estado='aprobada'
+            estado='miembro_activo'
         ).values_list('institucion_id', flat=True)
     )
     total_instituciones_participantes = len(instituciones_creadoras | instituciones_miembros)
@@ -919,16 +1010,16 @@ def detalle_club(request, club_id):
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
-    # Obtener membresías aprobadas
-    membresias_aprobadas = club.membresias.filter(
-        estado="aprobada"
+    # Obtener membresías activas
+    membresias_activas = club.membresias.filter(
+        estado="miembro_activo"
     ).select_related("institucion")
 
     # Verificar si el usuario ya postuló
     institucion = request.user.userprofile.institution
     ya_postulo = club.membresias.filter(
         institucion=institucion,
-        estado__in=["pendiente", "revision", "aprobada"]
+        estado__in=["pendiente_filtro", "visto_bueno_fundadora", "miembro_activo"]
     ).exists()
     
     # Verificar si es propietario del club
@@ -937,7 +1028,7 @@ def detalle_club(request, club_id):
     # Fase 4: Verificar si es miembro
     es_miembro = club.membresias.filter(
         institucion=institucion,
-        estado="aprobada"
+        estado="miembro_activo"
     ).exists()
     
     # Fase 4: Obtener eventos vinculados
@@ -949,7 +1040,7 @@ def detalle_club(request, club_id):
 
     context = {
         "club": club,
-        "membresias_aprobadas": membresias_aprobadas,
+        "membresias_activas": membresias_activas,
         "ya_postulo": ya_postulo,
         "puede_postular": club.puede_postularse and not ya_postulo,
         "es_propietario": es_propietario,
@@ -1226,20 +1317,22 @@ def gestionar_membresias_club(request, club_id):
         messages.error(request, "No tienes permiso para gestionar este club.")
         return redirect("clubes_lista")
     
-    # Obtener membresías por estado
-    membresias_pendientes = club.membresias.filter(estado="pendiente").select_related("institucion")
-    membresias_aprobadas = club.membresias.filter(estado="aprobada").select_related("institucion")
+    # Obtener membresías por estado federado
+    membresias_pendientes = club.membresias.filter(estado="pendiente_filtro").select_related("institucion")
+    membresias_con_visto_bueno = club.membresias.filter(estado="visto_bueno_fundadora").select_related("institucion")
+    membresias_activas = club.membresias.filter(estado="miembro_activo").select_related("institucion")
     membresias_rechazadas = club.membresias.filter(estado="rechazada").select_related("institucion")
     
     # Métricas
-    total_miembros = membresias_aprobadas.count()
-    total_pendientes = membresias_pendientes.count()
+    total_miembros = membresias_activas.count()
+    total_pendientes = membresias_pendientes.count() + membresias_con_visto_bueno.count()
     cupos_disponibles = club.cupo_maximo - total_miembros if club.cupo_maximo else None
     
     context = {
         "club": club,
         "membresias_pendientes": membresias_pendientes,
-        "membresias_aprobadas": membresias_aprobadas,
+        "membresias_con_visto_bueno": membresias_con_visto_bueno,
+        "membresias_activas": membresias_activas,
         "membresias_rechazadas": membresias_rechazadas,
         "total_miembros": total_miembros,
         "total_pendientes": total_pendientes,
@@ -1257,9 +1350,9 @@ def mis_membresias(request):
     
     institucion = request.user.userprofile.institution
     
-    # Obtener membresías por estado
-    membresias_activas = MembresiaClu.objects.filter(institucion=institucion, estado="aprobada").select_related("club")
-    membresias_pendientes = MembresiaClu.objects.filter(institucion=institucion, estado="pendiente").select_related("club")
+    # Obtener membresías por estado federado
+    membresias_activas = MembresiaClu.objects.filter(institucion=institucion, estado="miembro_activo").select_related("club")
+    membresias_pendientes = MembresiaClu.objects.filter(institucion=institucion, estado__in=["pendiente_filtro", "visto_bueno_fundadora"]).select_related("club")
     membresias_rechazadas = MembresiaClu.objects.filter(institucion=institucion, estado="rechazada").select_related("club")
     
     context = {
@@ -1303,59 +1396,69 @@ def detalle_membresia(request, membresia_id):
 
 @login_required
 def aprobar_membresia_club(request, membresia_id):
-    """Aprobar solicitud de membresía."""
+    """
+    Dar visto bueno a solicitud de membresía (Institución Fundadora).
+    
+    Flujo de Doble Aprobación:
+    - Este paso es realizado por la Institución Fundadora del club
+    - La membresía pasa de 'pendiente_filtro' a 'visto_bueno_fundadora'
+    - Luego el Ente Rector (Federación Central) debe dar la aprobación final
+    """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
     
-    # Verificar que el usuario es propietario del club
+    # Verificar que el usuario es propietario del club (Institución Fundadora)
     if not hasattr(request.user, "userprofile") or membresia.club.institucion_creadora != request.user.userprofile.institution:
         messages.error(request, "No tienes permiso para aprobar esta membresía.")
         return redirect("clubes_lista")
     
-    if membresia.estado != "pendiente":
-        messages.error(request, "Esta membresía ya fue procesada.")
+    if request.method == "POST":
+        observaciones = request.POST.get("observaciones", "").strip()
+        
+        try:
+            # Usar el servicio de admisión para dar visto bueno
+            AdmissionService.dar_visto_bueno_fundadora(membresia, request.user, observaciones)
+            messages.success(
+                request, 
+                f'Visto bueno otorgado a "{membresia.institucion.nombre}". '
+                f'La solicitud ha sido enviada al Ente Rector para aprobación final.'
+            )
+        except Exception as e:
+            messages.error(request, f"Error al procesar la solicitud: {str(e)}")
+        
         return redirect("gestionar_membresias_club", club_id=membresia.club.id)
     
-    # Verificar cupos disponibles
-    if membresia.club.cupo_maximo:
-        miembros_actuales = membresia.club.membresias.filter(estado="aprobada").count()
-        if miembros_actuales >= membresia.club.cupo_maximo:
-            messages.error(request, "No hay cupos disponibles en este club.")
-            return redirect("gestionar_membresias_club", club_id=membresia.club.id)
-    
-    membresia.estado = "aprobada"
-    membresia.fecha_respuesta = timezone.now()
-    membresia.save()
-    
-    messages.success(request, f'Membresía de "{membresia.institucion.nombre}" aprobada exitosamente.')
-    return redirect("gestionar_membresias_club", club_id=membresia.club.id)
+    context = {"membresia": membresia}
+    return render(request, "registry/aprobar_membresia_club.html", context)
 
 
 @login_required
 def rechazar_membresia_club(request, membresia_id):
-    """Rechazar solicitud de membresía."""
+    """
+    Rechazar solicitud de membresía (Institución Fundadora).
+    
+    La Institución Fundadora puede rechazar solicitudes que no cumplan
+    con los requisitos del club.
+    """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
     
-    # Verificar que el usuario es propietario del club
+    # Verificar que el usuario es propietario del club (Institución Fundadora)
     if not hasattr(request.user, "userprofile") or membresia.club.institucion_creadora != request.user.userprofile.institution:
         messages.error(request, "No tienes permiso para rechazar esta membresía.")
         return redirect("clubes_lista")
     
-    if membresia.estado != "pendiente":
-        messages.error(request, "Esta membresía ya fue procesada.")
-        return redirect("gestionar_membresias_club", club_id=membresia.club.id)
-    
     if request.method == "POST":
-        observaciones = request.POST.get("observaciones", "").strip()
-        if not observaciones:
+        motivo = request.POST.get("observaciones", "").strip()
+        if not motivo:
             messages.error(request, "Debes proporcionar un motivo de rechazo.")
             return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia})
         
-        membresia.estado = "rechazada"
-        membresia.observaciones = observaciones
-        membresia.fecha_respuesta = timezone.now()
-        membresia.save()
+        try:
+            # Usar el servicio de admisión para rechazar
+            AdmissionService.rechazar_fundadora(membresia, request.user, motivo)
+            messages.success(request, f'Membresía de "{membresia.institucion.nombre}" rechazada.')
+        except Exception as e:
+            messages.error(request, f"Error al procesar el rechazo: {str(e)}")
         
-        messages.success(request, f'Membresía de "{membresia.institucion.nombre}" rechazada.')
         return redirect("gestionar_membresias_club", club_id=membresia.club.id)
     
     return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia})
@@ -1381,15 +1484,15 @@ def salir_club(request, membresia_id):
         )
         return redirect("mis_membresias")
     
-    # Solo se puede salir si está aprobada
-    if membresia.estado != "aprobada":
+    # Solo se puede salir si es miembro activo (estado federado)
+    if membresia.estado != "miembro_activo":
         messages.error(request, "Solo puedes salir de clubes donde eres miembro activo.")
         return redirect("mis_membresias")
     
     if request.method == "POST":
         motivo = request.POST.get("motivo", "").strip()
         
-        # Cambiar estado a rechazada (reutilizamos el estado)
+        # Cambiar estado a rechazada
         membresia.estado = "rechazada"
         membresia.observaciones = f"Salida voluntaria: {motivo}" if motivo else "Salida voluntaria"
         membresia.fecha_respuesta = timezone.now()
@@ -1401,7 +1504,7 @@ def salir_club(request, membresia_id):
         # Actualizar cupos del club (reabre si estaba cerrado)
         club = membresia.club
         if club.estado_vinculacion == "cerrado":
-            miembros_actuales = club.membresias.filter(estado="aprobada").count()
+            miembros_actuales = club.membresias.filter(estado="miembro_activo").count()
             if miembros_actuales < club.cupo_maximo:
                 club.estado_vinculacion = "abierto"
                 club.save(update_fields=["estado_vinculacion"])

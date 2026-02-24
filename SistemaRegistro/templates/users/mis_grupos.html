@@ -87,7 +87,7 @@
     <!-- Grid de Equipos -->
     <div class="row g-4" id="equiposGrid">
         {% for grupo in grupos %}
-        <div class="col-xl-4 col-lg-6 equipo-card" data-nombre="{{ grupo.nombre|lower }}" data-responsable="{{ grupo.tutor_nombre|lower }}" data-miembros="{{ grupo.participantes.count }}">
+        <div class="col-xl-4 col-lg-6 equipo-card" data-nombre="{{ grupo.nombre|lower }}" data-responsable="{% if grupo.tutores.exists %}{{ grupo.tutores.first.get_nombre_completo|lower }}{% else %}{{ grupo.tutor_nombre|lower }}{% endif %}" data-miembros="{{ grupo.participantes.count }}">
             <div class="card border-0 shadow-sm h-100 overflow-hidden" style="border-radius: 20px; transition: all 0.3s ease;">
                 <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
                     <i class="bi bi-robot text-white me-3 fs-5"></i>
@@ -102,9 +102,16 @@
                         </div>
                         <div>
                             <span class="text-muted x-small fw-bold text-uppercase d-block">Responsable</span>
-                            <span class="fw-bold text-dark">{{ grupo.tutor_nombre|default:"Sin asignar" }}</span>
-                            {% if grupo.tutor_cedula %}
-                            <small class="text-muted d-block">C.I: {{ grupo.tutor_cedula }}</small>
+                            {% if grupo.tutores.exists %}
+                                <span class="fw-bold text-dark">{{ grupo.tutores.first.get_nombre_completo }}</span>
+                                <small class="text-muted d-block">C.I: {{ grupo.tutores.first.cedula }}</small>
+                            {% elif grupo.tutor_nombre %}
+                                <span class="fw-bold text-dark">{{ grupo.tutor_nombre }}</span>
+                                {% if grupo.tutor_cedula %}
+                                <small class="text-muted d-block">C.I: {{ grupo.tutor_cedula }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="fw-bold text-dark">Sin asignar</span>
                             {% endif %}
                         </div>
                     </div>
@@ -142,15 +149,15 @@
                     <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold btn-ver" 
                             data-id="{{ grupo.id }}"
                             data-nombre="{{ grupo.nombre|escapejs }}"
-                            data-tutor="{{ grupo.tutor_nombre|escapejs }}"
-                            data-cedula="{{ grupo.tutor_cedula }}">
+                            data-tutor="{% if grupo.tutores.exists %}{{ grupo.tutores.first.get_nombre_completo|escapejs }}{% else %}{{ grupo.tutor_nombre|escapejs }}{% endif %}"
+                            data-cedula="{% if grupo.tutores.exists %}{{ grupo.tutores.first.cedula }}{% else %}{{ grupo.tutor_cedula }}{% endif %}">
                         <i class="bi bi-eye me-1"></i> Ver
                     </button>
                     <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold btn-editar"
                             data-id="{{ grupo.id }}"
                             data-nombre="{{ grupo.nombre|escapejs }}"
-                            data-tutor="{{ grupo.tutor_nombre|escapejs }}"
-                            data-cedula="{{ grupo.tutor_cedula }}">
+                            data-tutor="{% if grupo.tutores.exists %}{{ grupo.tutores.first.get_nombre_completo|escapejs }}{% else %}{{ grupo.tutor_nombre|escapejs }}{% endif %}"
+                            data-cedula="{% if grupo.tutores.exists %}{{ grupo.tutores.first.cedula }}{% else %}{{ grupo.tutor_cedula }}{% endif %}">
                         <i class="bi bi-pencil-square me-1"></i> Editar
                     </button>
                     <button class="btn btn-outline-danger btn-sm px-2 rounded-circle btn-eliminar"
@@ -201,7 +208,7 @@
                             </div>
                             <span class="fw-bold" style="color: var(--blue-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;">Identidad del Equipo</span>
                         </div>
-                        <input type="text" name="nombre_grupo" class="form-control form-control-lg border-0 bg-light" placeholder="Nombre del Equipo" required>
+                        <input type="text" name="nombre_grupo" class="form-control form-control-lg border-0 bg-light" placeholder="Nombre del Escuadrón" required>
                     </div>
 
                     <!-- Sección: Tutor Responsable -->
@@ -210,7 +217,7 @@
                             <div class="p-2 rounded-3 me-3" style="background: var(--blue-main);">
                                 <i class="bi bi-person-badge text-white"></i>
                             </div>
-                            <span class="fw-bold" style="color: var(--blue-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;">Responsable / Tutor</span>
+                            <span class="fw-bold" style="color: var(--blue-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;">Tutor Responsable</span>
                         </div>
                         
                         <div class="row align-items-center">
@@ -236,6 +243,7 @@
                                             <small class="text-muted" id="tutor_meta">---</small>
                                             <input type="hidden" name="tutor_nombre" id="tutor_nombre_hidden">
                                             <input type="hidden" name="tutor_cedula" id="tutor_cedula_hidden">
+                                            <input type="hidden" name="tutor_id" id="tutor_id_hidden">
                                         </div>
                                     </div>
                                 </div>
@@ -250,11 +258,11 @@
                                 <div class="p-2 rounded-3 me-3" style="background: var(--blue-main);">
                                     <i class="bi bi-people text-white"></i>
                                 </div>
-                                <span class="fw-bold" style="color: var(--blue-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;">Escuadrón de Participantes</span>
+                                <span class="fw-bold" style="color: var(--blue-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem;">Miembros del Escuadrón</span>
                             </div>
                             <button type="button" class="btn btn-sm fw-bold rounded-pill px-3" 
                                     style="background: var(--accent-cyan); color: var(--blue-main);" onclick="agregarFilaParticipante()">
-                                <i class="bi bi-plus-circle me-1"></i> AÑADIR CÉDULA
+                                <i class="bi bi-plus-circle me-1"></i> AÑADIR MIEMBRO
                             </button>
                         </div>
                         
@@ -264,7 +272,7 @@
                         
                         <div class="text-muted small mt-3 p-3 bg-light rounded-3">
                             <i class="bi bi-info-circle me-2"></i>
-                            Ingrese la cédula de cada participante para validar automáticamente sus datos.
+                            Ingrese la cédula de cada participante registrado. El sistema validará automáticamente sus datos.
                         </div>
                     </div>
                 </div>
@@ -692,35 +700,71 @@
             .then(data => {
                 const display = document.getElementById('tutor_info_display');
                 if (data.encontrado) {
-                    if (data.edad < 18) {
+                    // Verificar si es un participante menor de edad (no aplica para tutores)
+                    if (data.tipo === 'participante' && data.edad !== null && data.edad < 18) {
                         mostrarError('El tutor debe ser mayor de edad');
                         display.classList.add('d-none');
                         return;
                     }
                     display.classList.remove('d-none');
                     document.getElementById('alertaError').classList.add('d-none');
-                    document.getElementById('tutor_full_name').innerText = `${data.nombre} ${data.apellido}`.toUpperCase();
-                    document.getElementById('tutor_meta').innerText = `C.I: ${cedula} • ${data.edad} años`;
-                    document.getElementById('tutor_nombre_hidden').value = `${data.nombre} ${data.apellido}`;
+                    
+                    // Construir el nombre completo
+                    const nombreCompleto = `${data.nombre} ${data.apellido}`.toUpperCase();
+                    document.getElementById('tutor_full_name').innerText = nombreCompleto;
+                    
+                    // Mostrar información adicional según el tipo
+                    let metaText = `C.I: ${cedula}`;
+                    if (data.tipo === 'tutor') {
+                        // Para tutores, mostrar institución si está disponible
+                        if (data.institucion) {
+                            metaText += ` • ${data.institucion}`;
+                        }
+                        metaText += ' • Tutor registrado';
+                        // Guardar el ID del tutor si está disponible
+                        if (data.id) {
+                            document.getElementById('tutor_id_hidden').value = data.id;
+                        }
+                    } else if (data.tipo === 'participante' && data.edad !== null) {
+                        metaText += ` • ${data.edad} años`;
+                    }
+                    document.getElementById('tutor_meta').innerText = metaText;
+                    
+                    // Guardar datos en campos ocultos
+                    document.getElementById('tutor_nombre_hidden').value = nombreCompleto;
                     document.getElementById('tutor_cedula_hidden').value = cedula;
                 } else {
-                    mostrarError('Tutor no encontrado');
+                    mostrarError('Tutor no encontrado. Verifique la cédula o registre primero al tutor.');
                     display.classList.add('d-none');
                 }
             })
             .catch(() => mostrarError('Error al consultar el tutor'));
     };
     
+    // Nueva función que recibe el botón como parámetro
     window.validarParticipante = function(input) {
+        // Si se pasa un botón, obtener el input de la misma fila
+        if (input && input.tagName === 'BUTTON') {
+            const row = input.closest('.participante-row');
+            input = row.querySelector('.participante-cedula-input');
+        }
+        
         const row = input.closest('.participante-row');
+        if (!row) return;
+        
         const cedula = input.value.trim();
         const display = row.querySelector('.p_info_display');
         
         if (!cedula) return;
         
+        // Deshabilitar input mientras carga
+        input.disabled = true;
+        
         fetch(`/api/participante/${cedula}/`)
             .then(response => response.json())
             .then(data => {
+                input.disabled = false;
+                
                 if (data.encontrado) {
                     display.classList.remove('d-none');
                     display.querySelector('.p_name').innerText = `${data.nombre} ${data.apellido}`.toUpperCase();
@@ -739,7 +783,10 @@
                     mostrarError('Participante no registrado');
                 }
             })
-            .catch(() => input.classList.add('is-invalid'));
+            .catch(() => {
+                input.disabled = false;
+                input.classList.add('is-invalid');
+            });
     };
     
     window.agregarFilaParticipante = function() {
@@ -750,7 +797,11 @@
                 <div class="col-md-5">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-0"><i class="bi bi-person-vcard"></i></span>
-                        <input type="text" class="form-control border-0 bg-light" placeholder="Cédula" onchange="validarParticipante(this)">
+                        <input type="text" class="form-control border-0 bg-light participante-cedula-input" placeholder="Cédula">
+                        <button class="btn btn-validar-participante" type="button" onclick="validarParticipante(this)"
+                                style="background: var(--accent-cyan); color: var(--blue-main); font-weight: bold;">
+                            VERIFICAR
+                        </button>
                     </div>
                 </div>
                 <div class="col-md-7">
@@ -766,6 +817,15 @@
                 </div>
             </div>`;
         container.insertAdjacentHTML('beforeend', html);
+        
+        // Agregar event listeners para Enter
+        const nuevaFila = container.lastElementChild;
+        const input = nuevaFila.querySelector('.participante-cedula-input');
+        input.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                validarParticipante(this);
+            }
+        });
     };
     
     window.eliminarParticipanteExistente = function(btn, index) {
@@ -820,7 +880,7 @@
                 <div class="col-md-5">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-0"><i class="bi bi-person-vcard"></i></span>
-                        <input type="text" class="form-control border-0 bg-light" placeholder="Cédula" onchange="validarNuevoParticipanteEdicion(this)">
+                        <input type="text" class="form-control border-0 bg-light" placeholder="Cédula" onkeyup="if(event.key === 'Enter') validarNuevoParticipanteEdicion(this)" onblur="validarNuevoParticipanteEdicion(this)">
                     </div>
                 </div>
                 <div class="col-md-7">

@@ -3,11 +3,83 @@ Utilidades comunes para la aplicación registry.
 """
 
 import logging
+import re
 from typing import Any, Dict
 
 from django.db.models import QuerySet
 
 logger = logging.getLogger(__name__)
+
+
+def normalizar_cedula(cedula: str) -> str:
+    """
+    Normaliza una cédula venezolana al formato estándar sin prefijo.
+    
+    Convierte:
+    - "V-19111111" -> "19111111"
+    - "V19111111" -> "19111111"
+    - "v-19111111" -> "19111111"
+    - "19111111" -> "19111111"
+    - "E-19111111" -> "19111111" (extranjeros también se normalizan)
+    
+    Args:
+        cedula: Cédula en cualquier formato válido
+        
+    Returns:
+        str: Cédula normalizada solo con números
+    """
+    if not cedula:
+        return ""
+    
+    # Convertir a string y limpiar espacios
+    cedula = str(cedula).strip().upper()
+    
+    # Remover prefijo V- o E- (con o sin guión)
+    cedula_limpia = re.sub(r'^[VE]-?', '', cedula)
+    
+    # Remover cualquier carácter no numérico
+    cedula_limpia = re.sub(r'[^0-9]', '', cedula_limpia)
+    
+    return cedula_limpia
+
+
+def buscar_participante_por_cedula(cedula: str):
+    """
+    Busca un participante por cédula, normalizando antes de la búsqueda.
+    Intenta encontrar el participante con diferentes formatos de cédula.
+    
+    Args:
+        cedula: Cédula en cualquier formato
+        
+    Returns:
+        Participante o None si no se encuentra
+    """
+    from .models import Participante
+    
+    if not cedula:
+        return None
+    
+    cedula_normalizada = normalizar_cedula(cedula)
+    
+    if not cedula_normalizada:
+        return None
+    
+    # Intentar buscar con diferentes formatos
+    formatos_a_buscar = [
+        cedula_normalizada,                    # 19111111
+        f"V-{cedula_normalizada}",             # V-19111111
+        f"V{cedula_normalizada}",              # V19111111
+        f"E-{cedula_normalizada}",             # E-19111111
+        f"E{cedula_normalizada}",              # E19111111
+    ]
+    
+    for formato in formatos_a_buscar:
+        try:
+            return Participante.objects.get(cedula=formato)
+        except Participante.DoesNotExist:
+            continue
+    
+    return None
 
 
 def validar_cedula_venezolana(cedula: str) -> bool:

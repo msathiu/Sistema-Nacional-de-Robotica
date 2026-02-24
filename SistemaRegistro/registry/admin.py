@@ -420,14 +420,7 @@ class ClubAdmin(admin.ModelAdmin):
             "Estado y Fechas",
             {"fields": ("status", "activo", "fecha_creacion", "fecha_aprobacion")},
         ),
-        (
-            "Líneas de Investigación (DEPRECADO)",
-            {
-                "fields": ("linea_1", "linea_2", "linea_3"),
-                "classes": ("collapse",),
-                "description": "Usar el inline de Líneas de Investigación arriba"
-            },
-        ),
+        # NOTA: Campos linea_1, linea_2, linea_3 eliminados - usar ClubLineaInvestigacionInline
     )
 
     actions = ["aprobar_clubes", "rechazar_clubes", "cerrar_clubes", "abrir_clubes"]
@@ -525,8 +518,8 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente", "revision"]):
-            membresia.estado = "aprobada"
+        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
+            membresia.estado = "miembro_activo"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])
             # Guardar el club para actualizar cupos
@@ -540,7 +533,7 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente", "revision"]):
+        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
             membresia.estado = "rechazada"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])

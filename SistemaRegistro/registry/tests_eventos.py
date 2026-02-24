@@ -257,7 +257,7 @@ class InscripcionEventoClubTestCase(TestCase):
         MembresiaClu.objects.create(
             club=self.club,
             institucion=self.inst_miembro,
-            estado="aprobada",
+            estado="miembro_activo",
         )
 
         # Crear evento de club

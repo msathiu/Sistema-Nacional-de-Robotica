@@ -31,7 +31,7 @@ def calificar_club(request, club_id):
     institucion = request.user.userprofile.institution
     
     # Verificar que la institución es miembro del club
-    if not club.membresias.filter(institucion=institucion, estado='aprobada').exists():
+    if not club.membresias.filter(institucion=institucion, estado='miembro_activo').exists():
         messages.error(request, "Solo los miembros del club pueden calificarlo.")
         return redirect('club_detalle', club_id=club_id)
     

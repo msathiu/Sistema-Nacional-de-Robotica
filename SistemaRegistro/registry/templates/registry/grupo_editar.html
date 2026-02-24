@@ -82,8 +82,10 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-                        <input type="text" name="tutor_telefono" class="form-control" 
-                               value="{{ grupo.tutor_telefono|default:'' }}" 
+                        <!-- DEBUG: Mostrar valor para diagnóstico -->
+                        <!-- tutor_telefono="{{ grupo.tutor_telefono }}" | tipo="{{ grupo.tutor_telefono|escapejs }}" -->
+                        <input type="text" name="tutor_telefono" id="tutorTelefono" class="form-control" 
+                               value="{{ grupo.tutor_telefono|default_if_none:'' }}" 
                                {% if grupo.estado_grupo != 'editable' %}readonly{% endif %} required>
                     </div>
                 </div>

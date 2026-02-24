@@ -118,7 +118,7 @@ def notificar_salida_club(membresia, motivo=''):
             mensaje += '\n\n(No se proporcionó motivo específico)'
         
         # Información adicional sobre cupos
-        miembros_actuales = club.membresias.filter(estado="aprobada").count()
+        miembros_actuales = club.membresias.filter(estado="miembro_activo").count()
         mensaje += f'\n\n📊 Miembros actuales: {miembros_actuales}'
         if club.cupo_maximo:
             cupos_disponibles = club.cupo_maximo - miembros_actuales
@@ -157,6 +157,79 @@ def notificar_reenvio_club(club, num_intento):
             destinatario=staff,
             tipo='sistema',
             titulo=f'🔄 Reenvío de Club: {club.nombre} (Intento #{num_intento})',
+            mensaje=mensaje,
+            club=club
+        )
+
+
+def notificar_visto_bueno_fundadora(membresia):
+    """Notifica que una fundadora ha dado visto bueno a una membresía.
+    
+    Args:
+        membresia: Objeto MembresiaClu con el visto bueno
+    """
+    club = membresia.club
+    institucion = membresia.institucion
+    
+    # Notificar al coordinador del club
+    if club.coordinador:
+        mensaje = f'La institución fundadora "{institucion.nombre}" ha dado visto bueno '
+        mensaje += f'para unirse al club "{club.nombre}".'
+        mensaje += f'\n\n📊 La membresía está lista para ser procesada.'
+        
+        crear_notificacion(
+            destinatario=club.coordinador,
+            tipo='membresia_aprobada',
+            titulo=f'✅ Visto Bueno de Fundadora: {institucion.nombre}',
+            mensaje=mensaje,
+            club=club
+        )
+
+
+def notificar_membresia_aprobada(membresia):
+    """Notifica a la institución que su membresía fue aprobada.
+    
+    Args:
+        membresia: Objeto MembresiaClu aprobado
+    """
+    club = membresia.club
+    institucion = membresia.institucion
+    
+    # Notificar al usuario representante de la institución
+    if hasattr(institucion, 'usuario') and institucion.usuario:
+        mensaje = f'Tu solicitud de membresía al club "{club.nombre}" ha sido aprobada.'
+        mensaje += f'\n\n🎉 ¡Bienvenido al club!'
+        
+        crear_notificacion(
+            destinatario=institucion.usuario,
+            tipo='membresia_aprobada',
+            titulo=f'✅ Membresía Aprobada: {club.nombre}',
+            mensaje=mensaje,
+            club=club
+        )
+
+
+def notificar_membresia_rechazada(membresia, motivo=''):
+    """Notifica a la institución que su membresía fue rechazada.
+    
+    Args:
+        membresia: Objeto MembresiaClu rechazado
+        motivo: Motivo del rechazo (opcional)
+    """
+    club = membresia.club
+    institucion = membresia.institucion
+    
+    # Notificar al usuario representante de la institución
+    if hasattr(institucion, 'usuario') and institucion.usuario:
+        mensaje = f'Tu solicitud de membresía al club "{club.nombre}" ha sido rechazada.'
+        
+        if motivo:
+            mensaje += f'\n\n📝 Motivo: {motivo}'
+        
+        crear_notificacion(
+            destinatario=institucion.usuario,
+            tipo='membresia_rechazada',
+            titulo=f'❌ Membresía Rechazada: {club.nombre}',
             mensaje=mensaje,
             club=club
         )

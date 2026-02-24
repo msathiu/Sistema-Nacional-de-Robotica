@@ -123,13 +123,13 @@
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-check-circle"></i> Miembros Activos
-                        <span class="badge bg-light text-dark">{{ membresias_aprobadas.count }}</span>
+                        <span class="badge bg-light text-dark">{{ membresias_activas.count }}</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if membresias_aprobadas %}
+                    {% if membresias_activas %}
                         <div class="row">
-                            {% for membresia in membresias_aprobadas %}
+                            {% for membresia in membresias_activas %}
                             <div class="col-md-6 mb-3">
                                 <div class="card border-success">
                                     <div class="card-body">

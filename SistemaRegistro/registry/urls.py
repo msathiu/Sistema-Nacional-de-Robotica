@@ -1,7 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import views, views_institucional, views_reportes, views_avanzadas, views_eventos
+from . import views, views_institucional, views_reportes, views_avanzadas, views_eventos, views_tutores
 
 urlpatterns = [
     path("", views.registro_publico, name="registro_publico"),
@@ -276,5 +276,41 @@ urlpatterns = [
         "admin/eventos-club/<int:evento_id>/rechazar/",
         views_eventos.rechazar_evento_club,
         name="rechazar_evento_club",
+    ),
+    # Gestión de Tutores
+    path(
+        "tutores/",
+        views_tutores.lista_tutores,
+        name="lista_tutores",
+    ),
+    path(
+        "tutores/crear/",
+        views_tutores.crear_tutor,
+        name="crear_tutor",
+    ),
+    path(
+        "tutores/<uuid:tutor_id>/",
+        views_tutores.detalle_tutor,
+        name="detalle_tutor",
+    ),
+    path(
+        "tutores/<uuid:tutor_id>/editar/",
+        views_tutores.editar_tutor,
+        name="editar_tutor",
+    ),
+    path(
+        "tutores/<uuid:tutor_id>/cambiar-estado/",
+        views_tutores.cambiar_estado_tutor,
+        name="cambiar_estado_tutor",
+    ),
+    path(
+        "grupos/<int:grupo_id>/asignar-tutor/",
+        views_tutores.asignar_tutor_grupo,
+        name="asignar_tutor_grupo",
+    ),
+    path(
+        "grupos/<int:grupo_id>/remover-tutor/<uuid:tutor_id>/",
+        views_tutores.remover_tutor_grupo,
+        name="remover_tutor_grupo",
     ),
 ]

@@ -26,14 +26,17 @@ from registry.models import (
     Estado,
     Evento,
     Grupo,
+    Inscripcion,
     InscripcionGrupoEvento,
     Institucion,
+    IntegranteEquipo,
     Municipio,
     Parroquia,
     Participante,
+    Tutor,
 )
 
-from .decorators import admin_or_owner_required, admin_required, institucional_required
+from .decorators import admin_or_owner_required, admin_required, institucional_required, not_superuser_required
 from .forms import (
     ClubRegistrationForm,
     InstitucionRegistrationForm,
@@ -580,18 +583,21 @@ def custom_login(request):
 @login_required
 def dashboard(request):
     """Router principal del dashboard con soberanía territorial completa"""
+    # Los superusuarios SOLO pueden acceder al admin de Django
+    if request.user.is_superuser:
+        messages.warning(
+            request, 
+            "Como superusuario, solo puedes acceder al panel de administración."
+        )
+        return redirect("/admin/")
+    
     try:
         user_profile = request.user.userprofile
         user_type = user_profile.user_type
         user_estado = user_profile.estado
     except Exception:  # Captura si no existe perfil
-        if request.user.is_superuser:
-            user_type = "superuser"
-            user_estado = None
-            user_profile = None
-        else:
-            messages.error(request, "No tienes un perfil configurado.")
-            return redirect("login")
+        messages.error(request, "No tienes un perfil configurado.")
+        return redirect("login")
 
     roles_administrativos = ["tecnologico", "fed_central", "fed_regional", "superuser"]
 
@@ -632,22 +638,40 @@ def dashboard(request):
 
         total_eventos = Evento.objects.count()
 
+        # Instituciones pendientes de aprobación:
+        # 1. estatus="pendiente" Y activa=False (pendientes de aprobación)
+        # 2. estatus="aprobado" Y activa=False (inconsistencia - deberían estar activas)
         pendientes_aprobacion = Institucion.objects.filter(
-            filtros_inst, activa=False
+            filtros_inst, 
+            eliminado=False
+        ).exclude(
+            estatus="aprobado", activa=True
         ).count()
         cobertura_nacional = (
             Institucion.objects.filter(filtros_inst).values("estado").distinct().count()
         )
 
         # Contar tutores únicos basados en la cédula dentro del ámbito territorial
-        total_tutores = (
-            Grupo.objects.filter(
-                participantes__in=Participante.objects.filter(filtros_part)
+        # Manejo graceful del error cuando la columna no existe en la base de datos
+        try:
+            total_tutores = (
+                Grupo.objects.filter(
+                    participantes__in=Participante.objects.filter(filtros_part)
+                )
+                .values("tutor_cedula")
+                .distinct()
+                .count()
             )
-            .values("tutor_cedula")
-            .distinct()
-            .count()
-        )
+        except Exception as e:
+            # Si la columna no existe, contar tutores desde el nuevo modelo Tutor si está disponible
+            try:
+                from registry.models import Tutor
+                total_tutores = Tutor.objects.filter(
+                    grupos__participantes__in=Participante.objects.filter(filtros_part)
+                ).values("cedula").distinct().count()
+            except ImportError:
+                # Si el modelo Tutor no existe, mostrar 0
+                total_tutores = 0
 
         # 2. CURVA DE INSCRIPCIÓN MENSUAL (Año Actual)
         year_actual = datetime.now().year
@@ -670,31 +694,41 @@ def dashboard(request):
         porcentaje_mujeres = round((mujeres / total_p) * 100)
         porcentaje_hombres = round((hombres / total_p) * 100)
 
-        # 4. ESPECIALIDADES DE CLUBES (Radar Chart)
+        # 4. ESPECIALIDADES DE CLUBES (Radar Chart) - Usando ClubLineaInvestigacion
+        from registry.models import ClubLineaInvestigacion
+        
         clubes_stats = (
-            Club.objects.filter(filtros_club)
-            .values("linea_1")
+            ClubLineaInvestigacion.objects.filter(
+                club__in=Club.objects.filter(filtros_club)
+            )
+            .values("linea__nombre")
             .annotate(total=Count("id"))
             .order_by("-total")
         )
         clubes_labels = [
-            c["linea_1"] if c["linea_1"] else "General" for c in clubes_stats
+            c["linea__nombre"] if c["linea__nombre"] else "General" for c in clubes_stats
         ]
         clubes_data = [c["total"] for c in clubes_stats]
         if not clubes_labels:
             clubes_labels, clubes_data = ["Sin Datos"], [0]
 
         # 5. DISTRIBUCIÓN DE TUTORES POR ESTADO (Barras)
-        tutores_stats = (
-            Participante.objects.filter(filtros_part)
-            .values("estado__nombre")
-            .annotate(total=Count("grupos__tutor_cedula", distinct=True))
-            .order_by("-total")[:5]
-        )
-        tutores_labels = [
-            t["estado__nombre"] for t in tutores_stats if t["estado__nombre"]
-        ]
-        tutores_data = [t["total"] for t in tutores_stats if t["estado__nombre"]]
+        # Manejo graceful del error cuando la columna no existe en la base de datos
+        try:
+            tutores_stats = (
+                Participante.objects.filter(filtros_part)
+                .values("estado__nombre")
+                .annotate(total=Count("grupos__tutor_cedula", distinct=True))
+                .order_by("-total")[:5]
+            )
+            tutores_labels = [
+                t["estado__nombre"] for t in tutores_stats if t["estado__nombre"]
+            ]
+            tutores_data = [t["total"] for t in tutores_stats if t["estado__nombre"]]
+        except Exception as e:
+            # Si la columna no existe, mostrar datos vacíos
+            tutores_labels = []
+            tutores_data = []
 
         # 6. DATOS DEL MAPA
         conteo_db = (
@@ -757,6 +791,7 @@ def dashboard(request):
 
 
 @login_required
+@not_superuser_required
 def dashboard_participante(request):
     """Panel de control exclusivo para participantes"""
 
@@ -789,6 +824,7 @@ def crear_usuario_institucional(request, institucion_id):
 
 
 @login_required
+@not_superuser_required
 def dashboard_institucional(request):
     """
     Vista principal del panel para usuarios institucionales.
@@ -2269,20 +2305,53 @@ def mis_grupos(request):
 
                     # 4. Procesar NUEVOS participantes
                     nuevas_cedulas = request.POST.getlist("nuevo_participante_cedula[]")
+                    
+                    # Importar función de normalización de cédulas
+                    from registry.utils import buscar_participante_por_cedula, normalizar_cedula
 
                     for cedula in nuevas_cedulas:
                         if cedula.strip():
-                            # Buscar si el participante ya existe
-                            try:
-                                participante = Participante.objects.get(
-                                    cedula=cedula.strip()
-                                )
-                            except Participante.DoesNotExist:
-                                # Si no existe, crear uno básico
+                            # Buscar si el participante ya existe (con normalización)
+                            participante = buscar_participante_por_cedula(cedula.strip())
+                            
+                            if not participante:
+                                # Si no existe, crear uno básico con valores por defecto
+                                # Normalizar la cédula para almacenamiento consistente
+                                cedula_normalizada = normalizar_cedula(cedula.strip())
+                                
+                                institucion_usuario = None
+                                if hasattr(usuario, 'institucion') and usuario.institucion:
+                                    institucion_usuario = usuario.institucion
+                                
+                                if not institucion_usuario:
+                                    estado_default, _ = Estado.objects.get_or_create(
+                                        codigo="DC",
+                                        defaults={"nombre": "Distrito Capital"}
+                                    )
+                                    municipio_default, _ = Municipio.objects.get_or_create(
+                                        estado=estado_default,
+                                        nombre="Libertador"
+                                    )
+                                    institucion_usuario, _ = Institucion.objects.get_or_create(
+                                        rif="PENDIENTE001",
+                                        defaults={
+                                            "nombre": "Institución Pendiente",
+                                            "estado": estado_default,
+                                            "municipio": municipio_default,
+                                        }
+                                    )
+                                
                                 participante = Participante.objects.create(
-                                    cedula=cedula.strip(),
-                                    nombre="Pendiente",
-                                    apellido="Pendiente",
+                                    cedula=cedula_normalizada,
+                                    nombres="Pendiente",
+                                    apellidos="Pendiente",
+                                    fecha_nacimiento=date(2000, 1, 1),
+                                    sexo="O",
+                                    email=f"pendiente_{cedula_normalizada}@pendiente.com",
+                                    direccion="Por completar",
+                                    estado=institucion_usuario.estado,
+                                    municipio=institucion_usuario.municipio,
+                                    institucion=institucion_usuario,
                                 )
 
                             # Agregar al grupo
@@ -2313,6 +2382,7 @@ def mis_grupos(request):
             tutor_cedula = request.POST.get("tutor_cedula")
             tutor_nombre = request.POST.get("tutor_nombre")
             tutor_telefono = request.POST.get("tutor_telefono")
+            tutor_id = request.POST.get("tutor_id")  # Nuevo campo para tutor existente
 
             try:
                 with transaction.atomic():
@@ -2346,39 +2416,137 @@ def mis_grupos(request):
                     if not tutor_cedula:
                         tutor_cedula = "0"
 
-                    # 2. Crear el Grupo
+                    # 2. Buscar o crear el Tutor
+                    tutor_instance = None
+                    
+                    # Primero intentar por ID si se proporcionó
+                    if tutor_id:
+                        try:
+                            tutor_instance = Tutor.objects.get(id=tutor_id)
+                        except (Tutor.DoesNotExist, ValueError):
+                            pass
+                    
+                    # Si no hay tutor por ID, buscar por cédula
+                    if not tutor_instance and tutor_cedula and tutor_cedula != "0":
+                        try:
+                            tutor_instance = Tutor.objects.get(cedula__iexact=tutor_cedula)
+                        except Tutor.DoesNotExist:
+                            # Crear tutor si no existe
+                            institucion_usuario = None
+                            if hasattr(usuario, 'institucion') and usuario.institucion:
+                                institucion_usuario = usuario.institucion
+                            
+                            if not institucion_usuario:
+                                estado_default, _ = Estado.objects.get_or_create(
+                                    codigo="DC",
+                                    defaults={"nombre": "Distrito Capital"}
+                                )
+                                municipio_default, _ = Municipio.objects.get_or_create(
+                                    estado=estado_default,
+                                    nombre="Libertador"
+                                )
+                                institucion_usuario, _ = Institucion.objects.get_or_create(
+                                    rif="PENDIENTE001",
+                                    defaults={
+                                        "nombre": "Institución Pendiente",
+                                        "estado": estado_default,
+                                        "municipio": municipio_default,
+                                    }
+                                )
+                            
+                            # Separar nombres y apellidos
+                            nombre_parts = tutor_nombre.split()
+                            nombres = nombre_parts[0] if nombre_parts else "Tutor"
+                            apellidos = " ".join(nombre_parts[1:]) if len(nombre_parts) > 1 else "Sin Apellido"
+                            
+                            tutor_instance = Tutor.objects.create(
+                                cedula=tutor_cedula,
+                                nombres=nombres,
+                                apellidos=apellidos,
+                                telefono=tutor_telefono or "0000000",
+                                email=f"tutor_{tutor_cedula}@pendiente.com",
+                                institucion=institucion_usuario,
+                            )
+
+                    # 3. Crear el Grupo (sin campos legacy de tutor)
                     nuevo_grupo = Grupo.objects.create(
                         nombre=nombre_grupo,
-                        tutor_cedula=tutor_cedula,
-                        tutor_nombre=tutor_nombre,
-                        tutor_telefono=tutor_telefono or "",
                         usuario_creador=usuario,
                     )
+                    
+                    # Asociar tutor mediante relación M2M
+                    if tutor_instance:
+                        nuevo_grupo.tutores.add(tutor_instance)
+                    
+                    # Mantener campos legacy por compatibilidad (se pueden eliminar en el futuro)
+                    nuevo_grupo.tutor_cedula = tutor_cedula
+                    nuevo_grupo.tutor_nombre = tutor_nombre
+                    nuevo_grupo.tutor_telefono = tutor_telefono or ""
+                    nuevo_grupo.save()
 
                     # 3. Procesar y asociar participantes (formato array)
                     cedulas_participantes = request.POST.getlist(
                         "participante_cedulas[]"
                     )
+                    
+                    # Importar función de normalización de cédulas
+                    from registry.utils import buscar_participante_por_cedula, normalizar_cedula
 
                     for cedula in cedulas_participantes:
                         if cedula.strip():
-                            # Buscar si el participante ya existe
-                            try:
-                                participante = Participante.objects.get(
-                                    cedula=cedula.strip()
-                                )
-                            except Participante.DoesNotExist:
-                                # Si no existe, crear uno básico
+                            # Buscar si el participante ya existe (con normalización)
+                            participante = buscar_participante_por_cedula(cedula.strip())
+                            
+                            if not participante:
+                                # Si no existe, crear uno básico con valores por defecto
+                                # Normalizar la cédula para almacenamiento consistente
+                                cedula_normalizada = normalizar_cedula(cedula.strip())
+                                
+                                # Obtener institución del usuario actual si existe
+                                institucion_usuario = None
+                                if hasattr(usuario, 'institucion') and usuario.institucion:
+                                    institucion_usuario = usuario.institucion
+                                
+                                # Si no tiene institución, buscar o crear una por defecto
+                                if not institucion_usuario:
+                                    from registry.models import Estado, Municipio
+                                    estado_default, _ = Estado.objects.get_or_create(
+                                        codigo="DC",
+                                        defaults={"nombre": "Distrito Capital"}
+                                    )
+                                    municipio_default, _ = Municipio.objects.get_or_create(
+                                        estado=estado_default,
+                                        nombre="Libertador"
+                                    )
+                                    institucion_usuario, _ = Institucion.objects.get_or_create(
+                                        rif="PENDIENTE001",
+                                        defaults={
+                                            "nombre": "Institución Pendiente",
+                                            "estado": estado_default,
+                                            "municipio": municipio_default,
+                                        }
+                                    )
+                                
                                 participante = Participante.objects.create(
-                                    cedula=cedula.strip(),
-                                    nombre="Pendiente",
-                                    apellido="Pendiente",
+                                    cedula=cedula_normalizada,
+                                    nombres="Pendiente",
+                                    apellidos="Pendiente",
+                                    fecha_nacimiento=date(2000, 1, 1),  # Fecha por defecto
+                                    sexo="O",  # Otro
+                                    email=f"pendiente_{cedula_normalizada}@pendiente.com",
+                                    direccion="Por completar",
+                                    estado=institucion_usuario.estado,
+                                    municipio=institucion_usuario.municipio,
+                                    institucion=institucion_usuario,
                                 )
 
                             # Agregar al grupo
                             nuevo_grupo.participantes.add(participante)
 
                     # 4. Procesar formato anterior con sufijos (por compatibilidad)
+                    # Importar función de normalización de cédulas
+                    from registry.utils import buscar_participante_por_cedula, normalizar_cedula
+                    
                     for key in request.POST:
                         if key.startswith("p_cedula_"):
                             suffix = key.split("_")[-1]
@@ -2387,20 +2555,47 @@ def mis_grupos(request):
                             apellido = request.POST.get(f"p_apellido_{suffix}")
 
                             if cedula:
-                                try:
-                                    participante = Participante.objects.get(
-                                        cedula=cedula
-                                    )
-                                except Participante.DoesNotExist:
-                                    # Crear con los datos proporcionados
-                                    participante = Participante.objects.create(
-                                        cedula=cedula,
-                                        nombre=nombre or "Pendiente",
-                                        apellido=apellido or "Pendiente",
-                                        fecha_nacimiento=request.POST.get(
-                                            f"p_fecha_{suffix}"
+                                # Buscar participante con normalización de cédula
+                                participante = buscar_participante_por_cedula(cedula)
+                                
+                                if not participante:
+                                    # Crear con los datos proporcionados y valores por defecto
+                                    # Normalizar la cédula para almacenamiento consistente
+                                    cedula_normalizada = normalizar_cedula(cedula)
+                                    
+                                    institucion_usuario = None
+                                    if hasattr(usuario, 'institucion') and usuario.institucion:
+                                        institucion_usuario = usuario.institucion
+                                    
+                                    if not institucion_usuario:
+                                        estado_default, _ = Estado.objects.get_or_create(
+                                            codigo="DC",
+                                            defaults={"nombre": "Distrito Capital"}
                                         )
-                                        or None,
+                                        municipio_default, _ = Municipio.objects.get_or_create(
+                                            estado=estado_default,
+                                            nombre="Libertador"
+                                        )
+                                        institucion_usuario, _ = Institucion.objects.get_or_create(
+                                            rif="PENDIENTE001",
+                                            defaults={
+                                                "nombre": "Institución Pendiente",
+                                                "estado": estado_default,
+                                                "municipio": municipio_default,
+                                            }
+                                        )
+                                    
+                                    participante = Participante.objects.create(
+                                        cedula=cedula_normalizada,
+                                        nombres=nombre or "Pendiente",
+                                        apellidos=apellido or "Pendiente",
+                                        fecha_nacimiento=request.POST.get(f"p_fecha_{suffix}") or date(2000, 1, 1),
+                                        sexo="O",
+                                        email=f"pendiente_{cedula_normalizada}@pendiente.com",
+                                        direccion="Por completar",
+                                        estado=institucion_usuario.estado,
+                                        municipio=institucion_usuario.municipio,
+                                        institucion=institucion_usuario,
                                     )
 
                                 nuevo_grupo.participantes.add(participante)
@@ -2474,15 +2669,15 @@ def dashboard_central(request):
 
     # KPIs Básicos
     total_participantes = Participante.objects.count()
-    total_instituciones = Institution.objects.count()  # Usando el nombre corregido
+    total_instituciones = Institucion.objects.count()  # Corregido: Institution -> Institucion
     total_eventos = Evento.objects.filter(fecha__gte=hoy).count()
 
-    # Cobertura: Ajustado al nombre del campo que vimos en errores anteriores
-    cobertura_nacional = Institution.objects.values("estado").distinct().count()
+    # Cobertura: Cantidad de estados con instituciones registradas
+    cobertura_nacional = Institucion.objects.values("estado").distinct().count()
 
     # 1. Gráfica de Barras: Distribución de Instituciones por Estado
     stats_estados = (
-        Institution.objects.values("estado")
+        Institucion.objects.values("estado")
         .annotate(total=Count("id"))
         .order_by("-total")[:8]
     )
@@ -2491,9 +2686,9 @@ def dashboard_central(request):
     data_estados = [item["total"] for item in stats_estados]
 
     # 2. Gráfica de Línea: Crecimiento por mes
-    # Usamos 'fecha_registro' si existe, si no, puedes usar 'id' para probar
+    # Usamos 'fecha_registro' para obtener el crecimiento mensual
     crecimiento_inst = (
-        Institution.objects.filter(fecha_registro__year=hoy.year)
+        Institucion.objects.filter(fecha_registro__year=hoy.year)
         .values("fecha_registro__month")
         .annotate(total=Count("id"))
         .order_by("fecha_registro__month")
@@ -2721,20 +2916,129 @@ def load_parroquias(request):
 
 
 def api_buscar_participante(request, cedula):
+    """
+    API para buscar personas por cédula.
+    Busca primero en Tutores (para el modal de registro de escuadrón),
+    luego en Participantes.
+    Retorna los datos encontrados para autocompletar formularios.
+
+    La búsqueda es flexible y admite diferentes formatos de ingreso:
+    - V-12345678, V12345678, 12345678
+    - Búsqueda exacta sin importar el formato de almacenamiento
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Normalizar la cédula del input: quitar espacios, guiones, puntos y convertir a mayúsculas
+    cedula_input = cedula.strip().upper().replace('-', '').replace(' ', '').replace('.', '')
+
+    # Validar que la cédula tenga al menos 5 caracteres después de normalizar
+    if len(cedula_input) < 5:
+        return JsonResponse({"encontrado": False, "error": "Cédula muy corta"})
+
+    logger.info(f"Buscando cédula: {cedula} (normalizada: {cedula_input})")
+
+    # 1. PRIMERO: Buscar en el modelo Tutor (prioritario para el modal de escuadrón)
     try:
-        # Buscamos en el modelo Participante por la cédula
-        p = Participante.objects.get(cedula=cedula)
-        return JsonResponse(
-            {
-                "encontrado": True,
-                "id": p.id,
-                "nombre": p.nombres,
-                "apellido": p.apellidos,
-                "edad": p.edad,  # Usando la @property edad que definimos antes
-            }
-        )
-    except Participante.DoesNotExist:
-        return JsonResponse({"encontrado": False})
+        from registry.models import Tutor
+        
+        # Estrategia: buscar con múltiples formatos posibles
+        # Primera búsqueda exacta con la cédula normalizada
+        tutor = Tutor.objects.filter(
+            cedula__iexact=cedula_input,
+            status='activo'
+        ).select_related('institucion').first()
+        
+        logger.info(f"Búsqueda 1 (Tutor exacta {cedula_input}): {tutor}")
+        
+        # Si no encuentra, buscar con la cédula original
+        if not tutor:
+            tutor = Tutor.objects.filter(
+                cedula__iexact=cedula.strip(),
+                status='activo'
+            ).select_related('institucion').first()
+            logger.info(f"Búsqueda 2 (Tutor original {cedula.strip()}): {tutor}")
+        
+        # Si aún no encuentra, buscar usando contains (sin guiones)
+        if not tutor:
+            cedula_sin_guion = cedula_input.replace('-', '')
+            tutor = Tutor.objects.filter(
+                cedula__icontains=cedula_sin_guion,
+                status='activo'
+            ).select_related('institucion').first()
+            logger.info(f"Búsqueda 3 (Tutor contains {cedula_sin_guion}): {tutor}")
+
+        if tutor:
+            logger.info(f"Tutor encontrado: {tutor.get_nombre_completo()}")
+            return JsonResponse(
+                {
+                    "encontrado": True,
+                    "tipo": "tutor",
+                    "id": str(tutor.id),
+                    "nombre": tutor.nombres,
+                    "apellido": tutor.apellidos,
+                    "edad": None,
+                    "telefono": tutor.telefono,
+                    "email": tutor.email,
+                    "institucion": tutor.institucion.nombre if tutor.institucion else None,
+                }
+            )
+    except ImportError:
+        # Si el modelo Tutor no existe, continuar con participantes
+        logger.warning("Modelo Tutor no encontrado")
+        pass
+    except Exception as e:
+        logger.error(f"Error buscando tutor: {e}")
+        pass
+
+    # 2. SEGUNDO: Buscar en el modelo Participante (si no se encontró tutor)
+    try:
+        # Primero intentar búsqueda exacta
+        participante = Participante.objects.filter(
+            cedula__iexact=cedula_input,
+            activo=True
+        ).select_related('institucion').first()
+        
+        logger.info(f"Búsqueda 1 (Participante exacta {cedula_input}): {participante}")
+        
+        # Si no encuentra, intentar con la cédula original (sin normalizar)
+        if not participante:
+            participante = Participante.objects.filter(
+                cedula__iexact=cedula.strip(),
+                activo=True
+            ).select_related('institucion').first()
+            logger.info(f"Búsqueda 2 (Participante original {cedula.strip()}): {participante}")
+        
+        # Si aún no encuentra, buscar usando contains (sin guiones)
+        if not participante:
+            cedula_sin_guion = cedula_input.replace('-', '')
+            participante = Participante.objects.filter(
+                cedula__icontains=cedula_sin_guion,
+                activo=True
+            ).select_related('institucion').first()
+            logger.info(f"Búsqueda 3 (Participante contains {cedula_sin_guion}): {participante}")
+
+        if participante:
+            logger.info(f"Participante encontrado: {participante.nombres} {participante.apellidos}")
+            return JsonResponse(
+                {
+                    "encontrado": True,
+                    "tipo": "participante",
+                    "id": participante.id,
+                    "nombre": participante.nombres,
+                    "apellido": participante.apellidos,
+                    "edad": participante.edad,
+                    "institucion": participante.institucion.nombre if participante.institucion else None,
+                }
+            )
+    except Exception as e:
+        # Log del error para debugging
+        logger.error(f"Error buscando participante: {e}")
+        pass
+
+    # 3. No se encontró en ningún modelo
+    logger.info(f"No se encontró ninguna persona con cédula: {cedula}")
+    return JsonResponse({"encontrado": False})
 
     # ============================================
 

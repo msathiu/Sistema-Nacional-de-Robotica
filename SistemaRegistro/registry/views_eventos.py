@@ -145,7 +145,7 @@ def listar_eventos_club(request, club_id):
     else:
         es_miembro = club.membresias.filter(
             institucion=institucion,
-            estado='aprobada'
+            estado='miembro_activo'
         ).exists()
         
         if es_miembro:
@@ -317,7 +317,7 @@ def detalle_evento_club(request, evento_id):
     if not puede_ver and evento.estado_evento == 'aprobado':
         puede_ver = evento.club_organizador.membresias.filter(
             institucion=institucion,
-            estado='aprobada'
+            estado='miembro_activo'
         ).exists()
     
     if not puede_ver:
@@ -334,7 +334,7 @@ def detalle_evento_club(request, evento_id):
     if evento.puede_inscribirse:
         puede_inscribir = evento.club_organizador.membresias.filter(
             institucion=institucion,
-            estado='aprobada'
+            estado='miembro_activo'
         ).exists()
     
     context = {
@@ -363,9 +363,9 @@ def inscribir_grupo_evento_club(request, evento_id):
     
     institucion = request.user.userprofile.institution
     es_miembro = evento.club_organizador.membresias.filter(
-        institucion=institucion,
-        estado='aprobada'
-    ).exists()
+            institucion=institucion,
+            estado='miembro_activo'
+        ).exists()
     
     if not es_miembro:
         messages.error(

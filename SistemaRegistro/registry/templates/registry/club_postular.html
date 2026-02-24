@@ -29,7 +29,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Institución Creadora:</strong> {{ club.institucion_creadora.nombre_publico }}</p>
-                                <p class="mb-1"><strong>Línea Principal:</strong> {{ club.get_linea_1_display }}</p>
+                                <p class="mb-1"><strong>Líneas de Investigación:</strong> 
+                                    {% if club.lineas_investigacion %}
+                                        {% for linea in club.lineas_investigacion %}
+                                            <span class="badge bg-info me-1">{{ linea }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">No especificadas</span>
+                                    {% endif %}
+                                </p>
                             </div>
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Cupos Disponibles:</strong> {{ club.cupos_disponibles }} / {{ club.cupo_maximo }}</p>
@@ -109,9 +117,9 @@
                     <div class="mb-3">
                         <small class="text-muted d-block fw-bold">Líneas de Investigación</small>
                         <div>
-                            {% if club.linea_1 %}<span class="badge bg-info me-1">{{ club.get_linea_1_display }}</span>{% endif %}
-                            {% if club.linea_2 %}<span class="badge bg-secondary me-1">{{ club.get_linea_2_display }}</span>{% endif %}
-                            {% if club.linea_3 %}<span class="badge bg-dark me-1">{{ club.get_linea_3_display }}</span>{% endif %}
+                            {% for linea in club.lineas_investigacion %}
+                                <span class="badge bg-info me-1 mb-1">{{ linea }}</span>
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}

@@ -108,12 +108,12 @@
             <div class="card border-0 shadow-sm" style="border-radius: 15px;">
                 <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
                     <h5 class="mb-0 text-white fw-bold"><i class="bi bi-people me-2"></i>Instituciones Miembro</h5>
-                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ membresias_aprobadas.count }}</span>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ membresias_activas.count }}</span>
                 </div>
                 <div class="card-body p-4">
-                    {% if membresias_aprobadas %}
+                    {% if membresias_activas %}
                         <div class="list-group list-group-flush">
-                            {% for membresia in membresias_aprobadas %}
+                            {% for membresia in membresias_activas %}
                             <div class="list-group-item px-0 border-0 mb-2">
                                 <div class="d-flex align-items-center p-3 rounded" style="background: #f8fafc;">
                                     <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
