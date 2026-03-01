@@ -10,6 +10,7 @@ from .models import (
     Municipio,
     Parroquia,
     Participante,
+    Tutor,
 )
 
 
@@ -18,6 +19,7 @@ class ParticipanteForm(forms.ModelForm):
         model = Participante
         fields = [
             "cedula",
+            "cedula_escolar",
             "nombres",
             "apellidos",
             "fecha_nacimiento",
@@ -28,8 +30,14 @@ class ParticipanteForm(forms.ModelForm):
             "direccion",
             "estado",
             "municipio",
+            "parroquia",
             "institucion",
+            "grupo",
+            "nombre_escuela",
             "grado_escolar",
+            "titulo_universitario",
+            "campo1",
+            "condicion_tea",
             "nombre_representante",
             "cedula_representante",
             "codigo_area_representante",
@@ -39,12 +47,19 @@ class ParticipanteForm(forms.ModelForm):
         widgets = {
             "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
             "direccion": forms.Textarea(attrs={"rows": 3}),
+            "cedula_escolar": forms.TextInput(attrs={"placeholder": "Cédula escolar (opcional)"}),
+            "nombre_escuela": forms.TextInput(attrs={"placeholder": "Nombre de la escuela/universidad"}),
+            "titulo_universitario": forms.TextInput(attrs={"placeholder": "Título o carrera universitaria"}),
+            "campo1": forms.Textarea(attrs={"rows": 2, "placeholder": "Especifique el nivel/grado si seleccionó 'Otro'"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Configurar querysets para campos de ubicación
         self.fields["municipio"].queryset = Municipio.objects.none()
+        self.fields["parroquia"].queryset = Parroquia.objects.none()
 
+        # Lógica para cargar municipios y parroquias dinámicamente
         if "estado" in self.data:
             try:
                 estado_id = int(self.data.get("estado"))
@@ -57,6 +72,79 @@ class ParticipanteForm(forms.ModelForm):
             self.fields[
                 "municipio"
             ].queryset = self.instance.estado.municipio_set.order_by("nombre")
+
+        # Cargar parroquias según municipio seleccionado
+        if "municipio" in self.data:
+            try:
+                municipio_id = int(self.data.get("municipio"))
+                self.fields["parroquia"].queryset = Parroquia.objects.filter(
+                    municipio_id=municipio_id
+                ).order_by("nombre")
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.municipio:
+            self.fields["parroquia"].queryset = self.instance.municipio.parroquia_set.order_by("nombre")
+
+    def clean(self):
+        """
+        Validaciones de negocio para el formulario de participante.
+
+        Reglas:
+            - Al menos una cédula es obligatoria (personal O escolar)
+            - Si es menor de edad, los datos del representante son obligatorios
+            - El grupo debe pertenecer a la institución seleccionada
+        """
+        cleaned_data = super().clean()
+        cedula = cleaned_data.get("cedula", "").strip()
+        cedula_escolar = cleaned_data.get("cedula_escolar", "").strip()
+
+        # Validación: Al menos una cédula es obligatoria
+        if not cedula and not cedula_escolar:
+            raise ValidationError(
+                "Debe proporcionar al menos una cédula (personal o escolar)."
+            )
+
+        # Validación: Si es menor de edad, representante es obligatorio
+        fecha_nacimiento = cleaned_data.get("fecha_nacimiento")
+        if fecha_nacimiento:
+            from datetime import date
+            today = date.today()
+            edad = (
+                today.year
+                - fecha_nacimiento.year
+                - (
+                    (today.month, today.day)
+                    < (fecha_nacimiento.month, fecha_nacimiento.day)
+                )
+            )
+
+            if edad < 18:
+                # Si es menor de 18, los datos del representante son obligatorios
+                nombre_rep = cleaned_data.get("nombre_representante", "").strip()
+                telefono_rep = cleaned_data.get("numero_telefono_representante", "").strip()
+
+                if not nombre_rep:
+                    self.add_error(
+                        "nombre_representante",
+                        "El nombre del representante es obligatorio para menores de edad."
+                    )
+                if not telefono_rep:
+                    self.add_error(
+                        "numero_telefono_representante",
+                        "El teléfono del representante es obligatorio para menores de edad."
+                    )
+
+        # Validación: El grupo debe pertenecer a la institución seleccionada
+        institucion = cleaned_data.get("institucion")
+        grupo = cleaned_data.get("grupo")
+
+        if grupo and institucion:
+            if grupo.institucion_id != institucion.id:
+                raise ValidationError(
+                    "El grupo seleccionado no pertenece a la institución elegida."
+                )
+
+        return cleaned_data
 
 
 class InstitucionForm(forms.ModelForm):
@@ -149,31 +237,24 @@ class InstitucionForm(forms.ModelForm):
 class ClubForm(forms.ModelForm):
     """Formulario para crear/editar clubes con líneas de investigación dinámicas."""
     
-    # Campos para líneas de investigación (hasta 3)
-    linea_investigacion_1 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
-        required=True,
-        label="Línea de Investigación 1 (Principal)",
-        empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    linea_investigacion_2 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
-        required=False,
-        label="Línea de Investigación 2 (Opcional)",
-        empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    linea_investigacion_3 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre'),
-        required=False,
-        label="Línea de Investigación 3 (Opcional)",
-        empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Obtener queryset de líneas de investigación activas
+        lineas_qs = LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre')
+        
+        # Asignar queryset a cada campo
+        self.fields['linea_investigacion_1'].queryset = lineas_qs
+        self.fields['linea_investigacion_2'].queryset = lineas_qs
+        self.fields['linea_investigacion_3'].queryset = lineas_qs
+        
+        # Verificar si hay líneas disponibles
+        if not lineas_qs.exists():
+            # Si no hay líneas, hacer el campo 1 opcional
+            self.fields['linea_investigacion_1'].required = False
+            self.fields['linea_investigacion_1'].empty_label = "No hay líneas disponibles - Contacte al administrador"
+        else:
+            self.fields['linea_investigacion_1'].empty_label = "Seleccione una línea"
         
         # Si estamos editando, cargar las líneas existentes
         if self.instance and self.instance.pk:
@@ -183,6 +264,29 @@ class ClubForm(forms.ModelForm):
                 field_name = f'linea_investigacion_{idx}'
                 if field_name in self.fields:
                     self.fields[field_name].initial = club_linea.linea
+    
+    # Campos para líneas de investigación (hasta 3)
+    linea_investigacion_1 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=True,
+        label="Línea de Investigación 1 (Principal)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_2 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=False,
+        label="Línea de Investigación 2 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_3 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=False,
+        label="Línea de Investigación 3 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
     class Meta:
         model = Club
@@ -209,54 +313,19 @@ class ClubForm(forms.ModelForm):
             'documento_legal': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Número de documento legal, resolución, etc.'}),
         }
     
-    def save(self, commit=True):
-        club = super().save(commit=False)
-        
-        # Guardar el club primero si commit=True
-        if commit:
-            club.save()
-            
-            # Limpiar líneas existentes
-            club.club_lineas.all().delete()
-            
-            # Guardar nuevas líneas
-            from registry.models import ClubLineaInvestigacion
-            
-            lineas = [
-                (self.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
-                (self.cleaned_data.get('linea_investigacion_2'), 'soporte', 2),
-                (self.cleaned_data.get('linea_investigacion_3'), 'afines', 3),
-            ]
-            
-            for linea, tipo, orden in lineas:
-                if linea:
-                    ClubLineaInvestigacion.objects.create(
-                        club=club,
-                        linea=linea,
-                        tipo_linea=tipo,
-                        orden=orden
-                    )
-        
-        return club
-    
-    def __init__(self, *args, **kwargs):
-        self.instance_id = kwargs.get('instance').pk if kwargs.get('instance') else None
-        super().__init__(*args, **kwargs)
-        
-        # Si estamos editando, cargar líneas existentes
-        if self.instance.pk:
-            lineas = self.instance.club_lineas.select_related('linea').order_by('orden')
-            if lineas.exists():
-                for i, club_linea in enumerate(lineas[:3], start=1):
-                    field_name = f'linea_investigacion_{i}'
-                    if field_name in self.fields:
-                        self.fields[field_name].initial = club_linea.linea
-    
     def clean(self):
         cleaned_data = super().clean()
+        
         linea_1 = cleaned_data.get('linea_investigacion_1')
         linea_2 = cleaned_data.get('linea_investigacion_2')
         linea_3 = cleaned_data.get('linea_investigacion_3')
+        
+        # Validar que la línea 1 sea obligatoria si hay líneas disponibles
+        lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
+        if lineas_disponibles and not linea_1:
+            raise ValidationError({
+                'linea_investigacion_1': 'Debe seleccionar al menos una línea de investigación principal.'
+            })
         
         # Validar que no se repitan líneas
         lineas = [l for l in [linea_1, linea_2, linea_3] if l]
@@ -269,23 +338,160 @@ class ClubForm(forms.ModelForm):
         club = super().save(commit=commit)
         
         if commit:
-            # Eliminar líneas existentes
-            ClubLineaInvestigacion.objects.filter(club=club).delete()
+            # Obtener las líneas del formulario
+            linea_1 = self.cleaned_data.get('linea_investigacion_1')
+            linea_2 = self.cleaned_data.get('linea_investigacion_2')
+            linea_3 = self.cleaned_data.get('linea_investigacion_3')
             
-            # Agregar nuevas líneas
-            lineas_data = [
-                (self.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
-                (self.cleaned_data.get('linea_investigacion_2'), 'soporte', 2),
-                (self.cleaned_data.get('linea_investigacion_3'), 'afines', 3),
-            ]
+            # Verificar si hay líneas disponibles en la base de datos
+            lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
             
-            for linea, tipo, orden in lineas_data:
-                if linea:
-                    ClubLineaInvestigacion.objects.create(
-                        club=club,
-                        linea=linea,
-                        tipo_linea=tipo,
-                        orden=orden
-                    )
+            # Solo guardar líneas si hay líneas disponibles y seleccionadas
+            if lineas_disponibles and (linea_1 or linea_2 or linea_3):
+                # Eliminar líneas existentes
+                ClubLineaInvestigacion.objects.filter(club=club).delete()
+                
+                # Agregar nuevas líneas
+                lineas_data = [
+                    (linea_1, 'principal', 1),
+                    (linea_2, 'soporte', 2),
+                    (linea_3, 'afines', 3),
+                ]
+                
+                for linea, tipo, orden in lineas_data:
+                    if linea:
+                        ClubLineaInvestigacion.objects.create(
+                            club=club,
+                            linea=linea,
+                            tipo_linea=tipo,
+                            orden=orden
+                        )
         
         return club
+
+
+class TutorForm(forms.ModelForm):
+    """
+    Formulario para crear y editar tutores.
+    
+    Incluye todos los campos necesarios para el registro de un tutor
+    asociado a una institución.
+    """
+    
+    class Meta:
+        model = Tutor
+        fields = [
+            'institucion',
+            'nombres',
+            'apellidos',
+            'cedula',
+            'telefono',
+            'email',
+            'profesion',
+            'experiencia',
+            'status',
+        ]
+        widgets = {
+            'institucion': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'nombres': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombres del tutor',
+            }),
+            'apellidos': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Apellidos del tutor',
+            }),
+            'cedula': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 12345678',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]+',
+                'title': 'Ingrese solo números sin letras (V/E)',
+                'autocomplete': 'off',
+                'maxlength': '12',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 0414-1234567',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com',
+            }),
+            'profesion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Profesión o especialidad',
+            }),
+            'experiencia': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Describa la experiencia en robótica...',
+            }),
+            'status': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+        }
+        labels = {
+            'institucion': 'Institución',
+            'nombres': 'Nombres',
+            'apellidos': 'Apellidos',
+            'cedula': 'Cédula de Identidad',
+            'telefono': 'Teléfono de Contacto',
+            'email': 'Correo Electrónico',
+            'profesion': 'Profesión / Especialidad',
+            'experiencia': 'Experiencia en Robótica',
+            'status': 'Estado',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Hacer que institucion no sea requerido si se pasa inicialmente
+        if 'initial' in kwargs and kwargs['initial'].get('institucion'):
+            self.fields['institucion'].required = False
+    
+    def clean_cedula(self):
+        """Validar formato de cédula."""
+        cedula = self.cleaned_data.get('cedula', '')
+        cedula = cedula.upper().strip()
+        
+        # Verificar formato básico
+        if not cedula:
+            raise ValidationError("La cédula es obligatoria.")
+        
+        # Permitir formato V o E seguido de números, o solo números
+        import re
+        if not re.match(r'^[VE]?\d+$', cedula):
+            raise ValidationError(
+                "Formato inválido. Use V12345678, E12345678 o solo números."
+            )
+        
+        # Verificar unicidad (excluyendo la instancia actual en edición)
+        queryset = Tutor.objects.filter(cedula=cedula)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise ValidationError(
+                f"Ya existe un tutor registrado con la cédula '{cedula}'."
+            )
+        
+        return cedula
+    
+    def clean_email(self):
+        """Validar email único."""
+        email = self.cleaned_data.get('email', '')
+        email = email.lower().strip()
+        
+        queryset = Tutor.objects.filter(email=email)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise ValidationError(
+                f"Ya existe un tutor registrado con el correo '{email}'."
+            )
+        
+        return email

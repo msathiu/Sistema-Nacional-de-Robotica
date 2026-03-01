@@ -90,10 +90,11 @@
                                                class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
                                                 <i class="bi bi-send me-1"></i> Enviar
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                            <a href="{% url 'eliminar_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-danger rounded-circle"
+                                               title="Eliminar club">
                                                 <i class="bi bi-trash"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     {% elif club.status == 'rechazado' %}
                                         <div class="d-flex justify-content-center gap-2">
@@ -105,10 +106,11 @@
                                                class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">
                                                 <i class="bi bi-arrow-repeat me-1"></i> Corregir
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                            <a href="{% url 'eliminar_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-danger rounded-circle"
+                                               title="Eliminar club">
                                                 <i class="bi bi-trash"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     {% elif club.status == 'pendiente' or club.status == 'en_revision' %}
                                         <div class="d-flex justify-content-center gap-2">
@@ -128,10 +130,11 @@
                                                class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
                                                 <i class="bi bi-clock-history me-1"></i> Historial
                                             </a>
-                                            <button class="btn btn-sm btn-outline-warning rounded-circle" 
-                                                    onclick="confirmarEliminar('{{ club.id }}', '{{ club.nombre|escapejs }}')">
+                                            <a href="{% url 'eliminar_club' club.id %}" 
+                                               class="btn btn-sm btn-outline-danger rounded-circle"
+                                               title="Solicitar eliminación">
                                                 <i class="bi bi-trash"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     {% endif %}
                                 </td>
@@ -291,11 +294,4 @@
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
 </style>
 
-<script>
-function confirmarEliminar(clubId, clubNombre) {
-    if(confirm(`¿Estás seguro de eliminar el club "${clubNombre}"?`)) {
-        window.location.href = `/clubes/eliminar/${clubId}/`;
-    }
-}
-</script>
 {% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dar Visto Bueno a Membresía{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Dar Visto Bueno a Membresía</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Información:</strong> Al dar visto bueno, la solicitud será enviada al Ente Rector para su aprobación final.
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Información de la Solicitud</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="30%">Club:</th>
+                                <td>{{ membresia.club.nombre }}</td>
+                            </tr>
+                            <tr>
+                                <th>Institución Solicitante:</th>
+                                <td>{{ membresia.institucion.nombre }}</td>
+                            </tr>
+                            <tr>
+                                <th>Fecha de Solicitud:</th>
+                                <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tipo de Línea:</th>
+                                <td>{{ membresia.get_tipo_linea_display|default:"No especificado" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Representante Legal:</th>
+                                <td>{{ membresia.representante_legal|default:"No especificado" }}</td>
+                            </tr>
+                            {% if membresia.carta_intencion %}
+                            <tr>
+                                <th>Carta de Intención:</th>
+                                <td>{{ membresia.carta_intencion|truncatewords:30 }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">
+                                <strong>Observaciones (opcional)</strong>
+                            </label>
+                            <textarea 
+                                name="observaciones" 
+                                id="observaciones" 
+                                class="form-control" 
+                                rows="4" 
+                                placeholder="Agrega comentarios sobre la solicitud..."
+                            ></textarea>
+                            <small class="text-muted">Estas observaciones serán visibles para el Ente Rector.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Dar Visto Bueno
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

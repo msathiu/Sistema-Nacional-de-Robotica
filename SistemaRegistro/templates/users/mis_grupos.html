@@ -692,16 +692,34 @@
             .then(data => {
                 const display = document.getElementById('tutor_info_display');
                 if (data.encontrado) {
-                    if (data.edad < 18) {
+                    // Verificar si es un participante menor de edad (no aplica para tutores)
+                    if (data.tipo === 'participante' && data.edad !== null && data.edad < 18) {
                         mostrarError('El tutor debe ser mayor de edad');
                         display.classList.add('d-none');
                         return;
                     }
                     display.classList.remove('d-none');
                     document.getElementById('alertaError').classList.add('d-none');
-                    document.getElementById('tutor_full_name').innerText = `${data.nombre} ${data.apellido}`.toUpperCase();
-                    document.getElementById('tutor_meta').innerText = `C.I: ${cedula} • ${data.edad} años`;
-                    document.getElementById('tutor_nombre_hidden').value = `${data.nombre} ${data.apellido}`;
+                    
+                    // Construir el nombre completo
+                    const nombreCompleto = `${data.nombre} ${data.apellido}`.toUpperCase();
+                    document.getElementById('tutor_full_name').innerText = nombreCompleto;
+                    
+                    // Mostrar información adicional según el tipo
+                    let metaText = `C.I: ${cedula}`;
+                    if (data.tipo === 'participante' && data.edad !== null) {
+                        metaText += ` • ${data.edad} años`;
+                    } else if (data.tipo === 'tutor') {
+                        // Para tutores, mostrar institución si está disponible
+                        if (data.institucion) {
+                            metaText += ` • ${data.institucion}`;
+                        }
+                        metaText += ' • Tutor registrado';
+                    }
+                    document.getElementById('tutor_meta').innerText = metaText;
+                    
+                    // Guardar datos en campos ocultos
+                    document.getElementById('tutor_nombre_hidden').value = nombreCompleto;
                     document.getElementById('tutor_cedula_hidden').value = cedula;
                 } else {
                     mostrarError('Tutor no encontrado');

@@ -8,16 +8,17 @@
             <h4 class="mb-0"><i class="bi bi-check-circle"></i> Aprobar Eliminación de Club</h4>
         </div>
         <div class="card-body">
-            <h5>{{ solicitud.club.nombre }}</h5>
+            <h5>{{ club.nombre }}</h5>
             
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <p><strong>Institución:</strong> {{ solicitud.institucion_solicitante.nombre }}</p>
+                    <p><strong>Institución Solicitante:</strong> {{ solicitud.institucion_solicitante.nombre }}</p>
                     <p><strong>Fecha Solicitud:</strong> {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Estado Club:</strong> <span class="badge bg-secondary">{{ solicitud.club.get_status_display }}</span></p>
-                    <p><strong>Cupos:</strong> {{ solicitud.club.cupos_disponibles }}/{{ solicitud.club.cupo_maximo }}</p>
+                    <p><strong>Estado Club:</strong> <span class="badge bg-secondary">{{ club.get_status_display }}</span></p>
+                    <p><strong>Miembros Activos:</strong> {{ club.membresias.count }}</p>
+                    <p><strong>Cupos:</strong> {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}</p>
                 </div>
             </div>
             
@@ -26,14 +27,74 @@
                 <p class="mb-0 mt-2">{{ solicitud.motivo }}</p>
             </div>
             
-            <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle"></i>
-                <strong>Atención:</strong> Al aprobar esta solicitud, el club será marcado como eliminado (soft delete). 
-                Se mantendrá en la base de datos para auditoría pero no será visible para los usuarios.
+            {% if tiene_otros_miembros %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Este club tiene otros miembros activos.</strong>
+                <p class="mb-0 mt-2">Puedes elegir entre:</p>
+                <ul class="mb-0 mt-2">
+                    <li><strong>Transferir propiedad:</strong> Nombrar a otro miembro como nuevo propietario del club</li>
+                    <li><strong>Eliminar club:</strong> Marcar el club como eliminado (soft delete)</li>
+                </ul>
             </div>
             
             <form method="post">
                 {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Acción a realizar:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="accion" id="accionTransferir" value="transferir" checked>
+                        <label class="form-check-label" for="accionTransferir">
+                            <i class="bi bi-person-badge"></i> <strong>Transferir propiedad</strong> - Nombrar nuevo propietario
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="accion" id="accionEliminar" value="eliminar">
+                        <label class="form-check-label" for="accionEliminar">
+                            <i class="bi bi-trash"></i> <strong>Eliminar club</strong> - Enviar a papelera
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="seccionNuevoPropietario" class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6><i class="bi bi-person-check"></i> Seleccionar Nuevo Propietario</h6>
+                        <p class="text-muted small">El nuevo propietario tendrá acceso completo a la gestión del club.</p>
+                        
+                        <div class="mb-3">
+                            <label for="nuevo_propietario" class="form-label">Institución miembro:</label>
+                            <select name="nuevo_propietario" id="nuevo_propietario" class="form-select" required>
+                                <option value="">-- Seleccionar --</option>
+                                {% for membresia in otros_miembros %}
+                                <option value="{{ membresia.id }}">
+                                    {{ membresia.institucion.nombre }} 
+                                    ({{ membresia.tipo_linea|default:"Sin línea" }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Procesar Solicitud
+                </button>
+                <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </form>
+            
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Atención:</strong> Este club no tiene otros miembros activos.
+                Al aprobar esta solicitud, el club será marcado como eliminado (soft delete).
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="eliminar">
                 <p class="mb-4">¿Estás seguro de que deseas aprobar la eliminación de este club?</p>
                 <button type="submit" class="btn btn-success">
                     <i class="bi bi-check-circle"></i> Aprobar Eliminación
@@ -42,7 +103,33 @@
                     <i class="bi bi-arrow-left"></i> Volver
                 </a>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const accionTransferir = document.getElementById('accionTransferir');
+    const accionEliminar = document.getElementById('accionEliminar');
+    const seccionPropietario = document.getElementById('seccionNuevoPropietario');
+    const selectPropietario = document.getElementById('nuevo_propietario');
+    
+    function toggleSeccion() {
+        if (accionTransferir && accionTransferir.checked) {
+            seccionPropietario.style.display = 'block';
+            selectPropietario.required = true;
+        } else {
+            seccionPropietario.style.display = 'none';
+            selectPropietario.required = false;
+        }
+    }
+    
+    if (accionTransferir && accionEliminar) {
+        accionTransferir.addEventListener('change', toggleSeccion);
+        accionEliminar.addEventListener('change', toggleSeccion);
+        toggleSeccion();
+    }
+});
+</script>
 {% endblock %}

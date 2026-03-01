@@ -6,9 +6,9 @@ import pandas as pd
 from django.apps import apps
 from django.contrib import messages
 from django.contrib.admin.models import LogEntry
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Q
@@ -33,7 +33,7 @@ from registry.models import (
     Participante,
 )
 
-from .decorators import admin_or_owner_required, admin_required, institucional_required
+from .decorators import admin_or_owner_required, admin_required, institucional_required, not_superuser_required
 from .forms import (
     ClubRegistrationForm,
     InstitucionRegistrationForm,
@@ -239,29 +239,23 @@ def crear_participante(request):
     if request.method == "POST":
         participante_form = ParticipanteRegistrationForm(request.POST)
 
-        # Extracción de campos que no están en el form o requieren manejo manual
-        email = request.POST.get("email")
-        nacionalidad = request.POST.get("nacionalidad", "V")
-        cedula_num = request.POST.get("cedula")
-
-        # Códigos de área
-        cod_area_part = request.POST.get("codigo_area")
-        cod_area_rep = request.POST.get("codigo_area_representante")
-
-        profesion = request.POST.get("profesion", "")
-        parroquia_id = request.POST.get("parroquia")
-
         if participante_form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Formatear Cédula
-                    cedula_completa = f"{nacionalidad}-{cedula_num}"
+                    # 1. Determinar cédula principal para el username
+                    cedula_personal = participante_form.cleaned_data.get("cedula_personal")
+                    cedula_escolar = participante_form.cleaned_data.get("cedula_escolar")
+                    
+                    if cedula_personal:
+                        username = f"V-{cedula_personal}"
+                    else:
+                        username = f"E-{cedula_escolar}"
 
                     # Verificar si ya existe un usuario con esa cédula
-                    if User.objects.filter(username=cedula_completa).exists():
+                    if User.objects.filter(username=username).exists():
                         messages.error(
                             request,
-                            f"Ya existe un registro con la cédula {cedula_completa}",
+                            f"Ya existe un usuario con el identificador {username}",
                         )
                         # Recalcular municipios si hay error y se seleccionó un estado
                         estado_error_id = request.POST.get("estado")
@@ -301,11 +295,11 @@ def crear_participante(request):
                         for _ in range(12)
                     )
                     user = User.objects.create_user(
-                        username=cedula_completa,
-                        email=email,
+                        username=username,
+                        email=participante_form.cleaned_data.get("email"),
                         password=password_aleatoria,
                     )
-
+                    
                     # 3. Crear perfil de usuario
                     UserProfile.objects.get_or_create(
                         user=user, defaults={"user_type": "participante"}
@@ -314,8 +308,6 @@ def crear_participante(request):
                     # 4. Preparar Participante
                     participante = participante_form.save(commit=False)
                     participante.user = user
-                    participante.cedula = cedula_completa
-                    participante.email = email
 
                     # Asignar institución según el tipo de usuario
                     if user_type == "institucional" and institucion:
@@ -335,30 +327,6 @@ def crear_participante(request):
                             participante.estado = estado_inst
                     else:
                         participante.estado = estado_inst
-
-                    # Teléfono del participante
-                    if cod_area_part:
-                        participante.codigo_area = cod_area_part
-
-                    # Cédula del representante
-                    rep_nac = request.POST.get("rep_nacionalidad", "V")
-                    if participante.cedula_representante:
-                        participante.cedula_representante = (
-                            f"{rep_nac}-{participante.cedula_representante}"
-                        )
-
-                    # Teléfono del representante
-                    if cod_area_rep:
-                        participante.codigo_area_representante = cod_area_rep
-
-                    # Parroquia
-                    if parroquia_id:
-                        try:
-                            participante.parroquia = Parroquia.objects.get(
-                                id=parroquia_id
-                            )
-                        except:
-                            pass
 
                     # 5. Guardar participante
                     participante.save()
@@ -580,18 +548,21 @@ def custom_login(request):
 @login_required
 def dashboard(request):
     """Router principal del dashboard con soberanía territorial completa"""
+    # Los superusuarios SOLO pueden acceder al admin de Django
+    if request.user.is_superuser:
+        messages.warning(
+            request, 
+            "Como superusuario, solo puedes acceder al panel de administración."
+        )
+        return redirect("/admin/")
+    
     try:
         user_profile = request.user.userprofile
         user_type = user_profile.user_type
         user_estado = user_profile.estado
     except Exception:  # Captura si no existe perfil
-        if request.user.is_superuser:
-            user_type = "superuser"
-            user_estado = None
-            user_profile = None
-        else:
-            messages.error(request, "No tienes un perfil configurado.")
-            return redirect("login")
+        messages.error(request, "No tienes un perfil configurado.")
+        return redirect("login")
 
     roles_administrativos = ["tecnologico", "fed_central", "fed_regional", "superuser"]
 
@@ -632,22 +603,40 @@ def dashboard(request):
 
         total_eventos = Evento.objects.count()
 
+        # Instituciones pendientes de aprobación:
+        # 1. estatus="pendiente" Y activa=False (pendientes de aprobación)
+        # 2. estatus="aprobado" Y activa=False (inconsistencia - deberían estar activas)
         pendientes_aprobacion = Institucion.objects.filter(
-            filtros_inst, activa=False
+            filtros_inst, 
+            eliminado=False
+        ).exclude(
+            estatus="aprobado", activa=True
         ).count()
         cobertura_nacional = (
             Institucion.objects.filter(filtros_inst).values("estado").distinct().count()
         )
 
         # Contar tutores únicos basados en la cédula dentro del ámbito territorial
-        total_tutores = (
-            Grupo.objects.filter(
-                participantes__in=Participante.objects.filter(filtros_part)
+        # Manejo graceful del error cuando la columna no existe en la base de datos
+        try:
+            total_tutores = (
+                Grupo.objects.filter(
+                    participantes__in=Participante.objects.filter(filtros_part)
+                )
+                .values("tutor_cedula")
+                .distinct()
+                .count()
             )
-            .values("tutor_cedula")
-            .distinct()
-            .count()
-        )
+        except Exception as e:
+            # Si la columna no existe, contar tutores desde el nuevo modelo Tutor si está disponible
+            try:
+                from registry.models import Tutor
+                total_tutores = Tutor.objects.filter(
+                    grupos__participantes__in=Participante.objects.filter(filtros_part)
+                ).values("cedula").distinct().count()
+            except ImportError:
+                # Si el modelo Tutor no existe, mostrar 0
+                total_tutores = 0
 
         # 2. CURVA DE INSCRIPCIÓN MENSUAL (Año Actual)
         year_actual = datetime.now().year
@@ -670,31 +659,41 @@ def dashboard(request):
         porcentaje_mujeres = round((mujeres / total_p) * 100)
         porcentaje_hombres = round((hombres / total_p) * 100)
 
-        # 4. ESPECIALIDADES DE CLUBES (Radar Chart)
+        # 4. ESPECIALIDADES DE CLUBES (Radar Chart) - Usando ClubLineaInvestigacion
+        from registry.models import ClubLineaInvestigacion
+        
         clubes_stats = (
-            Club.objects.filter(filtros_club)
-            .values("linea_1")
+            ClubLineaInvestigacion.objects.filter(
+                club__in=Club.objects.filter(filtros_club)
+            )
+            .values("linea__nombre")
             .annotate(total=Count("id"))
             .order_by("-total")
         )
         clubes_labels = [
-            c["linea_1"] if c["linea_1"] else "General" for c in clubes_stats
+            c["linea__nombre"] if c["linea__nombre"] else "General" for c in clubes_stats
         ]
         clubes_data = [c["total"] for c in clubes_stats]
         if not clubes_labels:
             clubes_labels, clubes_data = ["Sin Datos"], [0]
 
         # 5. DISTRIBUCIÓN DE TUTORES POR ESTADO (Barras)
-        tutores_stats = (
-            Participante.objects.filter(filtros_part)
-            .values("estado__nombre")
-            .annotate(total=Count("grupos__tutor_cedula", distinct=True))
-            .order_by("-total")[:5]
-        )
-        tutores_labels = [
-            t["estado__nombre"] for t in tutores_stats if t["estado__nombre"]
-        ]
-        tutores_data = [t["total"] for t in tutores_stats if t["estado__nombre"]]
+        # Manejo graceful del error cuando la columna no existe en la base de datos
+        try:
+            tutores_stats = (
+                Participante.objects.filter(filtros_part)
+                .values("estado__nombre")
+                .annotate(total=Count("grupos__tutor_cedula", distinct=True))
+                .order_by("-total")[:5]
+            )
+            tutores_labels = [
+                t["estado__nombre"] for t in tutores_stats if t["estado__nombre"]
+            ]
+            tutores_data = [t["total"] for t in tutores_stats if t["estado__nombre"]]
+        except Exception as e:
+            # Si la columna no existe, mostrar datos vacíos
+            tutores_labels = []
+            tutores_data = []
 
         # 6. DATOS DEL MAPA
         conteo_db = (
@@ -757,6 +756,7 @@ def dashboard(request):
 
 
 @login_required
+@not_superuser_required
 def dashboard_participante(request):
     """Panel de control exclusivo para participantes"""
 
@@ -789,6 +789,7 @@ def crear_usuario_institucional(request, institucion_id):
 
 
 @login_required
+@not_superuser_required
 def dashboard_institucional(request):
     """
     Vista principal del panel para usuarios institucionales.
@@ -1047,6 +1048,7 @@ def registrar_institucion(request):
         "es_federacion": es_federacion,
         "es_central": es_central,
         "es_regional": es_regional,
+        "es_fed_central": es_central,  # Nueva variable para diseño especial
         "estado_fijo_id": perfil_admin.estado.id
         if es_regional and perfil_admin.estado
         else None,
@@ -2173,6 +2175,22 @@ def mi_perfil_federacion_logic(request, perfil):
 @login_required
 def mi_perfil_institucional(request):
     usuario = request.user
+    open_password_modal = False
+    password_form = PasswordChangeForm(user=usuario)
+
+    if request.method == "POST" and request.POST.get("form_type") == "password_change":
+        password_form = PasswordChangeForm(user=usuario, data=request.POST)
+        if password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Clave actualizada correctamente.")
+            return redirect("mi_perfil_institucional")
+
+        open_password_modal = True
+        messages.error(
+            request,
+            "No se pudo actualizar la clave. Verifica los campos e intenta nuevamente.",
+        )
 
     # Intentamos obtener la institución a través del perfil del usuario
     # Según tu error, 'userprofile' es una opción válida en Institucion
@@ -2186,6 +2204,8 @@ def mi_perfil_institucional(request):
         "usuario": usuario,
         "institucion": institucion,
         "fecha_unido": usuario.date_joined,
+        "password_form": password_form,
+        "open_password_modal": open_password_modal,
     }
     return render(request, "users/mi_perfil.html", context)
 
@@ -2629,32 +2649,52 @@ def gestionar_usuarios_sedes(request):
 def mi_perfil_federacion(request):
     perfil = request.user.userprofile
     user = request.user
+    open_password_modal = False
+    password_form = PasswordChangeForm(user=user)
 
     if request.method == "POST":
-        # Procesar actualización de datos básicos
-        user.first_name = request.POST.get("first_name")
-        user.last_name = request.POST.get("last_name")
-        user.email = request.POST.get("email")
+        form_type = request.POST.get("form_type")
 
-        # Actualizar datos del perfil
-        perfil.phone = request.POST.get("telefono")
+        if form_type == "password_change":
+            password_form = PasswordChangeForm(user=user, data=request.POST)
+            if password_form.is_valid():
+                updated_user = password_form.save()
+                update_session_auth_hash(request, updated_user)
+                messages.success(request, "Contrasena actualizada correctamente.")
+                return redirect("mi_perfil_federacion")
 
-        # Solo el superusuario o central puede cambiarse de estado
-        if perfil.user_type in ["fed_central", "superuser"]:
-            nuevo_estado_id = request.POST.get("estado")
-            if nuevo_estado_id:
-                perfil.estado = Estado.objects.get(id=nuevo_estado_id)
+            open_password_modal = True
+            messages.error(
+                request,
+                "No se pudo actualizar la contrasena. Revisa los campos e intenta nuevamente.",
+            )
+        else:
+            # Procesar actualizacion de datos basicos
+            user.first_name = request.POST.get("first_name")
+            user.last_name = request.POST.get("last_name")
+            user.email = request.POST.get("email")
 
-        user.save()
-        perfil.save()
+            # Actualizar datos del perfil
+            perfil.phone = request.POST.get("telefono")
 
-        messages.success(request, "Perfil actualizado correctamente.")
-        return redirect("mi_perfil_federacion")
+            # Solo el superusuario o central puede cambiarse de estado
+            if perfil.user_type in ["fed_central", "superuser"]:
+                nuevo_estado_id = request.POST.get("estado")
+                if nuevo_estado_id:
+                    perfil.estado = Estado.objects.get(id=nuevo_estado_id)
+
+            user.save()
+            perfil.save()
+
+            messages.success(request, "Perfil actualizado correctamente.")
+            return redirect("mi_perfil_federacion")
 
     context = {
         "perfil": perfil,
         "user": user,
         "estados": Estado.objects.all(),
+        "password_form": password_form,
+        "open_password_modal": open_password_modal,
         # Para el menú lateral
         "es_central": perfil.user_type in ["fed_central", "superuser"],
         "es_regional": perfil.user_type == "fed_regional",
@@ -2721,12 +2761,18 @@ def load_parroquias(request):
 
 
 def api_buscar_participante(request, cedula):
+    """
+    API para buscar personas por cédula.
+    Busca primero en Participantes, luego en Tutores.
+    Retorna los datos encontrados para autocompletar formularios.
+    """
+    # 1. Buscar en el modelo Participante
     try:
-        # Buscamos en el modelo Participante por la cédula
         p = Participante.objects.get(cedula=cedula)
         return JsonResponse(
             {
                 "encontrado": True,
+                "tipo": "participante",
                 "id": p.id,
                 "nombre": p.nombres,
                 "apellido": p.apellidos,
@@ -2734,6 +2780,29 @@ def api_buscar_participante(request, cedula):
             }
         )
     except Participante.DoesNotExist:
+        pass
+    
+    # 2. Buscar en el modelo Tutor (si no se encontró en Participante)
+    try:
+        from registry.models import Tutor
+        t = Tutor.objects.get(cedula=cedula, status='activo')
+        return JsonResponse(
+            {
+                "encontrado": True,
+                "tipo": "tutor",
+                "id": str(t.id),
+                "nombre": t.nombres,
+                "apellido": t.apellidos,
+                "edad": None,  # Tutor no tiene campo de fecha de nacimiento
+                "telefono": t.telefono,
+                "email": t.email,
+                "institucion": t.institucion.nombre if t.institucion else None,
+            }
+        )
+    except Tutor.DoesNotExist:
+        return JsonResponse({"encontrado": False})
+    except ImportError:
+        # Si el modelo Tutor no existe, retornar no encontrado
         return JsonResponse({"encontrado": False})
 
     # ============================================
@@ -2915,3 +2984,54 @@ def load_parroquias(request):
         data = [{"id": p.id, "nombre": p.nombre} for p in parroquias]
         return JsonResponse(data, safe=False)
     return JsonResponse([], safe=False)
+
+
+@login_required
+def detalle_institucion_api(request, institucion_id):
+    """
+    Vista API para obtener detalles completos de una institución (AJAX)
+    """
+    from django.http import JsonResponse
+    
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
+    
+    # Verificar permisos
+    roles_admin = ["fed_central", "fed_regional", "superuser", "tecnologico"]
+    if user_type not in roles_admin:
+        return JsonResponse({"error": "No tienes permisos"}, status=403)
+    
+    try:
+        institucion = Institucion.objects.select_related(
+            "estado", "municipio", "parroquia"
+        ).get(id=institucion_id)
+        
+        # Verificar territorio para regionales
+        if user_type == "fed_regional" and institucion.estado != perfil.estado:
+            return JsonResponse({"error": "No tienes permiso sobre esta región"}, status=403)
+        
+        # Construir respuesta
+        data = {
+            "nombre": institucion.nombre,
+            "codigo": institucion.codigo,
+            "rif": institucion.rif,
+            "email": institucion.email,
+            "telefono": institucion.telefono,
+            "direccion": institucion.direccion,
+            "estado": institucion.estado.nombre if institucion.estado else None,
+            "municipio": institucion.municipio.nombre if institucion.municipio else None,
+            "parroquia": institucion.parroquia.nombre if institucion.parroquia else None,
+            "tipo_institucion": institucion.get_tipo_institucion_display() if hasattr(institucion, 'get_tipo_institucion_display') else institucion.tipo_institucion,
+            "naturaleza": institucion.get_naturaleza_display() if hasattr(institucion, 'get_naturaleza_display') else getattr(institucion, 'naturaleza', None),
+            "codigo_mppe": getattr(institucion, 'codigo_mppe', None),
+            "estatus": institucion.estatus,
+            "activa": institucion.activa,
+            "fecha_registro": institucion.fecha_registro.strftime("%Y-%m-%d %H:%M") if institucion.fecha_registro else None,
+        }
+        
+        return JsonResponse(data)
+        
+    except Institucion.DoesNotExist:
+        return JsonResponse({"error": "Institución no encontrada"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

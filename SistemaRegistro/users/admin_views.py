@@ -3,9 +3,10 @@ from django.shortcuts import render
 from django.db.models import Count
 from registry.models import Institucion, Participante, Evento, Grupo, Club
 from users.models import UserProfile
+from users.decorators import admin_access_required
 
 
-@staff_member_required
+@admin_access_required
 def admin_dashboard(request):
     """Dashboard personalizado para el admin de Django"""
     
@@ -13,7 +14,8 @@ def admin_dashboard(request):
     context = {
         'total_instituciones': Institucion.objects.count(),
         'instituciones_activas': Institucion.objects.filter(activa=True).count(),
-        'instituciones_pendientes': Institucion.objects.filter(activa=False, eliminado=False).count(),
+        # Instituciones pendientes de aprobación: activa=False, eliminado=False, estatus="pendiente"
+        'instituciones_pendientes': Institucion.objects.filter(activa=False, eliminado=False, estatus="pendiente").count(),
         'total_participantes': Participante.objects.count(),
         'total_eventos': Evento.objects.count(),
         'total_grupos': Grupo.objects.count(),

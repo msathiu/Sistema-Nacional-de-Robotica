@@ -1,4 +1,4 @@
-{% extends 'users/base_dashboard.html' %}
+﻿{% extends 'users/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Perfil Federación - RNR{% endblock %}
@@ -97,6 +97,7 @@
                 <div class="card-body p-4 pt-0">
                     <form method="POST" action="{% url 'mi_perfil_federacion' %}">
                         {% csrf_token %}
+                        <input type="hidden" name="form_type" value="profile_update">
                         <div class="row g-4">
                             <div class="col-md-6 tech-field">
                                 <label>Nombre(s)</label>
@@ -129,7 +130,8 @@
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" 
                          style="border-left:5px solid #8b5cf6; border-radius:15px;"
-                         data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                         data-bs-toggle="modal" data-bs-target="#changePasswordModal"
+                         role="button" tabindex="0" aria-controls="changePasswordModal">
                         <div class="d-flex align-items-center">
                             <div class="bg-purple-subtle p-2 rounded-2 me-3" style="background:#f3e8ff">
                                 <i class="bi bi-shield-lock-fill" style="color:#8b5cf6"></i>
@@ -171,24 +173,55 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form id="passwordChangeForm" method="POST" action="{% url 'password_change' %}">
+                <form id="passwordChangeForm" method="POST" action="{% url 'mi_perfil_federacion' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="form_type" value="password_change">
                     
                     <div class="mb-4 tech-field">
                         <label>Contraseña Actual</label>
-                        <input type="password" name="old_password" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
+                        <div class="password-field-wrap">
+                            <input type="password" id="fedOldPasswordField" name="old_password" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="fedOldPasswordField" aria-label="Mostrar u ocultar contraseña actual">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if password_form.old_password.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.old_password.errors|striptags }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="mb-4 tech-field">
                         <label>Nueva Contraseña</label>
-                        <input type="password" name="new_password1" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
-                        <div class="form-text small opacity-75">Mínimo 8 caracteres, letras y números.</div>
+                        <div class="password-field-wrap">
+                            <input type="password" id="fedNewPassword1Field" name="new_password1" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="fedNewPassword1Field" aria-label="Mostrar u ocultar nueva contraseña">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small opacity-75">Debe cumplir las validaciones de seguridad del sistema.</div>
+                        {% if password_form.new_password1.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.new_password1.errors|striptags }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="mb-4 tech-field">
                         <label>Confirmar Nueva Contraseña</label>
-                        <input type="password" name="new_password2" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold" required>
+                        <div class="password-field-wrap">
+                            <input type="password" id="fedNewPassword2Field" name="new_password2" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="fedNewPassword2Field" aria-label="Mostrar u ocultar confirmación de contraseña">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if password_form.new_password2.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.new_password2.errors|striptags }}</div>
+                        {% endif %}
                     </div>
+
+                    {% if password_form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">
+                            {{ password_form.non_field_errors|striptags }}
+                        </div>
+                    {% endif %}
 
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
@@ -229,9 +262,63 @@
     }
 
     .form-control-sm { padding: 0.5rem 0; }
+    .password-field-wrap { position: relative; }
+    .toggle-pass-btn {
+        position: absolute;
+        top: 50%;
+        right: 0.25rem;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        padding: 0.25rem 0.4rem;
+        line-height: 1;
+    }
+    .toggle-pass-btn:hover { color: #0b2c6d; }
 
     /* Estilo adicional para el Modal */
     .modal-backdrop { background-color: #051636; }
     .modal-backdrop.show { opacity: 0.8; }
 </style>
+{% if open_password_modal %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('changePasswordModal');
+    if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+});
+</script>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var trigger = document.querySelector('[data-bs-target="#changePasswordModal"]');
+    var modalEl = document.getElementById('changePasswordModal');
+    if (trigger && modalEl) {
+        trigger.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        });
+    }
+
+    document.querySelectorAll('.toggle-pass-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var targetId = this.getAttribute('data-target');
+            var input = document.getElementById(targetId);
+            if (!input) return;
+            var icon = this.querySelector('i');
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            if (icon) {
+                icon.classList.toggle('bi-eye', !isPassword);
+                icon.classList.toggle('bi-eye-slash', isPassword);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
+
+

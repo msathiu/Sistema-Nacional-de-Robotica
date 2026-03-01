@@ -46,7 +46,7 @@ def buscar_clubes(request):
         )
     
     clubes = clubes.select_related('institucion_creadora').annotate(
-        num_membresias=Count('membresias', filter=Q(membresias__estado='aprobada'))
+        num_membresias=Count('membresias', filter=Q(membresias__estado='miembro_activo'))
     )
     
     if cupos_min:
@@ -153,7 +153,7 @@ def dashboard_metricas_clubes(request):
         status='aprobado',
         activo=True
     ).annotate(
-        num_membresias=Count('membresias', filter=Q(membresias__estado='aprobada'))
+        num_membresias=Count('membresias', filter=Q(membresias__estado='miembro_activo'))
     ).order_by('-num_membresias')[:5]
     
     context = {
@@ -190,7 +190,7 @@ def exportar_clubes_csv(request):
         activo=True,
         eliminado=False
     ).select_related('institucion_creadora').annotate(
-        num_membresias=Count('membresias', filter=Q(membresias__estado='aprobada'))
+        num_membresias=Count('membresias', filter=Q(membresias__estado='miembro_activo'))
     )
     
     for club in clubes:
@@ -219,7 +219,7 @@ def exportar_clubes_json(request):
         activo=True,
         eliminado=False
     ).select_related('institucion_creadora').annotate(
-        num_membresias=Count('membresias', filter=Q(membresias__estado='aprobada'))
+        num_membresias=Count('membresias', filter=Q(membresias__estado='miembro_activo'))
     )
     
     data = []

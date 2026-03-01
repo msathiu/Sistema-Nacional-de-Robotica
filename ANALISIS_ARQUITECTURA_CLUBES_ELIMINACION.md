@@ -529,59 +529,7 @@ urlpatterns = [
 
 ## 🎯 MEJORAS ADICIONALES RECOMENDADAS
 
-### 1. Sistema de Notificaciones por Email
-
-**Implementación:**
-```python
-# En registry/utils.py
-
-def enviar_notificacion_club(club, tipo_notificacion, **kwargs):
-    """
-    Envía notificaciones por email relacionadas con clubes.
-    
-    Tipos:
-    - 'club_aprobado'
-    - 'club_rechazado'
-    - 'solicitud_eliminacion'
-    - 'eliminacion_aprobada'
-    - 'eliminacion_rechazada'
-    """
-    templates = {
-        'club_aprobado': 'emails/club_aprobado.html',
-        'club_rechazado': 'emails/club_rechazado.html',
-        'solicitud_eliminacion': 'emails/solicitud_eliminacion.html',
-        'eliminacion_aprobada': 'emails/eliminacion_aprobada.html',
-        'eliminacion_rechazada': 'emails/eliminacion_rechazada.html',
-    }
-    
-    context = {
-        'club': club,
-        'site_name': settings.SITE_NAME,
-        **kwargs
-    }
-    
-    html_message = render_to_string(templates[tipo_notificacion], context)
-    plain_message = strip_tags(html_message)
-    
-    # Determinar destinatario
-    if tipo_notificacion == 'solicitud_eliminacion':
-        # Enviar a federación
-        recipient = settings.ADMIN_EMAIL
-    else:
-        # Enviar a institución
-        recipient = club.institucion_creadora.email
-    
-    send_mail(
-        subject=f"SNR-PRO: {tipo_notificacion.replace('_', ' ').title()}",
-        message=plain_message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[recipient],
-        html_message=html_message,
-        fail_silently=False
-    )
-```
-
----
+### 1. Sistema de Notificaciones por el mismo sistema 
 
 ### 2. Historial de Cambios (Auditoría)
 
@@ -730,9 +678,7 @@ def buscar_clubes(request):
 - [ ] Testing completo
 
 ### Sistema de Notificaciones
-- [ ] Función enviar_notificacion_club
-- [ ] Templates de email (5 tipos)
-- [ ] Integración en vistas
+- [ ] Función enviar_notificacion_club- [ ] Integración en vistas
 - [ ] Configuración SMTP
 - [ ] Testing de envío
 

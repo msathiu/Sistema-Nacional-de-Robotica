@@ -198,7 +198,7 @@ class ParticipanteRegistrationForm(forms.ModelForm):
             if 'municipio' in self.fields:
                 self.fields["municipio"].queryset = Municipio.objects.none()
             if 'parroquia' in self.fields:
-                self.fields["parroquia"].queryset = Municipio.objects.none() # O Parroquia.objects.none()
+                self.fields["parroquia"].queryset = Municipio.objects.none()
 
     def clean_fecha_nacimiento(self):
         fecha_nac = self.cleaned_data.get("fecha_nacimiento")
@@ -350,24 +350,116 @@ class InstitucionRegistrationForm(forms.ModelForm):
 
 # --- FORMULARIO DE CLUBES ---
 class ClubRegistrationForm(forms.ModelForm):
+    """
+    Formulario para registrar clubes con líneas de investigación dinámicas.
+    Usa el modelo ClubLineaInvestigacion en lugar de campos deprecated.
+    """
+    from registry.models import LineaInvestigacion, ClubLineaInvestigacion
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Obtener queryset de líneas de investigación activas
+        lineas_qs = LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre')
+        
+        # Verificar si hay líneas disponibles
+        if not lineas_qs.exists():
+            # Si no hay líneas, hacer todos los campos opcionales para evitar errores
+            self.fields['linea_investigacion_1'].required = False
+            self.fields['linea_investigacion_1'].empty_label = "No hay líneas disponibles - Contacte al administrador"
+        else:
+            # Mensaje por defecto cuando hay líneas
+            self.fields['linea_investigacion_1'].empty_label = "Seleccione una línea"
+    
+    # Campos para líneas de investigación (hasta 3)
+    linea_investigacion_1 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=True,
+        label="Línea de Investigación 1 (Principal)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_2 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=False,
+        label="Línea de Investigación 2 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    linea_investigacion_3 = forms.ModelChoiceField(
+        queryset=LineaInvestigacion.objects.none(),
+        required=False,
+        label="Línea de Investigación 3 (Opcional)",
+        empty_label="Seleccione una línea",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
     class Meta:
         model = Club
-        fields = ['nombre', 'descripcion', 'ubicacion', 'linea_1', 'linea_2', 'linea_3']
+        fields = ['nombre', 'descripcion', 'ubicacion']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robotica "Simon Rodriguez"'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
-            'linea_1': forms.Select(attrs={'class': 'form-select'}),
-            'linea_2': forms.Select(attrs={'class': 'form-select'}),
-            'linea_3': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        l1 = cleaned_data.get('linea_1')
-        l2 = cleaned_data.get('linea_2')
-        l3 = cleaned_data.get('linea_3')
-        lineas = [l for l in [l1, l2, l3] if l]
+        
+        # Obtener las líneas
+        linea_1 = cleaned_data.get('linea_investigacion_1')
+        linea_2 = cleaned_data.get('linea_investigacion_2')
+        linea_3 = cleaned_data.get('linea_investigacion_3')
+        
+        # Validar que la línea 1 sea obligatoria si hay líneas disponibles
+        lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
+        if lineas_disponibles and not linea_1:
+            raise forms.ValidationError({
+                'linea_investigacion_1': 'Debe seleccionar al menos una línea de investigación principal.'
+            })
+        
+        # Validar que no se repitan líneas
+        lineas = [l for l in [linea_1, linea_2, linea_3] if l]
         if len(lineas) != len(set(lineas)):
-            raise forms.ValidationError("No puedes seleccionar la misma linea de investigacion mas de una vez.")
+            raise forms.ValidationError("No puedes seleccionar la misma línea de investigación más de una vez.")
+        
         return cleaned_data
+
+    def save(self, commit=True):
+        from registry.models import ClubLineaInvestigacion
+        
+        club = super().save(commit=False)
+        
+        if commit:
+            club.save()
+            
+            # Obtener las líneas del formulario
+            linea_1 = self.cleaned_data.get('linea_investigacion_1')
+            linea_2 = self.cleaned_data.get('linea_investigacion_2')
+            linea_3 = self.cleaned_data.get('linea_investigacion_3')
+            
+            # Verificar si hay líneas disponibles en la base de datos
+            lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
+            
+            # Solo guardar líneas si hay líneas disponibles y seleccionadas
+            if lineas_disponibles and (linea_1 or linea_2 or linea_3):
+                # Eliminar líneas existentes si las hay
+                ClubLineaInvestigacion.objects.filter(club=club).delete()
+                
+                # Agregar nuevas líneas de investigación
+                lineas_data = [
+                    (linea_1, 'principal', 1),
+                    (linea_2, 'soporte', 2),
+                    (linea_3, 'afines', 3),
+                ]
+                
+                for linea, tipo, orden in lineas_data:
+                    if linea:
+                        ClubLineaInvestigacion.objects.create(
+                            club=club,
+                            linea=linea,
+                            tipo_linea=tipo,
+                            orden=orden
+                        )
+        
+        return club

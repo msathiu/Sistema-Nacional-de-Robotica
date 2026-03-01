@@ -1,7 +1,7 @@
 """Context processors para agregar variables globales a todos los templates."""
 
 from django.core.cache import cache
-from registry.models import Club
+from registry.models import Club, SolicitudEliminacionClub
 
 
 def notificaciones_no_leidas(request):
@@ -30,6 +30,27 @@ def clubes_pendientes_federacion(request):
     return {
         'clubes_pendientes_count': count,
         'tiene_clubes_pendientes': count > 0
+    }
+
+
+def solicitudes_eliminacion_pendientes(request):
+    """Contador de solicitudes de eliminación pendientes para usuarios de federación."""
+    if not request.user.is_authenticated:
+        return {}
+    
+    if not hasattr(request.user, 'userprofile') or request.user.userprofile.user_type not in ['fed_central', 'fed_regional']:
+        return {}
+    
+    cache_key = 'solicitudes_eliminacion_pendientes_count'
+    count = cache.get(cache_key)
+    
+    if count is None:
+        count = SolicitudEliminacionClub.objects.filter(estado='pendiente').count()
+        cache.set(cache_key, count, 300)
+    
+    return {
+        'solicitudes_eliminacion_count': count,
+        'tiene_solicitudes_eliminacion': count > 0
     }
 
 

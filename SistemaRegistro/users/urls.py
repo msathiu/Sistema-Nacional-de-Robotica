@@ -68,6 +68,11 @@ urlpatterns = [
         views.eliminar_institucion,
         name="eliminar_institucion",
     ),
+    path(
+        "instituciones/detalle/<int:institucion_id>/",
+        views.detalle_institucion_api,
+        name="detalle_institucion_api",
+    ),
     # --- Participantes ---
     path("participantes/", views.lista_participantes, name="lista_participantes"),
     path("participantes/crear/", views.crear_participante, name="crear_participante"),

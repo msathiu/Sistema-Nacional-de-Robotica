@@ -65,6 +65,10 @@ MIDDLEWARE = [
     # Middlewares de seguridad personalizados
     "users.middleware.RateLimitMiddleware",
     "users.middleware.SecurityHeadersMiddleware",
+    # Middleware para restringir superusuarios solo al admin
+    "users.middleware.SuperuserAdminOnlyMiddleware",
+    # Middleware para control de acceso basado en roles
+    "users.middleware.RoleBasedAccessMiddleware",
 ]
 
 ROOT_URLCONF = "SistemaRegistro.urls"
@@ -87,6 +91,8 @@ TEMPLATES = [
                 "registry.context_processors.user_roles",
                 # Context processor para clubes pendientes (federación)
                 "registry.context_processors.clubes_pendientes_federacion",
+                # Context processor para solicitudes de eliminación pendientes
+                "registry.context_processors.solicitudes_eliminacion_pendientes",
             ],
         },
     },
@@ -239,9 +245,9 @@ LOGGING = {
 
 # --- CONFIGURACIÓN JAZZMIN (ADMIN PROFESIONAL) ---
 JAZZMIN_SETTINGS = {
-    "site_title": "SNR Admin",
+    "site_title": "FVRC Admin",
     "site_header": "Sistema Nacional de Robótica",
-    "site_brand": "SNR-PRO",
+    "site_brand": "FVRC-PRO",
     "site_logo": None,
     "welcome_sign": "Bienvenido al Panel de Administración",
     "copyright": "FVRC - Federación Venezolana de Robótica Creativa",
@@ -255,7 +261,7 @@ JAZZMIN_SETTINGS = {
     "topmenu_links": [
         {"name": "Dashboard", "url": "admin_dashboard", "icon": "fas fa-tachometer-alt"},
         {"name": "Ver Logs", "url": "admin_logs", "icon": "fas fa-file-alt"},
-        {"name": "Ver Sitio", "url": "/", "new_window": True, "icon": "fas fa-external-link-alt"},
+
     ],
     
     "icons": {

@@ -16,7 +16,7 @@
             <div class="d-flex gap-2">
                 <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Sede
+                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Institución
                 </a>
             </div>
         </div>
@@ -144,6 +144,12 @@
 
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
+                                    {% if es_central %}
+                                    <button class="btn btn-outline-info btn-sm px-3 rounded-pill fw-bold" 
+                                            onclick="verDetallesCompletos('{{ item.institucion.id }}')">
+                                        <i class="bi bi-eye me-1"></i> Ver Detalles
+                                    </button>
+                                    {% endif %}
                                     <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
                                             onclick="abrirModalEditar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', '{{ item.institucion.rif }}', '{{ item.institucion.email }}', '{{ item.institucion.telefono }}', '{{ item.institucion.direccion|escapejs }}')">
                                         <i class="bi bi-pencil-square me-1"></i> Editar
@@ -274,6 +280,55 @@
         document.getElementById('detTel').innerText = tel || 'Sin registro';
         document.getElementById('detDir').innerText = dir || 'Sin dirección';
         detalleModal.show();
+    }
+
+    // Nueva función para ver detalles completos con AJAX
+    function verDetallesCompletos(id) {
+        // Mostrar indicador de carga
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cargando...';
+        btn.disabled = true;
+        
+        // Llamada AJAX para obtener datos completos
+        fetch(`/instituciones/detalle/${id}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Llenar el modal con todos los datos
+            document.getElementById('detNombre').innerText = data.nombre || 'N/A';
+            document.getElementById('detUser').innerText = data.codigo || 'N/A';
+            document.getElementById('detRif').innerText = data.rif || 'N/A';
+            document.getElementById('detEmail').innerText = data.email || 'Sin correo';
+            document.getElementById('detTel').innerText = data.telefono || 'Sin teléfono';
+            document.getElementById('detDir').innerText = data.direccion || 'Sin dirección';
+            
+            // Agregar información adicional si existe
+            let htmlInfo = '';
+            if (data.estado) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Estado</label><p class="text-dark fw-bold mb-0">${data.estado}</p></div>`;
+            if (data.municipio) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Municipio</label><p class="text-dark fw-bold mb-0">${data.municipio}</p></div>`;
+            if (data.parroquia) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Parroquia</label><p class="text-dark fw-bold mb-0">${data.parroquia}</p></div>`;
+            if (data.tipo_institucion) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Tipo</label><p class="text-dark fw-bold mb-0">${data.tipo_institucion}</p></div>`;
+            if (data.naturaleza) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Naturaleza</label><p class="text-dark fw-bold mb-0">${data.naturaleza}</p></div>`;
+            if (data.codigo_mppe) htmlInfo += `<div class="col-md-4"><label class="text-muted small fw-bold">Código MPPE</label><p class="text-dark fw-bold mb-0">${data.codigo_mppe}</p></div>`;
+            
+            // Agregar al modal
+            const extraInfo = document.getElementById('detExtraInfo');
+            if (extraInfo) extraInfo.innerHTML = htmlInfo;
+            
+            detalleModal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar los detalles. Por favor intente de nuevo.');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
     }
 
     function abrirModalEditar(id, nombre, rifFull, emailOriginal, tel, dir) {

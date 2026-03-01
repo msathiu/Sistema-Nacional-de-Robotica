@@ -65,14 +65,16 @@
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Estado:</strong> 
-                                {% if membresia.estado == 'aprobada' %}
+                                {% if membresia.estado == 'miembro_activo' %}
                                     <span class="badge bg-success">{{ membresia.get_estado_display }}</span>
-                                {% elif membresia.estado == 'pendiente' %}
+                                {% elif membresia.estado == 'pendiente_filtro' %}
                                     <span class="badge bg-warning text-dark">{{ membresia.get_estado_display }}</span>
                                 {% elif membresia.estado == 'rechazada' %}
                                     <span class="badge bg-danger">{{ membresia.get_estado_display }}</span>
-                                {% else %}
+                                {% elif membresia.estado == 'visto_bueno_fundadora' %}
                                     <span class="badge bg-info">{{ membresia.get_estado_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ membresia.get_estado_display }}</span>
                                 {% endif %}
                             </p>
                             <p><strong>Tipo de Línea:</strong> {{ membresia.get_tipo_linea_display }}</p>
@@ -120,8 +122,8 @@
             </div>
             {% endif %}
 
-            <!-- Acciones (solo para propietario del club y si está pendiente) -->
-            {% if es_propietario_club and membresia.estado == 'pendiente' %}
+            <!-- Acciones (solo para propietario del club y si está pendiente de filtro) -->
+            {% if es_propietario_club and membresia.estado == 'pendiente_filtro' %}
             <div class="card shadow-sm border-primary">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-gear"></i> Acciones</h5>

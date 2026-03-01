@@ -1,10 +1,10 @@
-from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from pathlib import Path
 from django.conf import settings
+from users.decorators import admin_access_required
 
 
-@staff_member_required
+@admin_access_required
 def ver_logs_sistema(request):
     """Vista para ver los logs del sistema en el admin"""
     log_file = Path(settings.BASE_DIR) / 'logs' / 'django.log'

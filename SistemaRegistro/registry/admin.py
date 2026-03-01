@@ -96,43 +96,74 @@ class InstitucionAdmin(admin.ModelAdmin):
 
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):
-    list_display = ["cedula", "nombres", "apellidos", "institucion", "estado"]
-    list_filter = ["estado", "institucion", "sexo"]
-    search_fields = ["cedula", "nombres", "apellidos"]
+    list_display = ["cedula", "cedula_escolar", "nombres", "apellidos", "institucion", "estado", "status"]
+    list_filter = ["estado", "institucion", "sexo", "status", "grado_escolar", "condicion_tea"]
+    search_fields = ["cedula", "cedula_escolar", "nombres", "apellidos", "email"]
+    readonly_fields = ["fecha_registro"]
+    ordering = ["-fecha_registro"]
 
     fieldsets = (
+        (
+            "Identificación",
+            {
+                "fields": (
+                    "cedula",
+                    "cedula_escolar",
+                    "condicion_tea",
+                )
+            },
+        ),
         (
             "Datos Personales",
             {
                 "fields": (
-                    "cedula",
                     "nombres",
                     "apellidos",
                     "fecha_nacimiento",
                     "sexo",
                     "email",
-                    "telefono",
+                    "codigo_area",
+                    "numero_telefono",
                     "direccion",
                 )
             },
         ),
-        ("Ubicación", {"fields": ("estado", "municipio")}),
-        ("Institución", {"fields": ("institucion", "grado_escolar")}),
         (
-            "Representante (para menores)",
+            "Ubicación",
+            {"fields": ("estado", "municipio", "parroquia")},
+        ),
+        (
+            "Institución y Educación",
+            {
+                "fields": (
+                    "institucion",
+                    "grupo",
+                    "nombre_escuela",
+                    "grado_escolar",
+                    "titulo_universitario",
+                    "campo1",
+                )
+            },
+        ),
+        (
+            "Representante (para menores de edad)",
             {
                 "fields": (
                     "nombre_representante",
                     "cedula_representante",
-                    "telefono_representante",
+                    "codigo_area_representante",
+                    "numero_telefono_representante",
                     "email_representante",
                 ),
                 "classes": ("collapse",),
             },
         ),
         (
-            "Metadata",
-            {"fields": ("fecha_registro", "activo"), "classes": ("collapse",)},
+            "Estado y Metadata",
+            {
+                "fields": ("status", "fecha_registro", "user"),
+                "classes": ("collapse",),
+            },
         ),
     )
 
@@ -420,14 +451,7 @@ class ClubAdmin(admin.ModelAdmin):
             "Estado y Fechas",
             {"fields": ("status", "activo", "fecha_creacion", "fecha_aprobacion")},
         ),
-        (
-            "Líneas de Investigación (DEPRECADO)",
-            {
-                "fields": ("linea_1", "linea_2", "linea_3"),
-                "classes": ("collapse",),
-                "description": "Usar el inline de Líneas de Investigación arriba"
-            },
-        ),
+        # NOTA: Campos linea_1, linea_2, linea_3 eliminados - usar ClubLineaInvestigacionInline
     )
 
     actions = ["aprobar_clubes", "rechazar_clubes", "cerrar_clubes", "abrir_clubes"]
@@ -525,8 +549,8 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente", "revision"]):
-            membresia.estado = "aprobada"
+        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
+            membresia.estado = "miembro_activo"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])
             # Guardar el club para actualizar cupos
@@ -540,7 +564,7 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente", "revision"]):
+        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
             membresia.estado = "rechazada"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])

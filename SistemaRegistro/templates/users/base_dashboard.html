@@ -400,6 +400,9 @@
                     <div id="eliminacionesSubmenu" style="display: none;">
                         <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_solicitudes_eliminacion' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
                             <i class="bi bi-file-earmark-x"></i> Solicitudes Pendientes
+                            {% if tiene_solicitudes_eliminacion %}
+                            <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.65rem;">{{ solicitudes_eliminacion_count }}</span>
+                            {% endif %}
                         </a>
                         <a href="{% url 'clubes_eliminados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_eliminados' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
                             <i class="bi bi-trash3"></i> Papelera de Clubes
@@ -481,6 +484,9 @@
                 
                 <a href="{% url 'mis_grupos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_grupos' %}active{% endif %}">
                     <i class="bi bi-microsoft-teams"></i> Mis Grupos
+                </a>
+                <a href="{% url 'lista_tutores' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_tutores' %}active{% endif %}">
+                    <i class="bi bi-person-workspace"></i> Tutores
                 </a>
                 <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
                     <i class="bi bi-people"></i> Participantes

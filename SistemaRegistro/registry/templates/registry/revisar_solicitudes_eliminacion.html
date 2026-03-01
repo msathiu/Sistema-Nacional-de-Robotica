@@ -89,7 +89,7 @@
 <script>
 function rechazarSolicitud(solicitudId, clubNombre) {
     if(confirm(`¿Está seguro de rechazar la solicitud de eliminación del club "${clubNombre}"?`)) {
-        window.location.href = `/clubes/solicitudes-eliminacion/rechazar/${solicitudId}/`;
+        window.location.href = `/admin/clubes/solicitudes-eliminacion/${solicitudId}/rechazar/`;
     }
 }
 </script>

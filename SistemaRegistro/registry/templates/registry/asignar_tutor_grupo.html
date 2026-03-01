@@ -1,0 +1,156 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Asignar Tutor a {{ grupo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-plus fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
+                        Asignar Tutor al Grupo
+                    </h2>
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-people me-1"></i> {{ grupo.nombre }} 
+                        <span class="badge bg-light text-dark border ms-2">{{ grupo.codigo }}</span>
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ver_grupo' grupo.id %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Grupo
+                </a>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="row">
+        <!-- Tutores Asignados -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" 
+                     style="background: linear-gradient(145deg, #059669, #047857);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">Tutores Asignados</h5>
+                    </div>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ tutores_asignados.count }}</span>
+                </div>
+                <div class="card-body">
+                    {% if tutores_asignados %}
+                        <div class="list-group list-group-flush">
+                            {% for tutor in tutores_asignados %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <div class="fw-bold">{{ tutor.get_nombre_completo }}</div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-card-text me-1"></i> {{ tutor.cedula }}
+                                            <span class="mx-2">|</span>
+                                            <i class="bi bi-building me-1"></i> {{ tutor.institucion.nombre|truncatechars:20 }}
+                                        </small>
+                                    </div>
+                                    <form method="POST" action="{% url 'remover_tutor_grupo' grupo.id tutor.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                onclick="return confirm('¿Remover a {{ tutor.get_nombre_completo }} del grupo?')">
+                                            <i class="bi bi-x-circle me-1"></i> Remover
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning text-center py-4 mb-0">
+                            <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+                            <strong>Este grupo no tiene tutores asignados</strong>
+                            <p class="small mb-0 mt-2">Asigne al menos un tutor para poder vincular el grupo a un evento.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Agregar Nuevo Tutor -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" 
+                     style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-plus-circle text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">Agregar Tutor</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Seleccionar Tutor</label>
+                            <select name="tutor_id" class="form-select" required>
+                                <option value="">-- Seleccione un tutor --</option>
+                                {% for tutor in tutores_disponibles %}
+                                    <option value="{{ tutor.id }}">
+                                        {{ tutor.get_nombre_completo }} - {{ tutor.cedula }}
+                                        ({{ tutor.institucion.nombre|truncatechars:20 }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        {% if not tutores_disponibles %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-1"></i>
+                                No hay tutores disponibles para asignar.
+                                <a href="{% url 'crear_tutor' %}" class="alert-link">Registrar nuevo tutor</a>
+                            </div>
+                        {% else %}
+                            <button type="submit" class="btn w-100 fw-bold" 
+                                    style="background: var(--accent-cyan); color: var(--blue-main);">
+                                <i class="bi bi-plus-circle me-1"></i> Asignar Tutor
+                            </button>
+                        {% endif %}
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="text-muted small mb-2">¿No encuentras el tutor que buscas?</p>
+                        <a href="{% url 'crear_tutor' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-person-plus me-1"></i> Registrar Nuevo Tutor
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validación de Evento -->
+    {% if grupo.evento %}
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle me-1"></i>
+            Este grupo está vinculado al evento <strong>{{ grupo.evento.nombre }}</strong>
+        </div>
+    {% else %}
+        {% if tutores_asignados %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-1"></i>
+                Este grupo tiene tutores asignados y puede ser vinculado a un evento.
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <strong>Atención:</strong> Este grupo necesita al menos un tutor asignado antes de poder vincularse a un evento.
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+</style>
+{% endblock %}

@@ -1,6 +1,7 @@
 import logging
 import random
 import string
+import uuid
 from datetime import date
 
 from django.apps import apps
@@ -442,17 +443,34 @@ class Participante(models.Model):
         ("OTRO", "Otro/No especificado"),
     ]
 
+    STATUS_CHOICES = [
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
+    ]
+
     NUMERO_VALIDATOR = RegexValidator(
         regex="^[0-9]{7}$", message="El número debe ser de 7 dígitos numéricos."
     )
 
     # Datos personales
+    # Nota: cedula se mantiene por compatibilidad pero es la cédula personal
     cedula = models.CharField(
         max_length=20,
         unique=True,
         validators=[
             RegexValidator(regex="^[VE0-9]+$", message="Cédula válida requerida")
         ],
+    )
+    cedula_escolar = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Cédula Escolar",
+        help_text="Cédula escolar del participante (si posee)",
+    )
+    condicion_tea = models.BooleanField(
+        default=False,
+        verbose_name="Condición TEA",
+        help_text="Indica si el participante posee condición en el espectro autista",
     )
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
@@ -473,9 +491,24 @@ class Participante(models.Model):
     # Ubicación
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     municipio = models.ForeignKey(Municipio, on_delete=models.CASCADE)
+    parroquia = models.ForeignKey(
+        Parroquia,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        verbose_name="Parroquia",
+    )
 
     # Institución
     institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
+    grupo = models.ForeignKey(
+        "Grupo",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Grupo",
+        help_text="Grupo al que pertenece el participante por defecto",
+    )
     nombre_escuela = models.CharField(
         max_length=200,
         blank=True,
@@ -487,6 +520,17 @@ class Participante(models.Model):
         choices=GRADO_CHOICES,
         default="NO",
         verbose_name="Nivel Educativo/Grado",
+    )
+    titulo_universitario = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Título/Estudios Universitarios",
+        help_text="Especificar título o estudios universitarios (solo si selecciona Estudios Universitarios)",
+    )
+    campo1 = models.TextField(
+        blank=True,
+        verbose_name="Campo Adicional",
+        help_text="Campo adicional para guardar grado/nivel cuando se selecciona 'Otro/No especificado'",
     )
 
     # Representante (para menores)
@@ -509,7 +553,12 @@ class Participante(models.Model):
 
     # Metadata
     fecha_registro = models.DateTimeField(auto_now_add=True)
-    activo = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="activo",
+        verbose_name="Status",
+    )
 
     user = models.OneToOneField(
         "auth.User", on_delete=models.CASCADE, null=True, blank=True
@@ -521,10 +570,12 @@ class Participante(models.Model):
         ordering = ["apellidos", "nombres"]
         indexes = [
             models.Index(fields=["cedula"], name="idx_part_cedula"),
+            models.Index(fields=["cedula_escolar"], name="idx_part_cedula_esc"),
             models.Index(fields=["email"], name="idx_part_email"),
             models.Index(fields=["institucion"], name="idx_part_inst"),
             models.Index(fields=["estado", "municipio"], name="idx_part_ubicacion"),
-            models.Index(fields=["activo"], name="idx_part_activo"),
+            models.Index(fields=["status"], name="idx_part_status"),
+            models.Index(fields=["grupo"], name="idx_part_grupo"),
             models.Index(fields=["apellidos", "nombres"], name="idx_part_nombre"),
         ]
 
@@ -604,6 +655,34 @@ class Participante(models.Model):
                 if errores:
                     raise ValidationError(errores)
 
+class AsistenciaEvento(models.Model):
+    """
+    Registra la asistencia de un participante a un evento específico,
+    posiblemente como parte de un grupo.
+    """
+    ASISTENCIA_CHOICES = [
+        ('asistio', 'Asistió'),
+        ('ausente', 'Ausente'),
+        ('pendiente', 'Pendiente'),
+        ('justificado', 'Justificado'),
+    ]
+
+    evento = models.ForeignKey('Evento', on_delete=models.CASCADE, related_name='asistencias')
+    participante = models.ForeignKey('Participante', on_delete=models.CASCADE, related_name='asistencias')
+    grupo = models.ForeignKey('Grupo', on_delete=models.SET_NULL, null=True, blank=True, related_name='asistencias')
+    asistencia = models.CharField(max_length=12, choices=ASISTENCIA_CHOICES, default='pendiente', db_index=True)
+    observacion = models.TextField(blank=True)
+    fecha_asistencia = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora en que se marcó la asistencia.")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Asistencia a Evento"
+        verbose_name_plural = "Asistencias a Eventos"
+        unique_together = ['evento', 'participante'] # Un participante solo puede tener un registro de asistencia por evento
+        ordering = ['-evento__fecha', 'participante__apellidos']
+
+    def __str__(self):
+        return f"Asistencia de {self.participante.nombre_completo} a {self.evento.nombre}"
 
 class EventoManager(models.Manager):
     """Manager con queries optimizadas para eventos."""
@@ -874,13 +953,22 @@ class Grupo(models.Model):
         related_name="grupos_creados",
     )
 
-    # Cambiados a null=True para evitar el error de base de datos si fallara la lógica
+    # Campos legacy de tutor (mantenidos para compatibilidad)
+    # TODO: Migrar a relación M2M con modelo Tutor
     tutor_nombre = models.CharField(max_length=200, blank=True, null=True)
     tutor_apellidos = models.CharField(
         max_length=200, default="", blank=True, null=True
     )
     tutor_cedula = models.CharField(max_length=20, db_index=True, blank=True, null=True)
     tutor_telefono = models.CharField(max_length=20, blank=True, null=True)
+
+    # Relación M2M con Tutores (nueva implementación)
+    tutores = models.ManyToManyField(
+        "Tutor",
+        related_name="grupos",
+        blank=True,
+        verbose_name="Tutores asignados"
+    )
 
     participantes = models.ManyToManyField(
         "Participante", related_name="grupos", verbose_name="Integrantes del Grupo"
@@ -917,16 +1005,7 @@ class Grupo(models.Model):
 class Club(models.Model):
     """Modelo para representar clubes de robótica."""
 
-    LINEAS_INVESTIGACION_CHOICES = [
-        ("electronica", "Electrónica y Circuitos"),
-        ("programacion", "Programación y Algoritmos"),
-        ("mecanica", "Mecánica y Estructuras"),
-        ("ia", "Inteligencia Artificial"),
-        ("iot", "Internet de las Cosas (IoT)"),
-        ("automatizacion", "Automatización Industrial"),
-        ("diseno_3d", "Diseño e Impresión 3D"),
-        ("telecom", "Telecomunicaciones"),
-    ]
+    # NOTA: LINEAS_INVESTIGACION_CHOICES eliminado - usar modelo LineaInvestigacion dinámico
 
     ESTADO_VINCULACION_CHOICES = [
         ("abierto", "Abierto"),
@@ -976,31 +1055,7 @@ class Club(models.Model):
         max_length=255, blank=True, verbose_name="Documento Legal / Aval Institucional"
     )
 
-    # Líneas de investigación (DEPRECADAS - usar ClubLineaInvestigacion)
-    linea_1 = models.CharField(
-        max_length=50,
-        choices=LINEAS_INVESTIGACION_CHOICES,
-        verbose_name="Línea de investigación 1",
-        null=True,
-        blank=True,
-        help_text="DEPRECADO: Usar ClubLineaInvestigacion"
-    )
-    linea_2 = models.CharField(
-        max_length=50,
-        choices=LINEAS_INVESTIGACION_CHOICES,
-        verbose_name="Línea de investigación 2",
-        blank=True,
-        null=True,
-        help_text="DEPRECADO: Usar ClubLineaInvestigacion"
-    )
-    linea_3 = models.CharField(
-        max_length=50,
-        choices=LINEAS_INVESTIGACION_CHOICES,
-        verbose_name="Línea de investigación 3",
-        blank=True,
-        null=True,
-        help_text="DEPRECADO: Usar ClubLineaInvestigacion"
-    )
+    # NOTA: Campos linea_1, linea_2, linea_3 eliminados - usar ClubLineaInvestigacion
 
     # Estado de vinculación y cupos
     estado_vinculacion = models.CharField(
@@ -1053,7 +1108,7 @@ class Club(models.Model):
         """Override save para cerrar automáticamente cuando no hay cupos."""
         # Calcular cupos disponibles antes de guardar
         if self.cupo_maximo and self.pk:
-            miembros_actuales = self.membresias.filter(estado="aprobada").count()
+            miembros_actuales = self.membresias.filter(estado="miembro_activo").count()
             cupos = max(0, self.cupo_maximo - miembros_actuales)
 
             # Si no hay cupos disponibles y está abierto, cerrar automáticamente
@@ -1064,36 +1119,22 @@ class Club(models.Model):
 
     @property
     def lineas_investigacion(self):
-        """Retorna lista de líneas de investigación del club."""
-        lineas = []
-        
-        # Intentar obtener de la relación N:M (nuevo sistema)
+        """Retorna lista de líneas de investigación del club usando ClubLineaInvestigacion."""
         if self.pk:
-            try:
-                lineas_nm = self.club_lineas.select_related('linea').filter(
-                    linea__activa=True
-                ).order_by('orden').values_list('linea__nombre', flat=True)
-                lineas = list(lineas_nm)
-            except Exception:
-                pass
-        
-        # Si no hay líneas en el nuevo sistema, usar campos antiguos
-        if not lineas:
-            if self.linea_1:
-                lineas.append(dict(self.LINEAS_INVESTIGACION_CHOICES).get(self.linea_1, self.linea_1))
-            if self.linea_2:
-                lineas.append(dict(self.LINEAS_INVESTIGACION_CHOICES).get(self.linea_2, self.linea_2))
-            if self.linea_3:
-                lineas.append(dict(self.LINEAS_INVESTIGACION_CHOICES).get(self.linea_3, self.linea_3))
-        
-        return lineas if lineas else ['Sin líneas asignadas']
+            lineas_nm = self.club_lineas.select_related('linea').filter(
+                linea__activa=True
+            ).order_by('orden').values_list('linea__nombre', flat=True)
+            lineas = list(lineas_nm)
+            if lineas:
+                return lineas
+        return ['Sin líneas asignadas']
 
     @property
     def cupos_disponibles(self):
         """Retorna cuántos cupos quedan disponibles."""
         if not self.pk:
             return self.cupo_maximo
-        miembros_actuales = self.membresias.filter(estado="aprobada").count()
+        miembros_actuales = self.membresias.filter(estado="miembro_activo").count()
         return max(0, self.cupo_maximo - miembros_actuales)
 
     @property
@@ -1155,13 +1196,23 @@ class Club(models.Model):
 
 
 class MembresiaClu(models.Model):
-    """Modelo para gestionar solicitudes de membresía a clubes."""
+    """
+    Modelo para gestionar solicitudes de membresía a clubes.
+    
+    Flujo de Doble Aprobación (permisos_clubes.md - Sección 6):
+    1. Solicitante crea registro con estado PENDIENTE_FILTRO
+    2. Institución Fundadora da visto bueno -> VISTO_BUENO_FUNDADORA
+    3. Ente Rector aprueba finalmente -> MIEMBRO_ACTIVO
+    
+    Ninguna institución puede ser MIEMBRO_ACTIVO sin ambos checks.
+    """
 
+    # Estados federados para el flujo de doble aprobación
     ESTADO_CHOICES = [
-        ("pendiente", "Pendiente"),
-        ("revision", "En Revisión"),
-        ("aprobada", "Aprobada"),
-        ("rechazada", "Rechazada"),
+        ('pendiente_filtro', 'Pendiente de Filtro (Fundadora)'),
+        ('visto_bueno_fundadora', 'Visto Bueno Fundadora'),
+        ('miembro_activo', 'Miembro Activo'),
+        ('rechazada', 'Rechazada'),
     ]
 
     # Tipos de línea de investigación en la membresía
@@ -1177,7 +1228,7 @@ class MembresiaClu(models.Model):
     propuesta_tecnica = models.TextField()
     representante_legal = models.CharField(max_length=200)
 
-    # Nueva: Tipo de línea de investigación que aporta la institución
+    # Tipo de línea de investigación que aporta la institución
     tipo_linea = models.CharField(
         max_length=20,
         choices=TIPO_LINEA_CHOICES,
@@ -1186,23 +1237,72 @@ class MembresiaClu(models.Model):
     )
 
     estado = models.CharField(
-        max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True
+        max_length=25,
+        choices=ESTADO_CHOICES,
+        default='pendiente_filtro',
+        db_index=True
     )
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_respuesta = models.DateTimeField(null=True, blank=True)
     observaciones = models.TextField(blank=True)
 
+    # === Campos de Auditoría para Flujo Federado ===
+    # Fase 1: Visto bueno de la Institución Fundadora
+    visto_bueno_fundadora = models.BooleanField(
+        default=False,
+        verbose_name='Visto Bueno Fundadora'
+    )
+    visto_bueno_fundadora_por = models.ForeignKey(
+        'auth.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='membresias_visto_bueno',
+        verbose_name='Visto bueno dado por'
+    )
+    visto_bueno_fundadora_fecha = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha visto bueno'
+    )
+    observaciones_fundadora = models.TextField(
+        blank=True,
+        verbose_name='Observaciones de la Fundadora'
+    )
+
+    # Fase 2: Aprobación del Ente Rector (Federación Central)
+    aprobacion_ente_rector = models.BooleanField(
+        default=False,
+        verbose_name='Aprobación Ente Rector'
+    )
+    aprobacion_ente_rector_por = models.ForeignKey(
+        'auth.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='membresias_aprobadas_rector',
+        verbose_name='Aprobado por (Ente Rector)'
+    )
+    aprobacion_ente_rector_fecha = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha aprobación Ente Rector'
+    )
+    observaciones_rector = models.TextField(
+        blank=True,
+        verbose_name='Observaciones del Ente Rector'
+    )
+
     class Meta:
         verbose_name = "Membresía de Club"
         verbose_name_plural = "Membresías de Clubes"
-        # REMOVIDO: unique_together para permitir re-postulación
         ordering = ["-fecha_solicitud"]
         indexes = [
-            # Índice único parcial: solo para solicitudes activas (pendiente/revisión)
+            # Índice único parcial: solo para solicitudes activas
             models.Index(
                 fields=['club', 'institucion'],
                 name='idx_memb_club_inst_active',
-                condition=models.Q(estado__in=['pendiente', 'revision'])
+                condition=models.Q(estado__in=['pendiente_filtro', 'visto_bueno_fundadora'])
             ),
         ]
 
@@ -1249,7 +1349,7 @@ class InscripcionGrupoEvento(models.Model):
             institucion_grupo = self.grupo.usuario_creador.userprofile.institution
             es_miembro = self.evento.club_organizador.membresias.filter(
                 institucion=institucion_grupo,
-                estado='aprobada'
+                estado='miembro_activo'
             ).exists()
             
             if not es_miembro:
@@ -1498,3 +1598,97 @@ class ClubLineaInvestigacion(models.Model):
     
     def __str__(self):
         return f"{self.club.nombre} - {self.linea.nombre} ({self.tipo_linea})"
+
+
+class Tutor(models.Model):
+    """
+    Modelo para representar tutores de grupos.
+    
+    Un tutor es una persona responsable que guía y acompaña
+    a un grupo de participantes en eventos de robótica.
+    
+    Attributes:
+        id: UUID único para identificación.
+        institucion: Institución a la que pertenece el tutor.
+        nombres: Nombres del tutor.
+        apellidos: Apellidos del tutor.
+        cedula: Cédula de identidad (única).
+        telefono: Teléfono de contacto.
+        email: Correo electrónico.
+        profesion: Profesión o especialidad.
+        experiencia: Experiencia en robótica.
+        status: Estado del tutor (activo/inactivo).
+        created_at: Fecha de creación del registro.
+    """
+    
+    STATUS_CHOICES = [
+        ('activo', 'Activo'),
+        ('inactivo', 'Inactivo'),
+    ]
+    
+    id = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        primary_key=True,
+        verbose_name='ID'
+    )
+    institucion = models.ForeignKey(
+        Institucion,
+        on_delete=models.PROTECT,
+        related_name='tutores',
+        verbose_name='Institución'
+    )
+    nombres = models.CharField(max_length=100, verbose_name='Nombres')
+    apellidos = models.CharField(max_length=100, verbose_name='Apellidos')
+    cedula = models.CharField(
+        max_length=12,
+        unique=True,
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex='^[0-9]+$',
+                message='La cédula debe contener solo números (sin letras V/E)'
+            )
+        ],
+        verbose_name='Cédula',
+        help_text='Ingrese solo números, sin letras (V/E)'
+    )
+    telefono = models.CharField(max_length=20, verbose_name='Teléfono')
+    email = models.EmailField(verbose_name='Correo Electrónico')
+    profesion = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Profesión'
+    )
+    experiencia = models.TextField(
+        blank=True,
+        verbose_name='Experiencia en Robótica'
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='activo',
+        db_index=True,
+        verbose_name='Estado'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Fecha de Creación'
+    )
+    
+    class Meta:
+        verbose_name = 'Tutor'
+        verbose_name_plural = 'Tutores'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cedula'], name='idx_tutor_cedula'),
+            models.Index(fields=['status', 'institucion'], name='idx_tutor_status_inst'),
+        ]
+    
+    def __str__(self) -> str:
+        """Representación en string del tutor."""
+        return f"{self.get_nombre_completo()} ({self.cedula})"
+    
+    def get_nombre_completo(self) -> str:
+        """Retorna el nombre completo del tutor."""
+        return f"{self.nombres} {self.apellidos}"
