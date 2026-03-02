@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
@@ -404,3 +405,411 @@ document.getElementById('modalCargaMasiva').addEventListener('hidden.bs.modal', 
 });
 </script>
 {% endblock %}
+=======
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Crear Grupo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h2><i class="fas fa-users-cog"></i> Crear Nuevo Grupo</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Grupos</a></li>
+                <li class="breadcrumb-item active">Crear</li>
+            </ol>
+        </nav>
+    </div>
+
+    <form method="POST" id="formGrupo">
+        {% csrf_token %}
+        
+        <!-- Sección 1: Datos del Grupo -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Datos del Grupo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre del Grupo <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Criterio de Agrupación <span class="text-danger">*</span></label>
+                        <select name="criterio" class="form-select" required>
+                            {% for value, label in criterios %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 2: Datos del Tutor -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-user-tie"></i> Datos del Tutor</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Cédula <span class="text-danger">*</span></label>
+                        <input type="text" name="tutor_cedula" id="tutorCedula" class="form-control" required>
+                        <small class="text-muted">Ej: V12345678</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nombres <span class="text-danger">*</span></label>
+                        <input type="text" name="tutor_nombre" id="tutorNombre" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Apellidos <span class="text-danger">*</span></label>
+                        <input type="text" name="tutor_apellidos" id="tutorApellidos" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Teléfono <span class="text-danger">*</span></label>
+                        <input type="text" name="tutor_telefono" id="tutorTelefono" class="form-control" required>
+                        <small class="text-muted">Ej: 0424-1234567</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 3: Participantes -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-user-friends"></i> Participantes</h5>
+                <div>
+                    <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
+                        <i class="fas fa-upload"></i> Carga Masiva
+                    </button>
+                    <button type="button" class="btn btn-light btn-sm" onclick="agregarParticipante()">
+                        <i class="fas fa-plus"></i> Agregar Uno
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Tabla de participantes agregados -->
+                <div id="tablaParticipantes" class="table-responsive" style="display: none;">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cédula</th>
+                                <th>Nombres</th>
+                                <th>Apellidos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyParticipantes">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Mensaje cuando no hay participantes -->
+                <div id="mensajeVacio" class="text-center text-muted py-4">
+                    <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                    <p>No hay participantes agregados. Use "Carga Masiva" o "Agregar Uno".</p>
+                </div>
+                
+                <!-- Formulario individual -->
+                <div id="listaParticipantes" style="display: none;">
+                    <!-- Los participantes individuales se agregarán aquí -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'mis_grupos' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Guardar Grupo
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Carga Masiva -->
+<div class="modal fade" id="modalCargaMasiva" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-upload"></i> Carga Masiva de Participantes</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Instrucciones:</strong> Ingrese las cédulas separadas por comas, espacios o saltos de línea.
+                    <br><small>Ejemplo: V12345678, E98765432, V11223344</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Lista de Cédulas</label>
+                    <textarea id="cedulasMasivas" class="form-control" rows="8" 
+                              placeholder="V12345678&#10;E98765432&#10;V11223344"></textarea>
+                </div>
+                
+                <div id="resultadosCarga" class="mt-3" style="display: none;">
+                    <div class="alert alert-success" id="exitososCarga" style="display: none;">
+                        <strong>✓ Encontrados:</strong> <span id="countExitosos">0</span> participantes
+                    </div>
+                    <div class="alert alert-warning" id="noEncontradosCarga" style="display: none;">
+                        <strong>⚠ No encontrados:</strong> <span id="listNoEncontrados"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="procesarCargaMasiva()">
+                    <i class="fas fa-search"></i> Buscar Participantes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para Participante Individual -->
+<template id="templateParticipante">
+    <div class="card mb-3 participante-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Participante <span class="numero-participante"></span></h6>
+                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarParticipanteIndividual(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Cédula/Escolar <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control cedula-participante" placeholder="V12345678" required>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100" onclick="buscarParticipante(this)">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+                <div class="col-md-8">
+                    <div id="datosParticipante" style="display: none;">
+                        <input type="hidden" class="participante-id" name="participantes[]" value="">
+                        <p class="mb-1"><strong>Nombres:</strong> <span class="nombres-participante"></span></p>
+                        <p class="mb-1"><strong>Apellidos:</strong> <span class="apellidos-participante"></span></p>
+                        <p class="mb-0"><strong>Fecha Nac.:</strong> <span class="fecha-participante"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+let contadorParticipantes = 0;
+let participantesAgregados = new Map(); // ID -> {cedula, nombres, apellidos}
+
+function actualizarTabla() {
+    const tbody = document.getElementById('bodyParticipantes');
+    const tabla = document.getElementById('tablaParticipantes');
+    const mensaje = document.getElementById('mensajeVacio');
+    
+    tbody.innerHTML = '';
+    
+    if (participantesAgregados.size === 0) {
+        tabla.style.display = 'none';
+        mensaje.style.display = 'block';
+        return;
+    }
+    
+    tabla.style.display = 'block';
+    mensaje.style.display = 'none';
+    
+    let index = 1;
+    participantesAgregados.forEach((data, id) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${index++}</td>
+            <td>${data.cedula}</td>
+            <td>${data.nombres}</td>
+            <td>${data.apellidos}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarParticipante(${id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        
+        // Agregar input oculto al formulario
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'participantes[]';
+        input.value = id;
+        input.id = `participante_${id}`;
+        document.getElementById('formGrupo').appendChild(input);
+    });
+}
+
+function eliminarParticipante(id) {
+    participantesAgregados.delete(id);
+    const input = document.getElementById(`participante_${id}`);
+    if (input) input.remove();
+    actualizarTabla();
+}
+
+function agregarParticipante() {
+    document.getElementById('listaParticipantes').style.display = 'block';
+    contadorParticipantes++;
+    const template = document.getElementById('templateParticipante');
+    const clone = template.content.cloneNode(true);
+    clone.querySelector('.numero-participante').textContent = contadorParticipantes;
+    document.getElementById('listaParticipantes').appendChild(clone);
+}
+
+function eliminarParticipanteIndividual(btn) {
+    btn.closest('.participante-card').remove();
+}
+
+function buscarParticipante(btn) {
+    const card = btn.closest('.participante-card');
+    const cedula = card.querySelector('.cedula-participante').value.trim();
+    
+    if (!cedula) {
+        alert('Ingrese una cédula');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+    
+    fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.found) {
+                // Verificar si ya está agregado
+                if (participantesAgregados.has(data.id)) {
+                    alert('Este participante ya está en el grupo');
+                    card.remove();
+                    return;
+                }
+                
+                // Agregar a la lista
+                participantesAgregados.set(data.id, {
+                    cedula: cedula,
+                    nombres: data.nombres,
+                    apellidos: data.apellidos
+                });
+                
+                actualizarTabla();
+                card.remove();
+                
+                // Ocultar formulario individual si no hay más cards
+                if (document.querySelectorAll('.participante-card').length === 0) {
+                    document.getElementById('listaParticipantes').style.display = 'none';
+                }
+            } else {
+                alert('Participante no encontrado. Debe estar registrado en el sistema.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al buscar participante.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+        });
+}
+
+function procesarCargaMasiva() {
+    const textarea = document.getElementById('cedulasMasivas');
+    const texto = textarea.value.trim();
+    
+    if (!texto) {
+        alert('Ingrese al menos una cédula');
+        return;
+    }
+    
+    // Separar por comas, espacios, saltos de línea
+    const cedulas = texto.split(/[,\s\n]+/).filter(c => c.trim());
+    
+    if (cedulas.length === 0) {
+        alert('No se encontraron cédulas válidas');
+        return;
+    }
+    
+    // Mostrar loading
+    const btnBuscar = event.target;
+    btnBuscar.disabled = true;
+    btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    
+    // Buscar todas las cédulas
+    const promesas = cedulas.map(cedula => 
+        fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
+            .then(res => res.json())
+            .then(data => ({cedula, data}))
+    );
+    
+    Promise.all(promesas).then(resultados => {
+        let encontrados = 0;
+        let noEncontrados = [];
+        
+        resultados.forEach(({cedula, data}) => {
+            if (data.found) {
+                // Verificar si ya está agregado
+                if (!participantesAgregados.has(data.id)) {
+                    participantesAgregados.set(data.id, {
+                        cedula: cedula,
+                        nombres: data.nombres,
+                        apellidos: data.apellidos
+                    });
+                    encontrados++;
+                }
+            } else {
+                noEncontrados.push(cedula);
+            }
+        });
+        
+        // Actualizar tabla
+        actualizarTabla();
+        
+        // Mostrar resultados
+        document.getElementById('resultadosCarga').style.display = 'block';
+        
+        if (encontrados > 0) {
+            document.getElementById('exitososCarga').style.display = 'block';
+            document.getElementById('countExitosos').textContent = encontrados;
+        }
+        
+        if (noEncontrados.length > 0) {
+            document.getElementById('noEncontradosCarga').style.display = 'block';
+            document.getElementById('listNoEncontrados').textContent = noEncontrados.join(', ');
+        }
+        
+        // Restaurar botón
+        btnBuscar.disabled = false;
+        btnBuscar.innerHTML = '<i class="fas fa-search"></i> Buscar Participantes';
+        
+        // Cerrar modal después de 3 segundos si todo fue exitoso
+        if (noEncontrados.length === 0) {
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('modalCargaMasiva')).hide();
+                textarea.value = '';
+                document.getElementById('resultadosCarga').style.display = 'none';
+            }, 2000);
+        }
+    });
+}
+
+// Limpiar modal al cerrar
+document.getElementById('modalCargaMasiva').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('cedulasMasivas').value = '';
+    document.getElementById('resultadosCarga').style.display = 'none';
+    document.getElementById('exitososCarga').style.display = 'none';
+    document.getElementById('noEncontradosCarga').style.display = 'none';
+});
+</script>
+{% endblock %}
+>>>>>>> d478e2264f258e15800fbf075fe8cb7ecd57211f

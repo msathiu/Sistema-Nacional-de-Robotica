@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
@@ -219,3 +220,172 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+=======
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Tutores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-plus-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ titulo }}</h2>
+                    <p class="text-muted mb-0 small">Complete los datos del tutor</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" 
+                     style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-text text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">Información del Tutor</h5>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Institución -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-building me-1"></i> Institución
+                                </label>
+                                {{ form.institucion }}
+                                {% if form.institucion.errors %}
+                                    <span class="text-danger small">{{ form.institucion.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Nombres y Apellidos -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person me-1"></i> Nombres
+                                </label>
+                                {{ form.nombres }}
+                                {% if form.nombres.errors %}
+                                    <span class="text-danger small">{{ form.nombres.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person me-1"></i> Apellidos
+                                </label>
+                                {{ form.apellidos }}
+                                {% if form.apellidos.errors %}
+                                    <span class="text-danger small">{{ form.apellidos.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Cédula y Teléfono -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-card-text me-1"></i> Cédula
+                                </label>
+                                {{ form.cedula }}
+                                {% if form.cedula.errors %}
+                                    <span class="text-danger small">{{ form.cedula.errors.0 }}</span>
+                                {% endif %}
+                                <small class="text-muted">Formato: V12345678 o E12345678</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-telephone me-1"></i> Teléfono
+                                </label>
+                                {{ form.telefono }}
+                                {% if form.telefono.errors %}
+                                    <span class="text-danger small">{{ form.telefono.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-envelope me-1"></i> Correo Electrónico
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <span class="text-danger small">{{ form.email.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Profesión -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-briefcase me-1"></i> Profesión
+                                </label>
+                                {{ form.profesion }}
+                                {% if form.profesion.errors %}
+                                    <span class="text-danger small">{{ form.profesion.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Estado -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-toggle-on me-1"></i> Estado
+                                </label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <span class="text-danger small">{{ form.status.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Experiencia -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-journal-text me-1"></i> Experiencia
+                                </label>
+                                {{ form.experiencia }}
+                                {% if form.experiencia.errors %}
+                                    <span class="text-danger small">{{ form.experiencia.errors.0 }}</span>
+                                {% endif %}
+                                <small class="text-muted">Describa la experiencia relevante del tutor</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{% url 'lista_tutores' %}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn px-4 fw-bold" 
+                                    style="background: var(--accent-cyan); color: var(--blue-main);">
+                                <i class="bi bi-check-circle me-1"></i> {{ boton_texto }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+    }
+</style>
+{% endblock %}
+>>>>>>> d478e2264f258e15800fbf075fe8cb7ecd57211f

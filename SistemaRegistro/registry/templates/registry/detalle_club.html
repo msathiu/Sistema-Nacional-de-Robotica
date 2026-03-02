@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
@@ -762,3 +763,302 @@ function rechazarClub() {
 </script>
 {% endblock %}
 
+=======
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ club.nombre }} - Detalle{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'directorio_clubes_aprobados' %}">Directorio de Clubes</a></li>
+            <li class="breadcrumb-item active">{{ club.nombre }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header del Club -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-4 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle p-3 me-3" style="background: rgba(0, 212, 255, 0.2);">
+                            <i class="bi bi-robot text-white" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-0 fw-bold text-white" style="font-family: 'Space Grotesk', sans-serif;">{{ club.nombre }}</h2>
+                            {% if club.siglas %}
+                                <p class="text-white-50 mb-0">{{ club.siglas }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="text-white-50 mb-1 small">
+                        <i class="bi bi-building me-2"></i><strong>Institución:</strong> {{ club.institucion_creadora.nombre_publico }}
+                    </p>
+                    <p class="text-white-50 mb-0 small">
+                        <i class="bi bi-geo-alt me-2"></i><strong>Ubicación:</strong> {{ club.ubicacion }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-success fs-5 mb-2 px-4 py-2 rounded-pill">
+                        <i class="bi bi-check-circle me-1"></i>Aprobado
+                    </span>
+                    <br>
+                    {% if club.estado_vinculacion == 'abierto' %}
+                        <span class="badge bg-success rounded-pill px-3">
+                            <i class="bi bi-unlock me-1"></i>Abierto
+                        </span>
+                    {% elif club.estado_vinculacion == 'cerrado' %}
+                        <span class="badge bg-danger rounded-pill px-3">
+                            <i class="bi bi-lock me-1"></i>Cerrado
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark rounded-pill px-3">
+                            <i class="bi bi-envelope me-1"></i>Invitación
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Información Principal -->
+        <div class="col-lg-8">
+            <!-- Descripción -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-info-circle me-2"></i>Descripción</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ club.descripcion }}</p>
+                </div>
+            </div>
+
+            <!-- Líneas de Investigación -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #d97706, #b45309);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-lightbulb me-2"></i>Líneas de Investigación</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {% for linea in club.lineas_investigacion %}
+                        <div class="col-md-6">
+                            <div class="p-3 rounded border-0 shadow-sm" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
+                                <i class="bi bi-check-circle-fill me-2" style="color: #059669;"></i>
+                                <strong>{{ linea }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requisitos -->
+            {% if club.requisitos %}
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #7c3aed, #5b21b6);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-list-check me-2"></i>Requisitos</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ club.requisitos }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Instituciones Miembro -->
+            <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-people me-2"></i>Instituciones Miembro</h5>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ membresias_activas.count }}</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if membresias_activas %}
+                        <div class="list-group list-group-flush">
+                            {% for membresia in membresias_activas %}
+                            <div class="list-group-item px-0 border-0 mb-2">
+                                <div class="d-flex align-items-center p-3 rounded" style="background: #f8fafc;">
+                                    <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
+                                        <i class="bi bi-building" style="color: #059669;"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-tag me-1"></i>{{ membresia.get_tipo_linea_display }} • 
+                                            <i class="bi bi-calendar-check me-1"></i>{{ membresia.fecha_respuesta|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill px-3">Activa</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
+                            <p class="text-muted mb-0">Aún no hay instituciones miembro</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Información Rápida -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-info-square me-2"></i>Información</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Cupos Disponibles</small>
+                        <h4 class="mb-0">
+                            <span class="badge bg-success">
+                                {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
+                            </span>
+                        </h4>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fecha de Fundación</small>
+                        <strong>
+                            {% if club.fecha_fundacion %}
+                                {{ club.fecha_fundacion|date:"d/m/Y" }}
+                            {% else %}
+                                No especificada
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fecha de Aprobación</small>
+                        <strong>{{ club.fecha_aprobacion|date:"d/m/Y" }}</strong>
+                    </div>
+                    <hr>
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Coordinador</small>
+                        <strong>
+                            {% if club.coordinador %}
+                                {% if club.coordinador.userprofile.institution %}
+                                    {{ club.coordinador.userprofile.institution.nombre_publico }}
+                                {% else %}
+                                    {{ club.coordinador.get_full_name|default:club.coordinador.username }}
+                                {% endif %}
+                            {% else %}
+                                No especificado
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acción de Postulación -->
+            {% if user_type == "institucional" %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    {% if es_propietario %}
+                        <i class="bi bi-award-fill text-warning display-4 mb-3"></i>
+                        <h5>Eres el Coordinador</h5>
+                        <p class="text-muted small mb-0">
+                            Tu institución creó y coordina este club
+                        </p>
+                    {% elif es_miembro %}
+                        <i class="bi bi-check-circle-fill text-success display-4 mb-3"></i>
+                        <h5>Miembro Activo</h5>
+                        <p class="text-muted small mb-0">
+                            Tu institución es parte de este club
+                        </p>
+                    {% elif ya_postulo %}
+                        <i class="bi bi-hourglass-split text-info display-4 mb-3"></i>
+                        <h5>Postulación en Revisión</h5>
+                        <p class="text-muted small mb-0">
+                            Tu solicitud está siendo evaluada
+                        </p>
+                    {% elif puede_postular %}
+                        <i class="bi bi-send-fill text-primary display-4 mb-3"></i>
+                        <h5>¿Interesado en unirte?</h5>
+                        <p class="text-muted small mb-3">
+                            Postula a este club y forma parte de la red
+                        </p>
+                        <a href="{% url 'postular_club' club.id %}" 
+                           class="btn btn-primary w-100">
+                            <i class="bi bi-send"></i> Postular Ahora
+                        </a>
+                    {% else %}
+                        <i class="bi bi-lock-fill text-secondary display-4 mb-3"></i>
+                        <h5>No disponible</h5>
+                        <p class="text-muted small mb-0">
+                            {% if club.cupos_disponibles == 0 %}
+                                No hay cupos disponibles
+                            {% else %}
+                                El club no acepta postulaciones
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Fase 4: Eventos del Club -->
+            {% if es_propietario or es_miembro %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0"><i class="bi bi-calendar-event"></i> Eventos del Club</h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if es_propietario %}
+                    <a href="{% url 'eventos_club' club.id %}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-calendar-plus"></i> Gestionar Eventos
+                    </a>
+                    {% else %}
+                    <a href="{% url 'eventos_club' club.id %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="bi bi-calendar-event"></i> Ver Eventos
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Fase 4: Calificaciones -->
+            {% if es_miembro %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h6 class="mb-0"><i class="bi bi-star-fill"></i> Calificación</h6>
+                </div>
+                <div class="card-body text-center">
+                    <a href="{% url 'calificar_club' club.id %}" class="btn btn-warning w-100">
+                        <i class="bi bi-star"></i> Calificar Club
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Fase 4: Eventos Vinculados -->
+            {% if eventos_vinculados %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="mb-0"><i class="bi bi-calendar-event"></i> Eventos Vinculados</h6>
+                </div>
+                <div class="card-body">
+                    {% for vinculacion in eventos_vinculados %}
+                    <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                        <strong>{{ vinculacion.evento.nombre }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            {{ vinculacion.evento.fecha|date:"d/m/Y" }} • {{ vinculacion.get_rol_display }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+>>>>>>> d478e2264f258e15800fbf075fe8cb7ecd57211f
