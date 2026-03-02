@@ -1,48 +1,101 @@
-{% extends 'base.html' %}
+{% extends 'users/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Dar Visto Bueno a Membresía{% endblock %}
 
+{% block extra_css %}
+<style>
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .card-header-modern {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+        border: none;
+    }
+    
+    .success-gradient {
+        background: linear-gradient(145deg, #059669, #047857);
+    }
+    
+    .info-gradient {
+        background: linear-gradient(145deg, #0891b2, #0e7490);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" 
+                   class="btn btn-secondary btn-circle me-3" 
+                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <i class="bi bi-check-circle fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Dar Visto Bueno</h2>
+                    <p class="text-muted mb-0 small">Aprobar solicitud de membresía</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Dar Visto Bueno a Membresía</h4>
+            <div class="modern-card">
+                <div class="card-header card-header-modern success-gradient text-white d-flex align-items-center">
+                    <i class="bi bi-check-circle me-3 fs-4"></i>
+                    <h4 class="mb-0 fw-bold">Dar Visto Bueno a Membresía</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Información:</strong> Al dar visto bueno, la solicitud será enviada al Ente Rector para su aprobación final.
+                <div class="card-body p-4">
+                    <div class="alert mb-4" style="background: linear-gradient(135deg, #e0f2fe, #f0f9ff); border-radius: 12px; border-left: 4px solid #0891b2;">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-info-circle fs-5 me-3 mt-1" style="color: #0891b2;"></i>
+                            <div>
+                                <strong>Información:</strong> Al dar visto bueno, la solicitud será enviada al Ente Rector para su aprobación final.
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <h5>Información de la Solicitud</h5>
-                        <table class="table table-sm">
+                    <div class="mb-4 p-4 rounded" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
+                        <h5 class="fw-bold mb-3" style="color: var(--blue-main);">
+                            <i class="bi bi-file-text me-2"></i>Información de la Solicitud
+                        </h5>
+                        <table class="table table-borderless">
                             <tr>
-                                <th width="30%">Club:</th>
+                                <th width="30%"><i class="bi bi-robot me-2"></i>Club:</th>
                                 <td>{{ membresia.club.nombre }}</td>
                             </tr>
                             <tr>
-                                <th>Institución Solicitante:</th>
+                                <th><i class="bi bi-building me-2"></i>Institución Solicitante:</th>
                                 <td>{{ membresia.institucion.nombre }}</td>
                             </tr>
                             <tr>
-                                <th>Fecha de Solicitud:</th>
+                                <th><i class="bi bi-calendar me-2"></i>Fecha de Solicitud:</th>
                                 <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
                             </tr>
                             <tr>
-                                <th>Tipo de Línea:</th>
+                                <th><i class="bi bi-tag me-2"></i>Tipo de Línea:</th>
                                 <td>{{ membresia.get_tipo_linea_display|default:"No especificado" }}</td>
                             </tr>
                             <tr>
-                                <th>Representante Legal:</th>
+                                <th><i class="bi bi-person me-2"></i>Representante Legal:</th>
                                 <td>{{ membresia.representante_legal|default:"No especificado" }}</td>
                             </tr>
                             {% if membresia.carta_intencion %}
                             <tr>
-                                <th>Carta de Intención:</th>
+                                <th><i class="bi bi-envelope me-2"></i>Carta de Intención:</th>
                                 <td>{{ membresia.carta_intencion|truncatewords:30 }}</td>
                             </tr>
                             {% endif %}
@@ -51,9 +104,9 @@
 
                     <form method="post">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="observaciones" class="form-label">
-                                <strong>Observaciones (opcional)</strong>
+                        <div class="mb-4">
+                            <label for="observaciones" class="form-label fw-bold" style="color: var(--blue-main);">
+                                <i class="bi bi-chat-left-text me-2"></i>Observaciones (opcional)
                             </label>
                             <textarea 
                                 name="observaciones" 
@@ -61,16 +114,17 @@
                                 class="form-control" 
                                 rows="4" 
                                 placeholder="Agrega comentarios sobre la solicitud..."
+                                style="border-radius: 12px; border: 2px solid #e5e7eb;"
                             ></textarea>
-                            <small class="text-muted">Estas observaciones serán visibles para el Ente Rector.</small>
+                            <small class="text-muted mt-1 d-block">Estas observaciones serán visibles para el Ente Rector.</small>
                         </div>
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between pt-3">
                             <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancelar
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Dar Visto Bueno
+                                <i class="bi bi-check-circle me-2"></i>Dar Visto Bueno
                             </button>
                         </div>
                     </form>
@@ -80,3 +134,4 @@
     </div>
 </div>
 {% endblock %}
+

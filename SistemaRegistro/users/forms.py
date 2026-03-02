@@ -114,6 +114,35 @@ class ParticipanteModalEditForm(forms.ModelForm):
         fields = ['nombres', 'apellidos', 'email', 'codigo_area', 'numero_telefono']
 
 class ParticipanteRegistrationForm(forms.ModelForm):
+    # Campos de cédula separados
+    cedula_personal = forms.CharField(
+        required=False,
+        max_length=10,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Solo números",
+                "pattern": "[0-9]+",
+                "maxlength": "10"
+            }
+        ),
+        label="Cédula Personal"
+    )
+    
+    cedula_escolar_input = forms.CharField(
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Solo números",
+                "pattern": "[0-9]+",
+                "maxlength": "20"
+            }
+        ),
+        label="Cédula Escolar"
+    )
+    
     # Campo de edad calculado (readonly)
     edad = forms.IntegerField(
         required=False,
@@ -133,9 +162,9 @@ class ParticipanteRegistrationForm(forms.ModelForm):
     class Meta:
         model = Participante
         fields = [
-            "nombres", "apellidos", "cedula", "fecha_nacimiento", "sexo",
+            "nombres", "apellidos", "fecha_nacimiento", "sexo",
             "codigo_area", "numero_telefono", "direccion", "estado",
-            "municipio", "grado_escolar", "nombre_escuela",
+            "municipio", "parroquia", "grado_escolar", "nombre_escuela",
             "nombre_representante", "cedula_representante",
             "codigo_area_representante", "numero_telefono_representante",
             "email_representante",
@@ -145,7 +174,6 @@ class ParticipanteRegistrationForm(forms.ModelForm):
                 attrs={"type": "date", "class": "form-control"}
             ),
             "direccion": forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
-            "cedula": forms.TextInput(attrs={"placeholder": "Solo números"}),
             "cedula_representante": forms.TextInput(attrs={"placeholder": "Solo números"}),
         }
 
@@ -210,15 +238,50 @@ class ParticipanteRegistrationForm(forms.ModelForm):
                 raise ValidationError("El participante debe tener al menos 3 años de edad.")
         return fecha_nac
     
+    def clean_cedula_personal(self):
+        """Limpia la cédula personal dejando solo números."""
+        cedula = self.data.get('cedula_personal', '').strip()
+        if cedula:
+            # Remover todo excepto números
+            cedula_limpia = ''.join(filter(str.isdigit, cedula))
+            if cedula_limpia and len(cedula_limpia) > 10:
+                raise ValidationError("La cédula personal no puede tener más de 10 dígitos.")
+            return cedula_limpia
+        return ''
+    
+    def clean_cedula_escolar(self):
+        """Limpia la cédula escolar dejando solo números."""
+        cedula = self.data.get('cedula_escolar', '').strip()
+        if cedula:
+            # Remover todo excepto números
+            cedula_limpia = ''.join(filter(str.isdigit, cedula))
+            if cedula_limpia and len(cedula_limpia) > 20:
+                raise ValidationError("La cédula escolar no puede tener más de 20 dígitos.")
+            return cedula_limpia
+        return ''
+    
     def clean(self):
         cleaned_data = super().clean()
         fecha_nac = cleaned_data.get("fecha_nacimiento")
+        
+        # Obtener cédulas limpias
+        cedula_personal = self.clean_cedula_personal()
+        cedula_escolar = self.clean_cedula_escolar()
+        
+        # Validar que tenga al menos una cédula
+        if not cedula_personal and not cedula_escolar:
+            raise ValidationError("Debe proporcionar al menos una cédula (personal o escolar).")
         
         if fecha_nac:
             today = date.today()
             edad = today.year - fecha_nac.year - ((today.month, today.day) < (fecha_nac.month, fecha_nac.day))
             
-            # Lógica para Menores de Edad
+            # Para menores de 10 años: al menos una cédula requerida (ya validado arriba)
+            # Para mayores de 10 años: cédula personal obligatoria
+            if edad > 10 and not cedula_personal:
+                raise ValidationError("La cédula personal es obligatoria para mayores de 10 años.")
+            
+            # Lógica para Menores de Edad (< 18 años)
             if edad < 18:
                 campos_rep = [
                     'nombre_representante', 'cedula_representante', 

@@ -1,39 +1,88 @@
-{% extends 'base.html' %}
+{% extends 'users/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Rechazar Membresía{% endblock %}
 
+{% block extra_css %}
+<style>
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .card-header-modern {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+        border: none;
+    }
+    
+    .danger-gradient {
+        background: linear-gradient(145deg, #dc2626, #991b1b);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" 
+                   class="btn btn-secondary btn-circle me-3" 
+                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
+                    <i class="bi bi-x-circle fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Rechazar Membresía</h2>
+                    <p class="text-muted mb-0 small">Indica el motivo del rechazo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0"><i class="bi bi-x-circle"></i> Rechazar Membresía</h4>
+            <div class="modern-card">
+                <div class="card-header card-header-modern danger-gradient text-white d-flex align-items-center">
+                    <i class="bi bi-x-circle me-3 fs-4"></i>
+                    <h4 class="mb-0 fw-bold">Rechazar Membresía</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Atención:</strong> Estás a punto de rechazar la solicitud de membresía.
+                <div class="card-body p-4">
+                    <div class="alert mb-4" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; border-left: 4px solid #f59e0b;">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle fs-5 me-3 mt-1" style="color: #f59e0b;"></i>
+                            <div>
+                                <strong>Atención:</strong> Estás a punto de rechazar la solicitud de membresía.
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <h5>Información de la Solicitud</h5>
-                        <table class="table table-sm">
+                    <div class="mb-4 p-4 rounded" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
+                        <h5 class="fw-bold mb-3" style="color: var(--blue-main);">
+                            <i class="bi bi-file-text me-2"></i>Información de la Solicitud
+                        </h5>
+                        <table class="table table-borderless">
                             <tr>
-                                <th width="30%">Club:</th>
+                                <th width="30%"><i class="bi bi-robot me-2"></i>Club:</th>
                                 <td>{{ membresia.club.nombre }}</td>
                             </tr>
                             <tr>
-                                <th>Institución Solicitante:</th>
+                                <th><i class="bi bi-building me-2"></i>Institución Solicitante:</th>
                                 <td>{{ membresia.institucion.nombre }}</td>
                             </tr>
                             <tr>
-                                <th>Fecha de Solicitud:</th>
+                                <th><i class="bi bi-calendar me-2"></i>Fecha de Solicitud:</th>
                                 <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
                             </tr>
                             <tr>
-                                <th>Tipo de Línea:</th>
+                                <th><i class="bi bi-tag me-2"></i>Tipo de Línea:</th>
                                 <td>{{ membresia.get_tipo_linea_display }}</td>
                             </tr>
                         </table>
@@ -41,9 +90,9 @@
 
                     <form method="post">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="observaciones" class="form-label">
-                                <strong>Motivo del Rechazo <span class="text-danger">*</span></strong>
+                        <div class="mb-4">
+                            <label for="observaciones" class="form-label fw-bold" style="color: var(--blue-main);">
+                                <i class="bi bi-chat-left-text me-2"></i>Motivo del Rechazo <span class="text-danger">*</span>
                             </label>
                             <textarea 
                                 name="observaciones" 
@@ -52,16 +101,17 @@
                                 rows="5" 
                                 required
                                 placeholder="Explica el motivo del rechazo de esta solicitud..."
+                                style="border-radius: 12px; border: 2px solid #e5e7eb;"
                             ></textarea>
-                            <small class="text-muted">Este motivo será visible para la institución solicitante.</small>
+                            <small class="text-muted mt-1 d-block">Este motivo será visible para la institución solicitante.</small>
                         </div>
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between pt-3">
                             <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancelar
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
                             </a>
                             <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-x-circle"></i> Rechazar Membresía
+                                <i class="bi bi-x-circle me-2"></i>Rechazar Membresía
                             </button>
                         </div>
                     </form>
@@ -71,3 +121,4 @@
     </div>
 </div>
 {% endblock %}
+

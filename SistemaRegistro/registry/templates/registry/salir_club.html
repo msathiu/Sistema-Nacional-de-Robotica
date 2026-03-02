@@ -1,43 +1,111 @@
-{% extends 'base.html' %}
+{% extends 'users/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Salir del Club{% endblock %}
+{% block title %}Salir del Club - RNR{% endblock %}
+
+{% block extra_css %}
+<style>
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .card-header-modern {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+        border: none;
+    }
+    
+    .warning-gradient {
+        background: linear-gradient(145deg, #f59e0b, #d97706);
+    }
+    
+    .section-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'mis_membresias' %}" 
+                   class="btn btn-secondary btn-circle me-3" 
+                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                    <i class="bi bi-box-arrow-right fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Salir del Club</h2>
+                    <p class="text-muted mb-0 small">Confirmar salida del club</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h4 class="mb-0"><i class="bi bi-box-arrow-right"></i> Salir del Club</h4>
+            <div class="modern-card">
+                <div class="card-header card-header-modern warning-gradient text-white d-flex align-items-center">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </div>
+                    <h4 class="mb-0 fw-bold">Salir del Club</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Atención:</strong> Estás a punto de salir de este club. Esta acción liberará tu cupo y podrás volver a postular en el futuro si lo deseas.
+                <div class="card-body p-4">
+                    <div class="alert mb-4" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; border-left: 4px solid #f59e0b;">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle fs-5 me-3 mt-1" style="color: #f59e0b;"></i>
+                            <div>
+                                <strong>Atención:</strong>
+                                <p class="mb-0 mt-1">Estás a punto de salir de este club. Esta acción liberará tu cupo y podrás volver a postular en el futuro si lo deseas.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-4">
-                        <h5>Información del Club</h5>
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="text-primary">{{ membresia.club.nombre }}</h4>
-                                {% if membresia.club.siglas %}
-                                <p class="text-muted">{{ membresia.club.siglas }}</p>
-                                {% endif %}
-                                <hr>
-                                <p><strong>Institución Propietaria:</strong><br>{{ membresia.club.institucion_creadora.nombre }}</p>
-                                <p><strong>Ubicación:</strong> {{ membresia.club.ubicacion }}</p>
-                                <p><strong>Fecha de Ingreso:</strong> {{ membresia.fecha_respuesta|date:"d/m/Y" }}</p>
+                        <h5 class="fw-bold mb-3" style="color: var(--blue-main);">
+                            <i class="bi bi-building me-2"></i>Información del Club
+                        </h5>
+                        <div class="p-4 rounded" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
+                            <h4 class="text-primary fw-bold">{{ membresia.club.nombre }}</h4>
+                            {% if membresia.club.siglas %}
+                            <p class="text-muted">{{ membresia.club.siglas }}</p>
+                            {% endif %}
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong><i class="bi bi-bank2 me-2"></i>Institución Propietaria:</strong></p>
+                                    <p class="text-muted">{{ membresia.club.institucion_creadora.nombre }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong><i class="bi bi-geo-alt me-2"></i>Ubicación:</strong></p>
+                                    <p class="text-muted">{{ membresia.club.ubicacion }}</p>
+                                </div>
                             </div>
+                            <p class="mb-0"><strong><i class="bi bi-calendar-check me-2"></i>Fecha de Ingreso:</strong></p>
+                            <p class="text-muted">{{ membresia.fecha_respuesta|date:"d/m/Y" }}</p>
                         </div>
                     </div>
 
                     <form method="post">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="motivo" class="form-label">
-                                <strong>Motivo de Salida (Opcional)</strong>
+                        <div class="mb-4">
+                            <label for="motivo" class="form-label fw-bold" style="color: var(--blue-main);">
+                                <i class="bi bi-chat-left-text me-2"></i>Motivo de Salida (Opcional)
                             </label>
                             <textarea 
                                 name="motivo" 
@@ -45,27 +113,32 @@
                                 class="form-control" 
                                 rows="4" 
                                 placeholder="Puedes indicar el motivo de tu salida (opcional)..."
+                                style="border-radius: 12px; border: 2px solid #e5e7eb;"
                             ></textarea>
                             <small class="text-muted">Este motivo será visible para el propietario del club.</small>
                         </div>
 
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>¿Qué sucederá?</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>Tu membresía será cancelada inmediatamente</li>
-                                <li>Se liberará un cupo en el club</li>
-                                <li>Podrás volver a postular en el futuro</li>
-                                <li>El propietario será notificado de tu salida</li>
-                            </ul>
+                        <div class="alert mb-4" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd); border-radius: 12px; border-left: 4px solid #0891b2;">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-info-circle fs-5 me-3 mt-1" style="color: #0891b2;"></i>
+                                <div>
+                                    <strong>¿Qué sucederá?</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Tu membresía será cancelada inmediatamente</li>
+                                        <li>Se liberará un cupo en el club</li>
+                                        <li>Podrás volver a postular en el futuro</li>
+                                        <li>El propietario será notificado de tu salida</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between pt-3">
                             <a href="{% url 'mis_membresias' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancelar
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bi bi-box-arrow-right"></i> Confirmar Salida
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-box-arrow-right me-2"></i>Confirmar Salida
                             </button>
                         </div>
                     </form>
@@ -75,3 +148,4 @@
     </div>
 </div>
 {% endblock %}
+

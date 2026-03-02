@@ -26,14 +26,14 @@ def calificar_club(request, club_id):
     # Verificar que el usuario tiene institución
     if not hasattr(request.user, 'userprofile') or not request.user.userprofile.institution:
         messages.error(request, "Debe estar asociado a una institución para calificar.")
-        return redirect('club_detalle', club_id=club_id)
+        return redirect('detalle_club', club_id=club_id)
     
     institucion = request.user.userprofile.institution
     
     # Verificar que la institución es miembro del club
     if not club.membresias.filter(institucion=institucion, estado='miembro_activo').exists():
         messages.error(request, "Solo los miembros del club pueden calificarlo.")
-        return redirect('club_detalle', club_id=club_id)
+        return redirect('detalle_club', club_id=club_id)
     
     if request.method == 'POST':
         puntuacion = int(request.POST.get('puntuacion'))
@@ -51,7 +51,7 @@ def calificar_club(request, club_id):
         else:
             messages.success(request, "Calificación actualizada exitosamente.")
         
-        return redirect('club_detalle', club_id=club_id)
+        return redirect('detalle_club', club_id=club_id)
     
     # Obtener calificación existente si hay
     calificacion_existente = CalificacionClub.objects.filter(
@@ -72,7 +72,7 @@ def vincular_club_evento(request, club_id):
     # Verificar permisos
     if not club.puede_editar(request.user):
         messages.error(request, "No tiene permisos para vincular este club a eventos.")
-        return redirect('club_detalle', club_id=club_id)
+        return redirect('detalle_club', club_id=club_id)
     
     if request.method == 'POST':
         evento_id = request.POST.get('evento_id')
@@ -92,7 +92,7 @@ def vincular_club_evento(request, club_id):
         else:
             messages.info(request, "El club ya está vinculado a este evento.")
         
-        return redirect('club_detalle', club_id=club_id)
+        return redirect('detalle_club', club_id=club_id)
     
     # Obtener eventos disponibles
     eventos_disponibles = Evento.objects.filter(
@@ -116,14 +116,14 @@ def desvincular_club_evento(request, vinculacion_id):
     # Verificar permisos
     if not vinculacion.club.puede_editar(request.user):
         messages.error(request, "No tiene permisos para desvincular este club.")
-        return redirect('club_detalle', club_id=vinculacion.club.id)
+        return redirect('detalle_club', club_id=vinculacion.club.id)
     
     club_id = vinculacion.club.id
     evento_nombre = vinculacion.evento.nombre
     vinculacion.delete()
     
     messages.success(request, f"Club desvinculado del evento '{evento_nombre}'.")
-    return redirect('club_detalle', club_id=club_id)
+    return redirect('detalle_club', club_id=club_id)
 
 
 @login_required

@@ -328,6 +328,187 @@
             margin-left: auto;
             font-size: 0.9rem;
         }
+
+        /* ==================== SISTEMA DE BOTONES MODERNO ==================== */
+        :root {
+            /* Colores del sistema de botones */
+            --btn-primary: #0b2c6d;
+            --btn-primary-hover: #1a4ca8;
+            --btn-primary-light: #00d4ff;
+            --btn-success: #059669;
+            --btn-success-hover: #10b981;
+            --btn-danger: #dc2626;
+            --btn-danger-hover: #ef4444;
+            --btn-warning: #d97706;
+            --btn-warning-hover: #f59e0b;
+            --btn-secondary: #6b7280;
+            --btn-secondary-hover: #9ca3af;
+            --btn-outline: #0b2c6d;
+            --btn-outline-hover: #1a4ca8;
+        }
+
+        /* Botón base moderno */
+        .btn-modern {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+
+        /* Botón Primary - Azul principal */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--btn-primary) 0%, var(--btn-primary-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #234d94 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(11, 44, 109, 0.4);
+        }
+
+        /* Botón Success - Verde esmeralda */
+        .btn-success {
+            background: linear-gradient(135deg, var(--btn-success) 0%, var(--btn-success-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, var(--btn-success-hover) 0%, #34d399 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        /* Botón Danger - Rojo */
+        .btn-danger {
+            background: linear-gradient(135deg, var(--btn-danger) 0%, var(--btn-danger-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, var(--btn-danger-hover) 0%, #f87171 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Botón Warning - Naranja */
+        .btn-warning {
+            background: linear-gradient(135deg, var(--btn-warning) 0%, var(--btn-warning-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, var(--btn-warning-hover) 0%, #fbbf24 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+        }
+
+        /* Botón Secondary - Gris */
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--btn-secondary) 0%, var(--btn-secondary-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, var(--btn-secondary-hover) 0%, #d1d5db 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4);
+        }
+
+        /* Botón Outline - Borde azul */
+        .btn-outline {
+            background: transparent;
+            color: var(--btn-outline);
+            border: 2px solid var(--btn-outline);
+        }
+
+        .btn-outline:hover {
+            background: var(--btn-outline);
+            color: white;
+            box-shadow: 0 4px 15px rgba(11, 44, 109, 0.3);
+        }
+
+        /* Botón pequeño */
+        .btn-sm {
+            padding: 0.375rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        /* Botón grande */
+        .btn-lg {
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+        }
+
+        /* Botón círculo (para iconos) */
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-circle.btn-sm {
+            width: 32px;
+            height: 32px;
+        }
+
+        .btn-circle.btn-lg {
+            width: 48px;
+            height: 48px;
+        }
+
+        /* Iconos en botones */
+        .btn-modern i {
+            font-size: 1.1em;
+        }
+
+        /* Estados disabled */
+        .btn-modern:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Botón con gradiente cyan (especial) */
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--btn-primary) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-cyan:hover {
+            background: linear-gradient(135deg, #38bdf8 0%, var(--btn-primary-hover) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -483,7 +664,7 @@
                 </div>
                 
                 <a href="{% url 'mis_grupos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_grupos' %}active{% endif %}">
-                    <i class="bi bi-microsoft-teams"></i> Mis Grupos
+                    <i class="bi bi-microsoft-teams"></i> Mis Equipos
                 </a>
                 <a href="{% url 'lista_tutores' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_tutores' %}active{% endif %}">
                     <i class="bi bi-person-workspace"></i> Tutores
@@ -521,7 +702,7 @@
                         <span class="user-role">
                             {% if es_central or user.is_superuser %}SUPERADMIN
                             {% elif es_regional %}AUDITOR
-                            {% else %}SEDE{% endif %}
+                            {% else %}INSTITUCIÓN{% endif %}
                         </span>
                     </div>
                     <i class="bi bi-chevron-down chevron"></i>

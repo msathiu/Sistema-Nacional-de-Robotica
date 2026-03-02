@@ -1,0 +1,440 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Crear Evento - RNR{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                        <i class="bi bi-calendar-plus fs-2 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Configuración de Evento</h2>
+                        <p class="text-muted mb-0 small">Planificación y despliegue territorial de actividades</p>
+                    </div>
+                </div>
+                <a href="{% if es_federacion %}{% url 'dashboard' %}{% else %}{% url 'gestionar_eventos_inst' %}{% endif %}" class="btn btn-outline-secondary px-4 fw-bold rounded-pill">
+                    <i class="bi bi-arrow-left me-2"></i> Volver
+                </a>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-triangle-fill{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
+                <div class="card-header border-0 py-4 px-4" style="background: linear-gradient(135deg, var(--blue-main), #1e3a8a);">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="p-2 rounded-3 bg-white bg-opacity-20 me-3">
+                                <i class="bi bi-gear-wide-connected text-white fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0 text-white">NUEVO REGISTRO DE EVENTO</h5>
+                                <p class="text-white-50 small mb-0">
+                                    {% if es_federacion %}
+                                        <i class="bi bi-shield-check me-1"></i>Publicación directa - Visible inmediatamente
+                                    {% else %}
+                                        Complete los detalles del evento
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% if es_federacion %}
+                        <span class="badge bg-success fs-6">
+                            <i class="bi bi-lightning-fill me-1"></i>Publicación Directa
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form method="POST" id="formEvento">
+                        {% csrf_token %}
+
+                        <!-- Información Básica -->
+                        <div class="mb-5">
+                            <h6 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                                <i class="bi bi-info-circle me-2"></i>Información Básica
+                            </h6>
+                            
+                            <div class="row g-4">
+                                <!-- Nombre del Evento -->
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-bookmark-star me-1 text-primary"></i> Nombre del Evento *
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg" 
+                                           name="nombre" value="{{ valores_previos.nombre|default:'' }}"
+                                           placeholder="Ej: Feria Regional de Robótica 2024" required>
+                                </div>
+
+                                <!-- Categoría -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-tags me-1 text-primary"></i> Categoría *
+                                    </label>
+                                    <select name="categoria" class="form-select form-select-lg" required>
+                                        <option value="" disabled {% if not valores_previos.categoria %}selected{% endif %}>Seleccione...</option>
+                                        {% for categoria in categorias %}
+                                        <option value="{{ categoria }}" {% if valores_previos.categoria == categoria %}selected{% endif %}>
+                                            {{ categoria }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Fecha del Evento -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-calendar-event me-1 text-primary"></i> Fecha del Evento *
+                                    </label>
+                                    <input type="date" class="form-control form-control-lg" 
+                                           name="fecha" id="fecha_evento"
+                                           min="{{ hoy }}" value="{{ valores_previos.fecha|default:'' }}" required>
+                                </div>
+
+                                <!-- Modalidad -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-laptop me-1 text-primary"></i> Modalidad *
+                                    </label>
+                                    <select name="modalidad" class="form-select form-select-lg">
+                                        <option value="presencial" {% if valores_previos.modalidad == 'presencial' or not valores_previos %}selected{% endif %}>Presencial</option>
+                                        <option value="virtual" {% if valores_previos.modalidad == 'virtual' %}selected{% endif %}>Virtual</option>
+                                        <option value="hibrido" {% if valores_previos.modalidad == 'hibrido' %}selected{% endif %}>Híbrido</option>
+                                    </select>
+                                </div>
+
+                                <!-- Estado Evento -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-activity me-1 text-primary"></i> Estado Inicial *
+                                    </label>
+                                    <select name="estado_evento" class="form-select form-select-lg">
+                                        <option value="abierto" {% if valores_previos.estado_evento == 'abierto' or not valores_previos %}selected{% endif %}>Abierto</option>
+                                        <option value="pausado" {% if valores_previos.estado_evento == 'pausado' %}selected{% endif %}>Pausado</option>
+                                        <option value="cerrado" {% if valores_previos.estado_evento == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ubicación -->
+                        <div class="mb-5">
+                            <h6 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                                <i class="bi bi-geo-alt me-2"></i>Ubicación del Evento
+                            </h6>
+                            
+                            <div class="row g-4">
+                                <!-- Estado (preseleccionado) -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-flag me-1 text-primary"></i> Estado *
+                                    </label>
+                                    <select name="estado" id="estado" class="form-select form-select-lg" required>
+                                        <option value="" disabled>Seleccione un estado...</option>
+                                        {% for estado in estados %}
+                                        <option value="{{ estado.id }}" 
+                                            {% if estado_institucion and estado.id == estado_institucion.id %}selected{% endif %}
+                                            {% if valores_previos.estado == estado.id|stringformat:"i" %}selected{% endif %}>
+                                            {{ estado.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if estado_institucion %}
+                                    <div class="form-text text-success">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Estado de tu institución preseleccionado
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Municipio -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-building me-1 text-primary"></i> Municipio
+                                    </label>
+                                    <select name="municipio" id="municipio" class="form-select form-select-lg">
+                                        <option value="">Seleccione un municipio...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Parroquia -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-pin-map me-1 text-primary"></i> Parroquia
+                                    </label>
+                                    <select name="parroquia" id="parroquia" class="form-select form-select-lg">
+                                        <option value="">Seleccione una parroquia...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dirección -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-signpost me-1 text-primary"></i> Dirección Específica
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg" 
+                                           name="direccion" value="{{ valores_previos.direccion|default:'' }}"
+                                           placeholder="Ej: Av. Principal, frente a la plaza Bolívar">
+                                    <div class="form-text">Dirección detallada del lugar del evento</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción y Requisitos -->
+                        <div class="mb-5">
+                            <h6 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                                <i class="bi bi-file-text me-2"></i>Detalles del Evento
+                            </h6>
+                            
+                            <div class="row g-4">
+                                <!-- Descripción -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-text-paragraph me-1 text-primary"></i> Descripción del Evento
+                                    </label>
+                                    <textarea class="form-control" rows="4" 
+                                              name="descripcion" placeholder="Describa los objetivos, actividades y detalles del evento...">{{ valores_previos.descripcion|default:'' }}</textarea>
+                                </div>
+
+                                <!-- Requisitos -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-muted">
+                                        <i class="bi bi-card-checklist me-1 text-primary"></i> Requisitos de Participación
+                                    </label>
+                                    <textarea class="form-control" rows="4" 
+                                              name="requisitos" placeholder="Lista de requisitos para participar...">{{ valores_previos.requisitos|default:'' }}</textarea>
+                                    <div class="form-text">Especifique qué necesitan los participantes para inscribirse</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="pt-4 border-top">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" 
+                                            style="background: var(--blue-main); border: none; border-radius: 12px;">
+                                        <i class="bi bi-cloud-arrow-up-fill me-2"></i> Publicar Evento
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% if es_federacion %}{% url 'dashboard' %}{% else %}{% url 'gestionar_eventos_inst' %}{% endif %}" class="btn btn-light w-100 py-3 fw-bold" 
+                                       style="border-radius: 12px; border: 1px solid #e2e8f0;">
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info adicional mejorada -->
+            <div class="mt-4 p-4 rounded-4 d-flex align-items-start gap-3" 
+                 style="background: {% if es_federacion %}linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.05)){% else %}linear-gradient(135deg, rgba(0,212,255,0.1), rgba(11,44,109,0.05)){% endif %}; border: 1px solid {% if es_federacion %}#10b981{% else %}var(--accent-cyan){% endif %};">
+                <div class="bg-white p-3 rounded-3 shadow-sm">
+                    <i class="bi bi-{% if es_federacion %}shield-check-fill text-success{% else %}info-circle-fill text-primary{% endif %} fs-3"></i>
+                </div>
+                <div>
+                    {% if es_federacion %}
+                        <h6 class="fw-bold mb-3 text-success">✨ Publicación Directa de Federación</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success rounded-circle p-2">✓</span>
+                                    <small>El evento será <strong>visible inmediatamente</strong></small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success rounded-circle p-2">✓</span>
+                                    <small>No requiere aprobación adicional</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success rounded-circle p-2">✓</span>
+                                    <small>Todas las instituciones podrán verlo</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success rounded-circle p-2">✓</span>
+                                    <small>Gestión centralizada por federación</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <h6 class="fw-bold mb-3">📋 Información importante:</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-circle p-2">✓</span>
+                                    <small>Las inscripciones se cierran el día del evento</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-circle p-2">✓</span>
+                                    <small>El estado se preselecciona según tu institución</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-circle p-2">✓</span>
+                                    <small>Los participantes solo ven eventos de su estado</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary rounded-circle p-2">✓</span>
+                                    <small>Eventos pasados se marcan automáticamente</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --accent-cyan: #00d4ff;
+    }
+    
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--accent-cyan) !important;
+        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.15);
+    }
+    
+    .form-control-lg, .form-select-lg {
+        padding: 1rem 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .card {
+        animation: slideUp 0.5s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .bg-opacity-20 {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .border-bottom {
+        border-bottom: 2px solid rgba(11, 44, 109, 0.1) !important;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(11, 44, 109, 0.2) !important;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // URLs para AJAX
+    const urlMunicipios = "{% url 'ajax_municipios' %}";
+    const urlParroquias = "{% url 'ajax_load_parroquias' %}";
+    
+    // Validación de fecha
+    const fechaInput = document.getElementById('fecha_evento');
+    const hoy = new Date().toISOString().split('T')[0];
+    fechaInput.setAttribute('min', hoy);
+    
+    fechaInput.addEventListener('change', function() {
+        if (this.value < hoy) {
+            alert('❌ No puedes seleccionar una fecha anterior a hoy');
+            this.value = hoy;
+        }
+    });
+
+    // Si hay un estado preseleccionado, cargar sus municipios
+    const estadoSelect = document.getElementById('estado');
+    if (estadoSelect.value) {
+        cargarMunicipios(estadoSelect.value);
+    }
+
+    // Cargar municipios al seleccionar estado
+    estadoSelect.addEventListener('change', function() {
+        cargarMunicipios(this.value);
+    });
+
+    function cargarMunicipios(estadoId) {
+        if (!estadoId) return;
+        
+        fetch(`${urlMunicipios}?estado_id=${estadoId}`)
+            .then(response => response.json())
+            .then(data => {
+                const municipioSelect = document.getElementById('municipio');
+                municipioSelect.innerHTML = '<option value="">Seleccione un municipio...</option>';
+                
+                data.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.id;
+                    option.textContent = m.nombre;
+                    municipioSelect.appendChild(option);
+                });
+                
+                // Limpiar parroquias
+                document.getElementById('parroquia').innerHTML = '<option value="">Seleccione una parroquia...</option>';
+            });
+    }
+
+    // Cargar parroquias al seleccionar municipio
+    document.getElementById('municipio').addEventListener('change', function() {
+        const municipioId = this.value;
+        if (!municipioId) return;
+        
+        fetch(`${urlParroquias}?municipio_id=${municipioId}`)
+            .then(response => response.json())
+            .then(data => {
+                const parroquiaSelect = document.getElementById('parroquia');
+                parroquiaSelect.innerHTML = '<option value="">Seleccione una parroquia...</option>';
+                
+                data.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.nombre;
+                    parroquiaSelect.appendChild(option);
+                });
+            });
+    });
+});
+</script>
+{% endblock %}

@@ -77,6 +77,11 @@ urlpatterns = [
     path("participantes/", views.lista_participantes, name="lista_participantes"),
     path("participantes/crear/", views.crear_participante, name="crear_participante"),
     path(
+        "verificar-participante/",
+        views.verificar_participante_duplicado,
+        name="verificar_participante_duplicado",
+    ),
+    path(
         "participante/<int:pk>/", views.participante_detail, name="participante_detail"
     ),
     path(

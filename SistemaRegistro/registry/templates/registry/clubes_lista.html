@@ -122,6 +122,10 @@
                                         </div>
                                     {% elif club.status == 'aprobado' %}
                                         <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'gestionar_membresias_club' club.id %}" 
+                                               class="btn btn-sm rounded-pill px-3 fw-bold" style="background: #7c3aed; color: white;">
+                                                <i class="bi bi-people me-1"></i> Membresías
+                                            </a>
                                             <a href="{% url 'eventos_club' club.id %}" 
                                                class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
                                                 <i class="bi bi-calendar-event me-1"></i> Eventos

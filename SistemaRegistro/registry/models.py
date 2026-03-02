@@ -408,6 +408,11 @@ class Institucion(models.Model):
 
 
 class Participante(models.Model):
+
+    NACIONALIDAD_CHOICES = [
+        ("V", "Venezolano"),
+        ("E", "Extranjero"),
+    ]
     SEXO_CHOICES = [
         ("M", "Masculino"),
         ("F", "Femenino"),
@@ -451,21 +456,36 @@ class Participante(models.Model):
     NUMERO_VALIDATOR = RegexValidator(
         regex="^[0-9]{7}$", message="El número debe ser de 7 dígitos numéricos."
     )
-
+    nacionalidad = models.CharField(
+        max_length=1,
+        choices=NACIONALIDAD_CHOICES,
+        default="V",
+        verbose_name="Nacionalidad"
+    )
     # Datos personales
     # Nota: cedula se mantiene por compatibilidad pero es la cédula personal
     cedula = models.CharField(
         max_length=20,
         unique=True,
         validators=[
-            RegexValidator(regex="^[VE0-9]+$", message="Cédula válida requerida")
+            RegexValidator(
+                regex="^[0-9]+$",
+                message="Cédula debe contener solo números"
+            )
         ],
+        help_text="Solo números (ej: 19122516)"
     )
     cedula_escolar = models.CharField(
         max_length=20,
         blank=True,
         verbose_name="Cédula Escolar",
-        help_text="Cédula escolar del participante (si posee)",
+        help_text="Cédula escolar del participante (solo números)",
+        validators=[
+            RegexValidator(
+                regex="^[0-9]*$",
+                message="La cédula escolar debe contener solo números"
+            )
+        ],
     )
     condicion_tea = models.BooleanField(
         default=False,
@@ -535,6 +555,12 @@ class Participante(models.Model):
 
     # Representante (para menores)
     nombre_representante = models.CharField(max_length=200, blank=True)
+    nacionalidad_representante = models.CharField(
+        max_length=1,
+        choices=NACIONALIDAD_CHOICES,
+        default="V",
+        verbose_name="Nacionalidad Representante",
+    )
     cedula_representante = models.CharField(max_length=20, blank=True)
 
     codigo_area_representante = models.CharField(
@@ -611,6 +637,11 @@ class Participante(models.Model):
                 f"{self.codigo_area_representante}-{self.numero_telefono_representante}"
             )
         return ""
+    
+    @property
+    def cedula_completa(self):
+        """Retorna la nacionalidad y la cédula formateada"""
+        return f"{self.nacionalidad}-{self.cedula}"
 
     def clean(self):
         """
@@ -1193,6 +1224,36 @@ class Club(models.Model):
         return self.historial.filter(
             estado_nuevo="rechazado"
         ).order_by('-fecha').first()
+
+    # =========================================================================
+    # MÉTODOS DE CALIFICACIÓN
+    # =========================================================================
+    
+    @property
+    def promedio_calificacion(self):
+        """Retorna el promedio de calificación del club."""
+        from django.db.models import Avg
+        resultado = self.calificaciones.aggregate(promedio=Avg('puntuacion'))
+        return resultado['promedio'] or 0
+    
+    @property
+    def total_calificaciones(self):
+        """Retorna el total de calificaciones del club."""
+        return self.calificaciones.count()
+    
+    @property
+    def tiene_calificaciones(self):
+        """Verifica si el club tiene calificaciones."""
+        return self.calificaciones.exists()
+    
+    @property
+    def calificaciones_recientes(self):
+        """Retorna las calificaciones más recientes (últimas 5)."""
+        return self.calificaciones.select_related('institucion').order_by('-fecha')[:5]
+    
+    def mi_calificacion(self, institucion):
+        """Retorna la calificación de una institución específica."""
+        return self.calificaciones.filter(institucion=institucion).first()
 
 
 class MembresiaClu(models.Model):

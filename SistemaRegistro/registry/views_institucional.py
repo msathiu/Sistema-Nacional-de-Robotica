@@ -1053,6 +1053,14 @@ def detalle_club(request, club_id):
         activo=True
     ).select_related("evento")
 
+    # Fase 4: Obtener información de calificaciones
+    promedio = club.promedio_calificacion
+    total_calif = club.total_calificaciones
+    calificaciones_recientes = club.calificaciones_recientes
+    mi_calificacion = None
+    if es_miembro and institucion:
+        mi_calificacion = club.mi_calificacion(institucion)
+
     context = {
         "club": club,
         "membresias_activas": membresias_activas,
@@ -1062,6 +1070,11 @@ def detalle_club(request, club_id):
         "es_miembro": es_miembro,
         "eventos_vinculados": eventos_vinculados,
         "user_type": user_type,
+        # Calificaciones
+        "promedio_calificacion": promedio,
+        "total_calificaciones": total_calif,
+        "calificaciones_recientes": calificaciones_recientes,
+        "mi_calificacion": mi_calificacion,
     }
     return render(request, "registry/detalle_club.html", context)
 

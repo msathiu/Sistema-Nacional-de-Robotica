@@ -14,6 +14,8 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.functions import ExtractMonth
 from django.http import HttpResponse, JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -26,7 +28,9 @@ from registry.models import (
     Estado,
     Evento,
     Grupo,
+    Inscripcion,
     InscripcionGrupoEvento,
+    IntegranteEquipo,
     Institucion,
     Municipio,
     Parroquia,
@@ -47,7 +51,7 @@ from .models import Municipios, UserProfile
 @login_required
 def detalle_evento_inscripcion(request, evento_id):
     """
-    Vista para ver detalles de un evento e inscribir grupos
+    Vista para ver detalles de un evento e inscribir Equipos
     """
     evento = get_object_or_404(
         Evento.objects.select_related("estado", "municipio", "parroquia"),
@@ -80,7 +84,7 @@ def detalle_evento_inscripcion(request, evento_id):
 @transaction.atomic
 def inscribir_grupo_evento(request, evento_id):
     """
-    Vista para inscribir un grupo en un evento
+    Vista para inscribir un Equipos en un evento
     """
     if request.method == "POST":
         evento = get_object_or_404(Evento, id=evento_id, activo=True)
@@ -118,7 +122,7 @@ def inscribir_grupo_evento(request, evento_id):
         )
 
         messages.success(
-            request, f"✅ Grupo '{grupo.nombre}' inscrito exitosamente en el evento."
+            request, f"✅ Equipo '{grupo.nombre}' inscrito exitosamente en el evento."
         )
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
@@ -128,6 +132,68 @@ def inscribir_grupo_evento(request, evento_id):
 def home(request):
     """Página principal con opciones de login y registro"""
     return render(request, "users/home.html")
+
+
+@login_required
+@require_http_methods(["POST", "GET"])
+def verificar_participante_duplicado(request):
+    """
+    Vista AJAX para verificar si existe un participante con datos similares.
+    Busca por: cédula personal, cédula escolar, o combinación de nombres+apellidos+fecha_nacimiento
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            nombres = data.get('nombres', '').strip()
+            apellidos = data.get('apellidos', '').strip()
+            fecha_nacimiento = data.get('fecha_nacimiento')
+            cedula_personal = data.get('cedula_personal', '').strip()
+            cedula_escolar = data.get('cedula_escolar', '').strip()
+            
+            # Buscar duplicados
+            participante_existente = None
+            
+            # 1. Buscar por cédula personal
+            if cedula_personal:
+                nacionalidad = data.get('nacionalidad', 'V')
+                cedula_completa = f"{nacionalidad}-{cedula_personal}"
+                participante_existente = Participante.objects.filter(
+                    cedula=cedula_completa
+                ).first()
+            
+            # 2. Buscar por cédula escolar
+            if not participante_existente and cedula_escolar:
+                participante_existente = Participante.objects.filter(
+                    cedula_escolar=cedula_escolar
+                ).first()
+            
+            # 3. Buscar por nombres + apellidos + fecha de nacimiento
+            if not participante_existente and nombres and apellidos and fecha_nacimiento:
+                participante_existente = Participante.objects.filter(
+                    nombres__iexact=nombres,
+                    apellidos__iexact=apellidos,
+                    fecha_nacimiento=fecha_nacimiento
+                ).first()
+            
+            if participante_existente:
+                return JsonResponse({
+                    'existe': True,
+                    'participante_id': participante_existente.id,
+                    'datos': {
+                        'nombres': participante_existente.nombres,
+                        'apellidos': participante_existente.apellidos,
+                        'fecha_nacimiento': participante_existente.fecha_nacimiento.strftime('%Y-%m-%d'),
+                        'cedula': participante_existente.cedula,
+                        'cedula_escolar': participante_existente.cedula_escolar
+                    }
+                })
+            else:
+                return JsonResponse({'existe': False})
+                
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
 @login_required
@@ -242,16 +308,40 @@ def crear_participante(request):
         if participante_form.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Determinar cédula principal para el username
-                    cedula_personal = participante_form.cleaned_data.get("cedula_personal")
-                    cedula_escolar = participante_form.cleaned_data.get("cedula_escolar")
+                    # 1. Obtener datos del formulario y limpiar cédulas
+                    nacionalidad = request.POST.get('nacionalidad', 'V')
+                    cedula_personal_raw = request.POST.get('cedula_personal', '').strip()
+                    cedula_escolar_raw = request.POST.get('cedula_escolar', '').strip()
                     
+                    # Limpiar cédulas: solo números (seguridad adicional)
+                    cedula_personal = ''.join(filter(str.isdigit, cedula_personal_raw))
+                    cedula_escolar = ''.join(filter(str.isdigit, cedula_escolar_raw))
+                    
+                    # 2. Determinar cédula principal para el username (con formato V-)
                     if cedula_personal:
-                        username = f"V-{cedula_personal}"
+                        cedula_completa_username = f"{nacionalidad}-{cedula_personal}"
+                        username = cedula_completa_username
+                    elif cedula_escolar:
+                        cedula_completa_username = f"E-{cedula_escolar}"
+                        username = cedula_completa_username
                     else:
-                        username = f"E-{cedula_escolar}"
+                        messages.error(request, "Debe proporcionar al menos una cédula (personal o escolar)")
+                        return render(
+                            request,
+                            "users/register.html",
+                            {
+                                "participante_form": participante_form,
+                                "municipios": municipios,
+                                "institucion": institucion,
+                                "nombre_sede": nombre_sede,
+                                "estado": estado_seleccionado if estado_seleccionado else estado_inst,
+                                "estado_id": (estado_seleccionado.id if estado_seleccionado else estado_inst.id) if (estado_seleccionado or estado_inst) else None,
+                                "todos_estados": todos_estados,
+                                "es_admin_central": es_admin_central,
+                            },
+                        )
 
-                    # Verificar si ya existe un usuario con esa cédula
+                    # 3. Verificar si ya existe un usuario con esa cédula
                     if User.objects.filter(username=username).exists():
                         messages.error(
                             request,
@@ -294,9 +384,10 @@ def crear_participante(request):
                         secrets.choice(string.ascii_letters + string.digits)
                         for _ in range(12)
                     )
+                    email = request.POST.get('email', '')
                     user = User.objects.create_user(
                         username=username,
-                        email=participante_form.cleaned_data.get("email"),
+                        email=email,
                         password=password_aleatoria,
                     )
                     
@@ -305,9 +396,40 @@ def crear_participante(request):
                         user=user, defaults={"user_type": "participante"}
                     )
 
-                    # 4. Preparar Participante
+                    # 6. Preparar Participante
                     participante = participante_form.save(commit=False)
                     participante.user = user
+                    
+                    # Asignar nacionalidad y cédulas (SOLO NÚMEROS en la BD)
+                    participante.nacionalidad = nacionalidad  # V o E
+                    participante.cedula = cedula_personal  # Solo números: 19122516
+                    if cedula_escolar:
+                        participante.cedula_escolar = cedula_escolar  # Solo números
+                    
+                    # Asignar email
+                    participante.email = email
+                    
+                    # Asignar condición TEA
+                    condicion_tea = request.POST.get('condicion_tea', 'False')
+                    participante.condicion_tea = (condicion_tea == 'True')
+                    
+                    # Asignar título universitario
+                    titulo_universitario = request.POST.get('titulo_universitario', '').strip()
+                    if titulo_universitario:
+                        participante.titulo_universitario = titulo_universitario
+                    
+                    # Asignar campo1 (Otro)
+                    campo1 = request.POST.get('campo1', '').strip()
+                    if campo1:
+                        participante.campo1 = campo1
+                    
+                    # Asignar datos del representante con nacionalidad
+                    rep_nacionalidad = request.POST.get('rep_nacionalidad', 'V')
+                    cedula_rep_raw = request.POST.get('cedula_representante', '').strip()
+                    if cedula_rep_raw:
+                        cedula_rep_limpia = ''.join(filter(str.isdigit, cedula_rep_raw))
+                        participante.cedula_representante = cedula_rep_limpia
+                        participante.nacionalidad_representante = rep_nacionalidad
 
                     # Asignar institución según el tipo de usuario
                     if user_type == "institucional" and institucion:
@@ -318,6 +440,9 @@ def crear_participante(request):
 
                     # Asignar estado: si es admin central y seleccionó un estado del formulario, usarlo
                     estado_seleccionado_id = request.POST.get("estado")
+                    municipio_seleccionado_id = request.POST.get("municipio")
+                    parroquia_seleccionada_id = request.POST.get("parroquia")
+                    
                     if es_admin_central and estado_seleccionado_id:
                         try:
                             participante.estado = Estado.objects.get(
@@ -327,6 +452,24 @@ def crear_participante(request):
                             participante.estado = estado_inst
                     else:
                         participante.estado = estado_inst
+                    
+                    # Asignar municipio
+                    if municipio_seleccionado_id:
+                        try:
+                            participante.municipio = Municipio.objects.get(
+                                id=municipio_seleccionado_id
+                            )
+                        except Municipio.DoesNotExist:
+                            pass
+                    
+                    # Asignar parroquia
+                    if parroquia_seleccionada_id:
+                        try:
+                            participante.parroquia = Parroquia.objects.get(
+                                id=parroquia_seleccionada_id
+                            )
+                        except Parroquia.DoesNotExist:
+                            pass
 
                     # 5. Guardar participante
                     participante.save()
@@ -482,7 +625,6 @@ def register(request):
                     # 4. Guardar (Aquí se ejecuta el clean() del modelo que valida los 7 dígitos)
                     participante.save()
 
-                messages.success(request, "Participante registrado exitosamente.")
                 return redirect("lista_participantes")
 
             except Exception as e:
@@ -793,7 +935,7 @@ def crear_usuario_institucional(request, institucion_id):
 def dashboard_institucional(request):
     """
     Vista principal del panel para usuarios institucionales.
-    Muestra métricas clave y listas rápidas de eventos, grupos y clubes.
+    Muestra métricas clave y listas rápidas de eventos, equipos(grupos) y clubes.
     """
     # 1. Validación de perfil y tipo de usuario
     try:
@@ -1493,9 +1635,9 @@ def gestionar_eventos_institucion(request):
     }
 
     # Para depuración - imprime en la consola
-    print(f"Total grupos encontrados: {grupos_disponibles.count()}")
+    print(f"Total equipos encontrados: {grupos_disponibles.count()}")
     for grupo in grupos_disponibles:
-        print(f"Grupo: {grupo.nombre} - ID: {grupo.id}")
+        print(f"Equipo: {grupo.nombre} - ID: {grupo.id}")
 
     return render(request, "users/gestionar_eventos.html", context)
 
@@ -1622,27 +1764,48 @@ def cancelar_evento(request, evento_id):
 @institucional_required
 def eliminar_evento(request, evento_id):
     """
-    Vista para eliminar un evento (solo si no tiene inscritos)
+    Vista única y optimizada para eliminar un evento.
+    Verifica:
+    1. Que el método sea POST (Seguridad).
+    2. Que el evento pertenezca al usuario (Institución).
+    3. Que no tenga inscritos (Integridad de datos).
     """
-    if request.method == "POST":
-        evento = get_object_or_404(
-            Evento, id=evento_id, institucion=request.user.userprofile.institution
+    if request.method != "POST":
+        messages.error(request, "Acción no permitida.")
+        return redirect("gestionar_eventos_inst")
+
+    # Obtener la institución del usuario actual
+    try:
+        institution = request.user.userprofile.institution
+    except Exception:
+        messages.error(request, "No tienes una institución asociada.")
+        return redirect("gestionar_eventos_inst")
+
+    # Buscar el evento que pertenezca a esta institución
+    try:
+        evento = Evento.objects.get(id=evento_id, institucion=institution)
+    except Evento.DoesNotExist:
+        messages.error(request, "El evento no existe o no tienes permiso para eliminarlo.")
+        return redirect("gestionar_eventos_inst")
+
+    # Validar que no tenga inscripciones de grupos
+    # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
+    if evento.inscripciones_grupo.exists():
+        messages.warning(
+            request, 
+            f"❌ No se puede eliminar '{evento.nombre}' porque ya tiene equipos inscritos."
         )
+        return redirect("gestionar_eventos_inst")
 
-        # Verificar si tiene proyectos inscritos (asumiendo relación)
-        if hasattr(evento, "proyectos") and evento.proyectos.exists():
-            messages.warning(
-                request,
-                "❌ No se puede eliminar el evento porque tiene proyectos inscritos.",
-            )
-            return redirect("gestionar_eventos_inst")
-
-        nombre_evento = evento.nombre
-        evento.delete()
-        messages.success(
-            request, f"✅ Evento '{nombre_evento}' eliminado correctamente."
-        )
-
+    # Ejecución de la eliminación
+    nombre_guardado = evento.nombre
+    evento.delete()
+    
+    messages.success(
+        request, 
+        f"✅ Evento '{nombre_guardado}' eliminado correctamente."
+    )
+    
     return redirect("gestionar_eventos_inst")
 
 
@@ -2232,13 +2395,13 @@ def mis_grupos(request):
                     grupo.delete()
 
                 messages.success(
-                    request, "El escuadrón ha sido eliminado correctamente."
+                    request, "El Equipo ha sido eliminado correctamente."
                 )
                 return redirect("mis_grupos")
 
             except Grupo.DoesNotExist:
                 messages.error(
-                    request, "El grupo no existe o no tienes permiso para eliminarlo."
+                    request, "El equipo no existe o no tienes permiso para eliminarlo."
                 )
                 return redirect("mis_grupos")
             except Exception as e:
@@ -2310,13 +2473,13 @@ def mis_grupos(request):
 
                     messages.success(
                         request,
-                        f"El escuadrón '{grupo.nombre}' ha sido actualizado correctamente.",
+                        f"El equipo '{grupo.nombre}' ha sido actualizado correctamente.",
                     )
                     return redirect("mis_grupos")
 
             except Grupo.DoesNotExist:
                 messages.error(
-                    request, "El grupo no existe o no tienes permiso para editarlo."
+                    request, "El Equipo no existe o no tienes permiso para editarlo."
                 )
                 return redirect("mis_grupos")
             except Exception as e:
@@ -2812,93 +2975,63 @@ def api_buscar_participante(request, cedula):
 # ============================================
 
 
-@login_required
-def editar_evento(request, evento_id):
-    """
-    Vista para editar un evento existente
-    """
-    try:
-        # Verificar que el evento pertenezca a la institución del usuario
-        evento = Evento.objects.get(id=evento_id, institucion__usuario=request.user)
+# @login_required
+# def editar_evento(request, evento_id):
+#     """
+#     Vista para editar un evento existente
+#     """
+#     try:
+#         # Obtener la institución del usuario actual
+#         institution = request.user.userprofile.institution
+#         # Verificar que el evento pertenezca a la institución
+#         evento = Evento.objects.get(id=evento_id, institucion=institution)
 
-        if request.method == "POST":
-            # Actualizar datos del evento
-            evento.nombre = request.POST.get("nombre")
-            evento.descripcion = request.POST.get("descripcion")
-            evento.fecha = request.POST.get("fecha")
-            evento.estado_id = request.POST.get("estado")
-            evento.municipio_id = request.POST.get("municipio")
-            evento.parroquia_id = request.POST.get("parroquia")
-            evento.direccion = request.POST.get("direccion")
-            evento.capacidad_maxima = request.POST.get("capacidad_maxima") or None
-            evento.requisitos = request.POST.get("requisitos")
-            evento.save()
+#         if request.method == "POST":
+#             # Actualizar datos del evento
+#             evento.nombre = request.POST.get("nombre")
+#             evento.descripcion = request.POST.get("descripcion")
+#             evento.fecha = request.POST.get("fecha")
+#             evento.estado_id = request.POST.get("estado")
+#             evento.municipio_id = request.POST.get("municipio")
+#             evento.parroquia_id = request.POST.get("parroquia")
+#             evento.direccion = request.POST.get("direccion")
+#             evento.capacidad_maxima = request.POST.get("capacidad_maxima") or None
+#             evento.requisitos = request.POST.get("requisitos")
+#             evento.save()
 
-            messages.success(
-                request, f"Evento '{evento.nombre}' actualizado correctamente."
-            )
-            return redirect("gestionar_eventos_inst")
+#             messages.success(
+#                 request, f"Evento '{evento.nombre}' actualizado correctamente."
+#             )
+#             return redirect("gestionar_eventos_inst")
 
-        # GET - Mostrar formulario de edición
-        estados = Estado.objects.all().order_by("nombre")
+#         # GET - Mostrar formulario de edición
+#         estados = Estado.objects.all().order_by("nombre")
 
-        # Obtener municipios y parroquias para el select
-        municipios = (
-            Municipio.objects.filter(estado_id=evento.estado_id)
-            if evento.estado_id
-            else []
-        )
-        parroquias = (
-            Parroquia.objects.filter(municipio_id=evento.municipio_id)
-            if evento.municipio_id
-            else []
-        )
+#         # Obtener municipios y parroquias para el select
+#         municipios = (
+#             Municipio.objects.filter(estado_id=evento.estado_id)
+#             if evento.estado_id
+#             else []
+#         )
+#         parroquias = (
+#             Parroquia.objects.filter(municipio_id=evento.municipio_id)
+#             if evento.municipio_id
+#             else []
+#         )
 
-        context = {
-            "evento": evento,
-            "estados": estados,
-            "municipios": municipios,
-            "parroquias": parroquias,
-        }
-        return render(request, "users/editar_evento.html", context)
+#         context = {
+#             "evento": evento,
+#             "estados": estados,
+#             "municipios": municipios,
+#             "parroquias": parroquias,
+#         }
+#         return render(request, "users/editar_evento.html", context)
 
-    except Evento.DoesNotExist:
-        messages.error(
-            request, "El evento no existe o no tienes permiso para editarlo."
-        )
-        return redirect("gestionar_eventos_inst")
-
-
-@login_required
-def eliminar_evento(request, evento_id):
-    """
-    Vista para eliminar un evento
-    """
-    if request.method == "POST":
-        try:
-            evento = Evento.objects.get(id=evento_id, institucion__usuario=request.user)
-
-            # Verificar si tiene proyectos inscritos
-            if evento.proyectos.exists():
-                messages.warning(
-                    request,
-                    "No se puede eliminar el evento porque tiene proyectos inscritos.",
-                )
-                return redirect("gestionar_eventos_inst")
-
-            nombre_evento = evento.nombre
-            evento.delete()
-            messages.success(
-                request, f"Evento '{nombre_evento}' eliminado correctamente."
-            )
-
-        except Evento.DoesNotExist:
-            messages.error(
-                request, "El evento no existe o no tienes permiso para eliminarlo."
-            )
-
-    return redirect("gestionar_eventos_inst")
-
+#     except Evento.DoesNotExist:
+#         messages.error(
+#             request, "El evento no existe o no tienes permiso para editarlo."
+#         )
+#         return redirect("gestionar_eventos_inst")
 
 # ============================================
 # VISTA AUXILIAR PARA CARGAR MUNICIPIOS (AJAX)
@@ -2939,7 +3072,9 @@ def detalle_evento_gestion(request, evento_id):
     Vista para ver detalles del evento y gestionar inscritos
     """
     try:
-        evento = Evento.objects.get(id=evento_id, institucion__usuario=request.user)
+        # Obtener la institución del usuario actual
+        institution = request.user.userprofile.institution
+        evento = Evento.objects.get(id=evento_id, institucion=institution)
         # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
         inscripciones = evento.inscripciones_grupo.all().select_related("grupo")
 
@@ -2972,7 +3107,7 @@ def ajax_municipios(request):
     return JsonResponse([], safe=False)
 
 
-def load_parroquias(request):
+def load_parroquias_publico(request):
     """
     Vista AJAX para cargar parroquias de un municipio
     """

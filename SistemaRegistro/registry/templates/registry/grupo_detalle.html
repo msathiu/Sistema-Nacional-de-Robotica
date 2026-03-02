@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Grupos</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Equipos</a></li>
             <li class="breadcrumb-item active">{{ grupo.nombre }}</li>
         </ol>
     </nav>
@@ -52,7 +52,7 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información del Grupo</h5>
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información del Equipo</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -141,7 +141,7 @@
                                 {% empty %}
                                 <tr>
                                     <td colspan="6" class="text-center text-muted py-4">
-                                        No hay participantes registrados en este grupo
+                                        No hay participantes registrados en este Equipo
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -190,8 +190,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>¿Está seguro de eliminar el grupo <strong>{{ grupo.nombre }}</strong>?</p>
-                <p class="text-danger small">Esta acción no se puede deshacer y eliminará toda la información del grupo.</p>
+                <p>¿Está seguro de eliminar el Equipo <strong>{{ grupo.nombre }}</strong>?</p>
+                <p class="text-danger small">Esta acción no se puede deshacer y eliminará toda la información del Equipo.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

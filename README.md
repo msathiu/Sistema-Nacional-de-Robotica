@@ -98,6 +98,10 @@ El sistema ha sido optimizado con las siguientes mejoras:
 - ✅ **Sistema de eventos dual**: Eventos institucionales + eventos de club con aprobación de federación
 - ✅ **Menús de navegación**: Enlaces contextuales en dashboards para gestión de eventos de club
 - ✅ **Testing completo**: 17 tests unitarios y de integración con cobertura > 85%
+- ✅ **Registro de participantes mejorado**: Validación inteligente de cédulas (personal/escolar) según edad
+- ✅ **Detección de duplicados**: Sistema de verificación atómica con modal interactivo
+- ✅ **Cédula escolar condicional**: Visible solo para menores de 10 años con validación automática
+- ✅ **Cédulas solo números en BD**: Sistema robusto de limpieza y validación en múltiples capas (frontend/backend/modelo)
 
 📖 Ver detalles completos en [`MEJORAS_CODIGO.md`](MEJORAS_CODIGO.md)  
 📚 Consultar mejores prácticas en [`MEJORES_PRACTICAS.md`](MEJORES_PRACTICAS.md)  
@@ -109,7 +113,8 @@ El sistema ha sido optimizado con las siguientes mejoras:
 🔔 Notificaciones de clubes pendientes en [`NOTIFICACIONES_CLUBES_PENDIENTES.md`](NOTIFICACIONES_CLUBES_PENDIENTES.md)  
 🎯 Membresía automática para creadores en [`IMPLEMENTACION_MEMBRESIA_AUTOMATICA_CREADOR.md`](IMPLEMENTACION_MEMBRESIA_AUTOMATICA_CREADOR.md)  
 📊 Corrección contador de instituciones en [`CORRECCION_CONTADOR_INSTITUCIONES.md`](CORRECCION_CONTADOR_INSTITUCIONES.md)  
-🎭 Sistema de eventos dual en [`ARQUITECTURA_EVENTOS_DUAL.md`](ARQUITECTURA_EVENTOS_DUAL.md), [`FASE2_EVENTOS_CLUB_COMPLETADA.md`](FASE2_EVENTOS_CLUB_COMPLETADA.md), [`FASE3_TEMPLATES_EVENTOS_COMPLETADA.md`](FASE3_TEMPLATES_EVENTOS_COMPLETADA.md), [`FASE4_MENUS_NAVEGACION_COMPLETADA.md`](FASE4_MENUS_NAVEGACION_COMPLETADA.md), [`FASE5_TESTING_COMPLETADA.md`](FASE5_TESTING_COMPLETADA.md) y [`SISTEMA_EVENTOS_DUAL_COMPLETADO.md`](SISTEMA_EVENTOS_DUAL_COMPLETADO.md)
+🎭 Sistema de eventos dual en [`ARQUITECTURA_EVENTOS_DUAL.md`](ARQUITECTURA_EVENTOS_DUAL.md), [`FASE2_EVENTOS_CLUB_COMPLETADA.md`](FASE2_EVENTOS_CLUB_COMPLETADA.md), [`FASE3_TEMPLATES_EVENTOS_COMPLETADA.md`](FASE3_TEMPLATES_EVENTOS_COMPLETADA.md), [`FASE4_MENUS_NAVEGACION_COMPLETADA.md`](FASE4_MENUS_NAVEGACION_COMPLETADA.md), [`FASE5_TESTING_COMPLETADA.md`](FASE5_TESTING_COMPLETADA.md) y [`SISTEMA_EVENTOS_DUAL_COMPLETADO.md`](SISTEMA_EVENTOS_DUAL_COMPLETADO.md)  
+📝 Mejoras en registro de participantes en [`MEJORAS_REGISTRO_PARTICIPANTES.md`](MEJORAS_REGISTRO_PARTICIPANTES.md), [`RESUMEN_MEJORAS_REGISTRO.md`](RESUMEN_MEJORAS_REGISTRO.md), [`SNIPPETS_REGISTRO_PARTICIPANTES.md`](SNIPPETS_REGISTRO_PARTICIPANTES.md), [`MEJORAS_CEDULAS_SOLO_NUMEROS.md`](MEJORAS_CEDULAS_SOLO_NUMEROS.md) y [`SNIPPETS_CEDULAS_SOLO_NUMEROS.md`](SNIPPETS_CEDULAS_SOLO_NUMEROS.md)
 
 ### 🗺️ Roadmap de Mejoras Futuras
 

@@ -3,51 +3,110 @@
 
 {% block title %}Rechazar Club{% endblock %}
 
+{% block extra_css %}
+<style>
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .card-header-modern {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem;
+        border: none;
+    }
+    
+    .danger-gradient {
+        background: linear-gradient(145deg, #dc2626, #991b1b);
+    }
+    
+    .section-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'revisar_clubes' %}" 
+                   class="btn btn-secondary btn-circle me-3" 
+                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
+                    <i class="bi bi-x-circle fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Rechazar Club</h2>
+                    <p class="text-muted mb-0 small">Indica las razones del rechazo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
-                <div class="card-header bg-danger text-white" style="border-radius: 20px 20px 0 0;">
-                    <h4 class="mb-0">
-                        <i class="fas fa-times-circle me-2"></i>Rechazar Club
-                    </h4>
+            <div class="modern-card">
+                <div class="card-header card-header-modern danger-gradient text-white d-flex align-items-center">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                    <h4 class="mb-0 fw-bold">Rechazar Club</h4>
                 </div>
                 <div class="card-body p-4">
                     <!-- Información del Club -->
-                    <div class="alert alert-light border mb-4">
-                        <h5 class="alert-heading">
-                            <i class="fas fa-robot me-2"></i>{{ club.nombre }}
+                    <div class="p-4 rounded mb-4" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
+                        <h5 class="fw-bold mb-3" style="color: var(--blue-main);">
+                            <i class="bi bi-robot me-2"></i>{{ club.nombre }}
                             {% if club.siglas %}<span class="text-muted">({{ club.siglas }})</span>{% endif %}
                         </h5>
                         <hr>
-                        <p class="mb-1"><strong>Institución Creadora:</strong> {{ club.institucion_creadora.nombre }}</p>
-                        <p class="mb-1"><strong>Estado actual:</strong> {{ club.get_status_display }}</p>
-                        <p class="mb-0"><strong>Fecha de Creación:</strong> {{ club.fecha_creacion|date:"d/m/Y" }}</p>
+                        <p class="mb-2"><strong><i class="bi bi-building me-2"></i>Institución Creadora:</strong> {{ club.institucion_creadora.nombre }}</p>
+                        <p class="mb-2"><strong><i class="bi bi-info-circle me-2"></i>Estado actual:</strong> {{ club.get_status_display }}</p>
+                        <p class="mb-0"><strong><i class="bi bi-calendar me-2"></i>Fecha de Creación:</strong> {{ club.fecha_creacion|date:"d/m/Y" }}</p>
                     </div>
 
-                    <p>Está a punto de RECHAZAR el club <strong>"{{ club.nombre }}"</strong>.</p>
-                    
-                    <p class="text-muted">Por favor, indique las razones del rechazo para que la institución pueda corregir y volver a enviar el club.</p>
-
-                    <hr>
+                    <div class="alert" style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-radius: 12px; border-left: 4px solid #dc2626;">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle fs-5 me-3 mt-1" style="color: #dc2626;"></i>
+                            <div>
+                                <strong>Está a punto de RECHAZAR el club <span class="text-danger">"{{ club.nombre }}"</span></strong>
+                                <p class="mb-0 mt-1 text-muted small">Por favor, indique las razones del rechazo para que la institución pueda corregir y volver a enviar el club.</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="mb-3">
-                            <label for="observaciones" class="form-label fw-bold">Observaciones *</label>
+                        <div class="mb-4">
+                            <label for="observaciones" class="form-label fw-bold" style="color: var(--blue-main);">
+                                <i class="bi bi-chat-left-text me-2"></i>Observaciones *
+                            </label>
                             <textarea class="form-control" id="observaciones" name="observaciones" 
-                                      rows="4" placeholder="Indique las razones del rechazo..." required></textarea>
-                            <small class="text-muted">Estas observaciones serán visibles para la institución creadora</small>
+                                      rows="4" placeholder="Indique las razones del rechazo..." required
+                                      style="border-radius: 12px; border: 2px solid #e5e7eb;"></textarea>
+                            <small class="text-muted mt-1 d-block">Estas observaciones serán visibles para la institución creadora</small>
                         </div>
 
                         <div class="d-flex justify-content-between gap-3">
-                            <a href="{% url 'revisar_clubes' %}" class="btn btn-outline-secondary flex-grow-1">
-                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            <a href="{% url 'revisar_clubes' %}" class="btn btn-secondary flex-grow-1">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
                             </a>
                             <button type="submit" class="btn btn-danger flex-grow-1">
-                                <i class="fas fa-times-circle me-2"></i>Confirmar Rechazo
+                                <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
                             </button>
                         </div>
                     </form>

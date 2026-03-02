@@ -134,11 +134,11 @@ def owns_institution(view_func):
     return wrapper
 
 def admin_required(view_func):
-    """Requiere que el usuario sea administrador"""
+    """Requiere que el usuario sea administrador, federación central o superusuario"""
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
-        if not hasattr(request.user, 'userprofile') or request.user.userprofile.user_type != 'admin':
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.user_type not in ['admin', 'fed_central', 'superuser']:
             messages.error(request, 'No tienes permiso para acceder a esta página.')
             return redirect('dashboard')
         return view_func(request, *args, **kwargs)

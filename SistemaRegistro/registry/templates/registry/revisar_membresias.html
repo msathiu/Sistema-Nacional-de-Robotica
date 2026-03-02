@@ -1,35 +1,153 @@
 {% extends 'users/base_dashboard.html' %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+        --purple: #7c3aed;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--purple) 0%, #5b21b6 100%);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 200px;
+        height: 200px;
+        background: var(--accent-cyan);
+        opacity: 0.1;
+        border-radius: 50%;
+    }
+    
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 10%;
+        width: 150px;
+        height: 150px;
+        background: var(--accent-cyan);
+        opacity: 0.05;
+        border-radius: 50%;
+    }
+    
+    .page-header h2 {
+        color: white;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .page-header p {
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 0;
+    }
+    
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .btn-cancel {
+        background: transparent;
+        border: 2px solid rgba(255,255,255,0.5);
+        color: white;
+    }
+    
+    .btn-cancel:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.8);
+        color: white;
+    }
+    
+    .btn-modern {
+        border-radius: 50px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    
+    .x-small { font-size: 0.75rem; }
+    .text-purple { color: #7c3aed !important; }
+    .bg-purple { background-color: #7c3aed !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Encabezado -->
-    <div class="row mb-4">
-        <div class="col-md-8">
+    <!-- Page Header con estilo moderno -->
+    <div class="page-header animate-fade-in">
+        <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border: 1px solid #a78bfa;">
+                <div class="p-3 rounded-3 me-3" style="background: rgba(255,255,255,0.15);">
                     <i class="bi bi-people fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
-                        Revisión de Membresías
-                    </h2>
-                    <p class="text-muted mb-0 small">Administra las solicitudes de membresía a clubes</p>
+                    <h2><i class="fas fa-user-friends me-2"></i>Revisión de Membresías</h2>
+                    <p>Administra las solicitudes de membresía a clubes</p>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
-            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i>Volver al Dashboard
+            <a href="{% url 'dashboard' %}" class="btn btn-action btn-cancel">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
             </a>
         </div>
     </div>
 
-    <hr class="mt-2 mb-4 opacity-10">
-
     <!-- Estadísticas Rápidas -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+            <div class="card border-0 shadow-lg overflow-hidden text-white animate-fade-in delay-1" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Pendientes</div>
                     <h3 class="fw-bold mb-0">{{ total_pendientes|default:0 }}</h3>
@@ -39,7 +157,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
+            <div class="card border-0 shadow-lg overflow-hidden text-white animate-fade-in delay-1" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">En Revisión</div>
                     <h3 class="fw-bold mb-0">{{ total_en_revision|default:0 }}</h3>
@@ -49,7 +167,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+            <div class="card border-0 shadow-lg overflow-hidden text-white animate-fade-in delay-1" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Activas</div>
                     <h3 class="fw-bold mb-0">{{ total_activas|default:0 }}</h3>
@@ -59,7 +177,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 15px;">
+            <div class="card border-0 shadow-lg overflow-hidden text-white animate-fade-in delay-1" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Rechazadas</div>
                     <h3 class="fw-bold mb-0">{{ total_rechazadas|default:0 }}</h3>
@@ -113,7 +231,7 @@
         <div class="tab-pane fade show active" id="pendientes" role="tabpanel" aria-labelledby="pendientes-tab">
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                    <div class="card border-0 shadow-sm animate-fade-in delay-2" style="border-radius: 20px; background: white;">
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
@@ -198,7 +316,7 @@
         <div class="tab-pane fade" id="revision" role="tabpanel" aria-labelledby="revision-tab">
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                    <div class="card border-0 shadow-sm animate-fade-in delay-2" style="border-radius: 20px; background: white;">
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
@@ -283,7 +401,7 @@
         <div class="tab-pane fade" id="activas" role="tabpanel" aria-labelledby="activas-tab">
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                    <div class="card border-0 shadow-sm animate-fade-in delay-2" style="border-radius: 20px; background: white;">
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
@@ -360,7 +478,7 @@
         <div class="tab-pane fade" id="rechazadas" role="tabpanel" aria-labelledby="rechazadas-tab">
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm" style="border-radius: 20px; background: white;">
+                    <div class="card border-0 shadow-sm animate-fade-in delay-2" style="border-radius: 20px; background: white;">
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
@@ -737,15 +855,6 @@
 </div>
 {% endfor %}
 
-<style>
-    .counter { font-family: 'Space Grotesk', sans-serif; }
-    .x-small { font-size: 0.75rem; }
-    .text-purple { color: #7c3aed !important; }
-    .bg-purple { background-color: #7c3aed !important; }
-</style>
-
-{% endblock %}
-
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -767,5 +876,6 @@
         });
     });
 </script>
+{% endblock %}
 {% endblock %}
 

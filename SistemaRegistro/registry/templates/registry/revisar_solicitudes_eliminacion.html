@@ -1,85 +1,308 @@
 {% extends "users/base_dashboard.html" %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+        --purple: #7c3aed;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 200px;
+        height: 200px;
+        background: var(--accent-cyan);
+        opacity: 0.1;
+        border-radius: 50%;
+    }
+    
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 10%;
+        width: 150px;
+        height: 150px;
+        background: var(--accent-cyan);
+        opacity: 0.05;
+        border-radius: 50%;
+    }
+    
+    .page-header h2 {
+        color: white;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .page-header p {
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 0;
+    }
+    
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    
+    .btn-cancel {
+        background: transparent;
+        border: 2px solid rgba(255,255,255,0.5);
+        color: white;
+    }
+    
+    .btn-cancel:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.8);
+        color: white;
+    }
+    
+    .btn-modern {
+        border-radius: 50px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    
+    .x-small { font-size: 0.75rem; }
+    .text-purple { color: #7c3aed !important; }
+    .bg-purple { background-color: #7c3aed !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
+    <!-- Page Header con estilo moderno -->
+    <div class="page-header animate-fade-in">
+        <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
-                    <i class="bi bi-trash3 fs-2 text-white"></i>
+                <div class="p-3 rounded-3 me-3" style="background: rgba(255,255,255,0.15);">
+                    <i class="bi bi-exclamation-triangle-fill fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Solicitudes de Eliminación</h2>
-                    <p class="text-muted mb-0 small">Revisión de Solicitudes de Eliminación de Clubes</p>
+                    <h2><i class="fas fa-trash-alt me-2"></i>Solicitudes de Eliminación</h2>
+                    <p>Revisión de Solicitudes de Eliminación de Clubes</p>
                 </div>
+            </div>
+            <a href="{% url 'dashboard' %}" class="btn btn-action btn-cancel">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-lg overflow-hidden text-white animate-fade-in delay-1" style="background: linear-gradient(145deg, #dc2626, #991b1b); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-white-50 small fw-bold text-uppercase mb-2">Solicitudes Pendientes</div>
+                            <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ solicitudes_pendientes|length }}">0</h2>
+                        </div>
+                        <i class="bi bi-exclamation-triangle position-absolute opacity-10" style="font-size: 5rem; right: 20px; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
+                </div>
+                <div style="height: 4px; background: #f87171;"></div>
             </div>
         </div>
     </div>
-    <hr class="mt-2 mb-4 opacity-10">
 
-    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #dc2626, #991b1b);">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-exclamation-triangle-fill text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">Solicitudes Pendientes</h5>
+    <!-- Tab content -->
+    <div class="tab-content" id="solicitudesTabsContent">
+        <!-- Solicitudes Pendientes -->
+        <div class="tab-pane fade show active" id="pendientes" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm animate-fade-in delay-2" style="border-radius: 20px; background: white;">
+                        <div class="card-header bg-white border-0 p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Solicitudes Pendientes de Revisión
+                                </h5>
+                                <span class="badge bg-danger fs-6">{{ solicitudes_pendientes|length }} pendiente(s)</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if solicitudes_pendientes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="text-uppercase x-small fw-bold text-muted">
+                                            <th class="px-4 py-3">Club</th>
+                                            <th class="py-3">Institución</th>
+                                            <th class="py-3">Motivo</th>
+                                            <th class="py-3">Fecha Solicitud</th>
+                                            <th class="py-3 text-center px-4">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for solicitud in solicitudes_pendientes %}
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-danger bg-opacity-10 p-2 rounded-3 me-3">
+                                                        <i class="bi bi-collection-play text-danger fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold">{{ solicitud.club.nombre }}</h6>
+                                                        {% if solicitud.club.siglas %}
+                                                        <small class="text-muted">{{ solicitud.club.siglas }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="small">{{ solicitud.institucion_solicitante.nombre }}</span>
+                                            </td>
+                                            <td>
+                                                <div style="max-width: 300px;" class="small">
+                                                    {{ solicitud.motivo|truncatewords:20 }}
+                                                </div>
+                                            </td>
+                                            <td><span class="small text-muted">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span></td>
+                                            <td class="text-center px-4">
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#detalleSolicitud{{ solicitud.id }}">
+                                                        <i class="bi bi-eye"></i> Ver
+                                                    </button>
+                                                    <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
+                                                       class="btn btn-sm btn-success rounded-pill px-3">
+                                                        <i class="bi bi-check-circle me-1"></i>Aprobar
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" 
+                                                            onclick="rechazarSolicitud('{{ solicitud.id }}', '{{ solicitud.club.nombre|escapejs }}')">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+                                <h5 class="text-muted">No hay solicitudes de eliminación pendientes</h5>
+                                <p class="text-muted small">Todas las solicitudes han sido procesadas.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ solicitudes_pendientes|length }}</span>
-        </div>
-        <div class="card-body p-0">
-            {% if solicitudes_pendientes %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="text-uppercase x-small fw-bold text-muted">
-                                <th class="px-4 py-3">Club</th>
-                                <th class="py-3">Institución</th>
-                                <th class="py-3">Motivo</th>
-                                <th class="py-3">Fecha Solicitud</th>
-                                <th class="py-3 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for solicitud in solicitudes_pendientes %}
-                            <tr>
-                                <td class="px-4">
-                                    <div class="fw-bold small text-dark">{{ solicitud.club.nombre }}</div>
-                                    <div class="x-small text-muted">{{ solicitud.club.siglas }}</div>
-                                </td>
-                                <td><span class="small">{{ solicitud.institucion_solicitante.nombre }}</span></td>
-                                <td>
-                                    <div style="max-width: 300px;" class="small">
-                                        {{ solicitud.motivo|truncatewords:20 }}
-                                    </div>
-                                </td>
-                                <td><span class="small text-muted">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span></td>
-                                <td class="text-center px-4">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
-                                           class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
-                                            <i class="bi bi-check-circle me-1"></i>Aprobar
-                                        </a>
-                                        <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                                                onclick="rechazarSolicitud('{{ solicitud.id }}', '{{ solicitud.club.nombre|escapejs }}')">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
-                    <h5 class="text-muted">No hay solicitudes de eliminación pendientes</h5>
-                    <p class="text-muted small">Todas las solicitudes han sido procesadas.</p>
-                </div>
-            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modales de Detalle para Solicitudes -->
+{% for solicitud in solicitudes_pendientes %}
+<div class="modal fade" id="detalleSolicitud{{ solicitud.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Detalle de Solicitud de Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">CLUB</label>
+                        <p class="mb-0 fw-bold">{{ solicitud.club.nombre }}</p>
+                        {% if solicitud.club.siglas %}
+                        <small class="text-muted">{{ solicitud.club.siglas }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
+                        <p class="mb-0 fw-bold">{{ solicitud.institucion_solicitante.nombre }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">FECHA DE SOLICITUD</label>
+                        <p class="mb-0">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">ESTADO DEL CLUB</label>
+                        <p class="mb-0"><span class="badge bg-secondary">{{ solicitud.club.get_status_display }}</span></p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted small fw-bold">MOTIVO DE ELIMINACIÓN</label>
+                        <p class="mb-0">{{ solicitud.motivo }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cerrar
+                </button>
+                <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" class="btn btn-success">
+                    <i class="bi bi-check-circle me-2"></i>Procesar Solicitud
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
@@ -92,5 +315,20 @@ function rechazarSolicitud(solicitudId, clubNombre) {
         window.location.href = `/admin/clubes/solicitudes-eliminacion/${solicitudId}/rechazar/`;
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Contador animado
+    document.querySelectorAll('.counter').forEach(c => {
+        const target = +c.getAttribute('data-target');
+        const update = () => {
+            const now = +c.innerText;
+            const inc = target / 30;
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            else c.innerText = target;
+        };
+        update();
+    });
+});
 </script>
 {% endblock %}
+

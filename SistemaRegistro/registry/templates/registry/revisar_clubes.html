@@ -168,9 +168,93 @@
 
 <script>
 function rechazarClub(clubId, clubNombre) {
-    if(confirm(`¿Estás seguro de rechazar el club "${clubNombre}"?`)) {
-        window.location.href = `/clubes/rechazar/${clubId}/`;
+    // Buscar el modal correspondiente y mostrarlo
+    const modal = document.getElementById('rechazarClub' + clubId);
+    if (modal) {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    } else {
+        // Fallback al confirm tradicional
+        if(confirm(`¿Estás seguro de rechazar el club "${clubNombre}"?`)) {
+            window.location.href = `/clubes/rechazar/${clubId}/`;
+        }
     }
 }
 </script>
 {% endblock %}
+
+<!-- Modales de Rechazo para Clubes Pendientes -->
+{% for club in clubes_pendientes %}
+<div class="modal fade" id="rechazarClub{{ club.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-x-circle me-2"></i>Rechazar Club
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'rechazar_club' club.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Está a punto de RECHAZAR el club:</p>
+                    <h4 class="text-dark fw-bold">{{ club.nombre }}</h4>
+                    {% if club.siglas %}
+                    <p class="text-muted">{{ club.siglas }}</p>
+                    {% endif %}
+                    <div class="mb-3 mt-4">
+                        <label class="form-label fw-bold">Observaciones (opcional)</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle-fill me-2"></i>Confirmar Rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modales de Rechazo para Clubes en Revisión -->
+{% for club in clubes_en_revision %}
+<div class="modal fade" id="rechazarClub{{ club.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-x-circle me-2"></i>Rechazar Club
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'rechazar_club' club.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Está a punto de RECHAZAR el club:</p>
+                    <h4 class="text-dark fw-bold">{{ club.nombre }}</h4>
+                    {% if club.siglas %}
+                    <p class="text-muted">{{ club.siglas }}</p>
+                    {% endif %}
+                    <div class="mb-3 mt-4">
+                        <label class="form-label fw-bold">Observaciones (opcional)</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle-fill me-2"></i>Confirmar Rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}

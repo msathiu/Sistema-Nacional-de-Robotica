@@ -53,23 +53,6 @@
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
                                     {{ participante_form.apellidos }}
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
-                                        <input type="email" name="email" class="form-control" placeholder="ejemplo@correo.com" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Cédula / Escolar</label>
-                                    <div class="input-group">
-                                        <select name="nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #e2e8f0 !important;">
-                                            <option value="V">V</option>
-                                            <option value="E">E</option>
-                                        </select>
-                                        {{ participante_form.cedula }}
-                                    </div>
-                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Fecha de Nacimiento</label>
                                     {{ participante_form.fecha_nacimiento }}
@@ -80,9 +63,41 @@
                                     <input type="text" id="id_edad_display" class="form-control bg-light" readonly placeholder="0">
                                     <input type="hidden" name="edad" id="id_edad">
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
+                                        <input type="email" name="email" class="form-control" placeholder="ejemplo@correo.com" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nacionalidad</label>
+                                    <select name="nacionalidad" id="id_nacionalidad" class="form-select">
+                                        <option value="V" selected>V - Venezolano</option>
+                                        <option value="E">E - Extranjero</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3" id="cedula_personal_container">
+                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_personal">Cédula Personal</label>
+                                    <input type="text" name="cedula_personal" id="id_cedula_personal" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10">
+                                    <small class="text-muted" id="help_cedula_personal"></small>
+                                </div>
+                                <div class="col-md-3" id="cedula_escolar_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_escolar">Cédula Escolar</label>
+                                    <input type="text" name="cedula_escolar" id="id_cedula_escolar" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="20">
+                                    <small class="text-muted" id="help_cedula_escolar"></small>
+                                </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Sexo</label>
                                     {{ participante_form.sexo }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Condición TEA</label>
+                                    <select name="condicion_tea" class="form-select">
+                                        <option value="False">No</option>
+                                        <option value="True">Sí</option>
+                                    </select>
+                                    <small class="text-muted">Trastorno del Espectro Autista</small>
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono</label>
@@ -155,7 +170,11 @@
                                 </div>
                                 <div class="col-md-6" id="profesion_container" style="display: none;">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Especifique Título / Estudios</label>
-                                    <input type="text" name="profesion" class="form-control border-primary shadow-sm" placeholder="Ej: Ingeniería, Licenciatura, etc.">
+                                    <input type="text" name="titulo_universitario" id="id_titulo_universitario" class="form-control border-primary shadow-sm" placeholder="Ej: Ingeniería, Licenciatura, etc.">
+                                </div>
+                                <div class="col-md-6" id="otro_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Especifique Otro</label>
+                                    <input type="text" name="campo1" id="id_campo1" class="form-control border-secondary shadow-sm" placeholder="Especifique el nivel educativo">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Plantel / Universidad</label>
@@ -177,11 +196,11 @@
                                     <div class="col-md-6">
                                         <label class="small fw-bold text-muted text-uppercase">Cédula</label>
                                         <div class="input-group">
-                                            <select name="rep_nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #fff !important;">
-                                                <option value="V">V</option>
+                                            <select name="rep_nacionalidad" id="id_rep_nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #fff !important;">
+                                                <option value="V" selected>V</option>
                                                 <option value="E">E</option>
                                             </select>
-                                            {{ participante_form.cedula_representante }}
+                                            <input type="text" name="cedula_representante" id="id_cedula_representante" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -218,6 +237,27 @@
     </div>
 </div>
 
+<!-- Modal de Registro Duplicado -->
+<div class="modal fade" id="modalDuplicado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Registro Existente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3">Se encontró un registro con los siguientes datos:</p>
+                <div class="alert alert-light border" id="datosDuplicado"></div>
+                <p class="fw-bold">¿Es el mismo participante?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, continuar registro</button>
+                <button type="button" class="btn btn-primary" id="btnIrEditar">Sí, ir a editar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     input, select, textarea { border-radius: 12px !important; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
     .required-field::after { content: " *"; color: #ef4444; }
@@ -235,8 +275,14 @@
     const repSec = document.getElementById('representanteSection');
     const gradoSel = document.getElementById('id_grado_escolar');
     const profesionCont = document.getElementById('profesion_container');
+    const otroCont = document.getElementById('otro_container');
+    const cedulaPersonalCont = document.getElementById('cedula_personal_container');
+    const cedulaEscolarCont = document.getElementById('cedula_escolar_container');
+    const cedulaPersonalInput = document.getElementById('id_cedula_personal');
+    const cedulaEscolarInput = document.getElementById('id_cedula_escolar');
+    let participanteDuplicadoId = null;
 
-    // 1. Lógica de Edad y Representante
+    // 1. Lógica de Edad, Representante y Cédulas
     fechaNac.addEventListener('change', () => {
         const born = new Date(fechaNac.value);
         const now = new Date();
@@ -255,6 +301,38 @@
             document.getElementById('btnFinalizar').disabled = false;
         }
 
+        // Lógica de cédulas según edad
+        const labelPersonal = document.getElementById('label_cedula_personal');
+        const labelEscolar = document.getElementById('label_cedula_escolar');
+        const helpPersonal = document.getElementById('help_cedula_personal');
+        const helpEscolar = document.getElementById('help_cedula_escolar');
+        
+        if (edad <= 10 && edad >= 3) {
+            // Menor o igual a 10 años: mostrar ambos campos, al menos uno requerido
+            cedulaEscolarCont.style.display = 'block';
+            cedulaPersonalCont.style.display = 'block';
+            
+            // Actualizar labels y textos de ayuda
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
+            labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
+            helpPersonal.textContent = 'Opcional si tiene cédula escolar';
+            helpEscolar.textContent = 'Opcional si tiene cédula personal';
+            
+            // Ninguno es obligatorio por defecto, se valida en submit
+            cedulaPersonalInput.required = false;
+            cedulaEscolarInput.required = false;
+        } else {
+            // Mayor de 10 años: solo cédula personal
+            cedulaEscolarCont.style.display = 'none';
+            cedulaPersonalCont.style.display = 'block';
+            
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            helpPersonal.textContent = '';
+            
+            cedulaEscolarInput.required = false;
+            cedulaPersonalInput.required = true;
+        }
+
         // Mostrar sección de representante si es menor de 18
         if (edad >= 3 && edad < 18) {
             repSec.style.display = 'block';
@@ -265,17 +343,88 @@
         }
     });
 
-    // 2. Lógica de Nivel Educativo
-    gradoSel.addEventListener('change', () => {
-        const val = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
-        if (val.includes('universitario') || val.includes('graduado') || val.includes('profesional') || val.includes('otros')) {
-            profesionCont.style.display = 'block';
-        } else {
-            profesionCont.style.display = 'none';
+    // 2. Validación y limpieza de cédulas en tiempo real
+    cedulaPersonalInput.addEventListener('input', function(e) {
+        // Remover todo excepto números
+        let valor = e.target.value.replace(/\D/g, '');
+        // Limitar a 10 dígitos
+        if (valor.length > 10) {
+            valor = valor.substring(0, 10);
+        }
+        e.target.value = valor;
+        
+        const edad = parseInt(edadHid.value) || 0;
+        if (edad <= 10 && edad >= 3) {
+            const helpEscolar = document.getElementById('help_cedula_escolar');
+            const labelEscolar = document.getElementById('label_cedula_escolar');
+            if (valor) {
+                helpEscolar.textContent = 'Opcional (ya tiene cédula personal)';
+                labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
+            } else {
+                helpEscolar.textContent = 'Requerida si no tiene cédula personal';
+                labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            }
+        }
+    });
+    
+    cedulaEscolarInput.addEventListener('input', function(e) {
+        // Remover todo excepto números
+        let valor = e.target.value.replace(/\D/g, '');
+        // Limitar a 20 dígitos
+        if (valor.length > 20) {
+            valor = valor.substring(0, 20);
+        }
+        e.target.value = valor;
+        
+        const edad = parseInt(edadHid.value) || 0;
+        if (edad <= 10 && edad >= 3) {
+            const helpPersonal = document.getElementById('help_cedula_personal');
+            const labelPersonal = document.getElementById('label_cedula_personal');
+            if (valor) {
+                helpPersonal.textContent = 'Opcional (ya tiene cédula escolar)';
+                labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
+            } else {
+                helpPersonal.textContent = 'Requerida si no tiene cédula escolar';
+                labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            }
         }
     });
 
-    // 3. Lógica AJAX Municipios y Parroquias
+    // 2b. Validación dinámica de cédulas (para menores de 10 años)
+    function validarCedulas() {
+        const edad = parseInt(edadHid.value) || 0;
+        const cedulaPersonal = cedulaPersonalInput.value.trim();
+        const cedulaEscolar = cedulaEscolarInput.value.trim();
+        
+        if (edad <= 10 && edad >= 3) {
+            // Para menores de 10 años: al menos una cédula requerida
+            if (!cedulaPersonal && !cedulaEscolar) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 3. Lógica de Nivel Educativo
+    gradoSel.addEventListener('change', () => {
+        const val = gradoSel.value;
+        const text = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
+        
+        // Ocultar ambos por defecto
+        profesionCont.style.display = 'none';
+        otroCont.style.display = 'none';
+        
+        // Mostrar campo de título universitario si es nivel universitario
+        if (val === 'U' || text.includes('universitario')) {
+            profesionCont.style.display = 'block';
+        }
+        // Mostrar campo "Otro" si selecciona OTRO
+        else if (val === 'OTRO' || text.includes('otro')) {
+            otroCont.style.display = 'block';
+        }
+    });
+
+    // 4. Lógica AJAX Municipios y Parroquias
     document.getElementById('id_municipio').addEventListener('change', function() {
         const muniId = this.value;
         const parroquiaSelect = document.getElementById('id_parroquia');
@@ -290,7 +439,7 @@
             });
     });
 
-    // 4. Lógica para Admin Central: cambiar municipios cuando cambia el estado
+    // 5. Lógica para Admin Central: cambiar municipios cuando cambia el estado
     const estadoSelect = document.getElementById('id_estado');
     if (estadoSelect) {
         estadoSelect.addEventListener('change', function() {
@@ -314,13 +463,80 @@
         });
     }
 
-    // 5. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
+    // 6. Validación de duplicados antes de enviar
+    registroForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const nombres = document.querySelector('[name="nombres"]').value;
+        const apellidos = document.querySelector('[name="apellidos"]').value;
+        const fechaNacimiento = fechaNac.value;
+        const cedulaPersonal = cedulaPersonalInput.value.trim();
+        const cedulaEscolar = cedulaEscolarInput.value.trim();
+        
+        // Validar que tenga al menos una cédula
+        if (!validarCedulas()) {
+            alert('Debe ingresar al menos una cédula (personal o escolar)');
+            return;
+        }
+        
+        // Verificar duplicados
+        try {
+            const response = await fetch('/verificar-participante/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    nombres,
+                    apellidos,
+                    fecha_nacimiento: fechaNacimiento,
+                    cedula_personal: cedulaPersonal,
+                    cedula_escolar: cedulaEscolar
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.existe) {
+                // Mostrar modal con datos del duplicado
+                participanteDuplicadoId = data.participante_id;
+                const datosDuplicado = `
+                    <strong>Nombres:</strong> ${data.datos.nombres}<br>
+                    <strong>Apellidos:</strong> ${data.datos.apellidos}<br>
+                    <strong>Fecha Nacimiento:</strong> ${data.datos.fecha_nacimiento}<br>
+                    <strong>Cédula:</strong> ${data.datos.cedula || 'N/A'}
+                `;
+                document.getElementById('datosDuplicado').innerHTML = datosDuplicado;
+                const modal = new bootstrap.Modal(document.getElementById('modalDuplicado'));
+                modal.show();
+            } else {
+                // No hay duplicados, enviar formulario
+                registroForm.submit();
+            }
+        } catch (error) {
+            console.error('Error al verificar duplicados:', error);
+            // En caso de error, permitir continuar
+            registroForm.submit();
+        }
+    });
+    
+    // 7. Botón para ir a editar
+    document.getElementById('btnIrEditar').addEventListener('click', () => {
+        if (participanteDuplicadoId) {
+            window.location.href = `/participantes/${participanteDuplicadoId}/editar/`;
+        }
+    });
+
+    // 8. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
     registroForm.addEventListener('reset', () => {
         setTimeout(() => { 
             edadDisp.value = "0";
             edadHid.value = "0";
             repSec.style.display = 'none';
             profesionCont.style.display = 'none';
+            otroCont.style.display = 'none';
+            cedulaEscolarCont.style.display = 'none';
             document.getElementById('id_parroquia').innerHTML = '<option value="">Esperando municipio...</option>';
             document.getElementById('edad-error').classList.add('d-none');
             document.getElementById('btnFinalizar').disabled = false;
