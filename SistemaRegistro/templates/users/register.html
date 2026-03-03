@@ -19,12 +19,13 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+            <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
                 <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
                     <h5 class="fw-bold mb-0 text-white uppercase small tracking-wider">
                         <i class="bi bi-person-vcard me-2"></i> Expediente de Inscripción
                     </h5>
                 </div>
+                <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
 
                 <div class="card-body p-4 p-md-5">
                     {% if messages %}
@@ -40,9 +41,8 @@
                         {% csrf_token %}
 
                         <div class="mb-5">
-                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</span>
-                                Información Personal
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-person-vcard me-2 text-primary"></i> Información Personal
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-6">
@@ -116,9 +116,8 @@
                         </div>
 
                         <div class="mb-5">
-                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</span>
-                                Residencia
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-house-door me-2 text-primary"></i> Residencia
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-4">
@@ -159,9 +158,8 @@
                         </div>
 
                         <div class="mb-5">
-                            <h5 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                                <span class="badge bg-primary me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</span>
-                                Nivel Educativo
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-book me-2 text-primary"></i> Nivel Educativo
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-6">
@@ -224,11 +222,13 @@
                             </div>
                         </div>
 
-                        <div class="d-grid pt-4">
-                            <button type="submit" id="btnFinalizar" class="btn btn-primary btn-lg fw-bold py-3 shadow-lg rounded-pill" style="background: var(--blue-main); border: none;">
-                                GUARDAR REGISTRO NACIONAL
+                        <div class="d-flex justify-content-end gap-2 pt-4">
+                            <button type="reset" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
                             </button>
-                            <button type="reset" class="btn btn-link text-muted mt-2 small">Limpiar formulario</button>
+                            <button type="submit" id="btnFinalizar" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background: var(--blue-main);">
+                                <i class="bi bi-check-circle me-1"></i> Registrar Participante
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -240,26 +240,38 @@
 <!-- Modal de Registro Duplicado -->
 <div class="modal fade" id="modalDuplicado" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-warning text-dark border-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Registro Existente</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 20px 20px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="p-2 bg-white bg-opacity-10 rounded-3 me-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Registro Existente</h5>
+                        <p class="x-small mb-0 text-white-50">Verifique los datos del participante</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="mb-3">Se encontró un registro con los siguientes datos:</p>
-                <div class="alert alert-light border" id="datosDuplicado"></div>
-                <p class="fw-bold">¿Es el mismo participante?</p>
+            <div class="modal-body p-4 bg-light">
+                <div class="alert alert-warning border-0 shadow-sm mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Se encontró un registro con datos similares
+                </div>
+                <div class="bg-white p-3 rounded-3 shadow-sm border-start border-4 border-warning" id="datosDuplicado"></div>
+                <p class="fw-bold mt-3 mb-0 text-center">¿Es el mismo participante?</p>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, continuar registro</button>
-                <button type="button" class="btn btn-primary" id="btnIrEditar">Sí, ir a editar</button>
+            <div class="modal-footer border-0 bg-light pb-4 px-4 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold w-100" data-bs-dismiss="modal">No, continuar</button>
+                <button type="button" class="btn text-white rounded-pill px-4 fw-bold w-100 shadow-sm" style="background: var(--blue-main);" id="btnIrEditar">Sí, editar</button>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    input, select, textarea { border-radius: 12px !important; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    input, select, textarea { border-radius: 10px !important; background-color: #f8fafc !important; border: 0 !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important; }
     .required-field::after { content: " *"; color: #ef4444; }
     .representante-section { display: none; animation: fadeIn 0.5s; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

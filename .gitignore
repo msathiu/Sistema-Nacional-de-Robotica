@@ -199,3 +199,8 @@ mysql.txt
 docs/_build/
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
+.continue
+docs
+plan
+/docs
+/plan
