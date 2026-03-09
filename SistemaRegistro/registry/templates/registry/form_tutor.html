@@ -1,0 +1,309 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Tutores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-plus-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ titulo }}</h2>
+                    <p class="text-muted mb-0 small">Complete los datos del tutor</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" 
+                     style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-text text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">Información del Tutor</h5>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Institución -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-building me-1"></i> Institución
+                                </label>
+                                {{ form.institucion }}
+                                {% if form.institucion.errors %}
+                                    <span class="text-danger small">{{ form.institucion.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Nacionalidad y Cédula -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-flag me-1"></i> Nacionalidad
+                                </label>
+                                {{ form.nacionalidad }}
+                                {% if form.nacionalidad.errors %}
+                                    <span class="text-danger small">{{ form.nacionalidad.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-card-text me-1"></i> Cédula
+                                </label>
+                                {{ form.cedula }}
+                                {% if form.cedula.errors %}
+                                    <span class="text-danger small">{{ form.cedula.errors.0 }}</span>
+                                {% endif %}
+                                <div id="cedula-feedback" class="invalid-feedback" style="display: none;">
+                                    Solo se permiten números en la cédula.
+                                </div>
+                                <small class="text-muted">Ingrese solo números (ej: 12345678)</small>
+                            </div>
+
+                            <!-- Nombres y Apellidos -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person me-1"></i> Nombres
+                                </label>
+                                {{ form.nombres }}
+                                {% if form.nombres.errors %}
+                                    <span class="text-danger small">{{ form.nombres.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person me-1"></i> Apellidos
+                                </label>
+                                {{ form.apellidos }}
+                                {% if form.apellidos.errors %}
+                                    <span class="text-danger small">{{ form.apellidos.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Código de Área y Teléfono -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-telephone me-1"></i> Código de Área
+                                </label>
+                                {{ form.telefono_codigo }}
+                                {% if form.telefono_codigo.errors %}
+                                    <span class="text-danger small">{{ form.telefono_codigo.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-phone me-1"></i> Número de Teléfono
+                                </label>
+                                {{ form.telefono }}
+                                {% if form.telefono.errors %}
+                                    <span class="text-danger small">{{ form.telefono.errors.0 }}</span>
+                                {% endif %}
+                                <small class="text-muted">7 dígitos (ej: 1234567)</small>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-envelope me-1"></i> Correo Electrónico
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <span class="text-danger small">{{ form.email.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Profesión -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-briefcase me-1"></i> Profesión
+                                </label>
+                                {{ form.profesion }}
+                                {% if form.profesion.errors %}
+                                    <span class="text-danger small">{{ form.profesion.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Experiencia -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-journal-text me-1"></i> Experiencia
+                                </label>
+                                {{ form.experiencia }}
+                                {% if form.experiencia.errors %}
+                                    <span class="text-danger small">{{ form.experiencia.errors.0 }}</span>
+                                {% endif %}
+                                <small class="text-muted">Describa la experiencia relevante del tutor</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{% url 'lista_tutores' %}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn px-4 fw-bold" 
+                                    style="background: var(--accent-cyan); color: var(--blue-main);">
+                                <i class="bi bi-check-circle me-1"></i> {{ boton_texto }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var cedulaInput = document.getElementById('id_cedula');
+    var feedback = document.getElementById('cedula-feedback');
+    let verificacionTimeout;
+    const verificarCedulaUrl = "{% url 'verificar_tutor_cedula' %}";
+    
+    if (cedulaInput) {
+        // Solo permitir números en el campo de cédula
+        cedulaInput.addEventListener('input', function(e) {
+            var value = e.target.value;
+            var soloNumeros = value.replace(/[^0-9]/g, '');
+            
+            if (value !== soloNumeros) {
+                e.target.value = soloNumeros;
+                
+                if (feedback) {
+                    feedback.style.display = 'block';
+                    feedback.textContent = 'Solo se permiten números.';
+                    cedulaInput.classList.add('is-invalid');
+                }
+                
+                setTimeout(function() {
+                    if (feedback) {
+                        feedback.style.display = 'none';
+                        cedulaInput.classList.remove('is-invalid');
+                    }
+                }, 2000);
+            } else {
+                if (feedback) {
+                    feedback.style.display = 'none';
+                    cedulaInput.classList.remove('is-invalid');
+                }
+            }
+        });
+        
+        // Verificar cédula al perder el foco
+        cedulaInput.addEventListener('blur', function() {
+            const cedula = this.value.trim();
+            
+            if (cedula.length < 5) return;
+            
+            clearTimeout(verificacionTimeout);
+            verificacionTimeout = setTimeout(() => verificarCedula(cedula), 300);
+        });
+        
+        // Validar al perder el foco
+        cedulaInput.addEventListener('blur', function(e) {
+            var value = e.target.value;
+            if (value && value.length < 5) {
+                if (feedback) {
+                    feedback.textContent = 'La cédula debe tener al menos 5 dígitos.';
+                    feedback.style.display = 'block';
+                    cedulaInput.classList.add('is-invalid');
+                }
+            }
+        });
+    }
+    
+    async function verificarCedula(cedula) {
+        try {
+            const response = await fetch(`${verificarCedulaUrl}?cedula=${cedula}`);
+            const data = await response.json();
+            
+            if (!data.existe) return;
+            
+            if (data.vinculado) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Tutor Ya Vinculado',
+                    html: `
+                        <p>El tutor <strong>${data.tutor.nombres} ${data.tutor.apellidos}</strong> 
+                        ya está vinculado a esta institución.</p>
+                        <p>Estado: <span class="badge bg-${data.vinculacion.status === 'activo' ? 'success' : 'warning'}">
+                            ${data.vinculacion.status}
+                        </span></p>
+                    `,
+                });
+            } else {
+                const result = await Swal.fire({
+                    icon: 'question',
+                    title: 'Tutor Encontrado',
+                    html: `
+                        <div class="text-start">
+                            <p>Se encontró un tutor con esta cédula:</p>
+                            <div class="alert alert-info">
+                                <strong>${data.tutor.nombres} ${data.tutor.apellidos}</strong><br>
+                                <small>Email: ${data.tutor.email}</small><br>
+                                <small>Profesión: ${data.tutor.profesion || 'No especificada'}</small>
+                            </div>
+                            <p>¿Desea vincular este tutor a su institución?</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, vincular',
+                    cancelButtonText: 'No',
+                });
+                
+                if (result.isConfirmed) {
+                    autocompletarFormulario(data.tutor);
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+    
+    function autocompletarFormulario(tutor) {
+        document.getElementById('id_nacionalidad').value = tutor.nacionalidad;
+        document.getElementById('id_nombres').value = tutor.nombres;
+        document.getElementById('id_apellidos').value = tutor.apellidos;
+        document.getElementById('id_telefono_codigo').value = tutor.telefono_codigo;
+        document.getElementById('id_telefono').value = tutor.telefono;
+        document.getElementById('id_email').value = tutor.email;
+        document.getElementById('id_profesion').value = tutor.profesion;
+        document.getElementById('id_experiencia').value = tutor.experiencia;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Datos Cargados',
+            text: 'Los datos del tutor han sido cargados.',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+});
+</script>
+{% endblock %}

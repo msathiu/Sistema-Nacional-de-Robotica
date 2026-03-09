@@ -1,0 +1,437 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestión de Tutores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-badge fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Tutores</h2>
+                    <p class="text-muted mb-0 small">Registro y asignación de tutores a grupos</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'crear_tutor' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Tutor
+                </a>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-funnel-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Filtros de Búsqueda</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Buscar</label>
+                    <input type="text" name="q" class="form-control" 
+                           placeholder="Nombre o cédula..." value="{{ filtros.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Institución</label>
+                    <select name="institucion" class="form-select">
+                        <option value="">Todas</option>
+                        {% for inst in instituciones %}
+                            <option value="{{ inst.id }}" {% if filtros.institucion == inst.id|stringformat:"s" %}selected{% endif %}>
+                                {{ inst.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">STATUS</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="activo" {% if filtros.status == 'activo' %}selected{% endif %}>Activo</option>
+                        <option value="inactivo" {% if filtros.status == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Tutores -->
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between card-header-tutores">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">TUTORES REGISTRADOS</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ tutores.count }}</span>
+        </div>
+        <div class="card-body">
+            {% if tutores %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 table-tutores">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Nombre Completo</th>
+                                <th class="py-3">Cédula</th>
+                                <th class="py-3">Institución</th>
+                                <th class="py-3">Email</th>
+                                <th class="py-3 text-center">Status</th>
+                                <th class="py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vinculacion in tutores %}
+                            <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
+                                <td class="px-4">
+                                    <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
+                                    {% if vinculacion.tutor.profesion %}
+                                        <div class="x-small text-muted">{{ vinculacion.tutor.profesion }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
+                                </td>
+                                <td>
+                                    <span class="small">{{ vinculacion.institucion.nombre|truncatechars:30 }}</span>
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
+                                        {{ vinculacion.tutor.email|truncatechars:25 }}
+                                    </a>
+                                </td>
+                                <td class="text-center status-cell align-middle">
+                                    <div class="form-check form-switch m-0 toggle-wrap">
+                                        <input 
+                                            type="checkbox" 
+                                            class="form-check-input toggle-tutor" 
+                                            role="switch"
+                                            data-tutor-id="{{ vinculacion.tutor.id }}"
+                                            data-tutor-nombre="{{ vinculacion.tutor.get_nombre_completo }}"
+                                            data-toggle-url="{% url 'cambiar_estado_tutor' vinculacion.tutor.id %}"
+                                            {% if vinculacion.status == 'activo' %}checked{% endif %}
+                                            id="toggle_{{ vinculacion.tutor.id }}"
+                                        >
+                                    </div>
+                                </td>
+                                <td class="text-center px-4">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-eye me-1"></i> Ver
+                                        </a>
+                                        <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
+                                           class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
+                                            <i class="bi bi-pencil-square me-1"></i> Editar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-4">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    <strong>No se encontraron tutores</strong>
+                    <p class="mb-0 mt-2">
+                        <a href="{% url 'crear_tutor' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Registrar el primer tutor
+                        </a>
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="confirmToggleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-question-circle me-2"></i>Confirmar Cambio de Estado
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea <strong id="actionText"></strong> al tutor <strong id="tutorName"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmToggleBtn">
+                    <i class="bi bi-check-lg me-1"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de Notificación -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastBody"></div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; --success-color: #10b981; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+
+    .card-header-tutores {
+        background: var(--blue-main);
+    }
+
+    .table-tutores {
+        border-radius: 0;
+    }
+
+    .table-tutores thead {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-tutores thead th {
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .table-tutores tbody tr td {
+        background-color: #ffffff;
+        border-bottom: 1px solid #edf2f7;
+    }
+    
+    .toggle-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        width: 100%;
+    }
+
+    .status-cell {
+        width: 120px;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        vertical-align: middle !important;
+    }
+
+    .toggle-tutor.form-check-input {
+        width: 3.5rem;
+        height: 1.7rem;
+        cursor: pointer;
+        border-radius: 999px;
+        transition: all 0.3s ease;
+        border: none;
+        background-color: #cbd5e1;
+        margin: 0;
+    }
+    
+    .toggle-tutor.form-check-input:checked {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    .toggle-tutor.form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.22);
+    }
+    
+    .tutor-row {
+        transition: all 0.2s ease;
+    }
+    
+    .tutor-row:hover {
+        background-color: rgba(0, 212, 255, 0.04) !important;
+    }
+    
+    .tutor-row.table-secondary {
+        opacity: 0.65;
+    }
+    
+    .toast.show {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('confirmToggleModal');
+    const confirmBtn = document.getElementById('confirmToggleBtn');
+    const toastElement = document.getElementById('liveToast');
+    const toast = new bootstrap.Toast(toastElement);
+    const actionText = document.getElementById('actionText');
+    const tutorName = document.getElementById('tutorName');
+    
+    let newStatus = null;
+    let currentToggleElement = null;
+    let previousCheckedState = null;
+    let toggleUrl = null;
+
+    function getCsrfToken() {
+        const name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.querySelectorAll('.toggle-tutor').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            currentToggleElement = this;
+            previousCheckedState = !this.checked;
+            toggleUrl = this.dataset.toggleUrl;
+            const tutorNombre = this.dataset.tutorNombre;
+            newStatus = this.checked ? 'activo' : 'inactivo';
+            const action = newStatus === 'activo' ? 'activar' : 'desactivar';
+
+            actionText.textContent = action;
+            tutorName.textContent = tutorNombre;
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        });
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        if (currentToggleElement && previousCheckedState !== null && confirmBtn.disabled === false) {
+            currentToggleElement.checked = previousCheckedState;
+        }
+    });
+
+    confirmBtn.addEventListener('click', function() {
+        if (toggleUrl && newStatus && currentToggleElement) {
+            const originalBtnContent = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cambiando...';
+
+            cambiarEstadoTutor(toggleUrl, newStatus, currentToggleElement, originalBtnContent);
+            bootstrap.Modal.getInstance(modalElement).hide();
+        }
+    });
+
+    function cambiarEstadoTutor(url, nuevoStatus, toggleElement, originalContent) {
+        const csrfToken = getCsrfToken();
+        const formData = new FormData();
+        formData.append('status', nuevoStatus);
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include'
+        })
+        .then(response => {
+            return response.json().then(data => ({ ok: response.ok, data }));
+        })
+        .then(({ ok, data }) => {
+            if (!ok) {
+                throw new Error(data.error || 'No se pudo cambiar el estado.');
+            }
+
+            if (data.success) {
+                actualizarToggleUI(toggleElement, nuevoStatus === 'activo');
+                actualizarFilaTabla(toggleElement.closest('tr'), nuevoStatus === 'activo');
+                mostrarToast(
+                    'success',
+                    'bi-check-circle-fill text-success',
+                    'Estado Actualizado',
+                    data.message || `El tutor ha sido ${nuevoStatus === 'activo' ? 'habilitado' : 'deshabilitado'} correctamente.`
+                );
+            } else {
+                toggleElement.checked = previousCheckedState;
+                mostrarToast(
+                    'error',
+                    'bi-exclamation-circle-fill text-danger',
+                    'Error',
+                    data.error || 'No se pudo cambiar el estado.'
+                );
+            }
+        })
+        .catch(error => {
+            toggleElement.checked = previousCheckedState;
+            mostrarToast(
+                'error',
+                'bi-exclamation-circle-fill text-danger',
+                'Error',
+                error.message || 'No se pudo conectar con el servidor. Intente de nuevo.'
+            );
+        })
+        .finally(() => {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalContent;
+            currentToggleElement = null;
+            newStatus = null;
+            previousCheckedState = null;
+            toggleUrl = null;
+        });
+    }
+
+    function actualizarToggleUI(toggleElement, estaActivo) {
+        if (estaActivo) {
+            toggleElement.checked = true;
+        } else {
+            toggleElement.checked = false;
+        }
+    }
+
+    function actualizarFilaTabla(fila, estaActivo) {
+        if (estaActivo) {
+            fila.classList.remove('table-secondary');
+        } else {
+            fila.classList.add('table-secondary');
+        }
+    }
+
+    function mostrarToast(type, iconClass, title, message) {
+        const toastIcon = document.getElementById('toastIcon');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastBody = document.getElementById('toastBody');
+
+        toastIcon.className = `bi me-2 ${iconClass}`;
+        toastTitle.textContent = title;
+        toastBody.textContent = message;
+        
+        toast.show();
+    }
+});
+</script>
+{% endblock %}

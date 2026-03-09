@@ -1,0 +1,268 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Directorio de Clubes Aprobados{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+        --success: #10b981;
+    }
+    
+    .counter {
+        font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .badge-linea {
+        background: rgba(11, 44, 109, 0.1);
+        color: var(--blue-main);
+        border: 1px solid var(--blue-main);
+        font-size: 0.7rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 20px;
+    }
+    
+    .badge-cupo {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .badge-cupo.disponible {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-cupo.lleno {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+    
+    .badge-estado {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge-estado.abierto {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-estado.cerrado {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .badge-estado.invitacion {
+        background: #fef3c7;
+        color: #d97706;
+    }
+    
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header con estilo unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-book fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Directorio de Clubes Aprobados</h2>
+                    <p class="text-muted mb-0 small">Todos los clubes aprobados por la Federación</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Tarjetas KPI con estilo unificado -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Total Aprobados</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_clubes }}">0</h2>
+                    <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 3px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes Abiertos</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ clubes_abiertos|default:0 }}">0</h2>
+                    <i class="bi bi-unlock position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 3px; background: #10b981;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Instituciones Participantes</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_instituciones_participantes }}">0</h2>
+                    <i class="bi bi-building position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 3px; background: #f59e0b;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Líneas de Investigación</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ lineas_count|default:8 }}">0</h2>
+                    <i class="bi bi-lightbulb position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 3px; background: #8b5cf6;"></div>
+            </div>
+        </div>
+    </div>
+
+    {% if clubes_aprobados %}
+        <!-- Card Principal -->
+        <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
+                <i class="bi bi-list-check text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">CLUBES ACTIVOS</h5>
+            </div>
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Club</th>
+                                <th class="py-3">Institución</th>
+                                <th class="py-3">Líneas de Investigación</th>
+                                <th class="py-3 text-center">Cupos</th>
+                                <th class="py-3 text-center">Estado</th>
+                                <th class="py-3 text-center">Fecha Aprobación</th>
+                                <th class="py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for club in clubes_aprobados %}
+                            <tr>
+                                <td class="px-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
+                                            <i class="bi bi-robot fs-5" style="color: #059669;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold small text-dark">{{ club.nombre }}</div>
+                                            {% if club.siglas %}
+                                                <div class="x-small text-muted">{{ club.siglas }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold">{{ club.institucion_creadora.nombre_publico|truncatewords:5 }}</div>
+                                    <div class="x-small text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ club.institucion_creadora.estado.nombre }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for linea in club.lineas_investigacion %}
+                                            <span class="badge-linea">
+                                                {{ linea|truncatewords:2 }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge-cupo {% if club.cupos_disponibles > 0 %}disponible{% else %}lleno{% endif %}">
+                                        {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if club.estado_vinculacion == 'abierto' %}
+                                        <span class="badge-estado abierto">
+                                            <i class="bi bi-unlock me-1"></i>Abierto
+                                        </span>
+                                    {% elif club.estado_vinculacion == 'cerrado' %}
+                                        <span class="badge-estado cerrado">
+                                            <i class="bi bi-lock me-1"></i>Cerrado
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-estado invitacion">
+                                            <i class="bi bi-envelope me-1"></i>Invitación
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="small text-muted">
+                                        {{ club.fecha_aprobacion|date:"d/m/Y" }}
+                                    </span>
+                                </td>
+                                <td class="text-center px-4">
+                                    <a href="{% url 'detalle_club' club.id %}" 
+                                       class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                        <i class="bi bi-eye me-1"></i>Ver Detalles
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted mb-4"></i>
+                <h4 class="fw-bold">No hay clubes aprobados aún</h4>
+                <p class="text-muted">Los clubes aprobados por la federación aparecerán aquí.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Contadores animados con requestAnimationFrame
+        const counters = document.querySelectorAll('.counter');
+        
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target')) || 0;
+            const duration = 1000; // 1 segundo
+            
+            let startTime = null;
+            
+            const updateCounter = (currentTime) => {
+                if (!startTime) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = Math.floor(progress * target);
+                
+                counter.innerText = currentValue;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+            
+            requestAnimationFrame(updateCounter);
+        });
+    });
+</script>
+{% endblock %}

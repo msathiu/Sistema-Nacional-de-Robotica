@@ -1,0 +1,191 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-rocket-takeoff fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Inscripción de Proyecto</h2>
+                    <p class="text-muted mb-0 small">Evento: <span class="text-primary fw-bold">{{ evento.nombre }}</span></p>
+                </div>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-pencil-square me-2"></i>Formulario de Registro</h5>
+                </div>
+                
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" id="formInscripcion">
+                        {% csrf_token %}
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Modalidad de Participación</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="bi bi-person-badge"></i></span>
+                                    <select name="modalidad" id="modalidad" class="form-select border-0 bg-light fw-bold" style="border-radius: 0 10px 10px 0;">
+                                        <option value="individual">👤 Individual</option>
+                                        <option value="equipo">👥 Equipo / Grupo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Proyecto</label>
+                                <input type="text" name="nombre_proyecto" class="form-control border-0 bg-light p-2" 
+                                       placeholder="Ej. Rover Explorador RNR" required style="border-radius: 10px;">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Resumen del Proyecto</label>
+                                <textarea name="descripcion" class="form-control border-0 bg-light p-3" rows="4" 
+                                          placeholder="Describe brevemente de qué trata tu proyecto..." style="border-radius: 15px;"></textarea>
+                            </div>
+
+                            <div class="col-12" id="equipo-section" style="display:none;">
+                                <div class="p-4 rounded-4" style="background: #f8fafc; border: 2px dashed #cbd5e1;">
+                                    <h6 class="fw-bold mb-3"><i class="bi bi-people-fill me-2 text-primary"></i>Configuración de Equipo</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="small text-muted mb-2">Buscar Integrantes por Usuario</label>
+                                        <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                                            <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                                            <input type="text" id="buscar-usuario" class="form-control border-0" 
+                                                   placeholder="Escribe el nombre de usuario para buscar...">
+                                        </div>
+                                    </div>
+
+                                    <div id="lista-usuarios" class="list-group list-group-flush rounded-3 overflow-hidden shadow-sm">
+                                        </div>
+
+                                    <div class="mt-4">
+                                        <label class="small fw-bold text-primary mb-2">Integrantes Seleccionados:</label>
+                                        <div id="integrantes-seleccionados" class="d-flex flex-wrap gap-2">
+                                            <span class="badge bg-white text-dark border p-2 rounded-pill fw-medium">
+                                                <i class="bi bi-person-check-fill text-success me-1"></i> Tú (Líder)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 pt-3">
+                                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-lg" 
+                                        style="border-radius: 15px; background: var(--blue-main); border: none;">
+                                    <i class="bi bi-check-circle-fill me-2"></i> Finalizar Inscripción
+                                </button>
+                                <a href="{% url 'dashboard' %}" class="btn btn-link w-100 mt-2 text-muted text-decoration-none small">Cancelar y volver</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus, .form-select:focus {
+        background-color: #fff !important;
+        box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.15);
+        border: 1px solid var(--accent-cyan) !important;
+    }
+    
+    .list-group-item-action:hover {
+        background-color: #f1f5f9 !important;
+        color: var(--blue-main) !important;
+    }
+
+    .user-chip {
+        background: #e0f7fa;
+        color: #006064;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        border: 1px solid #b2ebf2;
+    }
+
+    .user-chip i { cursor: pointer; margin-left: 8px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const modalidad = document.getElementById('modalidad');
+    const equipoSection = document.getElementById('equipo-section');
+    const inputBusqueda = document.getElementById('buscar-usuario');
+    const listaResultados = document.getElementById('lista-usuarios');
+    const contenedorSeleccionados = document.getElementById('integrantes-seleccionados');
+
+    // Cambiar visibilidad de sección equipo
+    modalidad.addEventListener('change', () => {
+        equipoSection.style.display = modalidad.value === 'equipo' ? 'block' : 'none';
+    });
+
+    // Búsqueda AJAX avanzada
+    inputBusqueda.addEventListener('keyup', async () => {
+        const q = inputBusqueda.value;
+        if (q.length < 3) {
+            listaResultados.innerHTML = '';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/ajax/buscar-usuarios/?q=${q}`);
+            const data = await res.json();
+
+            listaResultados.innerHTML = '';
+            data.forEach(u => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-3';
+                btn.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm me-3 bg-light rounded-circle p-2"><i class="bi bi-person"></i></div>
+                        <div>
+                            <div class="fw-bold mb-0">${u.username}</div>
+                            <small class="text-muted">ID: ${u.id}</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-plus-circle text-primary fs-5"></i>
+                `;
+                btn.onclick = () => agregarIntegrante(u.id, u.username);
+                listaResultados.appendChild(btn);
+            });
+        } catch (error) {
+            console.error("Error buscando usuarios:", error);
+        }
+    });
+
+    function agregarIntegrante(id, nombre) {
+        // Evitar duplicados
+        if (document.querySelector(`input[value="${id}"]`)) return;
+
+        const chip = document.createElement('div');
+        chip.className = 'user-chip shadow-sm';
+        chip.innerHTML = `
+            ${nombre}
+            <input type="hidden" name="integrantes[]" value="${id}">
+            <i class="bi bi-x-circle-fill text-danger" onclick="this.parentElement.remove()"></i>
+        `;
+        contenedorSeleccionados.appendChild(chip);
+        inputBusqueda.value = '';
+        listaResultados.innerHTML = '';
+    }
+});
+</script>
+{% endblock %}

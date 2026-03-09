@@ -1,0 +1,324 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Mis Equipos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-people-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Mis Equipos</h2>
+                    <p class="text-muted mb-0 small">Gestiona tus equipos y participantes</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'crear_grupo' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Crear Equipo
+                </a>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-funnel-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Filtros de Búsqueda</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Buscar</label>
+                    <input type="text" id="buscarGrupo" class="form-control" 
+                           placeholder="Nombre o código del equipo...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Estatus</label>
+                    <select id="filtroEstatus" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="editable">Editable</option>
+                        <option value="inscrito">Inscrito</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Criterio</label>
+                    <select id="filtroCriterio" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="edad">Por Edad</option>
+                        <option value="nivel">Por Nivel Educativo</option>
+                        <option value="proyecto">Por Proyecto</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Equipos -->
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between card-header-equipos">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">EQUIPOS REGISTRADOS</h5>
+            </div>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_grupos }}</span>
+        </div>
+        <div class="card-body">
+            {% if grupos %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 table-equipos">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Equipo</th>
+                                <th class="py-3">Código</th>
+                                <th class="py-3">Tutor Responsable</th>
+                                <th class="py-3">Criterio</th>
+                                <th class="py-3 text-center">Participantes</th>
+                                <th class="py-3 text-center">Estatus</th>
+                                <th class="py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grupo in grupos %}
+                            <tr class="equipo-row" data-estado="{{ grupo.estado_grupo }}" data-criterio="{{ grupo.criterio }}">
+                                <td class="px-4">
+                                    <div class="fw-bold small text-dark">{{ grupo.nombre }}</div>
+                                    <div class="x-small text-muted">{{ grupo.fecha_registro|date:"d/m/Y" }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ grupo.codigo }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-badge me-2 text-muted"></i>
+                                        <span class="small">{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="mb-1">
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                            {{ grupo.criterio_display }}
+                                        </span>
+                                    </div>
+                                    <div class="x-small text-muted fw-bold">
+                                        <i class="bi bi-arrow-return-right me-1"></i>{{ grupo.criterio_detalle }}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                        <i class="bi bi-people-fill me-1"></i>{{ grupo.num_participantes }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if grupo.estado_grupo == 'editable' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                            <i class="bi bi-pencil-square me-1"></i>Editable
+                                        </span>
+                                    {% elif grupo.estado_grupo == 'inscrito' %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                            <i class="bi bi-check-circle me-1"></i>Inscrito
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                            <i class="bi bi-lock-fill me-1"></i>Bloqueado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center px-4">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{% url 'ver_grupo' grupo.id %}" 
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-eye me-1"></i> Ver
+                                        </a>
+                                        {% if grupo.estado_grupo == 'editable' %}
+                                        <a href="{% url 'editar_grupo' grupo.id %}" 
+                                           class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
+                                            <i class="bi bi-pencil-square me-1"></i> Editar
+                                        </a>
+                                        {% if grupo.puede_eliminar %}
+                                        <button class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-bold"
+                                                onclick="confirmarEliminar({{ grupo.id }}, '{{ grupo.nombre|escapejs }}')">
+                                            <i class="bi bi-trash3 me-1"></i> Eliminar
+                                        </button>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-4">
+                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                    <strong>No se encontraron equipos</strong>
+                    <p class="mb-0 mt-2">
+                        <a href="{% url 'crear_grupo' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Crear el primer equipo
+                        </a>
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar el equipo <strong id="nombreGrupo" class="text-primary"></strong>?</p>
+                <div class="alert alert-warning border-0 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>Esta acción no se puede deshacer.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formEliminar" method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de Notificación -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastBody"></div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; --success-color: #10b981; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+
+    .card-header-equipos {
+        background: var(--blue-main);
+    }
+
+    .table-equipos {
+        border-radius: 0;
+    }
+
+    .table-equipos thead {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-equipos thead th {
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .table-equipos tbody tr td {
+        background-color: #ffffff;
+        border-bottom: 1px solid #edf2f7;
+    }
+    
+    .equipo-row {
+        transition: all 0.2s ease;
+    }
+    
+    .equipo-row:hover {
+        background-color: rgba(0, 212, 255, 0.04) !important;
+    }
+    
+    .toast.show {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+function confirmarEliminar(grupoId, nombreGrupo) {
+    document.getElementById('nombreGrupo').textContent = nombreGrupo;
+    document.getElementById('formEliminar').action = `/registry/grupos/${grupoId}/eliminar/`;
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+
+// Búsqueda en tiempo real
+document.getElementById('buscarGrupo').addEventListener('keyup', function() {
+    const value = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.equipo-row');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(value) ? '' : 'none';
+    });
+});
+
+// Filtro por estatus
+document.getElementById('filtroEstatus').addEventListener('change', function() {
+    aplicarFiltros();
+});
+
+// Filtro por criterio
+document.getElementById('filtroCriterio').addEventListener('change', function() {
+    aplicarFiltros();
+});
+
+function aplicarFiltros() {
+    const estatus = document.getElementById('filtroEstatus').value;
+    const criterio = document.getElementById('filtroCriterio').value;
+    const rows = document.querySelectorAll('.equipo-row');
+    
+    rows.forEach(row => {
+        const estatusRow = row.dataset.estado;
+        const criterioRow = row.dataset.criterio;
+        
+        const cumpleEstatus = !estatus || estatusRow === estatus;
+        const cumpleCriterio = !criterio || criterioRow === criterio;
+        
+        row.style.display = (cumpleEstatus && cumpleCriterio) ? '' : 'none';
+    });
+}
+
+// Mostrar toast si hay mensajes
+{% if messages %}
+    const toastElement = document.getElementById('liveToast');
+    const toast = new bootstrap.Toast(toastElement);
+    {% for message in messages %}
+        document.getElementById('toastIcon').className = 'bi me-2 bi-{% if message.tags == "success" %}check-circle-fill text-success{% else %}exclamation-circle-fill text-danger{% endif %}';
+        document.getElementById('toastTitle').textContent = '{% if message.tags == "success" %}Éxito{% else %}Error{% endif %}';
+        document.getElementById('toastBody').textContent = '{{ message|escapejs }}';
+        toast.show();
+    {% endfor %}
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-end">
+        <div class="col-xl-6">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-graph-up-arrow fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Inteligencia de Datos Nacional</h2>
+                    <p class="text-muted mb-0 small">Registro Nacional de Federados| Análisis de Impacto RNR</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 mt-3 mt-xl-0">
+            <div class="d-flex flex-wrap gap-2 justify-content-xl-end bg-white p-2 rounded-4 shadow-sm border">
+                <div class="input-group input-group-sm" style="width: auto;">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-geo-alt-fill text-primary"></i></span>
+                    <select id="filterState" class="form-select border-0 bg-light fw-bold" style="min-width: 150px;">
+                        <option value="all">Todos los Estados</option>
+                        <option value="miranda">Miranda</option>
+                        <option value="dc">Dtto. Capital</option>
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="width: auto;">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-person-badge-fill text-info"></i></span>
+                    <select id="filterAge" class="form-select border-0 bg-light fw-bold" style="min-width: 140px;">
+                        <option value="all">Cualquier Edad</option>
+                        <option value="child">7-12 años</option>
+                        <option value="teen">13-17 años</option>
+                        <option value="adult">18+ años</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm rounded-3 px-3 fw-bold shadow-sm" onclick="updateDashboard()">
+                    <i class="bi bi-arrow-repeat me-1"></i> Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <hr class="mb-4 opacity-10">
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Total Usuarios</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="2840">0</h2>
+                    <i class="bi bi-people position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Instituciones</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="145">0</h2>
+                    <i class="bi bi-building position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #10b981;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Mujeres STEM</div>
+                    <h2 class="display-5 fw-bold mb-0">
+                        <span class="counter" data-target="42">0</span><span class="fs-4 text-white-50">%</span>
+                    </h2>
+                    <i class="bi bi-gender-female position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #f59e0b;"></div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2 tracking-wider">Eventos Activos</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="156">0</h2>
+                    <i class="bi bi-cpu position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #8b5cf6;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm p-4" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4" style="font-family: 'Space Grotesk', sans-serif;">
+                    <i class="bi bi-activity text-primary me-2"></i>Curva de Inscripción Mensual
+                </h5>
+                <div style="height: 250px;">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4" style="font-family: 'Space Grotesk', sans-serif;">
+                    <i class="bi bi-bar-chart-fill text-primary me-2"></i>Distribución por Entidad
+                </h5>
+                <div style="height: 350px;">
+                    <canvas id="complexBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm p-4 h-100" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4" style="font-family: 'Space Grotesk', sans-serif;">
+                    <i class="bi bi-bullseye text-danger me-2"></i>Especialización
+                </h5>
+                <div style="height: 300px; filter: drop-shadow(0px 4px 8px rgba(0, 212, 255, 0.2));">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm p-4 h-100 text-center" style="border-radius: 20px; background: white;">
+                <h5 class="fw-bold text-dark mb-4" style="font-family: 'Space Grotesk', sans-serif;">
+                    <i class="bi bi-gender-ambiguous text-warning me-2"></i>Género
+                </h5>
+                <div class="d-flex flex-column align-items-center justify-content-center" style="height: 250px;">
+                    <canvas id="genderGauge"></canvas>
+                    <div style="margin-top: -50px;">
+                        <h3 class="fw-bold mb-0" style="color: #0b2c6d;">42%</h3>
+                        <span class="text-muted small fw-bold">Mujeres</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top">
+                    <div class="d-flex justify-content-between small px-2">
+                        <span class="text-muted">Masculino: <b>58%</b></span>
+                        <span class="text-muted">Femenino: <b>42%</b></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .counter { font-family: 'Space Grotesk', sans-serif; }
+    canvas { width: 100% !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- ANIMACIÓN DE CONTADORES ---
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200;
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = parseInt(counter.getAttribute('data-target'));
+                const count = parseInt(counter.innerText);
+                const increment = Math.max(Math.trunc(target / speed), 1);
+                if (count < target) {
+                    counter.innerText = count + increment;
+                    setTimeout(updateCount, 10);
+                } else { counter.innerText = target; }
+            };
+            updateCount();
+        });
+
+        // --- 1. GRÁFICO DE LÍNEA (CRECIMIENTO) ---
+        const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+        const gradGrowth = ctxGrowth.createLinearGradient(0, 0, 0, 250);
+        gradGrowth.addColorStop(0, 'rgba(0, 212, 255, 0.2)');
+        gradGrowth.addColorStop(1, 'rgba(11, 44, 109, 0)');
+
+        new Chart(ctxGrowth, {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
+                datasets: [{
+                    data: [150, 400, 750, 1200, 1800, 2300, 2840],
+                    borderColor: '#00d4ff',
+                    backgroundColor: gradGrowth,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
+                }
+            }
+        });
+
+        // --- 2. GRÁFICO DE BARRAS (ESTADO) ---
+        const ctxBar = document.getElementById('complexBarChart').getContext('2d');
+        const gradBar = ctxBar.createLinearGradient(0, 0, 0, 400);
+        gradBar.addColorStop(0, '#00d4ff');
+        gradBar.addColorStop(1, '#0b2c6d');
+
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Mir', 'DC', 'Car', 'Zul', 'Ara', 'Lar', 'Bol', 'Anz'],
+                datasets: [{
+                    data: [450, 380, 320, 290, 240, 210, 180, 150],
+                    backgroundColor: gradBar,
+                    borderRadius: 10,
+                    barThickness: 25
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { borderDash: [5, 5] }, beginAtZero: true }
+                }
+            }
+        });
+
+        // --- 3. GRÁFICO RADAR (ESPECIALIDAD) ---
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Programación', 'IA', '3D', 'Electrónica', 'Mecánica'],
+                datasets: [{
+                    data: [95, 80, 70, 85, 90],
+                    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+                    borderColor: '#00d4ff',
+                    pointBackgroundColor: '#0b2c6d',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { r: { ticks: { display: false }, grid: { color: '#e2e8f0' } } }
+            }
+        });
+
+        // --- 4. GRÁFICO GÉNERO (SEMI-DONA) ---
+        new Chart(document.getElementById('genderGauge'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Masculino', 'Femenino'],
+                datasets: [{
+                    data: [58, 42],
+                    backgroundColor: ['#0b2c6d', '#f59e0b'],
+                    circumference: 180,
+                    rotation: 270,
+                    borderRadius: 8,
+                    cutout: '85%'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+
+    function updateDashboard() {
+        console.log("Sincronizando datos con filtros aplicados...");
+    }
+</script>
+{% endblock %}

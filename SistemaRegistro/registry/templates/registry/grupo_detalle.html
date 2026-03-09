@@ -1,0 +1,356 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ grupo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Moderno -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-people-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ grupo.nombre }}</h2>
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-hash me-1"></i>Código: <code class="text-primary">{{ grupo.codigo }}</code>
+                    </p>
+                </div>
+            </div>
+            <div>
+                {% if grupo.estado_grupo == 'editable' %}
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-6 px-3 py-2">
+                        <i class="bi bi-pencil-square me-1"></i>Editable
+                    </span>
+                {% elif grupo.estado_grupo == 'inscrito' %}
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6 px-3 py-2">
+                        <i class="bi bi-check-circle me-1"></i>Inscrito
+                    </span>
+                {% else %}
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-6 px-3 py-2">
+                        <i class="bi bi-lock-fill me-1"></i>Bloqueado
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Mis Equipos</a></li>
+            <li class="breadcrumb-item active">{{ grupo.nombre }}</li>
+        </ol>
+    </nav>
+
+    <!-- Acciones -->
+    <div class="mb-4">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+            <i class="bi bi-arrow-left me-1"></i> Volver
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Columna Izquierda: Información General -->
+        <div class="col-lg-4">
+            <!-- Información del Equipo -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small">INFORMACIÓN DEL EQUIPO</h5>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Nombre del Equipo</label>
+                        <p class="mb-0 fw-bold fs-5 text-dark">{{ grupo.nombre }}</p>
+                    </div>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Código</label>
+                        <p class="mb-0">
+                            <code class="bg-light px-3 py-2 rounded border text-primary fw-bold">{{ grupo.codigo }}</code>
+                        </p>
+                    </div>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Criterio de Agrupación</label>
+                        <p class="mb-1">
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                                {{ grupo.get_criterio_display }}
+                            </span>
+                        </p>
+                        {% if grupo.criterio == 'edad' %}
+                            {% if grupo.edad_desde == grupo.edad_hasta %}
+                                <p class="mb-0 small text-muted">
+                                    <i class="bi bi-arrow-right me-1"></i>{{ grupo.edad_desde }} años
+                                </p>
+                            {% else %}
+                                <p class="mb-0 small text-muted">
+                                    <i class="bi bi-arrow-right me-1"></i>{{ grupo.edad_desde }} a {{ grupo.edad_hasta }} años
+                                </p>
+                            {% endif %}
+                        {% elif grupo.criterio == 'nivel' %}
+                            <p class="mb-0 small text-muted">
+                                <i class="bi bi-arrow-right me-1"></i>{{ grupo.get_nivel_educativo_display }}
+                            </p>
+                        {% elif grupo.criterio == 'proyecto' %}
+                            <p class="mb-0 small text-muted">
+                                <i class="bi bi-arrow-right me-1"></i>{{ grupo.nombre_proyecto }}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Fecha de Registro</label>
+                        <p class="mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>{{ grupo.fecha_registro|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Total Participantes</label>
+                        <p class="mb-0">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6 px-3 py-2">
+                                <i class="bi bi-people-fill me-1"></i>{{ participantes.count }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if grupo.evento %}
+                    <div class="mb-0">
+                        <label class="text-muted x-small text-uppercase fw-bold mb-1">Evento Inscrito</label>
+                        <p class="mb-1 fw-bold text-primary">{{ grupo.evento.nombre }}</p>
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-calendar-event me-1"></i>{{ grupo.evento.fecha|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información del Tutor -->
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #10b981, #059669);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-badge-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small">TUTOR RESPONSABLE</h5>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if tutores %}
+                        {% for tutor in tutores %}
+                        <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <label class="text-muted x-small text-uppercase fw-bold mb-1">Nombre Completo</label>
+                            <p class="mb-0 fw-bold">{{ tutor.get_nombre_completo }}</p>
+                        </div>
+                        <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <label class="text-muted x-small text-uppercase fw-bold mb-1">Cédula</label>
+                            <p class="mb-0"><span class="badge bg-light text-dark border">{{ tutor.nacionalidad }}-{{ tutor.cedula }}</span></p>
+                        </div>
+                        <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <label class="text-muted x-small text-uppercase fw-bold mb-1">Email</label>
+                            <p class="mb-0"><a href="mailto:{{ tutor.email }}" class="text-decoration-none">{{ tutor.email }}</a></p>
+                        </div>
+                        {% if tutor.telefono_codigo and tutor.telefono %}
+                        <div class="mb-0">
+                            <label class="text-muted x-small text-uppercase fw-bold mb-1">Teléfono</label>
+                            <p class="mb-0"><i class="bi bi-telephone me-2 text-success"></i>{{ tutor.telefono_codigo }}-{{ tutor.telefono }}</p>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">Sin tutor asignado</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Participantes e Inscripciones -->
+        <div class="col-lg-8">
+            <!-- Participantes -->
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small">PARTICIPANTES</h5>
+                    </div>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ participantes.count }}</span>
+                </div>
+                <div class="card-body">
+                    {% if participantes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-participantes">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase x-small fw-bold text-muted">
+                                        <th class="px-4 py-3">#</th>
+                                        <th class="py-3">Nombre Completo</th>
+                                        <th class="py-3">Cédula</th>
+                                        <th class="py-3 text-center">Edad</th>
+                                        <th class="py-3">Nivel</th>
+                                        <th class="py-3 text-center">Sexo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for participante in participantes %}
+                                    <tr>
+                                        <td class="px-4">
+                                            <span class="badge bg-light text-dark border">{{ forloop.counter }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold small text-dark">{{ participante.nombre_completo }}</div>
+                                            <div class="x-small text-muted">{{ participante.email|truncatechars:30 }}</div>
+                                        </td>
+                                        <td>
+                                            {% if participante.cedula %}
+                                                <code class="small">{{ participante.nacionalidad }}-{{ participante.cedula }}</code>
+                                            {% elif participante.cedula_escolar %}
+                                                <code class="small">CE-{{ participante.cedula_escolar }}</code>
+                                            {% else %}
+                                                <span class="text-muted small">Sin cédula</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                                {{ participante.edad }} años
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="small">{{ participante.get_grado_escolar_display }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if participante.sexo == 'M' %}
+                                                <i class="bi bi-gender-male fs-5 text-primary"></i>
+                                            {% elif participante.sexo == 'F' %}
+                                                <i class="bi bi-gender-female fs-5 text-danger"></i>
+                                            {% else %}
+                                                <i class="bi bi-gender-ambiguous fs-5 text-secondary"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center py-4 mb-0">
+                            <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                            <strong>No hay participantes registrados</strong>
+                            <p class="mb-0 mt-2 small text-muted">Este equipo aún no tiene participantes asignados</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Inscripciones a Eventos -->
+            {% if inscripciones %}
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-calendar-check-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small">HISTORIAL DE INSCRIPCIONES</h5>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for inscripcion in inscripciones %}
+                        <div class="list-group-item px-4 py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-2 fw-bold">{{ inscripcion.evento.nombre }}</h6>
+                                    <p class="mb-2 small text-muted">
+                                        <i class="bi bi-calendar3 me-1"></i> {{ inscripcion.evento.fecha|date:"d/m/Y" }}
+                                        <span class="mx-2">•</span>
+                                        <i class="bi bi-geo-alt me-1"></i> {{ inscripcion.evento.get_modalidad_display }}
+                                    </p>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                        {{ inscripcion.get_rol_participacion_display }}
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted d-block">Inscrito el</small>
+                                    <small class="fw-bold">{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+{% if puede_editar %}
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar el equipo <strong class="text-primary">{{ grupo.nombre }}</strong>?</p>
+                <div class="alert alert-warning border-0 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>Esta acción no se puede deshacer y eliminará toda la información del equipo.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{% url 'eliminar_grupo' grupo.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; --success-color: #10b981; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+
+    .table-participantes {
+        border-radius: 0;
+    }
+
+    .table-participantes thead {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-participantes thead th {
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .table-participantes tbody tr td {
+        background-color: #ffffff;
+        border-bottom: 1px solid #edf2f7;
+    }
+    
+    .table-participantes tbody tr:hover {
+        background-color: rgba(0, 212, 255, 0.04) !important;
+    }
+
+    .breadcrumb-item a {
+        text-decoration: none;
+        color: var(--blue-main);
+    }
+
+    .breadcrumb-item a:hover {
+        color: var(--accent-cyan);
+    }
+</style>
+
+<script>
+function confirmarEliminar() {
+    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+}
+</script>
+{% endblock %}

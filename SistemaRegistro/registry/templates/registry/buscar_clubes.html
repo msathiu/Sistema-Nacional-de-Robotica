@@ -1,0 +1,123 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-search fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Búsqueda Avanzada de Clubes</h2>
+                    <p class="text-muted mb-0 small">Encuentra clubes por criterios específicos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+        <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <h5 class="mb-0 text-white fw-bold"><i class="bi bi-funnel me-2"></i>Filtros de Búsqueda</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">Búsqueda por nombre</label>
+                    <input type="text" name="q" class="form-control" placeholder="Nombre del club o institución" value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Línea de Investigación</label>
+                    <select name="linea" class="form-select">
+                        <option value="">Todas</option>
+                        {% for linea in lineas %}
+                        <option value="{{ linea.id }}" {% if request.GET.linea|stringformat:"s" == linea.id|stringformat:"s" %}selected{% endif %}>{{ linea.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Estado de Vinculación</label>
+                    <select name="estado_vinculacion" class="form-select">
+                        <option value="">Todos</option>
+                        {% for codigo, nombre in estados_vinculacion %}
+                        <option value="{{ codigo }}" {% if request.GET.estado_vinculacion == codigo %}selected{% endif %}>{{ nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">Cupos mínimos</label>
+                    <input type="number" name="cupos_min" class="form-control" min="1" value="{{ request.GET.cupos_min }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn shadow-sm px-4 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                        <i class="bi bi-search me-2"></i>Buscar
+                    </button>
+                    <a href="{% url 'buscar_clubes' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                        <i class="bi bi-x-circle me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
+            <h5 class="mb-0 text-white fw-bold"><i class="bi bi-list-check me-2"></i>Resultados</h5>
+            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_resultados }}</span>
+        </div>
+        <div class="card-body p-4">
+            
+            {% if clubes %}
+                <div class="row g-4">
+                    {% for club in clubes %}
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
+                                        <i class="bi bi-robot fs-4" style="color: #059669;"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title fw-bold mb-1">{{ club.nombre }}</h5>
+                                        <p class="text-muted small mb-0">
+                                            <i class="bi bi-building me-1"></i>{{ club.institucion_creadora.nombre_publico|truncatewords:4 }}
+                                        </p>
+                                        <p class="text-muted small mb-0">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ club.institucion_creadora.estado.nombre }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    {% for linea in club.lineas_investigacion %}
+                                        <span class="badge rounded-pill me-1 mb-1" style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main); font-size: 0.7rem;">{{ linea|truncatewords:2 }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success rounded-pill px-3">
+                                        <i class="bi bi-people me-1"></i>{{ club.cupos_disponibles }} cupos
+                                    </span>
+                                    <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                        <i class="bi bi-eye me-1"></i>Ver
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search text-muted fs-1 mb-3"></i>
+                    <h5 class="text-muted">No se encontraron clubes</h5>
+                    <p class="text-muted small">Intenta ajustar los criterios de búsqueda.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+</style>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-shield-lock-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Nodos Regionales</h2>
+                    <p class="text-muted mb-0 small">Control Maestro de Comisionados y Sedes Estatales</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'registrar_sede' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Sede
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Sedes Federadas</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ sedes.count }}">0</h2>
+                    <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Disponibilidad del Sistema</div>
+                    <h2 class="display-5 fw-bold mb-0">98.5<span class="fs-4">%</span></h2>
+                    <i class="bi bi-activity position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #10b981;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Jurisdicciones Cubiertas</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ sedes.count }}">0</h2>
+                    <i class="bi bi-map position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #f59e0b;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre, usuario o estado...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="estadoFilter" class="form-select border-0 bg-light fw-semibold">
+                        <option value="">Todos los Estados</option>
+                        {% for sede in sedes %}
+                        <option value="{{ sede.estado.nombre }}">{{ sede.estado.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-outline-secondary border-0 fw-bold w-100" onclick="resetFiltrosSedes()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 20px;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-list-task text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">REGISTRO NACIONAL DE NODOS</h5>
+            </div>
+            <span class="badge bg-white text-dark rounded-pill fw-bold px-3">{{ sedes.count }} Sedes</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="sedesTable">
+                    <thead class="bg-light">
+                        <tr class="text-uppercase x-small fw-bold text-muted">
+                            <th class="px-4 py-3">Responsable</th>
+                            <th class="py-3">ID Acceso</th>
+                            <th class="py-3">Jurisdicción</th>
+                            <th class="py-3">Contacto</th>
+                            <th class="py-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sede in sedes %}
+                        <tr class="clickable-row" style="cursor: pointer;" 
+                            onclick="verDetalleSede('{{ sede.user.get_full_name|escapejs }}', '{{ sede.user.username }}', '{{ sede.estado.nombre }}', '{{ sede.user.email }}', '{{ sede.phone|default:'No registrado' }}', '{{ sede.user.date_joined|date:'d/m/Y' }}')">
+                            <td class="px-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle-sm me-3">
+                                        {{ sede.user.first_name|slice:":1" }}{{ sede.user.last_name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold small text-dark">{{ sede.user.get_full_name }}</div>
+                                        <div class="x-small text-muted">Comisionado Regional</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><code class="bg-light px-2 py-1 rounded text-primary fw-bold font-monospace small">@{{ sede.user.username }}</code></td>
+                            <td>
+                                <div class="small fw-bold text-estado-val">{{ sede.estado.nombre }}</div>
+                                <div class="x-small text-muted">Nodo Activo</div>
+                            </td>
+                            <td>
+                                <div class="small text-dark">{{ sede.phone|default:"-" }}</div>
+                                <div class="x-small text-muted">{{ sede.user.email }}</div>
+                            </td>
+                            <td class="text-center px-4" onclick="event.stopPropagation();">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
+                                            onclick="abrirModalEditar('{{ sede.user.id }}', '{{ sede.user.first_name|escapejs }}', '{{ sede.user.last_name|escapejs }}', '{{ sede.user.email }}', '{{ sede.phone|default:'' }}')">
+                                        <i class="bi bi-pencil-square me-1"></i> Editar
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
+                                            onclick="abrirModalEliminar('{{ sede.user.id }}', '{{ sede.user.get_full_name|escapejs }}')">
+                                        <i class="bi bi-person-x"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUniversal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div id="modalHeader" class="modal-header border-0 pt-4 px-4 text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 id="modalTitle" class="fw-bold mb-0"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="modalForm" method="POST">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4" id="modalBody"></div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="submit" id="modalSubmitBtn" class="btn rounded-pill px-4 fw-bold w-100 shadow-sm"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalleSede" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-person-badge-fill me-2"></i>Expediente de Comisionado</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-4">
+                    <div class="col-md-7 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-info">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Responsable del Nodo</label>
+                        <span id="detNombre" class="fw-bold text-dark fs-5"></span>
+                    </div>
+                    <div class="col-md-5 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-primary">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">ID de Acceso</label>
+                        <span id="detUser" class="fw-bold text-primary fs-5 font-monospace"></span>
+                    </div>
+                    <div class="col-md-4"><label class="text-muted small fw-bold">Estado</label><p id="detEstado" class="text-dark fw-bold mb-0"></p></div>
+                    <div class="col-md-4"><label class="text-muted small fw-bold">Correo</label><p id="detEmail" class="text-dark fw-bold mb-0"></p></div>
+                    <div class="col-md-4"><label class="text-muted small fw-bold">Teléfono</label><p id="detTel" class="text-dark fw-bold mb-0"></p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .avatar-circle-sm { width: 38px; height: 38px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--blue-main); font-size: 0.75rem; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .clickable-row:hover { background-color: rgba(0, 212, 255, 0.04) !important; transition: 0.2s; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const universalModal = new bootstrap.Modal(document.getElementById('modalUniversal'));
+    const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalleSede'));
+
+    // BÚSQUEDA Y FILTRO
+    function filtrarSedes() {
+        const searchVal = document.getElementById('searchInput').value.toLowerCase();
+        const estadoVal = document.getElementById('estadoFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('#sedesTable tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowEstado = row.querySelector('.text-estado-val').innerText.toLowerCase();
+            row.style.display = (text.includes(searchVal) && (estadoVal === "" || rowEstado.includes(estadoVal))) ? "" : "none";
+        });
+    }
+    document.getElementById('searchInput').addEventListener('input', filtrarSedes);
+    document.getElementById('estadoFilter').addEventListener('change', filtrarSedes);
+
+    function resetFiltrosSedes() {
+        document.getElementById('searchInput').value = "";
+        document.getElementById('estadoFilter').value = "";
+        filtrarSedes();
+    }
+
+    function verDetalleSede(nombre, user, estado, email, tel) {
+        document.getElementById('detNombre').innerText = nombre;
+        document.getElementById('detUser').innerText = `@${user}`;
+        document.getElementById('detEstado').innerText = estado;
+        document.getElementById('detEmail').innerText = email;
+        document.getElementById('detTel').innerText = tel;
+        detalleModal.show();
+    }
+
+    // MODAL EDITAR CON SELECT DE CÓDIGO
+    function abrirModalEditar(id, nombre, apellido, email, tel) {
+        const header = document.getElementById('modalHeader');
+        header.style.background = "var(--blue-main)";
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR COMISIONADO';
+        
+        let codArea = "0412", numResto = "";
+        if(tel && tel.length >= 4) { codArea = tel.substring(0,4); numResto = tel.substring(4); } 
+        else { numResto = tel || ""; }
+
+        document.getElementById('modalBody').innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label small fw-bold">Nombres</label><input type="text" name="first_name" class="form-control" value="${nombre}" required></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Apellidos</label><input type="text" name="last_name" class="form-control" value="${apellido}" required></div>
+                <div class="col-12"><label class="form-label small fw-bold">Correo</label><input type="email" name="email" class="form-control" value="${email}" required></div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Teléfono Móvil</label>
+                    <div class="input-group">
+                        <select name="cod_area" class="form-select" style="max-width: 95px;">
+                            <option value="0412" ${codArea == '0412' ? 'selected' : ''}>0412</option>
+                            <option value="0414" ${codArea == '0414' ? 'selected' : ''}>0414</option>
+                            <option value="0424" ${codArea == '0424' ? 'selected' : ''}>0424</option>
+                        </select>
+                        <input type="text" name="phone_num" class="form-control" value="${numResto}" maxlength="7" onkeypress="return /[0-9]/.test(event.key)">
+                    </div>
+                </div>
+            </div>`;
+        
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Actualizar Nodo";
+        submit.style.background = "var(--blue-main)";
+        submit.disabled = false;
+        document.getElementById('modalForm').action = `/sedes/editar/${id}/`;
+        universalModal.show();
+    }
+
+    // MODAL ELIMINAR CON PALABRA DE SEGURIDAD "CONFIRMAR"
+    function abrirModalEliminar(id, nombre) {
+        const header = document.getElementById('modalHeader');
+        header.style.background = "#ef4444";
+        document.getElementById('modalTitle').innerHTML = `<i class="bi bi-person-x-fill me-2"></i> BAJA DE COMISIONADO`;
+        
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center py-2">
+                <h5 class="fw-bold">¿CONFIRMAR BAJA DEL SISTEMA?</h5>
+                <p class="text-muted small">Se revocará el acceso al comisionado: <br><strong>${nombre}</strong></p>
+                
+                <div class="bg-light p-3 rounded-3 border mt-3">
+                    <label class="d-block mb-2 fw-bold small text-danger">Escriba "CONFIRMAR" para habilitar el botón</label>
+                    <input type="text" id="confirmInput" class="form-control text-center fw-bold" placeholder="Escriba aquí..." autocomplete="off">
+                </div>
+            </div>`;
+            
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Inhabilitar Registro";
+        submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow mt-3";
+        submit.disabled = true; // Deshabilitado por defecto
+
+        // Lógica de activación del botón
+        setTimeout(() => {
+            const input = document.getElementById('confirmInput');
+            input.addEventListener('input', function() {
+                submit.disabled = (this.value !== "CONFIRMAR");
+            });
+        }, 200);
+
+        document.getElementById('modalForm').action = `/sedes/eliminar/${id}/`;
+        universalModal.show();
+    }
+
+    // CONTADORES
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.counter').forEach(c => {
+            const target = +c.getAttribute('data-target');
+            const update = () => {
+                const now = +c.innerText;
+                const inc = target / 30;
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                else c.innerText = target;
+            };
+            update();
+        });
+    });
+</script>
+{% endblock %}

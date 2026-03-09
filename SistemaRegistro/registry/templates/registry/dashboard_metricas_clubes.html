@@ -1,0 +1,192 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-graph-up-arrow fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Dashboard de Métricas</h2>
+                    <p class="text-muted mb-0 small">Análisis y Estadísticas de Clubes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
+            <a href="{% url 'exportar_clubes_csv' %}" class="btn btn-outline-success shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
+            </a>
+            <a href="{% url 'exportar_clubes_json' %}" class="btn shadow-sm px-4 fw-bold" 
+               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                <i class="bi bi-filetype-json me-2"></i>JSON
+            </a>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+    
+    <!-- Métricas Generales -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Total Clubes</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_clubes|default:0 }}">0</h2>
+                    <i class="bi bi-robot position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Aprobados</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ clubes_aprobados|default:0 }}">0</h2>
+                    <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #34d399;"></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Pendientes</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ clubes_pendientes|default:0 }}">0</h2>
+                    <i class="bi bi-hourglass-split position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #fbbf24;"></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0891b2, #0e7490); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Tasa Aprobación</div>
+                    <h2 class="display-5 fw-bold mb-0"><span class="counter" data-target="{{ tasa_aprobacion|default:0 }}">0</span>%</h2>
+                    <i class="bi bi-graph-up position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #22d3ee;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-lightbulb me-2"></i>Clubes por Línea de Investigación</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if clubes_por_linea %}
+                        <table class="table table-hover align-middle mb-0">
+                            <tbody>
+                                {% for linea, count in clubes_por_linea.items %}
+                                <tr>
+                                    <td class="small fw-semibold">{{ linea }}</td>
+                                    <td class="text-end">
+                                        <span class="badge rounded-pill px-3" style="background: var(--blue-main);">{{ count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-geo-alt me-2"></i>Clubes por Estado</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if clubes_por_estado %}
+                        <table class="table table-hover align-middle mb-0">
+                            <tbody>
+                                {% for item in clubes_por_estado|slice:":10" %}
+                                <tr>
+                                    <td class="small fw-semibold">{{ item.estado }}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success rounded-pill px-3">{{ item.count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Métricas Adicionales -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-clock-history me-2"></i>Tiempo Promedio de Revisión</h5>
+                </div>
+                <div class="card-body text-center py-5">
+                    <h1 class="display-3 fw-bold" style="color: #0891b2;">{{ tiempo_promedio_revision }}</h1>
+                    <p class="text-muted fw-semibold">días (últimos 30 días)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #d97706, #b45309);">
+                    <h5 class="mb-0 text-white fw-bold"><i class="bi bi-star me-2"></i>Clubes Más Populares</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if clubes_populares %}
+                        <table class="table table-hover align-middle mb-0">
+                            <tbody>
+                                {% for club in clubes_populares %}
+                                <tr>
+                                    <td class="small fw-semibold">{{ club.nombre }}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-warning text-dark rounded-pill px-3">
+                                            {{ club.num_membresias }} membresías
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-muted text-center py-4">No hay datos disponibles</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .counter { font-family: 'Space Grotesk', sans-serif; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('.counter').forEach(c => {
+        const target = +c.getAttribute('data-target');
+        const update = () => {
+            const now = +c.innerText;
+            const inc = target / 30;
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            else c.innerText = target;
+        };
+        update();
+    });
+});
+</script>
+{% endblock %}

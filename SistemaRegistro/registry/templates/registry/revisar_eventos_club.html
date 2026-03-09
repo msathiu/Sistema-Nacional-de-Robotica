@@ -1,0 +1,97 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Revisar Eventos de Club{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-calendar-check fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Revisar Eventos de Club</h2>
+                    <p class="text-muted mb-0 small">Validación de Eventos Pendientes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-clipboard-check text-white me-3 fs-5"></i>
+                <h5 class="fw-bold mb-0 text-white">Eventos Pendientes de Aprobación</h5>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">{{ eventos_pendientes|length }}</span>
+        </div>
+        <div class="card-body p-0">
+            {% if eventos_pendientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Evento</th>
+                                <th class="py-3">Club</th>
+                                <th class="py-3">Tipo</th>
+                                <th class="py-3">Fecha</th>
+                                <th class="py-3">Creado</th>
+                                <th class="py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for evento in eventos_pendientes %}
+                                <tr>
+                                    <td class="px-4">
+                                        <div class="fw-bold small text-dark">{{ evento.nombre }}</div>
+                                        <div class="x-small text-muted">{{ evento.get_modalidad_display }}</div>
+                                    </td>
+                                    <td><span class="small">{{ evento.club_organizador.nombre }}</span></td>
+                                    <td><span class="badge rounded-pill" style="background: var(--accent-cyan); color: var(--blue-main);">{{ evento.get_tipo_display }}</span></td>
+                                    <td><span class="small">{{ evento.fecha|date:"d/m/Y" }}</span></td>
+                                    <td><span class="small text-muted">{{ evento.fecha_creacion|date:"d/m/Y" }}</span></td>
+                                    <td class="text-center px-4">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" title="Ver">
+                                                <i class="bi bi-eye me-1"></i>Ver
+                                            </a>
+                                            <a href="{% url 'aprobar_evento_club' evento.id %}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" title="Aprobar">
+                                                <i class="bi bi-check-circle me-1"></i>Aprobar
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                                    onclick="rechazarEvento('{{ evento.id }}', '{{ evento.nombre|escapejs }}')" title="Rechazar">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+                    <h5 class="text-muted">No hay eventos pendientes de revisión</h5>
+                    <p class="text-muted small">Todos los eventos han sido procesados.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+
+<script>
+function rechazarEvento(eventoId, eventoNombre) {
+    if(confirm(`¿Está seguro de rechazar el evento "${eventoNombre}"?`)) {
+        window.location.href = `/eventos-club/rechazar/${eventoId}/`;
+    }
+}
+</script>
+{% endblock %}

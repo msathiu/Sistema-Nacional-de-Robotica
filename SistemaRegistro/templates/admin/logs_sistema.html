@@ -1,0 +1,70 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+<style>
+    .log-container {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .log-line {
+        padding: 4px 0;
+        border-bottom: 1px solid #333;
+    }
+    .log-error {
+        color: #f48771;
+        font-weight: bold;
+    }
+    .log-warning {
+        color: #dcdcaa;
+    }
+    .log-info {
+        color: #4ec9b0;
+    }
+    .log-debug {
+        color: #9cdcfe;
+    }
+    .log-header {
+        background: #2d2d30;
+        padding: 15px;
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 0;
+    }
+    .btn-refresh {
+        float: right;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3">
+    <div class="log-header">
+        <h2 class="d-inline">Logs del Sistema</h2>
+        <a href="{% url 'admin_logs' %}" class="btn btn-primary btn-sm btn-refresh">
+            <i class="fas fa-sync-alt"></i> Actualizar
+        </a>
+        <p class="mb-0 mt-2"><small>Mostrando últimas {{ total_lines }} líneas</small></p>
+    </div>
+    
+    <div class="log-container">
+        {% for line in logs %}
+        <div class="log-line 
+            {% if 'ERROR' in line %}log-error
+            {% elif 'WARNING' in line %}log-warning
+            {% elif 'INFO' in line %}log-info
+            {% elif 'DEBUG' in line %}log-debug
+            {% endif %}">
+            {{ line|safe }}
+        </div>
+        {% empty %}
+        <div class="log-line">No hay logs disponibles</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

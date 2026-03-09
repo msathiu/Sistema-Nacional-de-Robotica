@@ -1,0 +1,755 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-building-gear fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Instituciones</h2>
+                    <p class="text-muted mb-0 small">Padrón Nacional de Sedes Federadas</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Registrar Institución
+                </a>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Total Registradas</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_instituciones|default:0 }}">0</h2>
+                    <i class="bi bi-buildings position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Sedes Activas</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ instituciones_activas|default:0 }}">0</h2>
+                    <i class="bi bi-patch-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #10b981;"></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Pendientes</div>
+                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ instituciones_pendientes|default:0 }}">0</h2>
+                    <i class="bi bi-clock-history position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #ef4444;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre, RIF o RNR...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select id="estadoFilter" class="form-select border-0 bg-light fw-semibold">
+                        <option value="">Todos los Estados</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado.nombre }}">{{ estado.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="tipoFilter" class="form-select border-0 bg-light fw-semibold">
+                        <option value="">Todos los Tipos</option>
+                        <option value="particular">Particular</option>
+                        <option value="educativa">Educativa</option>
+                        <option value="publica">Pública</option>
+                        <option value="privada">Privada</option>
+                        <option value="otra">Otras</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-select border-0 bg-light fw-semibold">
+                        <option value="">Cualquier Estatus</option>
+                        <option value="VALIDADA">Validadas</option>
+                        <option value="PENDIENTE">Pendientes</option>
+                    </select>
+                </div>
+                <div class="col-md-2 text-end">
+                    <button class="btn btn-outline-secondary border-0 fw-bold w-100" onclick="resetFiltrosCompleto()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 20px;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
+            <i class="bi bi-list-task text-white me-3 fs-5"></i>
+            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">PADRÓN INSTITUCIONAL FEDERADO</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="institucionesTable">
+                    <thead class="bg-light">
+                        <tr class="text-uppercase x-small fw-bold text-muted">
+                            <th class="px-4 py-3">RNR</th>
+                            <th class="py-3">Razón Social / Cédula</th>
+                            <th class="py-3">Tipo</th>
+                            <th class="py-3">Correo / Teléfono</th>
+                            <th class="py-3">Ubicación</th>
+                            {% if es_central %}
+                            <th class="py-3 text-center">Estatus</th>
+                            {% endif %}
+                            <th class="py-3 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in instituciones_con_usuarios %}
+                        <tr class="clickable-row" data-institucion-id="{{ item.institucion.id }}">
+                            <td class="px-4 font-monospace small fw-bold text-primary">{{ item.institucion.codigo }}</td>
+                            <td>
+                                {% if item.institucion.tipo_institucion == 'particular' %}
+                                    <div class="fw-bold small text-dark">{{ item.institucion.particular_nombres }} {{ item.institucion.particular_apellidos }}</div>
+                                    <div class="x-small text-muted">Cédula: <span class="rif-completo-texto">{{ item.institucion.particular_nacionalidad }}-{{ item.institucion.particular_cedula }}</span></div>
+                                {% else %}
+                                    <div class="fw-bold small text-dark">{{ item.institucion.nombre }}</div>
+                                    <div class="x-small text-muted">RIF: <span class="rif-completo-texto">{{ item.institucion.rif }}</span></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill px-3 py-2 small fw-bold" 
+                                      style="background: {% if item.institucion.tipo_institucion == 'particular' %}#8b5cf6{% elif item.institucion.tipo_institucion == 'educativa' %}#3b82f6{% elif item.institucion.tipo_institucion == 'publica' %}#10b981{% elif item.institucion.tipo_institucion == 'privada' %}#f59e0b{% else %}#6b7280{% endif %}; color: white;">
+                                    {{ item.institucion.get_tipo_institucion_display }}
+                                </span>
+                                <span class="d-none tipo-hidden">{{ item.institucion.tipo_institucion }}</span>
+                            </td>
+                            <td>
+                                <div class="small text-primary text-decoration-underline email-lista">{{ item.institucion.email }}</div>
+                                <div class="x-small text-muted">{{ item.institucion.telefono }}</div>
+                            </td>
+                            <td>
+                                <div class="small fw-bold text-estado-val">{{ item.institucion.estado.nombre }}</div>
+                                <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
+                            </td>
+                            
+                            {% if es_central %}
+                            <td class="text-center" onclick="event.stopPropagation();">
+                                <div class="mt-2">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input switch-status" type="checkbox" role="switch" 
+                                               {% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}checked{% endif %}
+                                               onchange="confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
+                                    </div>
+                                </div>
+                                <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                            </td>
+                            {% else %}
+                                <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                            {% endif %}
+
+                            <td class="text-center px-4" onclick="event.stopPropagation();">
+                                <div class="d-flex justify-content-center gap-2">
+                                    {% if es_central %}
+                                    <button class="btn btn-outline-info btn-sm px-3 rounded-pill fw-bold" 
+                                            onclick="verDetallesCompletos('{{ item.institucion.id }}')">
+                                        <i class="bi bi-eye me-1"></i> Ver Detalles
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
+                                            onclick="abrirModalEditar('{{ item.institucion.id }}')">
+                                        <i class="bi bi-pencil-square me-1"></i> Editar
+                                    </button>
+                                    
+                                    {% if es_central %}
+                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
+                                            onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-text-fill me-2"></i>Detalles Instituciones o Particular</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <!-- Sección Principal -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-info">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Razón Social / Nombre Completo</label>
+                        <span id="detNombre" class="fw-bold text-dark fs-5"></span>
+                    </div>
+                    <div class="col-md-4 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-primary">
+                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Código RNR</label>
+                        <span id="detUser" class="fw-bold text-primary fs-5 font-monospace"></span>
+                    </div>
+                </div>
+
+                <!-- Sección: Identificación -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #0b2c6d 0%, #1e4a8a 100%);">
+                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-card-heading me-2"></i>Identificación</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="text-muted small fw-bold">RIF / Cédula</label>
+                                <p id="detRif" class="text-dark fw-bold mb-0"></p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small fw-bold">Tipo</label>
+                                <p id="detTipo" class="mb-0"></p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small fw-bold">Naturaleza</label>
+                                <p id="detNaturaleza" class="text-dark mb-0"></p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small fw-bold">Código MPPE</label>
+                                <p id="detCodigoMPPE" class="text-dark mb-0 font-monospace"></p>
+                            </div>
+                            <div class="col-12" id="detDependenciaContainer" style="display: none;">
+                                <label class="text-muted small fw-bold">Dependencia</label>
+                                <p id="detDependencia" class="text-dark fw-bold mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección: Contacto -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #059669 0%, #10b981 100%);">
+                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-telephone-fill me-2"></i>Información de Contacto</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small fw-bold">Correo Electrónico</label>
+                                <p id="detEmail" class="text-primary fw-bold mb-0"><i class="bi bi-envelope me-1"></i><span></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small fw-bold">Teléfono</label>
+                                <p id="detTel" class="text-dark fw-bold mb-0"><i class="bi bi-phone me-1"></i><span></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección: Ubicación -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 100%);">
+                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-geo-alt-fill me-2"></i>Ubicación Geográfica</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Estado</label>
+                                <p id="detEstado" class="text-dark fw-bold mb-0"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Municipio</label>
+                                <p id="detMunicipio" class="text-dark mb-0"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Parroquia</label>
+                                <p id="detParroquia" class="text-dark mb-0"></p>
+                            </div>
+                            <div class="col-12">
+                                <label class="text-muted small fw-bold">Dirección Completa</label>
+                                <p id="detDir" class="text-dark mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección: Información Administrativa -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);">
+                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-shield-check me-2"></i>Información Administrativa</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Estatus</label>
+                                <p id="detEstatus" class="mb-0"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Estado Cuenta</label>
+                                <p id="detActiva" class="mb-0"></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small fw-bold">Fecha Registro</label>
+                                <p id="detFechaRegistro" class="text-dark mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUniversal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div id="modalHeader" class="modal-header border-0 pt-4 px-4 text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 id="modalTitle" class="fw-bold mb-0"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="modalForm" method="POST">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-4" id="modalBody"></div>
+                <div id="editErrorMsg" class="alert alert-danger mx-4 py-2 small fw-bold mb-3" style="display:none; border-radius:10px; border-left: 5px solid #dc3545;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <span id="errorText"></span>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="submit" id="modalSubmitBtn" class="btn rounded-pill px-4 fw-bold w-100 shadow-sm"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .clickable-row { cursor: pointer; transition: background-color 0.2s ease; }
+    .clickable-row:hover { background-color: rgba(0, 212, 255, 0.04) !important; }
+    .switch-status { width: 3.5rem !important; height: 1.7rem !important; cursor: pointer; background-color: #cbd5e1; border: none; }
+    .switch-status:checked { background-color: #10b981 !important; border-color: #10b981 !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const universalModal = new bootstrap.Modal(document.getElementById('modalUniversal'));
+    const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+
+    function aplicarFiltros() {
+        const searchVal = document.getElementById('searchInput').value.toLowerCase();
+        const estadoVal = document.getElementById('estadoFilter').value.toLowerCase();
+        const tipoVal = document.getElementById('tipoFilter').value.toLowerCase();
+        const statusVal = document.getElementById('statusFilter').value.toUpperCase();
+        const rows = document.querySelectorAll('#institucionesTable tbody tr');
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            const rowEstado = row.querySelector('.text-estado-val').innerText.toLowerCase();
+            const rowTipo = row.querySelector('.tipo-hidden').innerText.toLowerCase();
+            const rowStatus = row.querySelector('.status-hidden').innerText.toUpperCase();
+            row.style.display = (
+                text.includes(searchVal) && 
+                (estadoVal === "" || rowEstado.includes(estadoVal)) && 
+                (tipoVal === "" || rowTipo === tipoVal) && 
+                (statusVal === "" || rowStatus.includes(statusVal))
+            ) ? "" : "none";
+        });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+    document.getElementById('estadoFilter').addEventListener('change', aplicarFiltros);
+    document.getElementById('tipoFilter').addEventListener('change', aplicarFiltros);
+    document.getElementById('statusFilter').addEventListener('change', aplicarFiltros);
+
+    function resetFiltrosCompleto() {
+        document.getElementById('searchInput').value = "";
+        document.getElementById('estadoFilter').value = "";
+        document.getElementById('tipoFilter').value = "";
+        document.getElementById('statusFilter').value = "";
+        aplicarFiltros();
+    }
+
+    function verDetallesCompleto(id, nombre, rif, email, tel, dir, user) {
+        document.getElementById('detNombre').innerText = nombre;
+        document.getElementById('detUser').innerText = user;
+        document.getElementById('detRif').innerText = rif || 'N/A';
+        document.getElementById('detEmail').innerText = email;
+        document.getElementById('detTel').innerText = tel || 'Sin registro';
+        document.getElementById('detDir').innerText = dir || 'Sin dirección';
+        detalleModal.show();
+    }
+
+    // Event delegation mejorado para filas
+    function verDetallesCompletos(id) {
+        // Remover event si viene del click de fila
+        const isFromButton = event && event.target.closest('button');
+        if (event && !isFromButton) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        // Si viene de botón, manejar el botón
+        let btn = null;
+        let originalText = '';
+        if (isFromButton) {
+            btn = event.target.closest('button');
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cargando...';
+            btn.disabled = true;
+        }
+        
+        fetch(`/instituciones/detalle/${id}/`, {
+            method: 'GET',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Sección Principal
+            document.getElementById('detNombre').innerText = data.nombre || 'N/A';
+            document.getElementById('detUser').innerText = data.codigo || 'N/A';
+            
+            // Sección Identificación - CORREGIDO: Mostrar cédula para particulares
+            document.getElementById('detRif').innerText = data.rif || 'N/A';
+            
+            const tipoColors = {
+                'particular': '#8b5cf6',
+                'educativa': '#3b82f6',
+                'publica': '#10b981',
+                'privada': '#f59e0b',
+                'otra': '#6b7280'
+            };
+            const tipoKey = data.tipo_institucion_key || 'otra';
+            const tipoColor = tipoColors[tipoKey] || '#6b7280';
+            document.getElementById('detTipo').innerHTML = data.tipo_institucion ? 
+                `<span class="badge rounded-pill px-3 py-1" style="background: ${tipoColor}; color: white;">${data.tipo_institucion}</span>` : 
+                '<span class="text-muted">N/A</span>';
+            
+            document.getElementById('detNaturaleza').innerText = data.naturaleza || 'N/A';
+            document.getElementById('detCodigoMPPE').innerText = data.codigo_mppe || 'N/A';
+            
+            // Mostrar dependencia solo si el tipo es "otra"
+            const dependenciaContainer = document.getElementById('detDependenciaContainer');
+            if (data.tipo_institucion_key === 'otra') {
+                document.getElementById('detDependencia').innerText = data.dependencia || 'N/A';
+                dependenciaContainer.style.display = 'block';
+            } else {
+                dependenciaContainer.style.display = 'none';
+            }
+            
+            // Sección Contacto
+            document.getElementById('detEmail').querySelector('span').innerText = data.email || 'Sin correo';
+            document.getElementById('detTel').querySelector('span').innerText = data.telefono || 'Sin teléfono';
+            
+            // Sección Ubicación
+            document.getElementById('detEstado').innerText = data.estado || 'N/A';
+            document.getElementById('detMunicipio').innerText = data.municipio || 'N/A';
+            document.getElementById('detParroquia').innerText = data.parroquia || 'N/A';
+            document.getElementById('detDir').innerText = data.direccion || 'Sin dirección';
+            
+            // Sección Administrativa
+            const estatusColors = {
+                'aprobado': 'success',
+                'pendiente': 'warning',
+                'rechazado': 'danger'
+            };
+            const estatusColor = estatusColors[data.estatus] || 'secondary';
+            document.getElementById('detEstatus').innerHTML = data.estatus ? 
+                `<span class="badge bg-${estatusColor} px-3 py-2">${data.estatus.toUpperCase()}</span>` : 
+                '<span class="text-muted">N/A</span>';
+            
+            document.getElementById('detActiva').innerHTML = data.activa ? 
+                '<span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>ACTIVA</span>' : 
+                '<span class="badge bg-secondary px-3 py-2"><i class="bi bi-x-circle me-1"></i>INACTIVA</span>';
+            
+            document.getElementById('detFechaRegistro').innerText = data.fecha_registro || 'N/A';
+            
+            detalleModal.show();
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            alert(`Error al cargar los detalles: ${error.message}\nPor favor intente de nuevo.`);
+        })
+        .finally(() => {
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    function abrirModalEditar(id) {
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cargando...';
+        btn.disabled = true;
+        
+        fetch(`/instituciones/detalle/${id}/`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const header = document.getElementById('modalHeader');
+            header.className = "modal-header border-0 pt-4 px-4 text-white";
+            header.style.background = "var(--blue-main)";
+            document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR INSTITUCIÓN';
+            
+            // Limpiar errores previos
+            const errorDiv = document.getElementById('editErrorMsg');
+            errorDiv.style.display = 'none';
+
+            // Parsing de RIF/Cédula
+            let rifLetra = "J", rifNum = "";
+            const rifFull = data.rif || "";
+            if(rifFull && rifFull.includes('-')) {
+                [rifLetra, rifNum] = rifFull.split('-');
+            } else if(rifFull) {
+                rifLetra = rifFull.charAt(0).toUpperCase();
+                rifNum = rifFull.substring(1);
+            }
+
+            // Parsing de Teléfono
+            let codArea = "0412", numResto = "";
+            const tel = data.telefono || "";
+            if(tel && tel.length >= 4) {
+                codArea = tel.substring(0,4);
+                numResto = tel.substring(4);
+            } else { numResto = tel || ""; }
+
+            document.getElementById('modalBody').innerHTML = `
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Razón Social / Nombre Completo</label>
+                        <input type="text" name="nombre" class="form-control text-uppercase" value="${data.nombre || ''}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">RIF / Cédula</label>
+                        <div class="d-flex gap-2">
+                            <select name="rif_letra" class="form-select" style="max-width: 70px;">
+                                <option value="J" ${rifLetra == 'J' ? 'selected' : ''}>J</option>
+                                <option value="V" ${rifLetra == 'V' ? 'selected' : ''}>V</option>
+                                <option value="E" ${rifLetra == 'E' ? 'selected' : ''}>E</option>
+                                <option value="G" ${rifLetra == 'G' ? 'selected' : ''}>G</option>
+                            </select>
+                            <input type="text" name="rif_numero" class="form-control" value="${rifNum}" placeholder="Número">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold d-block">Teléfono</label>
+                        <div class="input-group">
+                            <select name="modal_cod_area" class="form-select" style="max-width: 90px;">
+                                <option value="0412" ${codArea == '0412' ? 'selected' : ''}>0412</option>
+                                <option value="0422" ${codArea == '0422' ? 'selected' : ''}>0422</option>
+                                <option value="0414" ${codArea == '0414' ? 'selected' : ''}>0414</option>
+                                <option value="0424" ${codArea == '0424' ? 'selected' : ''}>0424</option>
+                                <option value="0416" ${codArea == '0416' ? 'selected' : ''}>0416</option>
+                                <option value="0426" ${codArea == '0426' ? 'selected' : ''}>0426</option>
+                            </select>
+                            <input type="text" name="modal_num_puro" class="form-control" value="${numResto}" maxlength="7">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Correo Electrónico</label>
+                        <input type="email" name="email" class="form-control" value="${data.email || ''}" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Dirección</label>
+                        <textarea name="direccion" class="form-control" rows="2">${data.direccion || ''}</textarea>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <div class="p-3 border rounded-3 bg-light">
+                            <div class="d-flex align-items-center mb-2 text-primary x-small">
+                                <i class="bi bi-shield-lock-fill me-2"></i>
+                                <span class="fw-bold text-uppercase">Seguridad (Opcional)</span>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="x-small fw-bold text-muted">Nueva Contraseña</label>
+                                    <input type="password" name="new_password" id="editPass" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="x-small fw-bold text-muted">Confirmar</label>
+                                    <input type="password" name="confirm_password" id="editPassConf" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            
+            const form = document.getElementById('modalForm');
+            form.action = `/instituciones/editar/${id}/`;
+            
+            const submit = document.getElementById('modalSubmitBtn');
+            submit.innerText = "Guardar Cambios";
+            submit.className = "btn rounded-pill px-4 fw-bold w-100 shadow-sm text-white";
+            submit.style.background = "var(--blue-main)";
+            
+            // Validaciones al enviar
+            form.onsubmit = function(e) {
+                const pass = document.getElementById('editPass').value;
+                const conf = document.getElementById('editPassConf').value;
+                
+                if(pass && pass !== conf) {
+                    e.preventDefault();
+                    document.getElementById('errorText').innerText = "Las contraseñas no coinciden.";
+                    errorDiv.style.display = 'block';
+                    return false;
+                }
+            };
+
+            universalModal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar los datos. Por favor intente de nuevo.');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+
+    function confirmarAccionStatus(id, nombre, checkbox) {
+        const activa = checkbox.checked;
+        const url = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
+        
+        const header = document.getElementById('modalHeader');
+        header.style.background = activa ? "#10b981" : "#f59e0b";
+        document.getElementById('modalTitle').innerHTML = activa ? 
+            '<i class="bi bi-check-circle me-2"></i> VALIDAR SEDE' : 
+            '<i class="bi bi-pause-circle me-2"></i> SUSPENDER ACCESO';
+        
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center py-3">
+                <p class="fs-5 mb-0">¿Confirmar cambio para <b>${nombre}</b>?</p>
+            </div>`;
+                
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Confirmar";
+        submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
+        submit.style.background = activa ? "#10b981" : "#f59e0b";
+        
+        const form = document.getElementById('modalForm');
+        form.action = ""; // Limpiar acción estándar para usar fetch
+        
+        form.onsubmit = function(e) {
+            e.preventDefault();
+            submit.disabled = true;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            })
+            .then(response => {
+                if (response.ok) window.location.reload();
+                else throw new Error('Error en el servidor');
+            })
+            .catch(error => {
+                alert("Error al procesar la solicitud.");
+                checkbox.checked = !activa;
+                universalModal.hide();
+            });
+        };
+        
+        universalModal.show();
+        
+        // Si cierran el modal sin confirmar, revertir el switch
+        document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', function () {
+            if (!submit.disabled) checkbox.checked = !activa;
+        }, {once: true});
+    }
+
+    function abrirModalEliminar(id, nombre) {
+        const header = document.getElementById('modalHeader');
+        header.style.background = "#ef4444";
+        document.getElementById('modalTitle').innerHTML = `<i class="bi bi-trash3-fill me-2"></i> ELIMINAR REGISTRO`;
+        
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center py-2">
+                <h5 class="fw-bold text-danger">¡ACCIÓN IRREVERSIBLE!</h5>
+                <p class="text-muted">Escriba <b>CONFIRMAR</b> para eliminar:<br><strong>${nombre}</strong></p>
+                <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR">
+            </div>`;
+            
+        const submit = document.getElementById('modalSubmitBtn');
+        submit.innerText = "Eliminar Definitivamente";
+        submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow";
+        submit.disabled = true;
+        
+        const form = document.getElementById('modalForm');
+        form.action = `/instituciones/eliminar/${id}/`;
+        form.onsubmit = null;
+        
+        universalModal.show();
+        document.getElementById('confirmInput').addEventListener('input', (e) => {
+            submit.disabled = (e.target.value.toUpperCase() !== "CONFIRMAR");
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Contadores animados
+        document.querySelectorAll('.counter').forEach(c => {
+            const target = +c.getAttribute('data-target');
+            const update = () => {
+                const now = +c.innerText;
+                const inc = target / 30;
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                else c.innerText = target;
+            };
+            update();
+        });
+        
+        // Event delegation para filas clickeables
+        const tbody = document.querySelector('#institucionesTable tbody');
+        if (tbody) {
+            tbody.addEventListener('click', function(e) {
+                // Ignorar clicks en botones y sus hijos
+                if (e.target.closest('button') || e.target.closest('.form-check')) {
+                    return;
+                }
+                
+                // Encontrar la fila clickeada
+                const row = e.target.closest('tr.clickable-row');
+                if (row) {
+                    const institucionId = row.getAttribute('data-institucion-id');
+                    if (institucionId) {
+                        verDetallesCompletos(institucionId);
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

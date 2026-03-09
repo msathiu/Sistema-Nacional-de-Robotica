@@ -1,0 +1,9 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">Registro Robótica</a>
+        <span class="navbar-text ms-auto">
+            Bienvenido, **{{ user.username }}** ({{ user_profile.get_user_type_display|capfirst }})
+        </span>
+        <a href="{% url 'logout' %}" class="btn btn-outline-danger ms-3">Cerrar Sesión</a>
+    </div>
+</nav>

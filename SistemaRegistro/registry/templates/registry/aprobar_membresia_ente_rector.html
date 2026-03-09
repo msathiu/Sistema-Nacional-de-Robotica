@@ -1,0 +1,164 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Aprobar Membresía - Ente Rector{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Encabezado -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{% url 'revisar_membresias' %}" class="btn btn-outline-secondary me-3">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+                <div>
+                    <h2 class="fw-bold mb-0">Aprobación Final - Ente Rector</h2>
+                    <p class="text-muted mb-0 small">Aprobación definitiva de membresía al club</p>
+                </div>
+            </div>
+
+            <!-- Alerta informativa -->
+            <div class="alert alert-info border-0 shadow-sm mb-4">
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-info-circle-fill fs-5 me-3 mt-1 text-info"></i>
+                    <div>
+                        <strong>Aprobación del Ente Rector</strong>
+                        <p class="mb-0 small mt-1">
+                            Esta membresía ya cuenta con el visto bueno de la Institución Fundadora.
+                            Al aprobar, la institución pasará a ser <strong>Miembro Activo</strong> del club.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de la Membresía -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-card-list me-2 text-primary"></i>Información de la Solicitud
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Club</label>
+                            <p class="fw-bold mb-0">{{ membresia.club.nombre }}</p>
+                            {% if membresia.club.siglas %}
+                            <small class="text-muted">{{ membresia.club.siglas }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Institución Solicitante</label>
+                            <p class="fw-bold mb-0">{{ membresia.institucion.nombre }}</p>
+                            {% if membresia.institucion.estado %}
+                            <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Fecha de Solicitud</label>
+                            <p class="mb-0">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Tipo de Línea</label>
+                            <p class="mb-0">
+                                <span class="badge bg-info">{{ membresia.get_tipo_linea_display }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Representante Legal</label>
+                            <p class="mb-0">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Estado Actual</label>
+                            <p class="mb-0">
+                                <span class="badge bg-success">{{ membresia.get_estado_display }}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if membresia.carta_intencion %}
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Carta de Intención</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0 small">{{ membresia.carta_intencion }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if membresia.propuesta_tecnica %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Propuesta Técnica</label>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-0 small">{{ membresia.propuesta_tecnica }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Visto Bueno de la Fundadora -->
+            {% if membresia.visto_bueno_fundadora %}
+            <div class="card border-0 shadow-sm mb-4 border-start border-success border-4">
+                <div class="card-body">
+                    <h6 class="fw-bold text-success mb-2">
+                        <i class="bi bi-check-circle-fill me-2"></i>Visto Bueno de la Institución Fundadora
+                    </h6>
+                    {% if membresia.visto_bueno_fundadora_por %}
+                    <p class="mb-1 small text-muted">
+                        Otorgado por: <strong>{{ membresia.visto_bueno_fundadora_por.get_full_name|default:membresia.visto_bueno_fundadora_por.username }}</strong>
+                        {% if membresia.visto_bueno_fundadora_fecha %}
+                        el {{ membresia.visto_bueno_fundadora_fecha|date:"d/m/Y H:i" }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                    {% if membresia.observaciones_fundadora %}
+                    <p class="mb-0 small">
+                        <strong>Observaciones:</strong> {{ membresia.observaciones_fundadora }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulario de Aprobación -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-pen me-2 text-success"></i>Decisión del Ente Rector
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="observaciones" class="form-label fw-bold">
+                                Observaciones <span class="text-muted fw-normal">(opcional)</span>
+                            </label>
+                            <textarea
+                                name="observaciones"
+                                id="observaciones"
+                                class="form-control"
+                                rows="4"
+                                placeholder="Agrega comentarios sobre la aprobación de esta membresía..."
+                            ></textarea>
+                            <small class="text-muted">Estas observaciones serán visibles para la institución solicitante.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'revisar_membresias' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg px-4"
+                                    onclick="return confirm('¿Confirma la APROBACIÓN FINAL de esta membresía? La institución pasará a ser Miembro Activo.');">
+                                <i class="bi bi-check-circle-fill me-2"></i>Aprobar como Miembro Activo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

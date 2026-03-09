@@ -1,0 +1,351 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Dashboard Institucional - RNR{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header con estilo unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-grid-1x2-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Panel Institucional</h2>
+                    <p class="text-muted mb-0 small">Gestión de grupos y participación en eventos</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Nuevo Evento
+                </a>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Tarjetas KPI con estilo unificado -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <a href="{% url 'eventos_disponibles' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Disponibles</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ eventos_disponibles|default:0 }}">0</h2>
+                        <i class="bi bi-search position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: var(--accent-cyan);"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'mis_grupos' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Grupos</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_grupos|default:0 }}">0</h2>
+                        <i class="bi bi-microsoft-teams position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #10b981;"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'gestionar_eventos_inst' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Asignados</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ eventos_asignados|default:0 }}">0</h2>
+                        <i class="bi bi-calendar-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #f59e0b;"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-3">
+            <a href="{% url 'lista_participantes' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Participantes Totales</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_participantes|default:0 }}">0</h2>
+                        <i class="bi bi-person-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #8b5cf6;"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Clubes -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Clubes</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_clubes|default:0 }}">0</h2>
+                        <p class="text-white-50 small mb-0">Club(es) creado(s) por mi institución</p>
+                        <i class="bi bi-people-robot position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #3b82f6;"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes Aprobados</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
+                        <p class="text-white-50 small mb-0">Club(es) con aprobación vigente</p>
+                        <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: #10b981;"></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg overflow-hidden" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
+                <div class="card-body p-4 text-center text-white">
+                    <i class="bi bi-calendar-event-fill fs-1 mb-3"></i>
+                    <h6 class="fw-bold mb-3">Eventos de Club</h6>
+                    <p class="small mb-3 opacity-75">Crea eventos exclusivos para tus clubes aprobados</p>
+                    {% if mis_clubes_aprobados > 0 %}
+                        <a href="{% url 'clubes_lista' %}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px;">
+                            <i class="bi bi-plus-circle me-1"></i> Crear Evento de Club
+                        </a>
+                        <div class="mt-2">
+                            <small class="opacity-75">Selecciona tu club para continuar</small>
+                        </div>
+                    {% else %}
+                        <button class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px; opacity: 0.5;" disabled>
+                            <i class="bi bi-lock me-1"></i> Sin clubes aprobados
+                        </button>
+                        <div class="mt-2">
+                            <small class="opacity-75">Necesitas un club aprobado</small>
+                        </div>
+                    {% endif %}
+                </div>
+                <div style="height: 4px; background: #a78bfa;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Información de la Institución -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
+            <i class="bi bi-building text-white me-3 fs-5"></i>
+            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">MI INSTITUCIÓN</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Nombre:</strong> 
+                        {% if institution.tipo_institucion == 'particular' %}
+                            {{ institution.particular_nombres }} {{ institution.particular_apellidos }}
+                        {% else %}
+                            {{ institution.nombre }}
+                        {% endif %}
+                    </p>
+                    <p><strong>{% if institution.tipo_institucion == 'particular' %}Cédula{% else %}RIF{% endif %}:</strong> 
+                        {% if institution.tipo_institucion == 'particular' %}
+                            {{ institution.particular_nacionalidad }}-{{ institution.particular_cedula }}
+                        {% else %}
+                            {{ institution.rif|default:"No especificado" }}
+                        {% endif %}
+                    </p>
+                    <p><strong>Email:</strong> {{ institution.email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Estado:</strong> {{ institution.estado.nombre|default:"No especificado" }}</p>
+                    <p><strong>Municipio:</strong> {{ institution.municipio.nombre|default:"No especificado" }}</p>
+                    <p><strong>Teléfono:</strong> {{ institution.telefono|default:"No especificado" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Próximos Eventos -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-calendar-week text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">PRÓXIMOS EVENTOS</h5>
+                    </div>
+                    <a href="{% url 'gestionar_eventos_inst' %}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border-radius: 20px;">
+                        Ver todos
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr class="text-uppercase small fw-bold text-muted">
+                                    <th class="px-4 py-3">Fecha</th>
+                                    <th class="py-3">Evento</th>
+                                    <th class="py-3">Ubicación</th>
+                                    <th class="py-3 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evento in proximos_eventos %}
+                                <tr>
+                                    <td class="px-4 fw-bold text-primary">{{ evento.fecha|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ evento.nombre }}</div>
+                                        <small class="text-muted">{{ evento.descripcion|truncatechars:30 }}</small>
+                                    </td>
+                                    <td>{{ evento.estado.nombre|default:"Por definir" }}</td>
+                                    <td class="text-center">
+                                        <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn btn-sm fw-bold px-3" 
+                                           style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 20px;">
+                                            Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-calendar-x me-2"></i>No hay eventos próximos
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grupos Recientes -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">EQUIPOS RECIENTES</h5>
+                    </div>
+                    <a href="{% url 'mis_grupos' %}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border-radius: 20px;">
+                        Ver todos
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column gap-3">
+                        {% for grupo in grupos_recientes %}
+                        <div class="p-3 rounded-3 d-flex align-items-center justify-content-between" style="background: #f8fafc; border: 1px solid #e2e8f0; transition: all 0.2s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background: var(--blue-main);">
+                                    <i class="bi bi-robot text-white"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ grupo.nombre }}</h6>
+                                    <small class="text-muted">{{ grupo.participantes.count }} miembros • Tutor: {{ grupo.tutor_nombre|truncatechars:15 }}</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success">Activo</span>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-robot display-4 text-muted"></i>
+                            <p class="text-muted mt-3">Aún no has registrado grupos</p>
+                            <a href="{% url 'mis_grupos' %}" class="btn btn-sm fw-bold px-4" 
+                               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 20px;">
+                                Crear Equipo
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --accent-cyan: #00d4ff;
+    }
+    
+    .tech-kpi-card {
+        transition: transform 0.3s ease;
+    }
+    
+    .tech-kpi-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .counter {
+        font-family: 'Space Grotesk', sans-serif;
+    }
+    
+    .btn-outline-primary {
+        border: 1px solid var(--blue-main);
+        color: var(--blue-main);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background: var(--blue-main);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(11, 44, 109, 0.2);
+    }
+    
+    .btn-primary {
+        background: var(--blue-main);
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(11, 44, 109, 0.3);
+    }
+    
+    .bg-success.bg-opacity-10 {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Contadores animados con requestAnimationFrame
+        const counters = document.querySelectorAll('.counter');
+        
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target')) || 0;
+            const duration = 1000; // 1 segundo
+            
+            let startTime = null;
+            
+            const updateCounter = (currentTime) => {
+                if (!startTime) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentValue = Math.floor(progress * target);
+                
+                counter.innerText = currentValue;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+            
+            requestAnimationFrame(updateCounter);
+        });
+    });
+</script>
+{% endblock %}

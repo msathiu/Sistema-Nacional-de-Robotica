@@ -1,0 +1,866 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RNR - Panel{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --blue-main: #0b2c6d;
+            --blue-dark: #051636;
+            --accent-cyan: #00d4ff;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: "Inter", sans-serif;
+            overflow-x: hidden;
+        }
+
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--blue-dark);
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border-right: 3px solid var(--accent-cyan);
+        }
+
+        #sidebar.collapsed {
+            left: calc(-1 * var(--sidebar-width));
+        }
+
+        #content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            width: calc(100% - var(--sidebar-width));
+            transition: all 0.3s ease;
+        }
+
+        #content.expanded {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--blue-main);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--accent-cyan);
+            transform: scale(1.05);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 992px) {
+            #sidebar {
+                left: calc(-1 * var(--sidebar-width));
+            }
+
+            #sidebar.show {
+                left: 0;
+            }
+
+            #content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            background: rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        .nav-link-custom {
+            color: rgba(255,255,255,0.7);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-link-custom:hover, .nav-link-custom.active {
+            color: white;
+            background: rgba(0, 212, 255, 0.1);
+            border-left-color: var(--accent-cyan);
+        }
+
+        .nav-link-custom i {
+            font-size: 1.2rem;
+            margin-right: 1rem;
+        }
+
+        /* User Dropdown Styles */
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(11, 44, 109, 0.3);
+        }
+
+        .user-dropdown-toggle:hover {
+            background: linear-gradient(135deg, #0d3a8a 0%, var(--blue-main) 100%);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(11, 44, 109, 0.4);
+        }
+
+        .user-dropdown-toggle .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-toggle .user-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .user-dropdown-toggle .user-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-toggle .user-role {
+            font-size: 0.65rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .user-dropdown-toggle .chevron {
+            transition: transform 0.3s ease;
+            font-size: 0.75rem;
+        }
+
+        .user-dropdown.open .user-dropdown-toggle .chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 240px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1050;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .user-dropdown.open .user-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-dropdown-menu .dropdown-header {
+            padding: 1.25rem 1rem;
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 100%);
+            color: white;
+            border-bottom: 3px solid var(--accent-cyan);
+        }
+
+        .user-dropdown-menu .dropdown-header .user-fullname {
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .user-dropdown-menu .dropdown-header .user-email {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.85);
+            margin-top: 0.25rem;
+        }
+
+        .user-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.25rem;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .user-dropdown-menu .dropdown-item:hover {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.08) 0%, rgba(11, 44, 109, 0.05) 100%);
+            color: var(--blue-main);
+            padding-left: 1.5rem;
+        }
+
+        .user-dropdown-menu .dropdown-item i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+            color: var(--blue-main);
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item {
+            color: #dc3545;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 0.5rem;
+            padding-top: 0.875rem;
+            background: #fffafa;
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item:hover {
+            background: #fff0f0;
+            color: #dc3545;
+            padding-left: 1.5rem;
+        }
+
+        .user-dropdown-menu .dropdown-item.logout-item i {
+            color: #dc3545;
+        }
+
+        .user-dropdown-menu .dropdown-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+            margin: 0.5rem 0;
+        }
+
+        /* Overlay for closing dropdown */
+        .dropdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1040;
+            display: none;
+        }
+
+        .dropdown-overlay.active {
+            display: block;
+        }
+
+        .nav-section {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 0.5rem;
+        }
+
+        .nav-link-custom .ms-auto {
+            margin-left: auto;
+            font-size: 0.9rem;
+        }
+
+        /* ==================== SISTEMA DE BOTONES MODERNO ==================== */
+        :root {
+            /* Colores del sistema de botones */
+            --btn-primary: #0b2c6d;
+            --btn-primary-hover: #1a4ca8;
+            --btn-primary-light: #00d4ff;
+            --btn-success: #059669;
+            --btn-success-hover: #10b981;
+            --btn-danger: #dc2626;
+            --btn-danger-hover: #ef4444;
+            --btn-warning: #d97706;
+            --btn-warning-hover: #f59e0b;
+            --btn-secondary: #6b7280;
+            --btn-secondary-hover: #9ca3af;
+            --btn-outline: #0b2c6d;
+            --btn-outline-hover: #1a4ca8;
+        }
+
+        /* Botón base moderno */
+        .btn-modern {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+
+        /* Botón Primary - Azul principal */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--btn-primary) 0%, var(--btn-primary-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #234d94 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(11, 44, 109, 0.4);
+        }
+
+        /* Botón Success - Verde esmeralda */
+        .btn-success {
+            background: linear-gradient(135deg, var(--btn-success) 0%, var(--btn-success-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, var(--btn-success-hover) 0%, #34d399 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        /* Botón Danger - Rojo */
+        .btn-danger {
+            background: linear-gradient(135deg, var(--btn-danger) 0%, var(--btn-danger-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, var(--btn-danger-hover) 0%, #f87171 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Botón Warning - Naranja */
+        .btn-warning {
+            background: linear-gradient(135deg, var(--btn-warning) 0%, var(--btn-warning-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, var(--btn-warning-hover) 0%, #fbbf24 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+        }
+
+        /* Botón Secondary - Gris */
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--btn-secondary) 0%, var(--btn-secondary-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, var(--btn-secondary-hover) 0%, #d1d5db 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4);
+        }
+
+        /* Botón Outline - Borde azul */
+        .btn-outline {
+            background: transparent;
+            color: var(--btn-outline);
+            border: 2px solid var(--btn-outline);
+        }
+
+        .btn-outline:hover {
+            background: var(--btn-outline);
+            color: white;
+            box-shadow: 0 4px 15px rgba(11, 44, 109, 0.3);
+        }
+
+        /* Botón pequeño */
+        .btn-sm {
+            padding: 0.375rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        /* Botón grande */
+        .btn-lg {
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+        }
+
+        /* Botón círculo (para iconos) */
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-circle.btn-sm {
+            width: 32px;
+            height: 32px;
+        }
+
+        .btn-circle.btn-lg {
+            width: 48px;
+            height: 48px;
+        }
+
+        /* Iconos en botones */
+        .btn-modern i {
+            font-size: 1.1em;
+        }
+
+        /* Estados disabled */
+        .btn-modern:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Botón con gradiente cyan (especial) */
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--btn-primary) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-cyan:hover {
+            background: linear-gradient(135deg, #38bdf8 0%, var(--btn-primary-hover) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Botón Toggle Sidebar (Tres Rayitas) -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle Sidebar">
+        <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+    </button>
+
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <img src="{% static 'images/fvrc_logo.png' %}" alt="Logo" style="max-height: 60px; display: block; margin: 0 auto 1rem auto;">
+            <h6 class="fw-bold mb-1 text-white" style="font-family: 'Space Grotesk'; font-size: 0.75rem; line-height: 1.3;">REGISTRO NACIONAL DE</h6>
+            <h6 class="fw-bold mb-0 text-white" style="font-family: 'Space Grotesk'; font-size: 0.75rem; line-height: 1.3;">ROBÓTICA CREATIVA</h6>
+        </div>
+
+        <div class="mt-4">
+            {% if es_central or user.is_superuser %}
+                {# Menú para Federación Central y Superusuarios #}
+                <a href="{% url 'dashboard' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i> Inicio
+                </a>
+                <a href="{% url 'mi_perfil_federacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mi_perfil_federacion' %}active{% endif %}">
+                    <i class="bi bi-person-badge"></i> Mi Perfil Profesional
+                </a>
+                <a href="{% url 'lista_instituciones' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_instituciones' %}active{% endif %}">
+                    <i class="bi bi-building"></i> Instituciones
+                </a>
+                <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
+                    <i class="bi bi-people"></i> Participantes
+                </a>
+                <a href="{% url 'admin_todos_eventos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'admin_todos_eventos' %}active{% endif %}">
+                    <i class="bi bi-calendar-event"></i> Eventos
+                </a>
+                
+                <!-- Submenú: Gestión de Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('gestionClubesSubmenu')">
+                        <i class="bi bi-robot"></i> 
+                        <span>Gestión de Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="gestionClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="gestionClubesSubmenu" style="display: none;">
+                        <a href="{% url 'revisar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-shield-check"></i> Revisar Clubes Pendientes
+                            {% if tiene_clubes_pendientes %}
+                            <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.65rem;">{{ clubes_pendientes_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'revisar_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_membresias' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-person-check"></i> Revisar Membresías
+                        </a>
+                        <a href="{% url 'dashboard_metricas_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard_metricas_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-graph-up"></i> Métricas de Clubes
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Submenú: Gestión de Eliminaciones -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('eliminacionesSubmenu')">
+                        <i class="bi bi-archive"></i> 
+                        <span>Gestión de Eliminaciones</span>
+                        <i class="bi bi-chevron-down ms-auto" id="eliminacionesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="eliminacionesSubmenu" style="display: none;">
+                        <a href="{% url 'revisar_solicitudes_eliminacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'revisar_solicitudes_eliminacion' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-file-earmark-x"></i> Solicitudes Pendientes
+                            {% if tiene_solicitudes_eliminacion %}
+                            <span class="badge bg-danger rounded-pill ms-2" style="font-size: 0.65rem;">{{ solicitudes_eliminacion_count }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'clubes_eliminados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_eliminados' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-trash3"></i> Papelera de Clubes
+                        </a>
+                    </div>
+                </div>
+                
+                <a href="{% url 'gestionar_sedes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_sedes' %}active{% endif %}">
+                    <i class="bi bi-shield-lock"></i> Gestionar Sedes
+                </a>
+            {% elif es_regional %}
+                {# Menú para Federación Regional (solo visualización) #}
+                <a href="{% url 'dashboard' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i> Inicio
+                </a>
+                <a href="{% url 'mi_perfil_federacion' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mi_perfil_federacion' %}active{% endif %}">
+                    <i class="bi bi-person-badge"></i> Mi Perfil Profesional
+                </a>
+                <a href="{% url 'lista_instituciones' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_instituciones' %}active{% endif %}">
+                    <i class="bi bi-building"></i> Instituciones
+                </a>
+                <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
+                    <i class="bi bi-people"></i> Participantes
+                </a>
+                <a href="{% url 'dashboard_metricas_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard_metricas_clubes' %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i> Métricas Clubes
+                </a>
+            {% else %}
+                {# Menú para Usuarios Institucionales #}
+                <a href="{% url 'dashboard' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-house-door"></i> Inicio
+                </a>
+                <a href="{% url 'mi_perfil_institucional' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mi_perfil_institucional' %}active{% endif %}">
+                    <i class="bi bi-building-gear"></i> Perfil Institucional
+                </a>
+                <a href="{% url 'mis_notificaciones' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_notificaciones' %}active{% endif %} position-relative">
+                    <i class="bi bi-bell"></i> Notificaciones
+                    {% if notificaciones_no_leidas > 0 %}
+                    <span class="position-absolute badge rounded-pill bg-danger" style="font-size: 0.65rem; top: 0.5rem; right: 1rem;">{{ notificaciones_no_leidas }}</span>
+                    {% endif %}
+                </a>
+                
+                <!-- Submenú: Mis Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('misClubesSubmenu')">
+                        <i class="bi bi-robot"></i> 
+                        <span>Mis Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="misClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="misClubesSubmenu" style="display: none;">
+                        <a href="{% url 'clubes_lista' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'clubes_lista' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-folder2-open"></i> Clubes Creados
+                        </a>
+                        <a href="{% url 'mis_membresias' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_membresias' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-star"></i> Mis Membresías
+                        </a>
+                        <a href="{% url 'gestionar_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_eventos_inst' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-calendar-event"></i> Eventos de Clubes
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Submenú: Explorar Clubes -->
+                <div class="nav-section mt-2">
+                    <div class="nav-link-custom" style="cursor: pointer; padding: 0.75rem 1.5rem;" onclick="toggleSubmenu('explorarClubesSubmenu')">
+                        <i class="bi bi-search"></i> 
+                        <span>Explorar Clubes</span>
+                        <i class="bi bi-chevron-down ms-auto" id="explorarClubesChevron" style="transition: transform 0.3s;"></i>
+                    </div>
+                    <div id="explorarClubesSubmenu" style="display: none;">
+                        <a href="{% url 'directorio_clubes_aprobados' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'directorio_clubes_aprobados' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-book"></i> Directorio Completo
+                        </a>
+                        <a href="{% url 'buscar_clubes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'buscar_clubes' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-funnel"></i> Búsqueda Avanzada
+                        </a>
+                    </div>
+                </div>
+                
+                <a href="{% url 'mis_grupos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_grupos' %}active{% endif %}">
+                    <i class="bi bi-microsoft-teams"></i> Mis Equipos
+                </a>
+                <a href="{% url 'lista_tutores' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_tutores' %}active{% endif %}">
+                    <i class="bi bi-person-workspace"></i> Tutores
+                </a>
+                <a href="{% url 'lista_participantes' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'lista_participantes' %}active{% endif %}">
+                    <i class="bi bi-people"></i> Participantes
+                </a>
+                <a href="{% url 'seguimiento_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'seguimiento_eventos_inst' %}active{% endif %}">
+                    <i class="bi bi-clipboard-check"></i>Eventos
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Overlay for closing dropdowns -->
+    <div class="dropdown-overlay" id="dropdownOverlay"></div>
+
+    <div id="content">
+        <header class="bg-white shadow-sm py-3 px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 fw-bold text-dark" style="font-family: 'Space Grotesk', sans-serif;">
+                    {% if es_central or user.is_superuser %}
+                        Administración Central
+                    {% elif es_regional %}
+                        Sede Regional: {{ perfil.estado.nombre }}
+                    {% else %}
+                        Panel Institucional
+                    {% endif %}
+                </h5>
+            </div>
+            
+            <!-- User Dropdown - Top Right -->
+            <div class="user-dropdown" id="userDropdown">
+                <a href="#" class="user-dropdown-toggle" id="userDropdownToggle">
+                    <div class="user-avatar">{{ user.username|first|upper }}</div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="user-role">
+                            {% if es_central or user.is_superuser %}SUPERADMIN
+                            {% elif es_regional %}AUDITOR
+                            {% else %}INSTITUCIÓN{% endif %}
+                        </span>
+                    </div>
+                    <i class="bi bi-chevron-down chevron"></i>
+                </a>
+                
+                <div class="user-dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="user-fullname">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="user-email">{{ user.email|default:user.username }}</div>
+                    </div>
+                    
+                    {% if es_central or user.is_superuser %}
+                    <a href="{% url 'mi_perfil_federacion' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% elif es_regional %}
+                    <a href="{% url 'mi_perfil_federacion' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% else %}
+                    <a href="{% url 'mi_perfil_institucional' %}" class="dropdown-item">
+                        <i class="bi bi-person-badge"></i> Mi Perfil
+                    </a>
+                    {% endif %}
+                    
+                    <div class="dropdown-divider"></div>
+                    
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item logout-item w-100 text-start">
+                            <i class="bi bi-power"></i> Cerrar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+        {% if messages %}
+        <div class="px-4 pt-4">
+            {% for message in messages %}
+            {% if message.tags == 'error' %}
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% else %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: 12px;">
+                {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>{% endif %}
+                {% if message.tags == 'warning' %}<i class="bi bi-exclamation-circle-fill me-2"></i>{% endif %}
+                {% if message.tags == 'info' %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <main class="p-4">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle Sidebar Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            // Toggle sidebar
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('active');
+            });
+
+            // Cerrar sidebar al hacer clic en overlay
+            sidebarOverlay.addEventListener('click', function() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('active');
+            });
+
+            // Cerrar sidebar al hacer clic en un enlace (solo en móvil)
+            if (window.innerWidth <= 992) {
+                const navLinks = sidebar.querySelectorAll('.nav-link-custom');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        sidebar.classList.remove('show');
+                        sidebarOverlay.classList.remove('active');
+                    });
+                });
+            }
+        });
+
+        // Toggle Submenu Function
+        function toggleSubmenu(submenuId) {
+            const submenu = document.getElementById(submenuId);
+            const chevron = document.getElementById(submenuId.replace('Submenu', 'Chevron'));
+            
+            if (submenu.style.display === 'none' || submenu.style.display === '') {
+                submenu.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            } else {
+                submenu.style.display = 'none';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Auto-expand submenu if active page is inside
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeLinks = document.querySelectorAll('.nav-link-custom.active');
+            activeLinks.forEach(link => {
+                const parentSubmenu = link.closest('[id$="Submenu"]');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                    const chevronId = parentSubmenu.id.replace('Submenu', 'Chevron');
+                    const chevron = document.getElementById(chevronId);
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // User Dropdown Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userDropdown = document.getElementById('userDropdown');
+            const userDropdownToggle = document.getElementById('userDropdownToggle');
+            const dropdownOverlay = document.getElementById('dropdownOverlay');
+
+            if (userDropdown && userDropdownToggle) {
+                userDropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('open');
+                    dropdownOverlay.classList.toggle('active');
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!userDropdown.contains(e.target)) {
+                        userDropdown.classList.remove('open');
+                        dropdownOverlay.classList.remove('active');
+                    }
+                });
+
+                if (dropdownOverlay) {
+                    dropdownOverlay.addEventListener('click', function() {
+                        userDropdown.classList.remove('open');
+                        dropdownOverlay.classList.remove('active');
+                    });
+                }
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

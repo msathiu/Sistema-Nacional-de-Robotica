@@ -1,0 +1,106 @@
+{% extends 'base.html' %} 
+{% load crispy_forms_tags %} 
+
+{% block title %}Editar Perfil | Participante{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="bi bi-person-fill-gear me-2"></i> Edición de Perfil de Participante</h3>
+                    <small>ID: {{ participante.pk }}</small>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">
+                        Actualiza tu información personal, de contacto y académica. Los cambios se reflejarán inmediatamente en tu Dashboard.
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {# ======================================================= #}
+                        {#                     SECCIÓN 1: CONTACTO Y DATOS BÁSICOS                     #}
+                        {# ======================================================= #}
+                        <fieldset class="form-group border p-3 mb-4 rounded">
+                            <legend class="border-bottom mb-4 text-primary fw-bold fs-5">
+                                <i class="bi bi-person-badge"></i> Datos Personales y de Contacto
+                            </legend>
+                            
+                            <div class="row">
+                                <div class="col-md-6">{{ form.nombres|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.apellidos|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">{{ form.cedula|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.email_representante|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">{{ form.codigo_area|as_crispy_field }}</div>
+                                <div class="col-md-8">{{ form.numero_telefono|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">{{ form.fecha_nacimiento|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.sexo|as_crispy_field }}</div>
+                            </div>
+                        </fieldset>
+
+                        {# ======================================================= #}
+                        {#                   SECCIÓN 2: ACADÉMICO Y UBICACIÓN                    #}
+                        {# ======================================================= #}
+                        <fieldset class="form-group border p-3 mb-4 rounded">
+                            <legend class="border-bottom mb-4 text-success fw-bold fs-5">
+                                <i class="bi bi-mortarboard"></i> Información Académica y Ubicación
+                            </legend>
+                            
+                            <div class="row">
+                                <div class="col-md-6">{{ form.institucion|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.nombre_escuela|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">{{ form.grado_escolar|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.talla_uniforme|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">{{ form.estado|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.municipio|as_crispy_field }}</div>
+                            </div>
+                            {{ form.direccion|as_crispy_field }}
+                        </fieldset>
+                        
+                        {# ======================================================= #}
+                        {#                 SECCIÓN 3: DATOS DEL REPRESENTANTE                    #}
+                        {# ======================================================= #}
+                        {# Aquí debes incluir todos los campos relacionados con el representante. #}
+                        {# Asumo que tu ParticipanteRegistrationForm tiene estos campos: #}
+                        <fieldset class="form-group border p-3 mb-4 rounded border-warning">
+                            <legend class="border-bottom mb-4 text-warning fw-bold fs-5">
+                                <i class="bi bi-person-vcard"></i> Datos del Representante (Solo si es menor de 18)
+                            </legend>
+                            
+                            <div class="row">
+                                <div class="col-md-6">{{ form.nombre_representante|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ form.cedula_representante|as_crispy_field }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">{{ form.codigo_area_representante|as_crispy_field }}</div>
+                                <div class="col-md-8">{{ form.numero_telefono_representante|as_crispy_field }}</div>
+                            </div>
+                            {{ form.email_representante|as_crispy_field }}
+                        </fieldset>
+
+
+                        <div class="d-flex justify-content-between pt-3">
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

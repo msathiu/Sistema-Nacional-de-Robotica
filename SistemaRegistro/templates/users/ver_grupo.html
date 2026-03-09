@@ -1,0 +1,104 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-microsoft-teams fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Equipos</h2>
+                    <p class="text-muted mb-0 small">Listado de equipos registrados y sus miembros asignados.</p>
+                </div>
+            </div>
+            <a href="{% url 'agregar_grupo' %}" class="btn btn-primary px-4 shadow-sm" style="border-radius: 10px; background: var(--blue-main);">
+                <i class="bi bi-plus-lg me-2"></i> Nuevo Equipos
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {% for grupo in grupos %}
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 group-card" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 p-4 d-flex justify-content-between align-items-start" style="background: linear-gradient(45deg, var(--blue-dark), #0b2c6d);">
+                    <div>
+                        <h5 class="text-white fw-bold mb-1" style="font-family: 'Space Grotesk', sans-serif;">{{ grupo.nombre }}</h5>
+                        <span class="badge rounded-pill" style="background: var(--accent-cyan); color: var(--blue-dark);">
+                            {{ grupo.miembros.count }} Miembros
+                        </span>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-link text-white p-0" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical fs-5"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <li><a class="dropdown-item" href="{% url 'ver_grupo' grupo.nombre %}"><i class="bi bi-eye me-2"></i> Ver Detalles</a></li>
+                            <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i> Eliminar</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <label class="x-small text-uppercase fw-bold text-muted d-block mb-2">Integrantes del Equipo</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for miembro in grupo.miembros.all %}
+                                <div class="d-flex align-items-center bg-light px-2 py-1 rounded-2 border" style="font-size: 0.8rem;">
+                                    <i class="bi bi-person-fill text-primary me-1"></i>
+                                    {{ miembro.nombre }}
+                                </div>
+                            {% empty %}
+                                <p class="text-muted small">Sin miembros asignados.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="x-small text-uppercase fw-bold text-muted d-block mb-2">Eventos Inscritos</label>
+                        {% if grupo.eventos.all %}
+                            <ul class="list-unstyled mb-0">
+                                {% for evento in grupo.eventos.all|slice:":2" %}
+                                <li class="small text-dark d-flex align-items-center mb-1">
+                                    <i class="bi bi-calendar-check text-success me-2"></i> {{ evento.nombre }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted x-small mb-0">No participa en eventos activos.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white border-0 p-4 pt-0">
+                    <a href="{% url 'ver_grupo' grupo.nombre %}" class="btn btn-outline-primary w-100 btn-sm rounded-pill">
+                        Gestionar Equipo
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-people text-muted display-1 opacity-25"></i>
+            <h4 class="mt-3 text-muted">Aún no has creado ningún equipo.</h4>
+            <p class="text-muted">Comienza registrando un equipo para participar en los eventos.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .group-card {
+        transition: all 0.3s ease;
+        border: 1px solid transparent !important;
+    }
+    .group-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--accent-cyan) !important;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    .x-small { font-size: 0.65rem; letter-spacing: 0.5px; }
+</style>
+{% endblock %}

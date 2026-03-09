@@ -1,0 +1,605 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Editar Equipo - RNR{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+        --success: #10b981;
+        --purple: #7c3aed;
+        --warning: #f59e0b;
+        --gray-bg: #f5f7fa;
+    }
+    
+    body { background: var(--gray-bg); }
+    
+    .form-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .form-header-custom {
+        background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-dark) 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+    }
+    
+    .section-card-custom {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-header-custom {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .section-number-custom {
+        background: var(--blue-main);
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-right: 0.75rem;
+    }
+    
+    .section-title-custom {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--blue-main);
+        margin: 0;
+    }
+    
+    .form-control-custom, .form-select-custom {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        min-height: 42px;
+        transition: all 0.2s ease;
+        background: white;
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--blue-main);
+        box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1);
+    }
+    
+    .form-label-custom {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    
+    .form-label-custom i {
+        color: var(--blue-main);
+    }
+    
+    .btn-submit-custom {
+        background: var(--success);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 0.7rem 1.5rem;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-submit-custom:hover {
+        background: #059669;
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .btn-back-custom {
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        background: #fff;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-back-custom:hover {
+        border-color: #94a3b8;
+        background: #f8fafc;
+        color: #334155;
+    }
+    
+    .btn-search-custom {
+        background: var(--blue-main);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .btn-search-custom:hover {
+        background: var(--blue-dark);
+        color: white;
+    }
+    
+    .tutor-card {
+        background: #ecfdf5;
+        border: 1px solid #6ee7b7;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .participante-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .header-icon-custom {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .header-icon-custom i {
+        font-size: 1.5rem;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="form-header-custom">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon-custom me-3">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Editar Equipo</h5>
+                        <p class="mb-0 small opacity-75">{{ grupo.nombre }} - {{ grupo.codigo }}</p>
+                    </div>
+                </div>
+                <a href="javascript:history.back()" class="btn-back-custom text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="px-4 pt-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Formulario -->
+        <div class="form-body p-4">
+            <form method="POST" id="formGrupo">
+                {% csrf_token %}
+
+                <!-- Datos Básicos -->
+                <div class="section-card-custom">
+                    <div class="section-header-custom">
+                        <div class="section-number-custom">1</div>
+                        <h6 class="section-title-custom">Datos Básicos del Equipo</h6>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label-custom">
+                                <i class="bi bi-bookmark-star"></i> Nombre del Equipo *
+                            </label>
+                            <input type="text" name="nombre" class="form-control form-control-custom" 
+                                   value="{{ grupo.nombre }}" required>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label-custom">
+                                <i class="bi bi-hash"></i> Código
+                            </label>
+                            <input type="text" class="form-control form-control-custom bg-light" 
+                                   value="{{ grupo.codigo }}" readonly>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label-custom">
+                                <i class="bi bi-diagram-3"></i> Criterio de Agrupación *
+                            </label>
+                            <select name="criterio" id="id_criterio" class="form-select form-select-custom" required>
+                                {% for value, label in form.fields.criterio.choices %}
+                                <option value="{{ value }}" {% if grupo.criterio == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Campos dinámicos -->
+                        <div id="camposCriterio">
+                            <div id="camposEdad" class="row g-3" style="display: {% if grupo.criterio == 'edad' %}flex{% else %}none{% endif %};">
+                                <div class="col-md-6">
+                                    <label class="form-label-custom">
+                                        <i class="bi bi-calendar-range"></i> Edad Desde *
+                                    </label>
+                                    <input type="number" name="edad_desde" class="form-control form-control-custom" 
+                                           value="{{ grupo.edad_desde|default:'' }}" min="4" max="99">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label-custom">
+                                        <i class="bi bi-calendar-range"></i> Edad Hasta *
+                                    </label>
+                                    <input type="number" name="edad_hasta" class="form-control form-control-custom" 
+                                           value="{{ grupo.edad_hasta|default:'' }}" min="4" max="99">
+                                </div>
+                            </div>
+                            
+                            <div id="camposNivel" class="col-12" style="display: {% if grupo.criterio == 'nivel' %}block{% else %}none{% endif %};">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-mortarboard"></i> Nivel Educativo *
+                                </label>
+                                <select name="nivel_educativo" class="form-select form-select-custom">
+                                    <option value="">-- Seleccione --</option>
+                                    {% for value, label in form.fields.nivel_educativo.choices %}
+                                    <option value="{{ value }}" {% if grupo.nivel_educativo == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div id="camposProyecto" class="col-12" style="display: {% if grupo.criterio == 'proyecto' %}block{% else %}none{% endif %};">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-lightbulb"></i> Nombre del Proyecto *
+                                </label>
+                                <input type="text" name="nombre_proyecto" class="form-control form-control-custom" 
+                                       value="{{ grupo.nombre_proyecto|default:'' }}" maxlength="200">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tutor -->
+                <div class="section-card-custom">
+                    <div class="section-header-custom">
+                        <div class="section-number-custom">2</div>
+                        <h6 class="section-title-custom">Tutor Asignado (Solo 1)</h6>
+                    </div>
+                    
+                    <div id="tutorActualContainer">
+                        {% if tutores_actuales %}
+                            {% for tutor in tutores_actuales %}
+                            <div class="tutor-card mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 text-success">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            {{ tutor.get_nombre_completo }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <strong>Cédula:</strong> {{ tutor.nacionalidad }}-{{ tutor.cedula }} | 
+                                            <strong>Email:</strong> {{ tutor.email }}
+                                        </small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-warning" onclick="cambiarTutor()">
+                                        <i class="bi bi-arrow-repeat"></i> Cambiar
+                                    </button>
+                                </div>
+                                <input type="hidden" name="tutores[]" value="{{ tutor.id }}" id="tutorActualInput">
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-warning" id="alertSinTutor">
+                                <i class="bi bi-exclamation-triangle"></i> No hay tutor asignado
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="buscarTutorContainer" style="display: {% if tutores_actuales %}none{% else %}block{% endif %};">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label-custom">
+                                    <i class="bi bi-search"></i> Buscar Tutor por Cédula
+                                </label>
+                                <input type="text" id="buscarTutorCedula" class="form-control form-control-custom" 
+                                       placeholder="12345678">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="button" class="btn btn-search-custom w-100" id="btnBuscarTutor">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="tutorResultado" class="mt-3" style="display: none;">
+                            <div class="tutor-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 text-success">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            <span id="tutorNombre"></span>
+                                        </h6>
+                                        <small class="text-muted">
+                                            <strong>Email:</strong> <span id="tutorEmail"></span>
+                                        </small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" id="btnRemoverTutor">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="tutores[]" id="tutorSeleccionado">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participantes -->
+                <div class="section-card-custom">
+                    <div class="section-header-custom">
+                        <div class="section-number-custom">3</div>
+                        <h6 class="section-title-custom">Participantes del Equipo</h6>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="agregarParticipante()">
+                            <i class="bi bi-plus-lg"></i> Agregar Participante
+                        </button>
+                    </div>
+                    
+                    {% if participantes_actuales %}
+                    <div class="participante-table mb-3">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Cédula</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in participantes_actuales %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ p.nombre_completo }}</td>
+                                    <td>
+                                        {% if p.cedula %}
+                                            {{ p.nacionalidad }}-{{ p.cedula }}
+                                        {% elif p.cedula_escolar %}
+                                            CE-{{ p.cedula_escolar }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="hidden" name="participantes[]" value="{{ p.id }}">
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="eliminarParticipanteActual(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    
+                    <div id="listaParticipantes"></div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-flex justify-content-between">
+                    <a href="javascript:history.back()" class="btn-back-custom text-decoration-none">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn-submit-custom">
+                        <i class="bi bi-check-circle-fill"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<template id="templateParticipante">
+    <div class="card mb-3 participante-card" style="border-radius: 8px;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Nuevo Participante</h6>
+                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarParticipanteNuevo(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Cédula *</label>
+                    <input type="text" class="form-control cedula-participante" placeholder="12345678" required>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="buscarParticipante(this)">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+                <div class="col-md-8">
+                    <div class="datos-participante" style="display: none;">
+                        <input type="hidden" class="participante-id">
+                        <p class="mb-1"><strong>Nombre:</strong> <span class="nombre-participante"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.getElementById('id_criterio')?.addEventListener('change', function() {
+    const criterio = this.value;
+    document.getElementById('camposEdad').style.display = criterio === 'edad' ? 'flex' : 'none';
+    document.getElementById('camposNivel').style.display = criterio === 'nivel' ? 'block' : 'none';
+    document.getElementById('camposProyecto').style.display = criterio === 'proyecto' ? 'block' : 'none';
+});
+
+function cambiarTutor() {
+    document.getElementById('tutorActualContainer').style.display = 'none';
+    document.getElementById('buscarTutorContainer').style.display = 'block';
+    const inputActual = document.getElementById('tutorActualInput');
+    if (inputActual) {
+        inputActual.removeAttribute('name');
+    }
+}
+
+document.getElementById('btnBuscarTutor')?.addEventListener('click', function() {
+    const cedula = document.getElementById('buscarTutorCedula').value.trim().replace(/\D/g, '');
+    if (!cedula) {
+        alert('Ingrese una cédula');
+        return;
+    }
+    
+    this.disabled = true;
+    this.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
+    
+    fetch(`/registry/api/buscar-tutor/?cedula=${cedula}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.found) {
+                document.getElementById('tutorNombre').textContent = data.nombre_completo;
+                document.getElementById('tutorEmail').textContent = data.email;
+                document.getElementById('tutorSeleccionado').value = data.id;
+                document.getElementById('tutorResultado').style.display = 'block';
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-search"></i> Buscar';
+            } else {
+                alert('Tutor no encontrado');
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-search"></i> Buscar';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al buscar tutor');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-search"></i> Buscar';
+        });
+});
+
+document.getElementById('btnRemoverTutor')?.addEventListener('click', function() {
+    document.getElementById('tutorResultado').style.display = 'none';
+    document.getElementById('buscarTutorCedula').value = '';
+    document.getElementById('tutorSeleccionado').value = '';
+});
+
+function agregarParticipante() {
+    const template = document.getElementById('templateParticipante');
+    const clone = template.content.cloneNode(true);
+    document.getElementById('listaParticipantes').appendChild(clone);
+}
+
+function eliminarParticipanteNuevo(btn) {
+    btn.closest('.participante-card').remove();
+}
+
+function eliminarParticipanteActual(btn) {
+    if (confirm('¿Eliminar este participante del equipo?')) {
+        const row = btn.closest('tr');
+        const input = row.querySelector('input[name="participantes[]"]');
+        if (input) {
+            input.remove();
+        }
+        row.remove();
+    }
+}
+
+function buscarParticipante(btn) {
+    const card = btn.closest('.participante-card');
+    const cedula = card.querySelector('.cedula-participante').value.trim();
+    
+    if (!cedula) {
+        alert('Ingrese una cédula');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
+    
+    fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.found) {
+                const inputId = card.querySelector('.participante-id');
+                inputId.value = data.id;
+                inputId.setAttribute('name', 'participantes[]');
+                card.querySelector('.nombre-participante').textContent = data.nombre_completo;
+                card.querySelector('.datos-participante').style.display = 'block';
+                card.querySelector('.cedula-participante').disabled = true;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> Encontrado';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-success');
+            } else {
+                alert('Participante no encontrado. Debe registrarlo primero.');
+                card.remove();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al buscar participante');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-search"></i> Buscar';
+        });
+}
+
+// Validación antes de enviar
+document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
+    // Eliminar cards de participantes sin buscar
+    document.querySelectorAll('.participante-card').forEach(card => {
+        const input = card.querySelector('.participante-id');
+        if (!input || !input.value || input.value.trim() === '') {
+            card.remove();
+        }
+    });
+    
+    // Validar que haya al menos un tutor
+    const tutoresValidos = document.querySelectorAll('input[name="tutores[]"]');
+    if (tutoresValidos.length === 0) {
+        e.preventDefault();
+        alert('Debe asignar un tutor al equipo');
+        return false;
+    }
+    
+    // Validar que haya al menos un participante
+    const participantesValidos = document.querySelectorAll('input[name="participantes[]"]').length;
+    if (participantesValidos === 0) {
+        e.preventDefault();
+        alert('Debe tener al menos un participante en el equipo');
+        return false;
+    }
+});
+</script>
+{% endblock %}

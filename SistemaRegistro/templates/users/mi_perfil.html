@@ -1,0 +1,360 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Perfil Institucional - RNR{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <div class="p-3 rounded-3 me-3 shadow-sm"
+                     style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-building-gear fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family:'Space Grotesk'">
+                        Perfil Institucional
+                    </h2>
+                    <p class="text-muted mb-0 small">
+                        Información general y estado dentro del Registro Nacional de Robótica.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg text-white tech-kpi-card"
+                 style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
+                <div class="card-body p-4 position-relative">
+                    <div class="small text-white-50 fw-bold text-uppercase mb-2">Código RNR</div>
+                    <h4 class="fw-bold mb-0" style="font-size: 1.5rem;">{{ institucion.codigo|default:"---" }}</h4>
+                    <i class="bi bi-qr-code position-absolute opacity-10" style="font-size:3rem; right:15px; bottom:10px;"></i>
+                </div>
+                <div style="height:4px;background:#00d4ff"></div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg text-white tech-kpi-card"
+                 style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
+                <div class="card-body p-4 position-relative">
+                    <div class="small text-white-50 fw-bold text-uppercase mb-2">Incorporación</div>
+                    <h4 class="fw-bold mb-0">{{ fecha_unido|date:"M Y" }}</h4>
+                    <i class="bi bi-award position-absolute opacity-10" style="font-size:3rem; right:15px; bottom:10px;"></i>
+                </div>
+                <div style="height:4px;background:#8b5cf6"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden" style="border-radius:20px;">
+                <div style="height:100px; background: linear-gradient(145deg, var(--blue-dark), var(--blue-main));"></div>
+                <div class="card-body text-center pt-0">
+                    <div class="rounded-circle mx-auto shadow-lg border border-3 border-white"
+                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan); 
+                                display:flex; align-items:center; justify-content:center;
+                                font-size:2.5rem; font-weight:700; color:var(--blue-dark); font-family:'Space Grotesk';">
+                        {{ institucion.nombre|default:usuario.username|first|upper }}
+                    </div>
+                    <h4 class="fw-bold mt-3 mb-1 text-dark">{{ institucion.nombre|default:"Institución" }}</h4>
+                    <p class="text-muted small mb-4">
+                        <i class="bi bi-person-circle me-1"></i> {{ usuario.get_full_name|default:usuario.username }}
+                    </p>
+                    
+                    <div class="bg-light p-3 rounded-3 text-start mb-2">
+                        <label class="small text-muted fw-bold text-uppercase d-block mb-1" style="font-size:0.6rem">Email de Acceso</label>
+                        <span class="small fw-bold">{{ usuario.email }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4" style="border-radius:20px;">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cpu text-primary me-2"></i>Ficha de Datos</h5>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="abrirModalEditarPerfil()">Editar Perfil</button>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <div class="row g-4">
+                        <div class="col-md-6 tech-field">
+                            <label>{% if institucion.tipo_institucion == 'particular' %}Cédula{% else %}RIF / Registro{% endif %}</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">
+                                {% if institucion.tipo_institucion == 'particular' %}
+                                    {{ institucion.particular_nacionalidad }}-{{ institucion.particular_cedula }}
+                                {% else %}
+                                    {{ institucion.rif|default:"No asignado" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Contacto Telefónico</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.telefono|default:"No registrado" }}</div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Email Institucional</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.email|default:usuario.email }}</div>
+                        </div>
+                        <div class="col-md-6 tech-field">
+                            <label>Estado / Región</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.estado|default:"---" }}</div>
+                        </div>
+                        <div class="col-12 tech-field">
+                            <label>Dirección Física</label>
+                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.direccion|default:"Sin dirección registrada" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card"
+                         style="border-left:5px solid #8b5cf6; border-radius:15px;"
+                         data-bs-toggle="modal" data-bs-target="#changePasswordModal"
+                         role="button" tabindex="0" aria-controls="changePasswordModal">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-purple-subtle p-2 rounded-2 me-3">
+                                <i class="bi bi-lock-fill text-purple" style="color:#8b5cf6"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Seguridad</h6>
+                                <span class="small text-decoration-none fw-bold" style="color:#8b5cf6">Actualizar Clave -></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" style="border-left:5px solid #f59e0b; border-radius:15px;">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning-subtle p-2 rounded-2 me-3">
+                                <i class="bi bi-file-earmark-pdf-fill text-warning"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Credencial PDF</h6>
+                                <a href="#" class="small text-decoration-none fw-bold text-warning">Descargar Certificado →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Perfil -->
+<div class="modal fade" id="editarPerfilModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 text-white p-4" style="background: linear-gradient(145deg, #051636, #0b2c6d); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Editar Perfil Institucional</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'mi_perfil_institucional' %}">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="editar_perfil">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label small fw-bold">Nombre / Razón Social</label><input type="text" name="nombre" id="editNombre" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Email</label><input type="email" name="email" id="editEmail" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono</label><input type="text" name="telefono" id="editTelefono" class="form-control" maxlength="11"></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Estado</label><select name="estado" id="editEstado" class="form-select" onchange="cargarMunicipiosPerfil()"><option value="">Seleccione...</option>{% for estado in estados %}<option value="{{ estado.id }}">{{ estado.nombre }}</option>{% endfor %}</select></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Municipio</label><select name="municipio" id="editMunicipio" class="form-select" onchange="cargarParroquiasPerfil()"><option value="">Seleccione estado primero...</option></select></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Parroquia</label><select name="parroquia" id="editParroquia" class="form-select"><option value="">Seleccione municipio primero...</option></select></div>
+                        <div class="col-12"><label class="form-label small fw-bold">Dirección</label><textarea name="direccion" id="editDireccion" class="form-control" rows="3"></textarea></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4"><button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-check-circle me-1"></i> Guardar Cambios</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 text-white p-4"
+                 style="background: linear-gradient(145deg, #051636, #0b2c6d); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold" id="changePasswordModalLabel">
+                    <i class="bi bi-key me-2 text-info"></i>Actualizar Clave
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="passwordChangeForm" method="POST" action="{% url 'mi_perfil_institucional' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="password_change">
+
+                    <div class="mb-4 tech-field">
+                        <label>Clave Actual</label>
+                        <div class="password-field-wrap">
+                            <input type="password" id="oldPasswordField" name="old_password" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="oldPasswordField" aria-label="Mostrar u ocultar clave actual">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if password_form.old_password.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.old_password.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 tech-field">
+                        <label>Nueva Clave</label>
+                        <div class="password-field-wrap">
+                            <input type="password" id="newPassword1Field" name="new_password1" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="newPassword1Field" aria-label="Mostrar u ocultar nueva clave">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small opacity-75">Debe cumplir las validaciones de seguridad del sistema.</div>
+                        {% if password_form.new_password1.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.new_password1.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 tech-field">
+                        <label>Confirmar Nueva Clave</label>
+                        <div class="password-field-wrap">
+                            <input type="password" id="newPassword2Field" name="new_password2" class="form-control border-0 border-bottom rounded-0 px-0 fw-bold pe-5" required>
+                            <button type="button" class="toggle-pass-btn" data-target="newPassword2Field" aria-label="Mostrar u ocultar confirmación de clave">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if password_form.new_password2.errors %}
+                            <div class="text-danger small mt-1">{{ password_form.new_password2.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if password_form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small">
+                            {{ password_form.non_field_errors|striptags }}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
+                            <i class="bi bi-shield-check me-2"></i> Confirmar Cambio
+                        </button>
+                        <button type="button" class="btn btn-link text-muted small text-decoration-none" data-bs-dismiss="modal">
+                            Cancelar operación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tech-kpi-card { transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+    .tech-kpi-card:hover { transform: translateY(-5px); }
+    .tech-action-card { transition: all 0.3s ease; cursor: pointer; background: #fff; }
+    .tech-action-card:hover { transform: translateX(5px); background: #f8fafc; }
+    .tech-field label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #64748b;
+        font-weight: 800;
+        display: block;
+        margin-bottom: 2px;
+    }
+    .tech-field div { font-size: 0.95rem; color: var(--blue-dark); }
+    .password-field-wrap { position: relative; }
+    .toggle-pass-btn {
+        position: absolute;
+        top: 50%;
+        right: 0.25rem;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        padding: 0.25rem 0.4rem;
+        line-height: 1;
+    }
+    .toggle-pass-btn:hover { color: #0b2c6d; }
+</style>
+{% if open_password_modal %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('changePasswordModal');
+    if (modalEl) {
+        var modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+});
+</script>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var trigger = document.querySelector('[data-bs-target="#changePasswordModal"]');
+    var modalEl = document.getElementById('changePasswordModal');
+    if (trigger && modalEl) {
+        trigger.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        });
+    }
+
+    document.querySelectorAll('.toggle-pass-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var targetId = this.getAttribute('data-target');
+            var input = document.getElementById(targetId);
+            if (!input) return;
+            var icon = this.querySelector('i');
+            var isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            if (icon) {
+                icon.classList.toggle('bi-eye', !isPassword);
+                icon.classList.toggle('bi-eye-slash', isPassword);
+            }
+        });
+    });
+});
+
+function abrirModalEditarPerfil() {
+    document.getElementById('editNombre').value = '{{ institucion.nombre|escapejs }}';
+    document.getElementById('editEmail').value = '{{ institucion.email|escapejs }}';
+    document.getElementById('editTelefono').value = '{{ institucion.telefono|default:""|escapejs }}';
+    document.getElementById('editEstado').value = '{{ institucion.estado.id|default:"" }}';
+    document.getElementById('editDireccion').value = '{{ institucion.direccion|default:""|escapejs }}';
+    if('{{ institucion.estado.id }}') cargarMunicipiosPerfil();
+    new bootstrap.Modal(document.getElementById('editarPerfilModal')).show();
+}
+
+function cargarMunicipiosPerfil() {
+    const estadoId = document.getElementById('editEstado').value;
+    const municipioSelect = document.getElementById('editMunicipio');
+    municipioSelect.innerHTML = '<option value="">Cargando...</option>';
+    if(!estadoId) { municipioSelect.innerHTML = '<option value="">Seleccione estado primero...</option>'; return; }
+    fetch(`/ajax/municipios/?estado_id=${estadoId}`)
+        .then(r => r.json())
+        .then(data => {
+            municipioSelect.innerHTML = '<option value="">Seleccione...</option>';
+            data.forEach(m => municipioSelect.innerHTML += `<option value="${m.id}" ${m.id == '{{ institucion.municipio.id|default:"" }}' ? 'selected' : ''}>${m.nombre}</option>`);
+            if('{{ institucion.municipio.id }}') cargarParroquiasPerfil();
+        });
+}
+
+function cargarParroquiasPerfil() {
+    const municipioId = document.getElementById('editMunicipio').value;
+    const parroquiaSelect = document.getElementById('editParroquia');
+    parroquiaSelect.innerHTML = '<option value="">Cargando...</option>';
+    if(!municipioId) { parroquiaSelect.innerHTML = '<option value="">Seleccione municipio primero...</option>'; return; }
+    fetch(`/ajax/parroquias/?municipio_id=${municipioId}`)
+        .then(r => r.json())
+        .then(data => {
+            parroquiaSelect.innerHTML = '<option value="">Seleccione...</option>';
+            data.forEach(p => parroquiaSelect.innerHTML += `<option value="${p.id}" ${p.id == '{{ institucion.parroquia.id|default:"" }}' ? 'selected' : ''}>${p.nombre}</option>`);
+        });
+}
+</script>
+
+{% endblock %}

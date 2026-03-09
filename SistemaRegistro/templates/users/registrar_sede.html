@@ -1,0 +1,302 @@
+{% extends "users/base_dashboard.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-lg" style="background: linear-gradient(135deg, var(--blue-main), #003366); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-geo-alt-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.5px;">Registro de Sede Regional</h2>
+                    <p class="text-muted mb-0 small uppercase tracking-wider"><i class="bi bi-cpu me-1"></i> Administración Central - FVRC</p>
+                </div>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden; background: #ffffff;">
+                <div class="card-header border-0 py-4 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white bg-opacity-10 p-2 rounded-circle me-3">
+                            <i class="bi bi-shield-lock-fill text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-0 text-white uppercase small tracking-widest">Protocolo de Alta: Nodo Regional</h5>
+                    </div>
+                    <span class="badge rounded-pill px-3 py-2" style="background: rgba(0, 212, 255, 0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); font-size: 0.7rem;">ADMIN CENTRAL</span>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="registroSedeForm" autocomplete="off" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge bg-primary me-3 rounded-4 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; font-size: 1rem;">1</span>
+                                <h5 class="fw-bold text-dark mb-0">Datos del Encargado Regional</h5>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Cédula</label>
+                                    {{ form.cedula }}
+                                    <small class="text-danger field-error" data-field="cedula" style="display: none;"></small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombres</label>
+                                    {{ form.nombres }}
+                                    <small class="text-danger field-error" data-field="nombres" style="display: none;"></small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
+                                    {{ form.apellidos }}
+                                    <small class="text-danger field-error" data-field="apellidos" style="display: none;"></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono de Contacto</label>
+                                    <div class="input-group custom-input-group">
+                                        <div style="width: 35%;">{{ form.codigo_area }}</div>
+                                        <div class="flex-grow-1 border-start">{{ form.numero_telefono }}</div>
+                                    </div>
+                                    <small class="text-danger field-error" data-field="numero_telefono" style="display: none;"></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Institucional</label>
+                                    <div class="input-group custom-input-group">
+                                        <span class="input-group-text border-0 bg-light"><i class="bi bi-envelope text-primary"></i></span>
+                                        {{ form.email }}
+                                    </div>
+                                    <small class="text-danger field-error" data-field="email" style="display: none;"></small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge bg-primary me-3 rounded-4 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; font-size: 1rem;">2</span>
+                                <h5 class="fw-bold text-dark mb-0">Credenciales de Seguridad</h5>
+                            </div>
+                            
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombre de Usuario</label>
+                                    <div class="input-group custom-input-group">
+                                        <span class="input-group-text border-0 bg-light"><i class="bi bi-at text-primary"></i></span>
+                                        {{ form.username }}
+                                    </div>
+                                    <small class="text-danger field-error" data-field="username" style="display: none;"></small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Contraseña</label>
+                                    <div class="input-group custom-input-group mb-2">
+                                        <span class="input-group-text border-0 bg-light"><i class="bi bi-key text-primary"></i></span>
+                                        {{ form.password }}
+                                        <button class="btn btn-outline-secondary border-0 bg-light" type="button" id="togglePassword" style="border-radius: 0 12px 12px 0 !important;">
+                                            <i class="bi bi-eye" id="eyeIcon"></i>
+                                        </button>
+                                    </div>
+                                    <div id="password-feedback" class="small mt-1" style="display: none;"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div id="password-requirements" class="p-3 rounded-4 bg-light border border-2 border-white shadow-sm h-100 d-flex flex-column justify-content-center">
+                                        <div class="row g-1">
+                                            <div id="min-length" class="col-6 x-small text-danger mb-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>8+ Carac.</div>
+                                            <div id="has-uppercase" class="col-6 x-small text-danger mb-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>Mayús.</div>
+                                            <div id="has-lowercase" class="col-6 x-small text-danger mb-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>Minús.</div>
+                                            <div id="has-number" class="col-6 x-small text-danger mb-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>Número</div>
+                                            <div id="has-symbol" class="col-12 x-small text-danger"><i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>Especial (!@#...)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="p-4 rounded-4 shadow-sm border-start border-4 border-primary" style="background: linear-gradient(to right, #f0f9ff, #ffffff);">
+                                <label class="form-label fw-bold text-primary small text-uppercase mb-3 tracking-widest"><i class="bi bi-geo-alt-fill me-2"></i>Soberanía Territorial Asignada</label>
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        {{ form.estado }}
+                                        <small class="text-danger field-error" data-field="estado" style="display: none;"></small>
+                                    </div>
+                                    <div class="col-md-6 mt-3 mt-md-0">
+                                        <div class="d-flex align-items-center p-2">
+                                            <i class="bi bi-shield-check text-success fs-3 me-3"></i>
+                                            <p class="mb-0 x-small text-muted">
+                                                Este usuario podrá gestionar exclusivamente las instituciones del estado seleccionado.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row gap-3 pt-4 justify-content-md-end">
+                            <a href="{% url 'gestionar_sedes' %}" class="btn btn-light btn-lg fw-bold px-4 shadow-sm" style="border-radius: 14px; border: 2px solid #e2e8f0; font-size: 0.95rem;">
+                                <i class="bi bi-x-circle me-2"></i> Cancelar
+                            </a>
+                            <button type="submit" id="btnFinalizar" class="btn btn-primary btn-lg fw-bold px-5 shadow-lg" style="border-radius: 14px; background: var(--blue-main); border: none; font-size: 0.95rem;" disabled>
+                                <i class="bi bi-cloud-check-fill me-2"></i> Finalizar Registro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    input, select { padding: 12px 18px !important; background-color: #f8fafc !important; border: 2px solid #e2e8f0 !important; border-radius: 12px !important; font-weight: 500; transition: all 0.3s ease; }
+    input:focus, select:focus { background-color: #ffffff !important; border-color: var(--accent-cyan) !important; box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.1) !important; outline: 0; }
+    .custom-input-group .input-group-text { border-radius: 12px 0 0 12px !important; }
+    .custom-input-group input[type="password"], .custom-input-group input[type="text"] { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
+    #togglePassword { border-left: 1px solid #e2e8f0 !important; }
+    #togglePassword:hover { background-color: #e2e8f0 !important; }
+    
+    /* Validación visual */
+    .is-valid { border-color: #10b981 !important; background-color: #f0fdf4 !important; }
+    .is-invalid { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+    .custom-input-group.is-valid .input-group-text { border-color: #10b981 !important; background-color: #f0fdf4 !important; }
+    .custom-input-group.is-invalid .input-group-text { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+    .custom-input-group.is-valid #togglePassword { border-color: #10b981 !important; background-color: #f0fdf4 !important; }
+    .custom-input-group.is-invalid #togglePassword { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
+    
+    .x-small { font-size: 0.72rem; }
+    .required-field::after { content: " *"; color: #ef4444; }
+    .tracking-widest { letter-spacing: 0.15em; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('registroSedeForm');
+        
+        // Mostrar errores inline de Django
+        {% if form.errors %}
+        const errors = {
+            {% for field, error_list in form.errors.items %}
+            '{{ field }}': '{{ error_list.0|escapejs }}',
+            {% endfor %}
+        };
+        
+        // Ocultar alertas grandes
+        document.querySelectorAll('.alert-danger').forEach(alert => {
+            alert.style.display = 'none';
+        });
+        
+        // Mostrar errores inline
+        Object.keys(errors).forEach(fieldName => {
+            const errorEl = document.querySelector(`[data-field="${fieldName}"]`);
+            const input = document.querySelector(`[name="${fieldName}"]`);
+            
+            if (errorEl) {
+                errorEl.textContent = '⚠️ ' + errors[fieldName];
+                errorEl.style.display = 'block';
+            }
+            
+            if (input) {
+                input.classList.add('is-invalid');
+                input.style.borderColor = '#ef4444';
+                input.style.backgroundColor = '#fef2f2';
+            }
+        });
+        {% endif %}
+        
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passInput = document.getElementById('id_password1');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const passwordGroup = passInput.closest('.custom-input-group');
+        const feedbackDiv = document.getElementById('password-feedback');
+        
+        if (togglePassword && passInput) {
+            togglePassword.addEventListener('click', function() {
+                const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passInput.setAttribute('type', type);
+                eyeIcon.classList.toggle('bi-eye');
+                eyeIcon.classList.toggle('bi-eye-slash');
+            });
+        }
+        
+        // Password validation
+        const btnSubmit = document.getElementById('btnFinalizar');
+        
+        const requirements = {
+            'min-length': /.{8,}/,
+            'has-uppercase': /[A-Z]/,
+            'has-lowercase': /[a-z]/,
+            'has-number': /[0-9]/,
+            'has-symbol': /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+        };
+
+        if (passInput) {
+            const validate = () => {
+                let allOk = true;
+                const val = passInput.value;
+
+                for (const [id, regex] of Object.entries(requirements)) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (regex.test(val)) {
+                            el.classList.remove('text-danger');
+                            el.classList.add('text-success');
+                        } else {
+                            el.classList.remove('text-success');
+                            el.classList.add('text-danger');
+                            allOk = false;
+                        }
+                    }
+                }
+                
+                // Aplicar estilos visuales al input-group
+                if (val.length > 0) {
+                    if (allOk) {
+                        passwordGroup.classList.remove('is-invalid');
+                        passwordGroup.classList.add('is-valid');
+                        passInput.classList.remove('is-invalid');
+                        passInput.classList.add('is-valid');
+                        feedbackDiv.style.display = 'block';
+                        feedbackDiv.className = 'small mt-1 text-success';
+                        feedbackDiv.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Contraseña válida';
+                    } else {
+                        passwordGroup.classList.remove('is-valid');
+                        passwordGroup.classList.add('is-invalid');
+                        passInput.classList.remove('is-valid');
+                        passInput.classList.add('is-invalid');
+                        feedbackDiv.style.display = 'block';
+                        feedbackDiv.className = 'small mt-1 text-danger';
+                        feedbackDiv.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i>Completa todos los requisitos';
+                    }
+                } else {
+                    passwordGroup.classList.remove('is-valid', 'is-invalid');
+                    passInput.classList.remove('is-valid', 'is-invalid');
+                    feedbackDiv.style.display = 'none';
+                }
+                
+                btnSubmit.disabled = !allOk;
+            };
+
+            // Validar en tiempo real
+            passInput.addEventListener('input', validate);
+            passInput.addEventListener('keyup', validate);
+            passInput.addEventListener('paste', function() {
+                setTimeout(validate, 10);
+            });
+        }
+
+        // Limitar teléfono a números
+        const telInput = document.querySelector('input[name="numero_telefono"]');
+        if (telInput) {
+            telInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').substring(0, 7);
+            });
+        }
+    });
+</script>
+{% endblock %}

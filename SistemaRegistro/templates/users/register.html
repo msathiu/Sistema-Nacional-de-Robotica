@@ -1,0 +1,694 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-plus-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Registro de Nuevo Participante</h2>
+                    <p class="text-muted mb-0 small">{% if nombre_sede %}Institución: {{ nombre_sede }}{% endif %}</p>
+                </div>
+            </div>
+            <hr class="mt-4 opacity-10">
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+                    <h5 class="fw-bold mb-0 text-white uppercase small tracking-wider">
+                        <i class="bi bi-person-vcard me-2"></i> Expediente de Inscripción
+                    </h5>
+                </div>
+                <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
+
+                <div class="card-body p-4 p-md-5">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert border-0 shadow-sm alert-{{ message.tags }} alert-dismissible fade show rounded-4" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="registroForm">
+                        {% csrf_token %}
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-person-vcard me-2 text-primary"></i> Información Personal
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombres</label>
+                                    {{ participante_form.nombres }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
+                                    {{ participante_form.apellidos }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Fecha de Nacimiento</label>
+                                    {{ participante_form.fecha_nacimiento }}
+                                    <div id="edad-error" class="text-danger x-small mt-1 d-none">Mínimo 3 años de edad.</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Edad</label>
+                                    <input type="text" id="id_edad_display" class="form-control bg-light" readonly placeholder="0">
+                                    <input type="hidden" name="edad" id="id_edad">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
+                                        <input type="email" name="email" class="form-control" placeholder="ejemplo@correo.com" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nacionalidad</label>
+                                    <select name="nacionalidad" id="id_nacionalidad" class="form-select">
+                                        <option value="V" selected>V - Venezolano</option>
+                                        <option value="E">E - Extranjero</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3" id="cedula_personal_container">
+                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_personal">Cédula Personal</label>
+                                    <input type="text" name="cedula_personal" id="id_cedula_personal" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10">
+                                    <small class="text-muted" id="help_cedula_personal"></small>
+                                </div>
+                                <div class="col-md-3" id="cedula_escolar_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_escolar">Cédula Escolar</label>
+                                    <input type="text" name="cedula_escolar_input" id="id_cedula_escolar" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="20">
+                                    <small class="text-muted" id="help_cedula_escolar"></small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Sexo</label>
+                                    {{ participante_form.sexo }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Condición TEA</label>
+                                    <select name="condicion_tea" class="form-select">
+                                        <option value="False">No</option>
+                                        <option value="True">Sí</option>
+                                    </select>
+                                    <small class="text-muted">Trastorno del Espectro Autista</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono</label>
+                                    <div class="input-group">
+                                        <select name="codigo_area" class="form-select" style="max-width: 90px; background-color: #fff !important;">
+                                            <option value="0412">0412</option>
+                                            <option value="0414">0414</option>
+                                            <option value="0424">0424</option>
+                                            <option value="0416">0416</option>
+                                            <option value="0426">0426</option>
+                                        </select>
+                                        {{ participante_form.numero_telefono }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-house-door me-2 text-primary"></i> Residencia
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    {% if es_admin_central %}
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Estado</label>
+                                    <select name="estado" id="id_estado" class="form-select" required>
+                                        <option value="">Seleccione...</option>
+                                        {% for est in todos_estados %}
+                                            <option value="{{ est.id }}" {% if estado_id == est.id %}selected{% endif %}>{{ est.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Estado (Asignado)</label>
+                                    <input type="text" class="form-control fw-bold" style="background: #e0f7fa; color: #006064;" value="{{ estado.nombre|default:"" }}" readonly>
+                                    <input type="hidden" name="estado" value="{{ estado_id|default:"" }}">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
+                                    <select name="municipio" id="id_municipio" class="form-select" required>
+                                        <option value="">Seleccione...</option>
+                                        {% for muni in municipios %}
+                                            <option value="{{ muni.id }}">{{ muni.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Parroquia</label>
+                                    <select name="parroquia" id="id_parroquia" class="form-select" required>
+                                        <option value="">Esperando municipio...</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Dirección de Vivienda</label>
+                                    {{ participante_form.direccion }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-dark mb-4">
+                                <i class="bi bi-book me-2 text-primary"></i> Nivel Educativo
+                            </h5>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Grado / Nivel</label>
+                                    {{ participante_form.grado_escolar }}
+                                </div>
+                                <div class="col-md-6" id="profesion_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Especifique Título / Estudios</label>
+                                    <input type="text" name="titulo_universitario" id="id_titulo_universitario" class="form-control border-primary shadow-sm" placeholder="Ej: Ingeniería, Licenciatura, etc.">
+                                </div>
+                                <div class="col-md-6" id="otro_container" style="display: none;">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Especifique Otro</label>
+                                    <input type="text" name="campo1" id="id_campo1" class="form-control border-secondary shadow-sm" placeholder="Especifique el nivel educativo">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Plantel / Universidad</label>
+                                    {{ participante_form.nombre_escuela }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="representanteSection" class="representante-section mb-5">
+                            <div class="p-4 rounded-4" style="background: #fff9f0; border: 2px dashed #ffc107;">
+                                <h5 class="fw-bold text-warning-emphasis mb-4 d-flex align-items-center">
+                                    <i class="bi bi-shield-fill-check me-2"></i> Datos del Representante Legal (Menor de Edad)
+                                </h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted text-uppercase">Nombre Completo</label>
+                                        {{ participante_form.nombre_representante }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted text-uppercase">Cédula</label>
+                                        <div class="input-group">
+                                            <select name="rep_nacionalidad" id="id_rep_nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #fff !important;">
+                                                <option value="V" selected>V</option>
+                                                <option value="E">E</option>
+                                            </select>
+                                            <input type="text" name="cedula_representante" id="id_cedula_representante" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted text-uppercase">Teléfono de Contacto</label>
+                                        <div class="input-group">
+                                            <select name="codigo_area_representante" class="form-select" style="max-width: 90px; background-color: #fff !important;">
+                                                <option value="0412">0412</option>
+                                                <option value="0414">0414</option>
+                                                <option value="0424">0424</option>
+                                                <option value="0416">0416</option>
+                                                <option value="0426">0426</option>
+                                            </select>
+                                            {{ participante_form.numero_telefono_representante }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted text-uppercase">Email</label>
+                                        {{ participante_form.email_representante }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-4">
+                            <button type="reset" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
+                            </button>
+                            <button type="submit" id="btnFinalizar" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background: var(--blue-main);">
+                                <i class="bi bi-check-circle me-1"></i> Registrar Participante
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Registro Duplicado -->
+<div class="modal fade" id="modalDuplicado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: linear-gradient(145deg, #d97706, #b45309); border-radius: 20px 20px 0 0;">
+                <div class="d-flex align-items-center">
+                    <div class="p-2 bg-white bg-opacity-10 rounded-3 me-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Registro Existente</h5>
+                        <p class="x-small mb-0 text-white-50">Verifique los datos del participante</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="alert alert-warning border-0 shadow-sm mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Se encontró un registro con datos similares
+                </div>
+                <div class="bg-white p-3 rounded-3 shadow-sm border-start border-4 border-warning mb-3" id="datosDuplicado"></div>
+                
+                <!-- Información de vinculación -->
+                <div id="infoVinculacion" class="alert alert-info border-0 shadow-sm" style="display: none;">
+                    <i class="bi bi-building me-2"></i>
+                    <span id="textoVinculacion"></span>
+                </div>
+                
+                <p class="fw-bold mt-3 mb-2 text-center">¿Es el mismo participante?</p>
+            </div>
+            <div class="modal-footer border-0 bg-light pb-4 px-4">
+                <div class="d-flex flex-column gap-2 w-100">
+                    <!-- Botón de vincular (solo si NO está vinculado) -->
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold w-100 shadow-sm" id="btnVincular" style="display: none;">
+                        <i class="bi bi-link-45deg me-1"></i> Sí, vincular a mi institución
+                    </button>
+                    
+                    <!-- Botón de editar (solo si YA está vinculado) -->
+                    <button type="button" class="btn text-white rounded-pill px-4 fw-bold w-100 shadow-sm" style="background: var(--blue-main); display: none;" id="btnIrEditar">
+                        <i class="bi bi-pencil-square me-1"></i> Sí, editar existente
+                    </button>
+                    
+                    <!-- Botón de continuar como nuevo -->
+                    <button type="button" class="btn btn-success rounded-pill px-4 fw-bold w-100 shadow-sm" id="btnContinuarNuevo">
+                        <i class="bi bi-person-plus-fill me-1"></i> No, es otra persona (Guardar nuevo)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    input, select, textarea { border-radius: 10px !important; background-color: #f8fafc !important; border: 0 !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important; }
+    .required-field::after { content: " *"; color: #ef4444; }
+    .representante-section { display: none; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const registroForm = document.getElementById('registroForm');
+    const fechaNac = document.getElementById('id_fecha_nacimiento');
+    const edadDisp = document.getElementById('id_edad_display');
+    const edadHid = document.getElementById('id_edad');
+    const repSec = document.getElementById('representanteSection');
+    const gradoSel = document.getElementById('id_grado_escolar');
+    const profesionCont = document.getElementById('profesion_container');
+    const otroCont = document.getElementById('otro_container');
+    const cedulaPersonalCont = document.getElementById('cedula_personal_container');
+    const cedulaEscolarCont = document.getElementById('cedula_escolar_container');
+    const cedulaPersonalInput = document.getElementById('id_cedula_personal');
+    const cedulaEscolarInput = document.getElementById('id_cedula_escolar');
+    let participanteDuplicadoId = null;
+
+    // 1. Lógica de Edad, Representante y Cédulas
+    fechaNac.addEventListener('change', () => {
+        const born = new Date(fechaNac.value);
+        const now = new Date();
+        let edad = now.getFullYear() - born.getFullYear();
+        if (now.getMonth() < born.getMonth() || (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) edad--;
+        
+        edadDisp.value = edad;
+        edadHid.value = edad;
+
+        // Validación de edad mínima (3 años)
+        if (edad < 3) {
+            document.getElementById('edad-error').classList.remove('d-none');
+            document.getElementById('btnFinalizar').disabled = true;
+        } else {
+            document.getElementById('edad-error').classList.add('d-none');
+            document.getElementById('btnFinalizar').disabled = false;
+        }
+
+        // Lógica de cédulas según edad
+        const labelPersonal = document.getElementById('label_cedula_personal');
+        const labelEscolar = document.getElementById('label_cedula_escolar');
+        const helpPersonal = document.getElementById('help_cedula_personal');
+        const helpEscolar = document.getElementById('help_cedula_escolar');
+        
+        if (edad <= 10 && edad >= 3) {
+            // Menor o igual a 10 años: mostrar ambos campos, al menos uno requerido
+            cedulaEscolarCont.style.display = 'block';
+            cedulaPersonalCont.style.display = 'block';
+            
+            // Actualizar labels y textos de ayuda
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
+            labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
+            helpPersonal.textContent = 'Opcional si tiene cédula escolar';
+            helpEscolar.textContent = 'Opcional si tiene cédula personal';
+            
+            // Ninguno es obligatorio por defecto, se valida en submit
+            cedulaPersonalInput.required = false;
+            cedulaEscolarInput.required = false;
+        } else {
+            // Mayor de 10 años: solo cédula personal
+            cedulaEscolarCont.style.display = 'none';
+            cedulaPersonalCont.style.display = 'block';
+            
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            helpPersonal.textContent = '';
+            
+            cedulaEscolarInput.required = false;
+            cedulaPersonalInput.required = true;
+        }
+
+        // Mostrar sección de representante si es menor de 18
+        if (edad >= 3 && edad < 18) {
+            repSec.style.display = 'block';
+            document.querySelectorAll('#representanteSection input, #representanteSection select').forEach(i => i.required = true);
+        } else {
+            repSec.style.display = 'none';
+            document.querySelectorAll('#representanteSection input, #representanteSection select').forEach(i => i.required = false);
+        }
+    });
+
+    // 2. Validación y limpieza de cédulas en tiempo real
+    cedulaPersonalInput.addEventListener('input', function(e) {
+        // Remover todo excepto números
+        let valor = e.target.value.replace(/\D/g, '');
+        // Limitar a 10 dígitos
+        if (valor.length > 10) {
+            valor = valor.substring(0, 10);
+        }
+        e.target.value = valor;
+        
+        const edad = parseInt(edadHid.value) || 0;
+        if (edad <= 10 && edad >= 3) {
+            const helpEscolar = document.getElementById('help_cedula_escolar');
+            const labelEscolar = document.getElementById('label_cedula_escolar');
+            if (valor) {
+                helpEscolar.textContent = 'Opcional (ya tiene cédula personal)';
+                labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
+            } else {
+                helpEscolar.textContent = 'Requerida si no tiene cédula personal';
+                labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            }
+        }
+    });
+    
+    cedulaEscolarInput.addEventListener('input', function(e) {
+        // Remover todo excepto números
+        let valor = e.target.value.replace(/\D/g, '');
+        // Limitar a 20 dígitos
+        if (valor.length > 20) {
+            valor = valor.substring(0, 20);
+        }
+        e.target.value = valor;
+        
+        const edad = parseInt(edadHid.value) || 0;
+        if (edad <= 10 && edad >= 3) {
+            const helpPersonal = document.getElementById('help_cedula_personal');
+            const labelPersonal = document.getElementById('label_cedula_personal');
+            if (valor) {
+                helpPersonal.textContent = 'Opcional (ya tiene cédula escolar)';
+                labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
+            } else {
+                helpPersonal.textContent = 'Requerida si no tiene cédula escolar';
+                labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            }
+        }
+    });
+
+    // 2b. Validación dinámica de cédulas (para menores de 10 años)
+    function validarCedulas() {
+        const edad = parseInt(edadHid.value) || 0;
+        const cedulaPersonal = cedulaPersonalInput.value.trim();
+        const cedulaEscolar = cedulaEscolarInput.value.trim();
+        
+        if (edad <= 10 && edad >= 3) {
+            // Para menores de 10 años: al menos una cédula requerida
+            if (!cedulaPersonal && !cedulaEscolar) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 3. Lógica de Nivel Educativo
+    gradoSel.addEventListener('change', () => {
+        const val = gradoSel.value;
+        const text = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
+        
+        // Ocultar ambos por defecto
+        profesionCont.style.display = 'none';
+        otroCont.style.display = 'none';
+        
+        // Mostrar campo de título universitario si es nivel universitario
+        if (val === 'U' || text.includes('universitario')) {
+            profesionCont.style.display = 'block';
+        }
+        // Mostrar campo "Otro" si selecciona OTRO
+        else if (val === 'OTRO' || text.includes('otro')) {
+            otroCont.style.display = 'block';
+        }
+    });
+
+    // 4. Lógica AJAX Municipios y Parroquias
+    document.getElementById('id_municipio').addEventListener('change', function() {
+        const muniId = this.value;
+        const parroquiaSelect = document.getElementById('id_parroquia');
+        parroquiaSelect.innerHTML = '<option value="">Cargando...</option>';
+        fetch(`/ajax/parroquias/?municipio_id=${muniId}`)
+            .then(response => response.json())
+            .then(data => {
+                parroquiaSelect.innerHTML = '<option value="">Seleccione Parroquia</option>';
+                data.forEach(item => {
+                    parroquiaSelect.innerHTML += `<option value="${item.id}">${item.nombre}</option>`;
+                });
+            });
+    });
+
+    // 5. Lógica para Admin Central: cambiar municipios cuando cambia el estado
+    const estadoSelect = document.getElementById('id_estado');
+    if (estadoSelect) {
+        estadoSelect.addEventListener('change', function() {
+            const estadoId = this.value;
+            const municipioSelect = document.getElementById('id_municipio');
+            const parroquiaSelect = document.getElementById('id_parroquia');
+            
+            if (estadoId) {
+                municipioSelect.innerHTML = '<option value="">Cargando...</option>';
+                fetch(`/ajax/municipios/?estado_id=${estadoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        municipioSelect.innerHTML = '<option value="">Seleccione Municipio</option>';
+                        data.forEach(item => {
+                            municipioSelect.innerHTML += `<option value="${item.id}">${item.nombre}</option>`;
+                        });
+                    });
+                // Limpiar parroquias
+                parroquiaSelect.innerHTML = '<option value="">Seleccione primero un municipio</option>';
+            }
+        });
+    }
+
+    // 6. Validación de duplicados antes de enviar
+    let verificacionRealizada = false; // Flag para evitar loop infinito
+    
+    registroForm.addEventListener('submit', async (e) => {
+        // Si ya se verificó y el usuario decidió continuar, permitir submit
+        if (verificacionRealizada) {
+            return true;
+        }
+        
+        e.preventDefault();
+        
+        const nombres = document.querySelector('[name="nombres"]').value;
+        const apellidos = document.querySelector('[name="apellidos"]').value;
+        const fechaNacimiento = fechaNac.value;
+        const cedulaPersonal = cedulaPersonalInput.value.trim();
+        const cedulaEscolar = cedulaEscolarInput.value.trim();
+        
+        // Validar que tenga al menos una cédula
+        if (!validarCedulas()) {
+            alert('Debe ingresar al menos una cédula (personal o escolar)');
+            return;
+        }
+        
+        // Verificar duplicados
+        try {
+            const response = await fetch('/verificar-participante/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    nombres,
+                    apellidos,
+                    fecha_nacimiento: fechaNacimiento,
+                    cedula_personal: cedulaPersonal,
+                    cedula_escolar: cedulaEscolar,
+                    nacionalidad: document.getElementById('id_nacionalidad').value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.existe) {
+                // Mostrar modal con datos del duplicado
+                participanteDuplicadoId = data.participante_id;
+                const datosDuplicado = `
+                    <div class="mb-2"><strong>Nombres:</strong> ${data.datos.nombres}</div>
+                    <div class="mb-2"><strong>Apellidos:</strong> ${data.datos.apellidos}</div>
+                    <div class="mb-2"><strong>Edad:</strong> ${data.datos.edad} años</div>
+                    <div class="mb-2"><strong>Fecha Nacimiento:</strong> ${data.datos.fecha_nacimiento}</div>
+                    <div class="mb-2"><strong>Cédula Personal:</strong> ${data.datos.cedula}</div>
+                    <div><strong>Cédula Escolar:</strong> ${data.datos.cedula_escolar}</div>
+                `;
+                document.getElementById('datosDuplicado').innerHTML = datosDuplicado;
+                
+                // Mostrar información de vinculación
+                const infoVinculacion = document.getElementById('infoVinculacion');
+                const textoVinculacion = document.getElementById('textoVinculacion');
+                const btnVincular = document.getElementById('btnVincular');
+                const btnEditar = document.getElementById('btnIrEditar');
+                
+                if (data.ya_vinculado) {
+                    // Ya está vinculado a esta institución
+                    if (data.vinculacion_activa) {
+                        textoVinculacion.innerHTML = `<strong>Este participante ya está registrado en tu institución.</strong><br>
+                            Instituciones vinculadas (${data.total_instituciones}): ${data.instituciones_vinculadas.join(', ')}`;
+                        infoVinculacion.className = 'alert alert-success border-0 shadow-sm';
+                        btnEditar.style.display = 'block';
+                        btnVincular.style.display = 'none';
+                    } else {
+                        textoVinculacion.innerHTML = `<strong>Este participante estuvo vinculado a tu institución pero está inactivo.</strong><br>
+                            Instituciones vinculadas (${data.total_instituciones}): ${data.instituciones_vinculadas.join(', ')}`;
+                        infoVinculacion.className = 'alert alert-warning border-0 shadow-sm';
+                        btnVincular.style.display = 'block';
+                        btnVincular.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Sí, reactivar en mi institución';
+                        btnEditar.style.display = 'none';
+                    }
+                } else {
+                    // NO está vinculado a esta institución
+                    textoVinculacion.innerHTML = `<strong>Este participante existe en el sistema pero NO está vinculado a tu institución.</strong><br>
+                        Instituciones vinculadas (${data.total_instituciones}): ${data.instituciones_vinculadas.join(', ')}`;
+                    infoVinculacion.className = 'alert alert-info border-0 shadow-sm';
+                    btnVincular.style.display = 'block';
+                    btnVincular.innerHTML = '<i class="bi bi-link-45deg me-1"></i> Sí, vincular a mi institución';
+                    btnEditar.style.display = 'none';
+                }
+                
+                infoVinculacion.style.display = 'block';
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalDuplicado'));
+                modal.show();
+            } else {
+                // No hay duplicados, marcar como verificado y enviar
+                verificacionRealizada = true;
+                registroForm.submit();
+            }
+        } catch (error) {
+            console.error('Error al verificar duplicados:', error);
+            // En caso de error, permitir continuar
+            verificacionRealizada = true;
+            registroForm.submit();
+        }
+    });
+    
+    // 7. Botón "Vincular" - Vincular participante existente a la institución
+    document.getElementById('btnVincular').addEventListener('click', async () => {
+        const btn = document.getElementById('btnVincular');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Vinculando...';
+        
+        try {
+            const response = await fetch('/participantes/vincular/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    participante_id: participanteDuplicadoId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Cerrar modal
+                const modalElement = document.getElementById('modalDuplicado');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+                // Redirigir a lista de participantes
+                window.location.href = '/participantes/';
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Error al vincular:', error);
+            alert('Error al vincular el participante. Intente nuevamente.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+    
+    // 8. Botón "No, es otra persona" - Guardar como nuevo participante
+    document.getElementById('btnContinuarNuevo').addEventListener('click', () => {
+        verificacionRealizada = true;
+        const modalElement = document.getElementById('modalDuplicado');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+        setTimeout(() => {
+            registroForm.submit();
+        }, 300);
+    });
+    
+    // 9. Botón "Sí, editar" - Ir a editar el existente
+    document.getElementById('btnIrEditar').addEventListener('click', () => {
+        if (participanteDuplicadoId) {
+            window.location.href = `/participantes/${participanteDuplicadoId}/editar/`;
+        }
+    });
+    
+    // 10. Resetear estado cuando se cierra el modal
+    document.getElementById('modalDuplicado').addEventListener('hidden.bs.modal', () => {
+        verificacionRealizada = false;
+        participanteDuplicadoId = null;
+        // Limpiar contenido del modal
+        document.getElementById('datosDuplicado').innerHTML = '';
+        document.getElementById('infoVinculacion').style.display = 'none';
+        document.getElementById('textoVinculacion').innerHTML = '';
+        document.getElementById('btnVincular').style.display = 'none';
+        document.getElementById('btnIrEditar').style.display = 'none';
+    });
+
+    // 11. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
+    registroForm.addEventListener('reset', () => {
+        setTimeout(() => { 
+            edadDisp.value = "0";
+            edadHid.value = "0";
+            repSec.style.display = 'none';
+            profesionCont.style.display = 'none';
+            otroCont.style.display = 'none';
+            cedulaEscolarCont.style.display = 'none';
+            document.getElementById('id_parroquia').innerHTML = '<option value="">Esperando municipio...</option>';
+            document.getElementById('edad-error').classList.add('d-none');
+            document.getElementById('btnFinalizar').disabled = false;
+        }, 10);
+    });
+</script>
+{% endblock %}

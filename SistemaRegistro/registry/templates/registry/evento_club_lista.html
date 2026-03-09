@@ -1,0 +1,93 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Eventos del Club{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-calendar-event"></i> Eventos del Club</h2>
+            <p class="text-muted mb-0">{{ club.nombre }}</p>
+        </div>
+        <div>
+            {% if es_propietario %}
+                <a href="{% url 'crear_evento_club' club.id %}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Crear Evento
+                </a>
+            {% endif %}
+            <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver al Club
+            </a>
+        </div>
+    </div>
+
+    {% if eventos %}
+        <div class="row g-4">
+            {% for evento in eventos %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">{{ evento.nombre }}</h5>
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="badge 
+                                        {% if evento.estado_evento == 'borrador' %}bg-secondary
+                                        {% elif evento.estado_evento == 'pendiente' %}bg-warning
+                                        {% elif evento.estado_evento == 'aprobado' %}bg-success
+                                        {% elif evento.estado_evento == 'rechazado' %}bg-danger
+                                        {% endif %}">
+                                        {{ evento.get_estado_evento_display }}
+                                    </span>
+                                    {% if evento.audiencia == 'publica' %}
+                                    <span class="badge bg-primary" data-bs-toggle="tooltip" title="Visible para todos">
+                                        <i class="bi bi-globe"></i> Público
+                                    </span>
+                                    {% elif evento.audiencia == 'club_exclusivo' %}
+                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Solo miembros del club">
+                                        <i class="bi bi-shield-lock"></i> Exclusivo
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Solo mi institución">
+                                        <i class="bi bi-lock"></i> Privado
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-calendar"></i> {{ evento.fecha|date:"d/m/Y" }}
+                            </p>
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-tag"></i> {{ evento.get_tipo_display }}
+                            </p>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-geo-alt"></i> {{ evento.get_modalidad_display }}
+                            </p>
+
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                {% if es_propietario and evento.estado_evento in 'borrador,rechazado' %}
+                                    <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-send"></i> Enviar
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            No hay eventos registrados para este club.
+            {% if es_propietario %}
+                <a href="{% url 'crear_evento_club' club.id %}">Crear el primer evento</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

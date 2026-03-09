@@ -1,0 +1,1031 @@
+{% extends base_template|default:"base.html" %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+
+{% if es_fed_central %}
+<!-- DISEÑO MODERNO PARA FED_CENTRAL - Colores del Dashboard -->
+<style>
+  :root {
+    --blue-main: #0b2c6d;
+    --accent-cyan: #00d4ff;
+    --gray-bg: #f5f7fa;
+  }
+  body { 
+    background: var(--gray-bg);
+    min-height: 100vh;
+  }
+  .registration-container { 
+    max-width: 1000px; 
+    margin: 2rem auto; 
+    background: white; 
+    border-radius: 16px; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
+    overflow: hidden; 
+  }
+  .form-header { 
+    background: linear-gradient(135deg, var(--blue-main) 0%, #1a3d7c 100%); 
+    color: white; 
+    padding: 1.5rem 2rem; 
+    text-align: center; 
+  }
+  .logo { display: none; }
+  .form-body { padding: 2rem; }
+  .section-card { 
+    background: #f8fafc; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 12px; 
+    padding: 1.5rem; 
+    margin-bottom: 1.5rem; 
+    transition: all 0.3s ease;
+  }
+  .section-card.active { 
+    border-color: var(--blue-main); 
+    box-shadow: 0 2px 8px rgba(11, 44, 109, 0.1);
+  }
+  .section-header { display: flex; align-items: center; margin-bottom: 1rem; }
+  .section-number { 
+    background: var(--blue-main); 
+    color: white; 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 8px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 600; 
+    font-size: 0.9rem;
+    margin-right: .75rem; 
+  }
+  .required::after { content: " *"; color: #ef4444; }
+  .form-control, .form-select, .select2-container--default .select2-selection--single { 
+    border: 1px solid #cbd5e1; 
+    border-radius: 8px; 
+    min-height: 42px; 
+    transition: all 0.2s ease;
+  }
+  .form-control:focus, .form-select:focus { 
+    border-color: var(--blue-main); 
+    box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1); 
+  }
+  .validation-text { color: #ef4444; font-size: .85rem; margin-top: .25rem; }
+  .inline-alert {
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: .9rem;
+    padding: .65rem .8rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .dependencia-preview {
+    margin-top: .6rem;
+    font-size: .88rem;
+    padding: .5rem .7rem;
+    border-radius: 6px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0c4a6e;
+  }
+  .password-rules {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: .8rem .95rem;
+  }
+  .password-rules .rule {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .86rem;
+    margin-bottom: .28rem;
+    color: #64748b;
+  }
+  .password-rules .rule.ok { color: #059669; }
+  .password-rules .rule:last-child { margin-bottom: 0; }
+  .btn-next, .btn-submit { 
+    background: var(--blue-main); 
+    border: none; 
+    color: white; 
+    border-radius: 8px; 
+    padding: .65rem 1.25rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .btn-next:hover, .btn-submit:hover {
+    background: #1a3d7c;
+    transform: translateY(-1px);
+  }
+  .btn-submit {
+    background: var(--blue-main);
+    border-radius: 8px;
+    padding: .7rem 1.5rem;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(11, 44, 109, 0.2);
+  }
+  .btn-submit:hover {
+    background: #1a3d7c;
+    box-shadow: 0 4px 8px rgba(11, 44, 109, 0.25);
+  }
+  .btn-submit:active {
+    transform: translateY(0);
+  }
+  .btn-submit[disabled] {
+    opacity: .7;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-submit i { margin-right: .35rem; }
+  .input-group .btn-outline-secondary {
+    border: 1px solid #cbd5e1;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+  }
+  .input-group .btn-outline-secondary:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+  }
+  .btn-back {
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    background: #fff;
+    border-radius: 8px;
+    padding: .6rem 1rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    transition: all .2s ease;
+  }
+  .btn-back:hover { border-color: #94a3b8; background: #f8fafc; color: #334155; }
+  .actions-stack { gap: .75rem; }
+  .actions-stack .btn-submit { width: auto; }
+  @media (max-width: 768px) {
+    .actions-stack { display: grid !important; gap: .65rem; }
+    .actions-stack .btn { width: 100%; justify-content: center; }
+    .actions-stack .btn-submit { width: 100%; }
+  }
+  .hidden { display: none; }
+  .fed-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+  }
+</style>
+{% else %}
+<!-- DISEÑO ORIGINAL PARA OTROS USUARIOS -->
+<style>
+  :root {
+    --primary-blue: #0052b4;
+    --secondary-blue: #0077ff;
+    --light-bg: #f8fafc;
+    --border-color: #e2e8f0;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+  }
+  body { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
+  .registration-container { max-width: 1000px; margin: 2rem auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 82, 180, 0.15); overflow: hidden; }
+  .form-header { background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%); color: white; padding: 2rem; text-align: center; }
+  .logo { max-width: 160px; }
+  .form-body { padding: 2rem; }
+  .section-card { background: var(--light-bg); border: 2px solid var(--border-color); border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .section-card.active { border-color: var(--secondary-blue); }
+  .section-header { display: flex; align-items: center; margin-bottom: 1rem; }
+  .section-number { background: var(--secondary-blue); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: .75rem; }
+  .required::after { content: " *"; color: var(--error-color); }
+  .form-control, .form-select, .select2-container--default .select2-selection--single { border: 2px solid var(--border-color); border-radius: 10px; min-height: 44px; }
+  .validation-text { color: var(--error-color); font-size: .85rem; margin-top: .25rem; }
+  .inline-alert {
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: .9rem;
+    padding: .65rem .8rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .dependencia-preview {
+    margin-top: .6rem;
+    font-size: .88rem;
+    padding: .5rem .7rem;
+    border-radius: 8px;
+    background: #ecfeff;
+    border: 1px solid #bae6fd;
+    color: #0c4a6e;
+  }
+  .password-rules {
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    padding: .8rem .95rem;
+  }
+  .password-rules .rule {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .86rem;
+    margin-bottom: .28rem;
+    color: #b91c1c;
+  }
+  .password-rules .rule.ok { color: #047857; }
+  .password-rules .rule:last-child { margin-bottom: 0; }
+  .btn-next, .btn-submit { background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue)); border: none; color: white; border-radius: 10px; padding: .75rem 1.5rem; }
+  .btn-submit {
+    background: linear-gradient(135deg, #0052b4 0%, #0077ff 100%);
+    border: 1px solid #1d4ed8;
+    border-radius: 999px;
+    padding: .82rem 1.8rem;
+    font-weight: 700;
+    letter-spacing: .2px;
+    box-shadow: 0 10px 20px rgba(0, 82, 180, 0.24);
+    transition: all .25s ease;
+  }
+  .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 24px rgba(0, 82, 180, 0.3);
+    filter: saturate(1.06);
+  }
+  .btn-submit:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 14px rgba(0, 82, 180, 0.22);
+  }
+  .btn-submit[disabled] {
+    opacity: .85;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 10px rgba(0, 82, 180, 0.18);
+  }
+  .btn-submit i { margin-right: .35rem; }
+  .input-group .btn-outline-secondary {
+    border: 2px solid var(--border-color);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+  }
+  .input-group .btn-outline-secondary:hover {
+    background: var(--light-bg);
+    border-color: var(--secondary-blue);
+  }
+  .btn-back {
+    border: 2px solid #cbd5e1;
+    color: #1e3a8a;
+    background: #fff;
+    border-radius: 12px;
+    padding: .7rem 1.2rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    transition: all .25s ease;
+  }
+  .btn-back:hover { border-color: var(--secondary-blue); background: #eff6ff; color: #1d4ed8; transform: translateY(-1px); }
+  .actions-stack { gap: .75rem; }
+  .actions-stack .btn-submit { width: auto; }
+  @media (max-width: 768px) {
+    .actions-stack { display: grid !important; gap: .65rem; }
+    .actions-stack .btn { width: 100%; justify-content: center; }
+    .actions-stack .btn-submit { width: 100%; border-radius: 14px; }
+  }
+  .hidden { display: none; }
+</style>
+{% endif %}
+
+<div class="registration-container">
+  <div class="form-header">
+    {% if es_fed_central %}
+    <span class="fed-badge mb-2"><i class="bi bi-shield-check me-1"></i>Panel Administración Central</span>
+    {% endif %}
+    <img src="{% static 'images/fvrc_logo.png' %}" alt="FVRC" class="logo mb-3">
+    <h2 class="mb-1">Registro Nacional de Robótica</h2>
+    <p class="mb-0">Federación Venezolana de Robótica Creativa</p>
+  </div>
+
+  <div class="form-body">
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for err in form.non_field_errors %}<div>{{ err }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    <div id="inlineError" class="inline-alert"></div>
+
+    <form method="post" id="registroForm" novalidate>
+      {% csrf_token %}
+
+      <div class="section-card active" id="section1">
+        <div class="section-header">
+          <div class="section-number">1</div>
+          <div><h5 class="mb-0">Datos de Identificacion Institucional</h5></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-8">
+            <label class="form-label required">Tipo de Institucion</label>
+            <select class="form-select" id="tipoInstitucion" name="tipo_institucion" required>
+              <option value="">Seleccione el tipo de institucion</option>
+              <option value="educativa" {% if form.tipo_institucion.value == 'educativa' %}selected{% endif %}>Institucion educativa (Adscrita a MPPE)</option>
+              <option value="publica" {% if form.tipo_institucion.value == 'publica' %}selected{% endif %}>Pública</option>
+              <option value="privada" {% if form.tipo_institucion.value == 'privada' %}selected{% endif %}>Privada</option>
+              <option value="otra" {% if form.tipo_institucion.value == 'otra' %}selected{% endif %}>Otras Instituciones</option>
+              <option value="particular" {% if form.tipo_institucion.value == 'particular' %}selected{% endif %}>Particular (Persona Natural)</option>
+            </select>
+            {% if form.tipo_institucion.errors %}<div class="validation-text">{{ form.tipo_institucion.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div id="categoriasContainer" class="hidden">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label required">Naturaleza</label>
+              <select class="form-select" id="naturaleza" name="naturaleza">
+                <option value="">Seleccione naturaleza</option>
+                <option value="publica" {% if form.naturaleza.value == 'publica' %}selected{% endif %}>Pública</option>
+                <option value="privada" {% if form.naturaleza.value == 'privada' %}selected{% endif %}>Privada</option>
+              </select>
+              {% if form.naturaleza.errors %}<div class="validation-text">{{ form.naturaleza.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label required">Subcategoria</label>
+              <select class="form-select" id="subcategoria" name="subcategoria">
+                <option value="">Seleccione subcategoria</option>
+              </select>
+              {% if form.subcategoria.errors %}<div class="validation-text">{{ form.subcategoria.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3 hidden" id="dependenciaContainer">
+            <div class="col-md-8">
+              <label class="form-label required">Dependencia</label>
+              <select class="form-select" id="dependenciaSelect" name="dependencia_existente" style="width:100%">
+                <option value="">Busque o escriba una nueva dependencia</option>
+                {% for dep in dependencias %}
+                  <option value="{{ dep.id }}" {% if form.dependencia_existente.value|stringformat:'s' == dep.id|stringformat:'s' %}selected{% endif %}>{{ dep.nombre }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" id="nuevaDependencia" name="nueva_dependencia" value="{{ form.nueva_dependencia.value|default:'' }}">
+              <div id="dependenciaPreview" class="dependencia-preview hidden"></div>
+              {% if form.dependencia_existente.errors %}<div class="validation-text">{{ form.dependencia_existente.errors|striptags }}</div>{% endif %}
+              {% if form.nueva_dependencia.errors %}<div class="validation-text">{{ form.nueva_dependencia.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Campo Razón Social (solo para instituciones) -->
+        <div class="row g-3 mb-3" id="campoRazonSocial">
+          <div class="col-md-8">
+            <label class="form-label required">Razon Social / Nombre</label>
+            <input type="text" class="form-control" name="nombre" id="razonSocial" value="{{ form.nombre.value|default:'' }}">
+            {% if form.nombre.errors %}<div class="validation-text">{{ form.nombre.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- Campos para Persona Natural (Particular) -->
+        <div id="camposParticular" class="hidden">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label required">Nombres</label>
+              <input type="text" class="form-control" name="particular_nombres" id="particularNombres" value="{{ form.particular_nombres.value|default:'' }}">
+              {% if form.particular_nombres.errors %}<div class="validation-text">{{ form.particular_nombres.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label required">Apellidos</label>
+              <input type="text" class="form-control" name="particular_apellidos" id="particularApellidos" value="{{ form.particular_apellidos.value|default:'' }}">
+              {% if form.particular_apellidos.errors %}<div class="validation-text">{{ form.particular_apellidos.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-2">
+              <label class="form-label required">Nacionalidad</label>
+              <select class="form-select" name="particular_nacionalidad" id="particularNacionalidad">
+                <option value="">Sel.</option>
+                <option value="V" {% if form.particular_nacionalidad.value == 'V' %}selected{% endif %}>V</option>
+                <option value="E" {% if form.particular_nacionalidad.value == 'E' %}selected{% endif %}>E</option>
+              </select>
+              {% if form.particular_nacionalidad.errors %}<div class="validation-text">{{ form.particular_nacionalidad.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label required">Cédula</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                name="particular_cedula" 
+                id="particularCedula" 
+                placeholder="Solo números" 
+                pattern="[0-9]+" 
+                maxlength="10"
+                value="{{ form.particular_cedula.value|default:'' }}">
+              {% if form.particular_cedula.errors %}<div class="validation-text">{{ form.particular_cedula.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos para Instituciones (RIF) -->
+        <div class="row g-3 mb-3 align-items-end" id="camposRIF">
+          <div class="col-md-2">
+            <label class="form-label required">RIF</label>
+            <select class="form-select" id="rifLetra" name="rif_letra">
+              <option value="J" {% if form.rif_letra.value == 'J' %}selected{% endif %}>J</option>
+              <option value="G" {% if form.rif_letra.value == 'G' %}selected{% endif %}>G</option>
+              <option value="V" {% if form.rif_letra.value == 'V' %}selected{% endif %}>V</option>
+              <option value="E" {% if form.rif_letra.value == 'E' %}selected{% endif %}>E</option>
+            </select>
+            {% if form.rif_letra.errors %}<div class="validation-text">{{ form.rif_letra.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">&nbsp;</label>
+            <input
+              type="text"
+              class="form-control"
+              id="rifNumero"
+              name="rif_numero"
+              placeholder="12345678-9"
+              maxlength="10"
+              value="{{ form.rif_numero.value|default:'' }}"
+            >
+            {% if form.rif_numero.errors %}<div class="validation-text">{{ form.rif_numero.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" id="codigoMppeLabel">Codigo MPPE</label>
+            <input type="text" class="form-control" name="codigo_mppe" id="codigoMPPE" value="{{ form.codigo_mppe.value|default:'' }}" placeholder="Ej: ME123456">
+            {% if form.codigo_mppe.errors %}<div class="validation-text">{{ form.codigo_mppe.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-next" onclick="irSeccion(2)">Continuar a Seccion 2</button>
+        </div>
+      </div>
+
+      <div class="section-card hidden" id="section2">
+        <div class="section-header">
+          <div class="section-number">2</div>
+          <div><h5 class="mb-0">Ubicacion y Contacto</h5></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label required">Estado</label>
+            <select class="form-select" name="estado" id="estado" required>
+              <option value="">Seleccione estado</option>
+              {% for estado in form.fields.estado.queryset %}
+                <option value="{{ estado.id }}" {% if form.estado.value|stringformat:'s' == estado.id|stringformat:'s' %}selected{% endif %}>{{ estado.nombre }}</option>
+              {% endfor %}
+            </select>
+            {% if form.estado.errors %}<div class="validation-text">{{ form.estado.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">Municipio</label>
+            <select class="form-select" name="municipio" id="municipio" required>
+              <option value="">Seleccione municipio</option>
+              {% for municipio in form.fields.municipio.queryset %}
+                <option value="{{ municipio.id }}" {% if form.municipio.value|stringformat:'s' == municipio.id|stringformat:'s' %}selected{% endif %}>{{ municipio.nombre }}</option>
+              {% endfor %}
+            </select>
+            {% if form.municipio.errors %}<div class="validation-text">{{ form.municipio.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">Parroquia</label>
+            <select class="form-select" name="parroquia" id="parroquia" required>
+              <option value="">Seleccione parroquia</option>
+              {% for parroquia in form.fields.parroquia.queryset %}
+                <option value="{{ parroquia.id }}" {% if form.parroquia.value|stringformat:'s' == parroquia.id|stringformat:'s' %}selected{% endif %}>{{ parroquia.nombre }}</option>
+              {% endfor %}
+            </select>
+            {% if form.parroquia.errors %}<div class="validation-text">{{ form.parroquia.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <label class="form-label required">Direccion Exacta</label>
+            <textarea class="form-control" name="direccion" id="direccion" rows="3" required>{{ form.direccion.value|default:'' }}</textarea>
+            {% if form.direccion.errors %}<div class="validation-text">{{ form.direccion.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label required">Correo Electronico</label>
+            <input type="email" class="form-control" name="email" id="email" value="{{ form.email.value|default:'' }}" required>
+            {% if form.email.errors %}<div class="validation-text">{{ form.email.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">Telefono</label>
+            <div class="d-flex gap-2">
+              <select class="form-select" style="max-width:140px" name="codigo_area" id="codigoOperadora">
+                <option value="">Codigo</option>
+                <option value="0412" {% if form.codigo_area.value == '0412' %}selected{% endif %}>0412</option>
+                <option value="0414" {% if form.codigo_area.value == '0414' %}selected{% endif %}>0414</option>
+                <option value="0416" {% if form.codigo_area.value == '0416' %}selected{% endif %}>0416</option>
+                <option value="0424" {% if form.codigo_area.value == '0424' %}selected{% endif %}>0424</option>
+                <option value="0426" {% if form.codigo_area.value == '0426' %}selected{% endif %}>0426</option>
+                <option value="0212" {% if form.codigo_area.value == '0212' %}selected{% endif %}>0212</option>
+                <option value="0281" {% if form.codigo_area.value == '0281' %}selected{% endif %}>0281</option>
+              </select>
+              <input type="text" class="form-control" name="numero_telefono" id="telefono" maxlength="7" value="{{ form.numero_telefono.value|default:'' }}" placeholder="1234567">
+            </div>
+            {% if form.codigo_area.errors %}<div class="validation-text">{{ form.codigo_area.errors|striptags }}</div>{% endif %}
+            {% if form.numero_telefono.errors %}<div class="validation-text">{{ form.numero_telefono.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between actions-stack">
+          <button type="button" class="btn btn-back" onclick="irSeccion(1)"><i class="bi bi-arrow-left"></i>Regresar</button>
+          <button type="button" class="btn btn-next" onclick="irSeccion(3)">Continuar a Seccion 3</button>
+        </div>
+      </div>
+
+      <div class="section-card hidden" id="section3">
+        <div class="section-header">
+          <div class="section-number">3</div>
+          <div><h5 class="mb-0">Seguridad</h5></div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label required">Contrasena</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="password" name="password" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('password', this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}<div class="validation-text">{{ form.password.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">Confirmar Contrasena</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('confirmPassword', this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% if form.confirm_password.errors %}<div class="validation-text">{{ form.confirm_password.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <div class="password-rules">
+              <div class="rule" id="ruleLength"><i class="bi bi-x-circle"></i> Minimo 8 caracteres</div>
+              <div class="rule" id="ruleUpper"><i class="bi bi-x-circle"></i> Al menos 1 letra mayuscula</div>
+              <div class="rule" id="ruleNumber"><i class="bi bi-x-circle"></i> Al menos 1 numero</div>
+              <div class="rule" id="ruleSpecial"><i class="bi bi-x-circle"></i> Al menos 1 caracter especial (!@#$...)</div>
+              <div class="rule" id="ruleMatch"><i class="bi bi-x-circle"></i> Confirmacion coincide</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between actions-stack">
+          <button type="button" class="btn btn-back" onclick="irSeccion(2)"><i class="bi bi-arrow-left"></i>Regresar</button>
+          <button type="submit" class="btn btn-submit" id="btnFinalizar"><i class="bi bi-check-circle"></i> Finalizar Registro</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  let currentSection = 1;
+
+  const subcategoriasEducativa = [
+    { value: 'preescolar', text: 'Preescolar' },
+    { value: 'primaria', text: 'Primaria (1ra y 2da etapa)' },
+    { value: 'secundaria', text: 'Secundaria (3ra etapa)' },
+    { value: 'media_general', text: 'Media General' },
+    { value: 'media_tecnica', text: 'Media Tecnica' }
+  ];
+
+  const subcategoriasOtraPrivada = [
+    { value: 'empresa', text: 'Empresa' },
+    { value: 'fundacion', text: 'Fundacion' }
+  ];
+
+  function irSeccion(num) {
+    document.getElementById('section' + currentSection).classList.add('hidden');
+    document.getElementById('section' + currentSection).classList.remove('active');
+    currentSection = num;
+    document.getElementById('section' + currentSection).classList.remove('hidden');
+    document.getElementById('section' + currentSection).classList.add('active');
+    document.getElementById('section' + currentSection).scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function formatearRifNumero(valor) {
+    const limpio = valor.replace(/\D/g, '');
+    if (limpio.length <= 8) return limpio;
+    return limpio.slice(0, 8) + '-' + limpio.slice(8, 9);
+  }
+
+  function cargarSubcategorias() {
+    const tipo = document.getElementById('tipoInstitucion').value;
+    const naturaleza = document.getElementById('naturaleza').value;
+    const sub = document.getElementById('subcategoria');
+    const valorActual = "{{ form.subcategoria.value|default:'' }}";
+
+    sub.innerHTML = '<option value="">Seleccione subcategoria</option>';
+    sub.disabled = false;
+
+    if (tipo === 'educativa') {
+      subcategoriasEducativa.forEach(item => {
+        sub.innerHTML += `<option value="${item.value}">${item.text}</option>`;
+      });
+    } else if (tipo === 'otra' && naturaleza === 'privada') {
+      subcategoriasOtraPrivada.forEach(item => {
+        sub.innerHTML += `<option value="${item.value}">${item.text}</option>`;
+      });
+    } else if (tipo === 'otra' && naturaleza === 'publica') {
+      sub.innerHTML += '<option value="no_aplica">No aplica</option>';
+      sub.value = 'no_aplica';
+      sub.disabled = true;
+    }
+
+    if (valorActual) {
+      sub.value = valorActual;
+    }
+  }
+
+  function aplicarTipoInstitucion() {
+    const tipo = document.getElementById('tipoInstitucion').value;
+    const categorias = document.getElementById('categoriasContainer');
+    const depContainer = document.getElementById('dependenciaContainer');
+    const naturaleza = document.getElementById('naturaleza').value;
+
+    const rifLetra = document.getElementById('rifLetra');
+    const rifNumero = document.getElementById('rifNumero');
+    const codigoMppe = document.getElementById('codigoMPPE');
+    const codigoMppeLabel = document.getElementById('codigoMppeLabel');
+    
+    // Campos de Persona Natural
+    const camposParticular = document.getElementById('camposParticular');
+    const camposRIF = document.getElementById('camposRIF');
+    const campoRazonSocial = document.getElementById('campoRazonSocial');
+    const razonSocial = document.getElementById('razonSocial');
+
+    if (tipo === 'educativa' || tipo === 'otra') {
+      categorias.classList.remove('hidden');
+    } else {
+      categorias.classList.add('hidden');
+      depContainer.classList.add('hidden');
+    }
+    
+    // Lógica para Persona Natural (Particular)
+    if (tipo === 'particular') {
+      // OCULTAR Razón Social y RIF
+      campoRazonSocial.classList.add('hidden');
+      camposRIF.classList.add('hidden');
+      
+      // MOSTRAR campos de persona natural
+      camposParticular.classList.remove('hidden');
+      
+      // Hacer campos de particular obligatorios
+      document.getElementById('particularNombres').setAttribute('required', 'required');
+      document.getElementById('particularApellidos').setAttribute('required', 'required');
+      document.getElementById('particularNacionalidad').setAttribute('required', 'required');
+      document.getElementById('particularCedula').setAttribute('required', 'required');
+      
+      // Quitar obligatoriedad de Razón Social y RIF
+      razonSocial.removeAttribute('required');
+      rifNumero.removeAttribute('required');
+      
+      // Ocultar código MPPE
+      codigoMppe.removeAttribute('required');
+      codigoMppeLabel.classList.remove('required');
+      
+      // Autocompletar nombre desde campos de particular
+      const nombres = document.getElementById('particularNombres').value.trim();
+      const apellidos = document.getElementById('particularApellidos').value.trim();
+      if (nombres && apellidos) {
+        razonSocial.value = `${nombres} ${apellidos}`;
+      }
+    } else {
+      // MOSTRAR Razón Social y RIF para instituciones
+      campoRazonSocial.classList.remove('hidden');
+      camposRIF.classList.remove('hidden');
+      
+      // OCULTAR campos de persona natural
+      camposParticular.classList.add('hidden');
+      
+      // Quitar obligatoriedad de campos de particular
+      document.getElementById('particularNombres').removeAttribute('required');
+      document.getElementById('particularApellidos').removeAttribute('required');
+      document.getElementById('particularNacionalidad').removeAttribute('required');
+      document.getElementById('particularCedula').removeAttribute('required');
+      
+      // Hacer Razón Social y RIF obligatorios
+      razonSocial.setAttribute('required', 'required');
+      rifNumero.setAttribute('required', 'required');
+    }
+
+    if (tipo === 'educativa') {
+      rifLetra.value = 'G';
+      rifNumero.value = '20000009-0';
+      rifLetra.style.pointerEvents = 'none';
+      rifLetra.style.opacity = '0.6';
+      rifNumero.setAttribute('readonly', 'readonly');
+      codigoMppe.setAttribute('required', 'required');
+      codigoMppeLabel.classList.add('required');
+      depContainer.classList.remove('hidden');
+    } else {
+      rifLetra.style.pointerEvents = '';
+      rifLetra.style.opacity = '';
+      rifNumero.removeAttribute('readonly');
+      codigoMppe.removeAttribute('required');
+      codigoMppeLabel.classList.remove('required');
+
+      if (tipo === 'particular') rifLetra.value = 'V';
+      else if (tipo === 'publica') rifLetra.value = 'G';
+      else if (tipo === 'privada') rifLetra.value = 'J';
+      
+      if (rifNumero.value === '20000009-0') rifNumero.value = '';
+    }
+
+    if (tipo === 'otra' && naturaleza === 'publica') {
+      depContainer.classList.remove('hidden');
+    } else {
+      depContainer.classList.add('hidden');
+      $('#dependenciaSelect').val('').trigger('change');
+      document.getElementById('nuevaDependencia').value = '';
+    }
+
+    cargarSubcategorias();
+    actualizarPreviewDependencia();
+  }
+
+  function cargarMunicipios() {
+    const estadoId = document.getElementById('estado').value;
+    const municipioSelect = document.getElementById('municipio');
+    const parroquiaSelect = document.getElementById('parroquia');
+
+    municipioSelect.innerHTML = '<option value="">Seleccione municipio</option>';
+    parroquiaSelect.innerHTML = '<option value="">Seleccione parroquia</option>';
+
+    if (!estadoId) return;
+
+    fetch(`/registry/ajax/municipios/?estado_id=${estadoId}`)
+      .then(r => r.json())
+      .then(data => {
+        data.forEach(item => {
+          municipioSelect.add(new Option(item.nombre, item.id));
+        });
+        // Si hay un municipio previo (por error de form), seleccionarlo
+        const municipioPrevio = "{{ form.municipio.value|default:'' }}";
+        if (municipioPrevio) {
+            municipioSelect.value = municipioPrevio;
+            cargarParroquias();
+        }
+      })
+      .catch(err => console.error('Error cargando municipios:', err));
+  }
+
+  function cargarParroquias() {
+    const municipioId = document.getElementById('municipio').value;
+    const parroquiaSelect = document.getElementById('parroquia');
+
+    parroquiaSelect.innerHTML = '<option value="">Seleccione parroquia</option>';
+    if (!municipioId) return;
+
+    fetch(`/registry/ajax/parroquias/?municipio_id=${municipioId}`)
+      .then(r => r.json())
+      .then(data => {
+        data.forEach(item => {
+          parroquiaSelect.add(new Option(item.nombre, item.id));
+        });
+        const parroquiaPrevia = "{{ form.parroquia.value|default:'' }}";
+        if (parroquiaPrevia) parroquiaSelect.value = parroquiaPrevia;
+      })
+      .catch(err => console.error('Error cargando parroquias:', err));
+  }
+
+  function setRuleState(ruleId, ok) {
+    const el = document.getElementById(ruleId);
+    if (!el) return;
+    el.classList.toggle('ok', !!ok);
+    const icon = el.querySelector('i');
+    if (icon) {
+      icon.className = ok ? 'bi bi-check-circle-fill' : 'bi bi-x-circle';
+    }
+  }
+
+  function mostrarErrorInline(msg) {
+    const box = document.getElementById('inlineError');
+    if (!box) return;
+    box.textContent = msg;
+    box.style.display = 'block';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function limpiarErrorInline() {
+    const box = document.getElementById('inlineError');
+    if (!box) return;
+    box.textContent = '';
+    box.style.display = 'none';
+  }
+
+  function validarPasswordUI() {
+    const pass = document.getElementById('password').value || '';
+    const confirm = document.getElementById('confirmPassword').value || '';
+    const hasLength = pass.length >= 8;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const matches = pass.length > 0 && pass === confirm;
+
+    setRuleState('ruleLength', hasLength);
+    setRuleState('ruleUpper', hasUpper);
+    setRuleState('ruleNumber', hasNumber);
+    setRuleState('ruleSpecial', hasSpecial);
+    setRuleState('ruleMatch', matches);
+
+    return hasLength && hasUpper && hasNumber && hasSpecial && matches;
+  }
+
+  function actualizarPreviewDependencia() {
+    const preview = document.getElementById('dependenciaPreview');
+    const nueva = (document.getElementById('nuevaDependencia').value || '').trim();
+    if (nueva) {
+      preview.textContent = `Nueva dependencia a registrar: ${nueva}`;
+      preview.classList.remove('hidden');
+      return;
+    }
+
+    const data = $('#dependenciaSelect').select2('data');
+    if (data && data.length && data[0].id) {
+      preview.textContent = `Dependencia seleccionada: ${data[0].text}`;
+      preview.classList.remove('hidden');
+      return;
+    }
+
+    preview.textContent = '';
+    preview.classList.add('hidden');
+  }
+
+  function togglePasswordField(fieldId, btn) {
+    const input = document.getElementById(fieldId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'bi bi-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'bi bi-eye';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Select2
+    $('#dependenciaSelect').select2({
+      tags: true,
+      language: 'es',
+      width: 'resolve',
+      placeholder: 'Busque o escriba una nueva dependencia',
+      createTag: function(params) {
+        const term = params.term.trim();
+        if (!term) return null;
+        return { id: `new::${term}`, text: `${term} (nueva)`, isNew: true };
+      }
+    });
+    
+    // Autocompletar nombre completo para particulares
+    function actualizarNombreCompleto() {
+      const tipo = document.getElementById('tipoInstitucion').value;
+      if (tipo === 'particular') {
+        const nombres = document.getElementById('particularNombres').value.trim();
+        const apellidos = document.getElementById('particularApellidos').value.trim();
+        const razonSocial = document.getElementById('razonSocial');
+        
+        if (nombres && apellidos) {
+          razonSocial.value = `${nombres} ${apellidos}`;
+        }
+      }
+    }
+    
+    // Eventos para autocompletar
+    document.getElementById('particularNombres').addEventListener('input', actualizarNombreCompleto);
+    document.getElementById('particularApellidos').addEventListener('input', actualizarNombreCompleto);
+
+    // Eventos de Dependencia
+    $('#dependenciaSelect').on('select2:select', function(e) {
+      const data = e.params.data;
+      const inputNueva = document.getElementById('nuevaDependencia');
+      if (data.isNew || String(data.id).startsWith('new::')) {
+        inputNueva.value = String(data.id).replace('new::', '').replace(' (nueva)', '');
+        $('#dependenciaSelect').val('').trigger('change.select2');
+      } else {
+        inputNueva.value = '';
+      }
+      actualizarPreviewDependencia();
+    });
+
+    $('#dependenciaSelect').on('change', function() {
+      if ($(this).val()) {
+        document.getElementById('nuevaDependencia').value = '';
+      }
+      actualizarPreviewDependencia();
+    });
+
+    // Eventos de Formulario
+    document.getElementById('tipoInstitucion').addEventListener('change', aplicarTipoInstitucion);
+    document.getElementById('naturaleza').addEventListener('change', aplicarTipoInstitucion);
+    document.getElementById('estado').addEventListener('change', cargarMunicipios);
+    document.getElementById('municipio').addEventListener('change', cargarParroquias);
+    document.getElementById('password').addEventListener('input', validarPasswordUI);
+    document.getElementById('confirmPassword').addEventListener('input', validarPasswordUI);
+    document.getElementById('rifNumero').addEventListener('input', function(e) {
+      e.target.value = formatearRifNumero(e.target.value);
+    });
+
+    // Validacion al enviar
+    document.getElementById('registroForm').addEventListener('submit', function(e) {
+      limpiarErrorInline();
+      
+      const tipoInstitucion = document.getElementById('tipoInstitucion').value;
+      const naturaleza = document.getElementById('naturaleza').value;
+      
+      // Validar según tipo de institución
+      if (tipoInstitucion === 'particular') {
+        // Para particulares: validar campos de persona natural
+        const nombres = document.getElementById('particularNombres').value.trim();
+        const apellidos = document.getElementById('particularApellidos').value.trim();
+        const nacionalidad = document.getElementById('particularNacionalidad').value;
+        const cedula = document.getElementById('particularCedula').value.trim();
+        
+        if (!nombres || !apellidos || !nacionalidad || !cedula) {
+          e.preventDefault();
+          mostrarErrorInline('Debe completar todos los campos de persona natural (nombres, apellidos, nacionalidad y cédula).');
+          if (currentSection !== 1) irSeccion(1);
+          return;
+        }
+      } else {
+        // Para instituciones: validar RIF
+        if (tipoInstitucion === 'educativa' && !naturaleza) {
+          e.preventDefault();
+          mostrarErrorInline('Para instituciones educativas Adscritas al MPPE, debe seleccionar la Naturaleza (Pública o Privada).');
+          if (currentSection !== 1) irSeccion(1);
+          document.getElementById('naturaleza').focus();
+          return;
+        }
+        
+        const rifNum = document.getElementById('rifNumero').value.replace(/-/g, '');
+        if (rifNum.length !== 9) {
+          e.preventDefault();
+          mostrarErrorInline('Ingrese un RIF válido (8 dígitos + 1 dígito verificador).');
+          if (currentSection !== 1) irSeccion(1);
+          document.getElementById('rifNumero').focus();
+          return;
+        }
+      }
+      
+      if (!validarPasswordUI()) {
+        e.preventDefault();
+        mostrarErrorInline('La contraseña no cumple los requisitos indicados.');
+        if (currentSection !== 3) irSeccion(3);
+        document.getElementById('password').focus();
+        return;
+      }
+
+      const btnFinalizar = document.getElementById('btnFinalizar');
+      if (btnFinalizar) {
+        btnFinalizar.disabled = true;
+        btnFinalizar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+      }
+    });
+
+    // --- LOGICA DE SEDE REGIONAL ---
+    {% if es_regional and estado_fijo_id %}
+        const estadoSelect = document.getElementById('estado');
+        const estadoIdFijo = "{{ estado_fijo_id }}";
+        
+        if (estadoIdFijo) {
+            estadoSelect.value = estadoIdFijo;
+            estadoSelect.style.pointerEvents = 'none';
+            estadoSelect.style.backgroundColor = '#f1f5f9';
+            estadoSelect.setAttribute('tabindex', '-1');
+            cargarMunicipios(); 
+        }
+    {% endif %}
+
+    // Inicializaciones
+    aplicarTipoInstitucion();
+    actualizarPreviewDependencia();
+    validarPasswordUI();
+
+    {% if form.errors %}
+      if (document.getElementById('password').value || document.getElementById('confirmPassword').value || {{ form.password.errors|length }} > 0 || {{ form.confirm_password.errors|length }} > 0) {
+        irSeccion(3);
+      } else if ({{ form.estado.errors|length }} > 0 || {{ form.municipio.errors|length }} > 0 || {{ form.parroquia.errors|length }} > 0 || {{ form.email.errors|length }} > 0) {
+        irSeccion(2);
+      }
+    {% endif %}
+  });
+</script>
+{% endblock %}

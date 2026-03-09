@@ -1,0 +1,381 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestión de Eventos - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: var(--blue-dark);">
+                <i class="bi bi-calendar-event me-2"></i>Gestión de Eventos
+            </h2>
+            <p class="text-muted mb-0">Administración centralizada de eventos globales y de clubes</p>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-left: 4px solid #0b2c6d !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Eventos Globales</p>
+                            <h3 class="fw-bold mb-0">{{ stats.total_globales }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-globe2 fs-4 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-left: 4px solid #00d4ff !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Eventos de Club</p>
+                            <h3 class="fw-bold mb-0">{{ stats.total_club }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-robot fs-4 text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-left: 4px solid #f59e0b !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Pendientes Aprobación</p>
+                            <h3 class="fw-bold mb-0">{{ stats.club_pendientes }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-clock-history fs-4 text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-left: 4px solid #059669 !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Club Aprobados</p>
+                            <h3 class="fw-bold mb-0">{{ stats.club_aprobados }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                            <i class="bi bi-check-circle fs-4 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs de Navegación -->
+    <ul class="nav nav-tabs mb-4" id="eventosTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="globales-tab" data-bs-toggle="tab" data-bs-target="#globales" type="button" role="tab">
+                <i class="bi bi-globe2 me-2"></i>Eventos Globales ({{ stats.total_globales }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="club-pendientes-tab" data-bs-toggle="tab" data-bs-target="#club-pendientes" type="button" role="tab">
+                <i class="bi bi-clock-history me-2"></i>Club Pendientes ({{ stats.club_pendientes }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="club-aprobados-tab" data-bs-toggle="tab" data-bs-target="#club-aprobados" type="button" role="tab">
+                <i class="bi bi-check-circle me-2"></i>Club Aprobados ({{ stats.club_aprobados }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenido de Tabs -->
+    <div class="tab-content" id="eventosTabContent">
+        <!-- Tab: Eventos Globales -->
+        <div class="tab-pane fade show active" id="globales" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-globe2 me-2 text-primary"></i>Eventos Institucionales Globales
+                    </h5>
+                    <small class="text-muted">Eventos creados por federación central y regionales</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if eventos_globales %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fecha</th>
+                                    <th>Creado Por</th>
+                                    <th>Institución</th>
+                                    <th>Estado</th>
+                                    <th>Ubicación</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evento in eventos_globales %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ evento.nombre }}</strong>
+                                        <br><small class="text-muted">{{ evento.get_tipo_display }}</small>
+                                    </td>
+                                    <td>{{ evento.fecha|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if evento.institucion %}
+                                            <span class="badge bg-info">{{ evento.institucion.nombre|truncatewords:3 }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Federación Venezolana de Robótica Creativa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if evento.institucion %}
+                                            {{ evento.institucion.nombre|truncatewords:4 }}
+                                        {% else %}
+                                            <em class="text-muted">Federación</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if evento.estado_evento == 'publicado' %}
+                                            <span class="badge bg-success">Publicado</span>
+                                        {% elif evento.estado_evento == 'abierto' %}
+                                            <span class="badge bg-success">Abierto</span>
+                                        {% elif evento.estado_evento == 'pendiente' %}
+                                            <span class="badge bg-warning">Pendiente</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ evento.get_estado_evento_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if evento.estado %}
+                                            <small>{{ evento.estado.nombre }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'detalle_evento' evento.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No hay eventos globales registrados</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Eventos Club Pendientes -->
+        <div class="tab-pane fade" id="club-pendientes" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-clock-history me-2 text-warning"></i>Eventos de Club Pendientes de Aprobación
+                    </h5>
+                    <small class="text-muted">Eventos creados por clubes que requieren aprobación</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if eventos_club_pendientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fecha</th>
+                                    <th>Club</th>
+                                    <th>Institución Creadora</th>
+                                    <th>Estado</th>
+                                    <th>Ubicación</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evento in eventos_club_pendientes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ evento.nombre }}</strong>
+                                        <br><small class="text-muted">{{ evento.get_tipo_display }}</small>
+                                    </td>
+                                    <td>{{ evento.fecha|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-robot me-1"></i>{{ evento.club_organizador.nombre|truncatewords:3 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if evento.club_organizador.institucion_creadora %}
+                                            {{ evento.club_organizador.institucion_creadora.nombre|truncatewords:4 }}
+                                        {% else %}
+                                            <em class="text-muted">Sin institución</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock-history me-1"></i>Pendiente
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if evento.estado %}
+                                            <small>{{ evento.estado.nombre }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'aprobar_evento_club' evento.id %}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                        <a href="{% url 'rechazar_evento_club' evento.id %}" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                        <p class="text-muted mt-3">No hay eventos de club pendientes de aprobación</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Eventos Club Aprobados -->
+        <div class="tab-pane fade" id="club-aprobados" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-check-circle me-2 text-success"></i>Eventos de Club Aprobados
+                    </h5>
+                    <small class="text-muted">Eventos de clubes que han sido aprobados y están activos</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if eventos_club_aprobados %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fecha</th>
+                                    <th>Club</th>
+                                    <th>Institución Creadora</th>
+                                    <th>Estado</th>
+                                    <th>Ubicación</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for evento in eventos_club_aprobados %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ evento.nombre }}</strong>
+                                        <br><small class="text-muted">{{ evento.get_tipo_display }}</small>
+                                    </td>
+                                    <td>{{ evento.fecha|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-robot me-1"></i>{{ evento.club_organizador.nombre|truncatewords:3 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if evento.club_organizador.institucion_creadora %}
+                                            {{ evento.club_organizador.institucion_creadora.nombre|truncatewords:4 }}
+                                        {% else %}
+                                            <em class="text-muted">Sin institución</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>Aprobado
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if evento.estado %}
+                                            <small>{{ evento.estado.nombre }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No hay eventos de club aprobados</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-tabs .nav-link {
+        color: #6b7280;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #e5e7eb;
+        color: var(--blue-main);
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: var(--blue-main);
+        border-color: var(--blue-main);
+        background: transparent;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+        transform: translateX(2px);
+    }
+</style>
+{% endblock %}

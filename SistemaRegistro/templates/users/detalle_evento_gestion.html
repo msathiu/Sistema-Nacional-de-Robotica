@@ -1,0 +1,278 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Detalle del Evento - {{ evento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header con estilo unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-info-circle-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Detalle del Evento</h2>
+                    <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
+                </div>
+            </div>
+            <a href="{% url 'gestionar_eventos_inst' %}" class="btn shadow-sm px-4 fw-bold" 
+               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                <i class="bi bi-arrow-left me-2"></i> Volver
+            </a>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Fecha del Evento</div>
+                    <h3 class="fw-bold mb-0">{{ evento.fecha|date:"d M, Y" }}</h3>
+                    <i class="bi bi-calendar-event position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Grupos Inscritos</div>
+                    <h3 class="fw-bold mb-0">{{ total_inscritos|default:0 }}</h3>
+                    <i class="bi bi-people-fill position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
+                </div>
+                <div style="height: 4px; background: #10b981;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Evento -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
+            <i class="bi bi-info-circle text-white me-3 fs-5"></i>
+            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">INFORMACIÓN DEL EVENTO</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-tag-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Nombre del Evento</small>
+                            <span class="fw-bold text-dark fs-6">{{ evento.nombre }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-laptop text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Modalidad</small>
+                            <span class="fw-bold text-dark">{{ evento.get_modalidad_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-activity text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Estatus</small>
+                            <div>
+                                <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning{% elif evento.estado_evento == 'cerrado' %}bg-secondary{% elif evento.estado_evento == 'finalizado' %}bg-info{% else %}bg-light{% endif %}">
+                                    {{ evento.get_estado_evento_display }}
+                                </span>
+                                {% if evento.cancelado %}
+                                <span class="badge bg-danger">Cancelado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mt-2">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-geo-alt-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Ubicación</small>
+                            <span class="fw-bold text-dark">{{ evento.estado.nombre }}</span>
+                            {% if evento.municipio %}
+                            <span class="text-muted d-block">{{ evento.municipio.nombre }}{% if evento.parroquia %}, {{ evento.parroquia.nombre }}{% endif %}</span>
+                            {% endif %}
+                            {% if evento.direccion %}
+                            <span class="text-muted small d-block mt-1"><i class="bi bi-pin-map me-1"></i>{{ evento.direccion }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-building text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Institución Organizadora</small>
+                            <span class="fw-bold text-dark">{{ evento.institucion.nombre }}</span>
+                            {% if evento.institucion.rif %}
+                            <span class="text-muted d-block small">{{ evento.institucion.rif }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if evento.descripcion %}
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-text-paragraph text-primary me-2"></i>
+                            <small class="text-muted text-uppercase fw-bold">Descripción</small>
+                        </div>
+                        <p class="mb-0">{{ evento.descripcion|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if evento.requisitos %}
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-3 bg-light rounded-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-card-checklist text-primary me-2"></i>
+                            <small class="text-muted text-uppercase fw-bold">Requisitos</small>
+                        </div>
+                        <p class="mb-0">{{ evento.requisitos|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row g-4 mt-2">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3">
+                        <small class="text-muted text-uppercase fw-bold d-block"><i class="bi bi-calendar-plus me-1"></i>Fecha de Creación</small>
+                        <span class="fw-bold">{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3">
+                        <small class="text-muted text-uppercase fw-bold d-block"><i class="bi bi-arrow-repeat me-1"></i>Última Actualización</small>
+                        <span class="fw-bold">{{ evento.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Grupos Inscritos -->
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: var(--blue-main);">
+            <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">GRUPOS INSCRITOS</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if inscripciones %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr class="text-uppercase small fw-bold text-muted">
+                            <th class="px-4 py-3">Grupo / Código</th>
+                            <th class="py-3">Tutor</th>
+                            <th class="py-3 text-center">Participantes</th>
+                            <th class="py-3">Fecha Inscripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inscripcion in inscripciones %}
+                        <tr>
+                            <td class="px-4">
+                                <div class="fw-bold text-dark">{{ inscripcion.grupo.nombre }}</div>
+                                <div class="x-small text-muted font-monospace">{{ inscripcion.grupo.codigo }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ inscripcion.grupo.tutor_nombre }}</div>
+                                <div class="x-small text-muted">{{ inscripcion.grupo.tutor_cedula }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill">{{ inscripcion.grupo.participantes.count }}</span>
+                            </td>
+                            <td>
+                                <div class="small fw-bold">{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</div>
+                                <div class="x-small text-muted">{{ inscripcion.fecha_inscripcion|date:"H:i" }}</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-light mb-3"></i>
+                <h4 class="text-muted">No hay grupos inscritos en este evento</h4>
+                <p class="text-muted mb-0">Los grupos inscritos aparecerán aquí</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --accent-cyan: #00d4ff;
+    }
+    
+    .x-small {
+        font-size: 0.72rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--blue-main) !important;
+    }
+    
+    .bg-success {
+        background-color: #10b981 !important;
+    }
+    
+    .bg-warning {
+        background-color: #f59e0b !important;
+    }
+    
+    .bg-secondary {
+        background-color: #6c757d !important;
+    }
+    
+    .bg-info {
+        background-color: var(--accent-cyan) !important;
+        color: var(--blue-main) !important;
+    }
+    
+    .bg-danger {
+        background-color: #ef4444 !important;
+    }
+    
+    .bg-light {
+        background-color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
