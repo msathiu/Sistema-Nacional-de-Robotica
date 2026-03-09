@@ -1151,22 +1151,49 @@ def dashboard_institucional(request):
 
 
 @login_required
-@admin_required
 def exportar_participantes_excel(request):
-    """Exporta todos los datos de participantes a Excel con formato legible"""
+    """Exporta datos de participantes a Excel según permisos del usuario"""
     from django.db.models import F, Value
     from django.db.models.functions import Concat
     
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
+    
+    # Filtrar participantes según el tipo de usuario
+    if user_type in ['fed_central', 'superuser', 'tecnologico']:
+        # Administradores centrales: todos los participantes
+        participantes = Participante.objects.all()
+    elif user_type == 'fed_regional':
+        # Administradores regionales: participantes de su estado
+        participantes = Participante.objects.filter(
+            vinculaciones__institucion__estado=perfil.estado,
+            vinculaciones__status='activo'
+        ).distinct()
+    elif user_type == 'institucional':
+        # Instituciones: solo sus participantes vinculados
+        participantes = Participante.objects.filter(
+            vinculaciones__institucion=perfil.institution,
+            vinculaciones__status='activo'
+        ).distinct()
+    else:
+        # Otros usuarios no tienen acceso
+        messages.error(request, "No tienes permisos para exportar participantes.")
+        return redirect('dashboard')
+    
     # Obtener participantes con datos relacionados
-    participantes = Participante.objects.select_related(
-        'estado', 'municipio', 'parroquia', 'institucion'
-    ).all()
+    participantes = participantes.select_related(
+        'estado', 'municipio', 'parroquia'
+    )
     
     # Preparar datos para Excel
     data = []
     for p in participantes:
         # Cédula: personal o escolar
         cedula = f"{p.nacionalidad or 'V'}-{p.cedula}" if p.cedula else (f"E-{p.cedula_escolar}" if p.cedula_escolar else "Sin cédula")
+        
+        # Obtener institución desde vinculación activa
+        vinculacion = p.vinculaciones.filter(status='activo').select_related('institucion').first()
+        institucion_nombre = vinculacion.institucion.nombre if vinculacion else 'Federación'
         
         data.append({
             'Nombres': p.nombres,
@@ -1184,7 +1211,7 @@ def exportar_participantes_excel(request):
             'Dirección': p.direccion,
             'Nivel Educativo': p.get_grado_escolar_display() if p.grado_escolar else '',
             'Plantel/Universidad': p.nombre_escuela or '',
-            'Institución': p.institucion.nombre if p.institucion else '',
+            'Institución': institucion_nombre,
             'Representante Legal': p.nombre_representante or '',
             'Teléfono Representante': f"{p.codigo_area_representante}-{p.numero_telefono_representante}" if p.numero_telefono_representante else '',
             'Fecha Registro': p.fecha_registro.strftime('%Y-%m-%d %H:%M') if hasattr(p, 'fecha_registro') and p.fecha_registro else ''
@@ -1193,11 +1220,18 @@ def exportar_participantes_excel(request):
     # Crear DataFrame
     df = pd.DataFrame(data)
     
-    # Crear respuesta HTTP
+    # Crear respuesta HTTP con nombre dinámico según usuario
+    if user_type == 'institucional':
+        filename = f"Participantes_{perfil.institution.nombre.replace(' ', '_')}.xlsx"
+    elif user_type == 'fed_regional':
+        filename = f"Participantes_{perfil.estado.nombre.replace(' ', '_')}.xlsx"
+    else:
+        filename = "Padron_Nacional_Participantes.xlsx"
+    
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="Padron_Nacional_Participantes.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     # Escribir a Excel
     df.to_excel(response, index=False, engine='openpyxl')

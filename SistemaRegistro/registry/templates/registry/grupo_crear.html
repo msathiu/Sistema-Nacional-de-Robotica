@@ -917,7 +917,7 @@ function buscarParticipante(btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
     
-    fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
+    fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
             if (data.found) {
@@ -976,7 +976,7 @@ function procesarCargaMasiva() {
     btnBuscar.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
     
     const promesas = cedulas.map(cedula => 
-        fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
+        fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
             .then(res => res.json())
             .then(data => ({cedula, data}))
     );

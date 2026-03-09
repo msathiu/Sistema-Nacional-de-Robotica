@@ -54,9 +54,9 @@ def crear_equipo(request):
                     # Validar que los tutores pertenecen a la institución
                     tutores = Tutor.objects.filter(
                         id__in=tutores_ids,
-                        institucion=institucion,
-                        status='activo'
-                    )
+                        vinculaciones__institucion=institucion,
+                        vinculaciones__status='activo'
+                    ).distinct()
                     
                     print(f"[DEBUG] Tutores encontrados: {tutores.count()} de {len(tutores_ids)} esperados")
                     
@@ -81,9 +81,9 @@ def crear_equipo(request):
                     # Validar que los participantes pertenecen a la institución
                     participantes = Participante.objects.filter(
                         id__in=participantes_ids,
-                        institucion=institucion,
-                        status='activo'
-                    )
+                        vinculaciones__institucion=institucion,
+                        vinculaciones__status='activo'
+                    ).distinct()
                     
                     print(f"[DEBUG] Participantes encontrados: {participantes.count()} de {len(participantes_ids)} esperados")
                     
@@ -114,14 +114,14 @@ def crear_equipo(request):
     
     # Obtener tutores y participantes disponibles
     tutores_disponibles = Tutor.objects.filter(
-        institucion=institucion,
-        status='activo'
-    ).order_by('apellidos', 'nombres')
+        vinculaciones__institucion=institucion,
+        vinculaciones__status='activo'
+    ).distinct().order_by('apellidos', 'nombres')
     
     participantes_disponibles = Participante.objects.filter(
-        institucion=institucion,
-        status='activo'
-    ).order_by('apellidos', 'nombres')
+        vinculaciones__institucion=institucion,
+        vinculaciones__status='activo'
+    ).distinct().order_by('apellidos', 'nombres')
     
     context = {
         'form': form,
@@ -168,9 +168,9 @@ def editar_equipo(request, grupo_id):
                     if tutores_ids:
                         tutores = Tutor.objects.filter(
                             id__in=tutores_ids,
-                            institucion=institucion,
-                            status='activo'
-                        )
+                            vinculaciones__institucion=institucion,
+                            vinculaciones__status='activo'
+                        ).distinct()
                         grupo.tutores.set(tutores)
                     else:
                         grupo.tutores.clear()
@@ -185,9 +185,9 @@ def editar_equipo(request, grupo_id):
                     
                     participantes = Participante.objects.filter(
                         id__in=participantes_ids,
-                        institucion=institucion,
-                        status='activo'
-                    )
+                        vinculaciones__institucion=institucion,
+                        vinculaciones__status='activo'
+                    ).distinct()
                     grupo.participantes.set(participantes)
                     
                     messages.success(request, f'✅ Equipo "{grupo.nombre}" actualizado exitosamente')
@@ -210,14 +210,14 @@ def editar_equipo(request, grupo_id):
     
     # Obtener disponibles
     tutores_disponibles = Tutor.objects.filter(
-        institucion=institucion,
-        status='activo'
-    ).order_by('apellidos', 'nombres')
+        vinculaciones__institucion=institucion,
+        vinculaciones__status='activo'
+    ).distinct().order_by('apellidos', 'nombres')
     
     participantes_disponibles = Participante.objects.filter(
-        institucion=institucion,
-        status='activo'
-    ).order_by('apellidos', 'nombres')
+        vinculaciones__institucion=institucion,
+        vinculaciones__status='activo'
+    ).distinct().order_by('apellidos', 'nombres')
     
     context = {
         'form': form,
@@ -303,8 +303,8 @@ def api_buscar_tutor(request):
     try:
         tutor = Tutor.objects.get(
             cedula=cedula_limpia,
-            institucion=institucion,
-            status='activo'
+            vinculaciones__institucion=institucion,
+            vinculaciones__status='activo'
         )
         
         return JsonResponse({
@@ -342,8 +342,8 @@ def api_buscar_participante_equipo(request):
     try:
         participante = Participante.objects.get(
             Q(cedula=cedula_limpia) | Q(cedula_escolar=cedula_limpia),
-            institucion=institucion,
-            status='activo'
+            vinculaciones__institucion=institucion,
+            vinculaciones__status='activo'
         )
         
         return JsonResponse({
@@ -366,9 +366,9 @@ def api_buscar_participante_equipo(request):
         # Si hay múltiples, retornar el primero
         participante = Participante.objects.filter(
             Q(cedula=cedula_limpia) | Q(cedula_escolar=cedula_limpia),
-            institucion=institucion,
-            status='activo'
-        ).first()
+            vinculaciones__institucion=institucion,
+            vinculaciones__status='activo'
+        ).distinct().first()
         
         return JsonResponse({
             'found': True,
