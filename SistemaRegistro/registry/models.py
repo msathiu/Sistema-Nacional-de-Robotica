@@ -40,12 +40,9 @@ class Estado(models.Model):
 
 class LineaInvestigacion(models.Model):
     """Catálogo dinámico de líneas de investigación gestionado por el Ente Rector."""
-    
+
     codigo = models.CharField(
-        max_length=50,
-        unique=True,
-        db_index=True,
-        verbose_name="Código"
+        max_length=50, unique=True, db_index=True, verbose_name="Código"
     )
     nombre = models.CharField(max_length=200, verbose_name="Nombre")
     descripcion = models.TextField(blank=True, verbose_name="Descripción")
@@ -53,15 +50,15 @@ class LineaInvestigacion(models.Model):
     orden = models.IntegerField(default=0, verbose_name="Orden de visualización")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Línea de Investigación"
         verbose_name_plural = "Líneas de Investigación"
-        ordering = ['orden', 'nombre']
+        ordering = ["orden", "nombre"]
         indexes = [
-            models.Index(fields=['activa', 'orden'], name='idx_linea_activa_orden'),
+            models.Index(fields=["activa", "orden"], name="idx_linea_activa_orden"),
         ]
-    
+
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
 
@@ -180,23 +177,27 @@ class Institucion(models.Model):
     rif = models.CharField(
         max_length=20, null=True, blank=True
     )  # Agregamos null=True y blank=True
-    
+
     # Campos para Persona Natural (Particular)
-    particular_nombres = models.CharField(max_length=100, null=True, blank=True, verbose_name="Nombres")
-    particular_apellidos = models.CharField(max_length=100, null=True, blank=True, verbose_name="Apellidos")
+    particular_nombres = models.CharField(
+        max_length=100, null=True, blank=True, verbose_name="Nombres"
+    )
+    particular_apellidos = models.CharField(
+        max_length=100, null=True, blank=True, verbose_name="Apellidos"
+    )
     particular_nacionalidad = models.CharField(
-        max_length=1, 
-        choices=[('V', 'V'), ('E', 'E')], 
-        null=True, 
+        max_length=1,
+        choices=[("V", "V"), ("E", "E")],
+        null=True,
         blank=True,
-        verbose_name="Nacionalidad"
+        verbose_name="Nacionalidad",
     )
     particular_cedula = models.CharField(
-        max_length=10, 
-        null=True, 
-        blank=True, 
+        max_length=10,
+        null=True,
+        blank=True,
         db_index=True,
-        verbose_name="Cédula (solo números)"
+        verbose_name="Cédula (solo números)",
     )
     tipo_institucion = models.CharField(
         max_length=20, choices=TIPO_INSTITUCION_CHOICES, default="educativa"
@@ -394,35 +395,35 @@ class Institucion(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
-    
+
     @property
     def nombre_publico(self):
         """Retorna el nombre de la institución sin exponer el código.
-        
+
         Uso: Para mostrar en vistas públicas donde no se debe revelar el código RNR.
         """
         return self.nombre
-    
+
     def mostrar_codigo_para(self, user):
         """Verifica si el usuario tiene permiso para ver el código de la institución.
-        
+
         Args:
             user: Usuario que solicita ver el código
-            
+
         Returns:
             bool: True si puede ver el código, False si no
         """
         if not user or not user.is_authenticated:
             return False
-        
+
         # Federación y superusuarios pueden ver todos los códigos
         if user.is_staff or user.is_superuser:
             return True
-        
+
         # La propia institución puede ver su código
-        if hasattr(user, 'userprofile') and user.userprofile.institution == self:
+        if hasattr(user, "userprofile") and user.userprofile.institution == self:
             return True
-        
+
         return False
 
 
@@ -475,23 +476,24 @@ NUMERO_VALIDATOR = RegexValidator(
 class Participante(models.Model):
     """
     Modelo para datos personales del participante (ÚNICOS).
-    
+
     Un participante es una persona física con datos inmutables.
     Las vinculaciones con instituciones se manejan en ParticipanteInstitucion.
-    
+
     IMPORTANTE: Este modelo solo contiene datos personales.
     Los campos institucion, grupo, status fueron movidos a ParticipanteInstitucion.
     """
+
     # === DATOS PERSONALES (ÚNICOS) ===
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
-    
+
     nacionalidad = models.CharField(
         max_length=1,
         choices=NACIONALIDAD_CHOICES,
         default="V",
-        verbose_name="Nacionalidad"
+        verbose_name="Nacionalidad",
     )
-    
+
     cedula = models.CharField(
         max_length=20,
         unique=True,
@@ -500,11 +502,10 @@ class Participante(models.Model):
         blank=True,
         validators=[
             RegexValidator(
-                regex="^[0-9]+$",
-                message="Cédula debe contener solo números"
+                regex="^[0-9]+$", message="Cédula debe contener solo números"
             )
         ],
-        help_text="Solo números (ej: 19122516)"
+        help_text="Solo números (ej: 19122516)",
     )
     cedula_escolar = models.CharField(
         max_length=20,
@@ -516,8 +517,7 @@ class Participante(models.Model):
         help_text="Cédula escolar del participante (solo números)",
         validators=[
             RegexValidator(
-                regex="^[0-9]*$",
-                message="La cédula escolar debe contener solo números"
+                regex="^[0-9]*$", message="La cédula escolar debe contener solo números"
             )
         ],
     )
@@ -526,7 +526,7 @@ class Participante(models.Model):
     fecha_nacimiento = models.DateField()
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES)
     email = models.EmailField()
-    
+
     # === UBICACIÓN ===
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
     municipio = models.ForeignKey(Municipio, on_delete=models.CASCADE)
@@ -538,7 +538,7 @@ class Participante(models.Model):
         verbose_name="Parroquia",
     )
     direccion = models.TextField()
-    
+
     # === CONTACTO ===
     codigo_area = models.CharField(
         max_length=4,
@@ -549,7 +549,7 @@ class Participante(models.Model):
     numero_telefono = models.CharField(
         max_length=7, validators=[NUMERO_VALIDATOR], verbose_name="Número (7 dígitos)"
     )
-    
+
     # === EDUCACIÓN ===
     nombre_escuela = models.CharField(
         max_length=200,
@@ -574,7 +574,7 @@ class Participante(models.Model):
         verbose_name="Campo Adicional",
         help_text="Campo adicional para guardar grado/nivel cuando se selecciona 'Otro/No especificado'",
     )
-    
+
     # === REPRESENTANTE (PARA MENORES) ===
     nombre_representante = models.CharField(max_length=200, blank=True)
     nacionalidad_representante = models.CharField(
@@ -597,7 +597,7 @@ class Participante(models.Model):
         verbose_name="Número Rep. (7 dígitos)",
     )
     email_representante = models.EmailField(blank=True)
-    
+
     # === METADATA ===
     condicion_tea = models.BooleanField(
         default=False,
@@ -618,13 +618,16 @@ class Participante(models.Model):
             models.Index(fields=["cedula_escolar"], name="idx_part_cedula_esc"),
             models.Index(fields=["email"], name="idx_part_email"),
             models.Index(fields=["apellidos", "nombres"], name="idx_part_nombre"),
-            models.Index(fields=["nombres", "apellidos", "fecha_nacimiento"], name="idx_part_nombre_fn"),
+            models.Index(
+                fields=["nombres", "apellidos", "fecha_nacimiento"],
+                name="idx_part_nombre_fn",
+            ),
         ]
         constraints = [
             models.UniqueConstraint(
                 fields=["nombres", "apellidos", "fecha_nacimiento"],
                 name="unique_participante_datos_personales",
-                violation_error_message="Ya existe un participante con estos nombres, apellidos y fecha de nacimiento."
+                violation_error_message="Ya existe un participante con estos nombres, apellidos y fecha de nacimiento.",
             ),
         ]
 
@@ -658,27 +661,27 @@ class Participante(models.Model):
     def telefono_representante_completo(self):
         """Retorna el teléfono del representante formateado."""
         if self.codigo_area_representante and self.numero_telefono_representante:
-            return f"{self.codigo_area_representante}-{self.numero_telefono_representante}"
+            return (
+                f"{self.codigo_area_representante}-{self.numero_telefono_representante}"
+            )
         return ""
-    
+
     @property
     def cedula_completa(self):
         """Retorna la nacionalidad y la cédula formateada."""
         return f"{self.nacionalidad}-{self.cedula}"
-    
+
     def get_instituciones_activas(self):
         """Retorna instituciones donde el participante está activo."""
         return Institucion.objects.filter(
             participantes_vinculados__participante=self,
-            participantes_vinculados__status='activo'
+            participantes_vinculados__status="activo",
         ).distinct()
-    
+
     def esta_vinculado_a(self, institucion):
         """Verifica si está vinculado activamente a una institución."""
         return ParticipanteInstitucion.objects.filter(
-            participante=self,
-            institucion=institucion,
-            status='activo'
+            participante=self, institucion=institucion, status="activo"
         ).exists()
 
     def clean(self):
@@ -724,72 +727,102 @@ class Participante(models.Model):
                 if errores:
                     raise ValidationError(errores)
 
+
 class AsistenciaEvento(models.Model):
     """
     Registra la asistencia de un participante a un evento específico,
     posiblemente como parte de un grupo.
     """
+
     ASISTENCIA_CHOICES = [
-        ('asistio', 'Asistió'),
-        ('ausente', 'Ausente'),
-        ('pendiente', 'Pendiente'),
-        ('justificado', 'Justificado'),
+        ("asistio", "Asistió"),
+        ("ausente", "Ausente"),
+        ("pendiente", "Pendiente"),
+        ("justificado", "Justificado"),
     ]
 
-    evento = models.ForeignKey('Evento', on_delete=models.CASCADE, related_name='asistencias')
-    participante = models.ForeignKey('Participante', on_delete=models.CASCADE, related_name='asistencias')
-    grupo = models.ForeignKey('Grupo', on_delete=models.SET_NULL, null=True, blank=True, related_name='asistencias')
-    asistencia = models.CharField(max_length=12, choices=ASISTENCIA_CHOICES, default='pendiente', db_index=True)
+    evento = models.ForeignKey(
+        "Evento", on_delete=models.CASCADE, related_name="asistencias"
+    )
+    participante = models.ForeignKey(
+        "Participante", on_delete=models.CASCADE, related_name="asistencias"
+    )
+    grupo = models.ForeignKey(
+        "Grupo",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="asistencias",
+    )
+    asistencia = models.CharField(
+        max_length=12, choices=ASISTENCIA_CHOICES, default="pendiente", db_index=True
+    )
     observacion = models.TextField(blank=True)
-    fecha_asistencia = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora en que se marcó la asistencia.")
+    fecha_asistencia = models.DateTimeField(
+        null=True, blank=True, help_text="Fecha y hora en que se marcó la asistencia."
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Asistencia a Evento"
         verbose_name_plural = "Asistencias a Eventos"
-        unique_together = ['evento', 'participante'] # Un participante solo puede tener un registro de asistencia por evento
-        ordering = ['-evento__fecha', 'participante__apellidos']
+        unique_together = [
+            "evento",
+            "participante",
+        ]  # Un participante solo puede tener un registro de asistencia por evento
+        ordering = ["-evento__fecha", "participante__apellidos"]
 
     def __str__(self):
-        return f"Asistencia de {self.participante.nombre_completo} a {self.evento.nombre}"
+        return (
+            f"Asistencia de {self.participante.nombre_completo} a {self.evento.nombre}"
+        )
+
 
 class EventoManager(models.Manager):
     """Manager con queries optimizadas para eventos."""
-    
+
     def institucionales(self):
         """Eventos institucionales."""
-        return self.filter(tipo_evento='institucional')
-    
+        return self.filter(tipo_evento="institucional")
+
     def de_club(self):
         """Eventos de club."""
-        return self.filter(tipo_evento='club')
-    
+        return self.filter(tipo_evento="club")
+
     def pendientes_aprobacion(self):
         """Eventos de club pendientes de aprobación."""
-        return self.de_club().filter(estado_evento='pendiente')
-    
+        return self.de_club().filter(estado_evento="pendiente")
+
     def pendientes_aprobacion_todos(self):
         """NUEVO: Todos los eventos pendientes de aprobación (institucionales y de club)."""
-        return self.filter(estado_evento='pendiente')
-    
+        return self.filter(estado_evento="pendiente")
+
     def publicos(self):
         """NUEVO: Eventos con audiencia pública y publicados."""
-        return self.filter(audiencia='publica', estado_evento__in=['publicado', 'abierto', 'aprobado'])
-    
+        return self.filter(
+            audiencia="publica", estado_evento__in=["publicado", "abierto", "aprobado"]
+        )
+
     def exclusivos_club(self):
         """NUEVO: Eventos exclusivos de club publicados."""
-        return self.filter(audiencia='club_exclusivo', estado_evento__in=['publicado', 'abierto', 'aprobado'])
-    
+        return self.filter(
+            audiencia="club_exclusivo",
+            estado_evento__in=["publicado", "abierto", "aprobado"],
+        )
+
     def privados(self):
         """NUEVO: Eventos privados institucionales publicados."""
-        return self.filter(audiencia='institucional_privado', estado_evento__in=['publicado', 'abierto', 'aprobado'])
-    
+        return self.filter(
+            audiencia="institucional_privado",
+            estado_evento__in=["publicado", "abierto", "aprobado"],
+        )
+
     def disponibles_para_inscripcion(self):
         """Eventos disponibles para inscripción."""
         return self.filter(
-            models.Q(estado_evento__in=['publicado', 'abierto', 'aprobado']),
+            models.Q(estado_evento__in=["publicado", "abierto", "aprobado"]),
             activo=True,
-            cancelado=False
+            cancelado=False,
         )
 
 
@@ -816,34 +849,36 @@ class Evento(models.Model):
     ]
 
     ESTADO_CHOICES = [
-        ('borrador', 'Borrador'),
-        ('pendiente', 'Pendiente Aprobación'),
-        ('en_revision', 'En Revisión'),
-        ('aprobado', 'Aprobado'),
-        ('publicado', 'Publicado'),
-        ('en_proceso', 'En Proceso'),
-        ('finalizado', 'Finalizado'),
-        ('rechazado', 'Rechazado'),
-        ('cancelado', 'Cancelado'),
+        ("borrador", "Borrador"),
+        ("pendiente", "Pendiente Aprobación"),
+        ("en_revision", "En Revisión"),
+        ("aprobado", "Aprobado"),
+        ("publicado", "Publicado"),
+        ("en_proceso", "En Proceso"),
+        ("finalizado", "Finalizado"),
+        ("rechazado", "Rechazado"),
+        ("cancelado", "Cancelado"),
         # Mantener compatibilidad con estados antiguos
         ("abierto", "Abierto"),
         ("pausado", "Pausado"),
         ("cerrado", "Cerrado"),
     ]
-    
+
     TIPO_EVENTO_CHOICES = [
-        ('institucional', 'Evento Institucional'),
-        ('club', 'Evento de Club'),
+        ("institucional", "Evento Institucional"),
+        ("club", "Evento de Club"),
     ]
-    
+
     AUDIENCIA_CHOICES = [
-        ('publica', 'Pública - Todas las instituciones'),
-        ('club_exclusivo', 'Exclusivo para miembros del club'),
-        ('institucional_privado', 'Privado - Solo mi institución'),
+        ("publica", "Pública - Todas las instituciones"),
+        ("club_exclusivo", "Exclusivo para miembros del club"),
+        ("institucional_privado", "Privado - Solo mi institución"),
     ]
 
     nombre = models.CharField(max_length=255, db_index=True)
-    tipo = models.CharField(max_length=100, choices=TIPO_CHOICES, default="Competencia", db_index=True)
+    tipo = models.CharField(
+        max_length=100, choices=TIPO_CHOICES, default="Competencia", db_index=True
+    )
     categoria = models.CharField(max_length=100, blank=True)
     fecha = models.DateField(db_index=True)
     descripcion = models.TextField(blank=True)
@@ -866,7 +901,7 @@ class Evento(models.Model):
     direccion = models.CharField(max_length=300, blank=True)
     capacidad_maxima = models.PositiveIntegerField(null=True, blank=True)
     requisitos = models.TextField(blank=True)
-    
+
     # Contacto del evento
     CODIGO_AREA_EVENTO_CHOICES = [
         ("0424", "0424"),
@@ -876,70 +911,70 @@ class Evento(models.Model):
         ("0426", "0426"),
         ("0416", "0416"),
     ]
-    
+
     telefono_codigo = models.CharField(
         max_length=4,
         choices=CODIGO_AREA_EVENTO_CHOICES,
         blank=True,
-        verbose_name='Código de Área',
-        help_text='Código de área del teléfono de contacto'
+        verbose_name="Código de Área",
+        help_text="Código de área del teléfono de contacto",
     )
     telefono_numero = models.CharField(
         max_length=7,
         blank=True,
-        verbose_name='Número de Teléfono',
-        help_text='Número de teléfono de contacto (7 dígitos)'
+        verbose_name="Número de Teléfono",
+        help_text="Número de teléfono de contacto (7 dígitos)",
     )
     email_contacto = models.EmailField(
         blank=True,
-        verbose_name='Correo de Contacto',
-        help_text='Correo electrónico de contacto del evento'
+        verbose_name="Correo de Contacto",
+        help_text="Correo electrónico de contacto del evento",
     )
-    
+
     # Discriminador de tipo
     tipo_evento = models.CharField(
         max_length=20,
         choices=TIPO_EVENTO_CHOICES,
-        default='institucional',
-        verbose_name='Tipo de Evento'
+        default="institucional",
+        verbose_name="Tipo de Evento",
     )
-    
+
     # Indica si el evento es público (creado por fed_central)
     # Si es True: visible para todos
     # Si es False: requiere aprobación de fed_central para ser visible
     es_publico = models.BooleanField(
         default=False,
         db_index=True,
-        help_text='Si es True, el evento es público para todas las instituciones. Si es False, requiere aprobación.'
+        help_text="Si es True, el evento es público para todas las instituciones. Si es False, requiere aprobación.",
     )
-    
+
     # NUEVO: Define la audiencia del evento
     audiencia = models.CharField(
         max_length=25,
         choices=AUDIENCIA_CHOICES,
-        default='publica',
+        default="publica",
         db_index=True,
-        verbose_name='Audiencia del Evento',
-        help_text='Define quién puede ver e inscribirse al evento'
+        verbose_name="Audiencia del Evento",
+        help_text="Define quién puede ver e inscribirse al evento",
     )
-    
+
     # Relaciones polimórficas
     institucion = models.ForeignKey(
         Institucion,
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        help_text="Para eventos institucionales"
+        help_text="Para eventos institucionales",
     )
     club_organizador = models.ForeignKey(
-        'Club',
+        "Club",
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name='eventos',
-        help_text="Para eventos de club"
+        related_name="eventos",
+        help_text="Para eventos de club",
     )
-    
+
     # Campos de aprobación (solo para eventos de club)
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
     aprobado_por = models.ForeignKey(
@@ -947,23 +982,20 @@ class Evento(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='eventos_club_aprobados'
+        related_name="eventos_club_aprobados",
     )
     observaciones_aprobacion = models.TextField(blank=True)
-    
+
     # Metadata
     fecha_creacion = models.DateTimeField(default=timezone.now, editable=False)
     creado_por = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='eventos_creados'
+        User, on_delete=models.SET_NULL, null=True, related_name="eventos_creados"
     )
     activo = models.BooleanField(default=True, db_index=True)
     cancelado = models.BooleanField(default=False)
     motivo_cancelacion = models.TextField(blank=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
-    
+
     objects = EventoManager()
 
     class Meta:
@@ -973,72 +1005,96 @@ class Evento(models.Model):
         indexes = [
             models.Index(fields=["fecha", "activo"], name="idx_evt_fecha_activo"),
             models.Index(fields=["institucion"], name="idx_evt_institucion"),
-            models.Index(fields=['tipo_evento', 'estado_evento'], name='idx_evt_tipo_estado'),
-            models.Index(fields=['club_organizador', 'estado_evento'], name='idx_evt_club_estado'),
-            models.Index(fields=['audiencia', 'estado_evento'], name='idx_evt_audiencia_estado'),
+            models.Index(
+                fields=["tipo_evento", "estado_evento"], name="idx_evt_tipo_estado"
+            ),
+            models.Index(
+                fields=["club_organizador", "estado_evento"], name="idx_evt_club_estado"
+            ),
+            models.Index(
+                fields=["audiencia", "estado_evento"], name="idx_evt_audiencia_estado"
+            ),
         ]
         constraints = [
             models.CheckConstraint(
                 check=(
                     # Eventos institucionales: pueden tener institución o ser públicos (fed_central)
-                    models.Q(tipo_evento='institucional', es_publico=True, club_organizador__isnull=True) |
-                    models.Q(tipo_evento='institucional', es_publico=False, institucion__isnull=False, club_organizador__isnull=True) |
+                    models.Q(
+                        tipo_evento="institucional",
+                        es_publico=True,
+                        club_organizador__isnull=True,
+                    )
+                    | models.Q(
+                        tipo_evento="institucional",
+                        es_publico=False,
+                        institucion__isnull=False,
+                        club_organizador__isnull=True,
+                    )
+                    |
                     # Eventos de club
-                    models.Q(tipo_evento='club', club_organizador__isnull=False, institucion__isnull=True)
+                    models.Q(
+                        tipo_evento="club",
+                        club_organizador__isnull=False,
+                        institucion__isnull=True,
+                    )
                 ),
-                name='evento_organizador_valido'
+                name="evento_organizador_valido",
             )
         ]
 
     def __str__(self):
         return f"{self.nombre} - {self.fecha}"
-    
+
     @property
     def es_evento_club(self):
         """Indica si es un evento de club."""
-        return self.tipo_evento == 'club'
-    
+        return self.tipo_evento == "club"
+
     @property
     def organizador(self):
         """Retorna el organizador según el tipo."""
         return self.club_organizador if self.es_evento_club else self.institucion
-    
+
     @property
     def requiere_aprobacion(self):
         """Indica si el evento requiere aprobación.
-        
+
         NUEVO: TODOS los eventos requieren aprobación de fed_central.
         """
         return True
-    
+
     @property
     def puede_inscribirse(self):
         """Indica si se pueden inscribir grupos.
-        
+
         NUEVO: Solo eventos en estado 'publicado' aceptan inscripciones.
         """
-        return self.estado_evento in ['publicado', 'abierto', 'aprobado'] and self.activo and not self.cancelado
-    
+        return (
+            self.estado_evento in ["publicado", "abierto", "aprobado"]
+            and self.activo
+            and not self.cancelado
+        )
+
     @property
     def es_exclusivo_club(self):
         """Indica si el evento es exclusivo para miembros del club."""
-        return self.audiencia == 'club_exclusivo'
-    
+        return self.audiencia == "club_exclusivo"
+
     @property
     def es_privado(self):
         """Indica si el evento es privado (solo institución creadora)."""
-        return self.audiencia == 'institucional_privado'
-    
+        return self.audiencia == "institucional_privado"
+
     @property
     def es_publico_audiencia(self):
         """Indica si el evento tiene audiencia pública."""
-        return self.audiencia == 'publica'
+        return self.audiencia == "publica"
 
     @property
     def esta_vigente(self):
         """Verifica si el evento aún está vigente."""
         return self.activo and not self.cancelado and self.fecha >= date.today()
-    
+
     @property
     def telefono_completo(self):
         """Retorna el teléfono completo formateado."""
@@ -1058,12 +1114,14 @@ class Evento(models.Model):
             return float("inf")
         inscritos = self.inscripciones_grupo.filter(activo=True).count()
         return max(0, self.capacidad_maxima - inscritos)
-    
+
     def clean(self):
         """Validaciones del modelo."""
-        if self.tipo_evento == 'institucional' and not self.institucion:
-            raise ValidationError("Evento institucional debe tener institución organizadora")
-        if self.tipo_evento == 'club' and not self.club_organizador:
+        if self.tipo_evento == "institucional" and not self.institucion:
+            raise ValidationError(
+                "Evento institucional debe tener institución organizadora"
+            )
+        if self.tipo_evento == "club" and not self.club_organizador:
             raise ValidationError("Evento de club debe tener club organizador")
         if self.institucion and self.club_organizador:
             raise ValidationError("Evento no puede tener ambos organizadores")
@@ -1111,46 +1169,24 @@ class Grupo(models.Model):
         ("nivel", "Por Nivel Educativo"),
         ("proyecto", "Por Proyecto"),
     ]
-    GRADO_CHOICES = [
-        ("NO", "No estudia"),
-        ("P1", "Preescolar Nivel 1"),
-        ("P2", "Preescolar Nivel 2"),
-        ("PR1", "1er Grado Primaria"),
-        ("PR2", "2do Grado Primaria"),
-        ("PR3", "3er Grado Primaria"),
-        ("PR4", "4to Grado Primaria"),
-        ("PR5", "5to Grado Primaria"),
-        ("PR6", "6to Grado Primaria"),
-        ("L1", "1er Año Liceo"),
-        ("L2", "2do Año Liceo"),
-        ("L3", "3er Año Liceo"),
-        ("L4", "4to Año Liceo"),
-        ("L5", "5to Año Liceo"),
-        ("L6", "6to Año Liceo"),
-        ("U", "Estudios Universitarios"),
-        ("OTRO", "Otro/No especificado"),
-    ]
-
     nombre = models.CharField(
         max_length=150, verbose_name="Nombre del Grupo", db_index=True
     )
     codigo = models.CharField(max_length=20, unique=True, editable=False)
-    criterio = models.CharField(
-        max_length=20, choices=CRITERIO_CHOICES
-    )
-    
+    criterio = models.CharField(max_length=20, choices=CRITERIO_CHOICES)
+
     # Campos específicos por criterio
     edad_desde = models.PositiveIntegerField(
         null=True,
         blank=True,
         verbose_name="Edad Desde",
-        help_text="Edad mínima (solo para criterio 'Por Edad')"
+        help_text="Edad mínima (solo para criterio 'Por Edad')",
     )
     edad_hasta = models.PositiveIntegerField(
         null=True,
         blank=True,
         verbose_name="Edad Hasta",
-        help_text="Edad máxima (solo para criterio 'Por Edad')"
+        help_text="Edad máxima (solo para criterio 'Por Edad')",
     )
     nivel_educativo = models.CharField(
         max_length=4,
@@ -1158,15 +1194,15 @@ class Grupo(models.Model):
         null=True,
         blank=True,
         verbose_name="Nivel Educativo",
-        help_text="Grado escolar (solo para criterio 'Por Nivel Educativo')"
+        help_text="Grado escolar (solo para criterio 'Por Nivel Educativo')",
     )
     nombre_proyecto = models.CharField(
         max_length=200,
         blank=True,
         verbose_name="Nombre del Proyecto",
-        help_text="Nombre del proyecto (solo para criterio 'Por Proyecto')"
+        help_text="Nombre del proyecto (solo para criterio 'Por Proyecto')",
     )
-    
+
     estado_grupo = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default="editable", db_index=True
     )
@@ -1181,14 +1217,12 @@ class Grupo(models.Model):
         related_name="grupos_institucion",
         null=True,
         blank=True,
-        verbose_name="Institución"
+        verbose_name="Institución",
     )
 
     # Relación M2M con Tutores (obligatorio al menos uno)
     tutores = models.ManyToManyField(
-        "Tutor",
-        related_name="grupos",
-        verbose_name="Tutores asignados"
+        "Tutor", related_name="grupos", verbose_name="Tutores asignados"
     )
 
     participantes = models.ManyToManyField(
@@ -1216,40 +1250,44 @@ class Grupo(models.Model):
     def clean(self):
         """Validaciones del modelo según el criterio seleccionado."""
         super().clean()
-        
+
         if self.criterio == "edad":
             if not self.edad_desde or not self.edad_hasta:
-                raise ValidationError({
-                    'edad_desde': 'Debe especificar edad desde y hasta para criterio "Por Edad"',
-                    'edad_hasta': 'Debe especificar edad desde y hasta para criterio "Por Edad"'
-                })
+                raise ValidationError(
+                    {
+                        "edad_desde": 'Debe especificar edad desde y hasta para criterio "Por Edad"',
+                        "edad_hasta": 'Debe especificar edad desde y hasta para criterio "Por Edad"',
+                    }
+                )
             if self.edad_desde > self.edad_hasta:
-                raise ValidationError({
-                    'edad_desde': 'La edad desde no puede ser mayor que edad hasta'
-                })
+                raise ValidationError(
+                    {"edad_desde": "La edad desde no puede ser mayor que edad hasta"}
+                )
             if self.edad_desde < 4:
-                raise ValidationError({
-                    'edad_desde': 'La edad mínima debe ser 4 años'
-                })
+                raise ValidationError({"edad_desde": "La edad mínima debe ser 4 años"})
             # Limpiar campos no usados
             self.nivel_educativo = None
             self.nombre_proyecto = ""
-            
+
         elif self.criterio == "nivel":
             if not self.nivel_educativo:
-                raise ValidationError({
-                    'nivel_educativo': 'Debe seleccionar un nivel educativo para criterio "Por Nivel Educativo"'
-                })
+                raise ValidationError(
+                    {
+                        "nivel_educativo": 'Debe seleccionar un nivel educativo para criterio "Por Nivel Educativo"'
+                    }
+                )
             # Limpiar campos no usados
             self.edad_desde = None
             self.edad_hasta = None
             self.nombre_proyecto = ""
-            
+
         elif self.criterio == "proyecto":
             if not self.nombre_proyecto or not self.nombre_proyecto.strip():
-                raise ValidationError({
-                    'nombre_proyecto': 'Debe ingresar el nombre del proyecto para criterio "Por Proyecto"'
-                })
+                raise ValidationError(
+                    {
+                        "nombre_proyecto": 'Debe ingresar el nombre del proyecto para criterio "Por Proyecto"'
+                    }
+                )
             # Limpiar campos no usados
             self.edad_desde = None
             self.edad_hasta = None
@@ -1346,7 +1384,7 @@ class Club(models.Model):
     fecha_creacion = models.DateTimeField(default=timezone.now, editable=False)
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
     activo = models.BooleanField(default=True, db_index=True)
-    
+
     # Campos para eliminación
     eliminado = models.BooleanField(default=False, db_index=True)
     fecha_eliminacion = models.DateTimeField(null=True, blank=True)
@@ -1356,7 +1394,7 @@ class Club(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='clubes_eliminados'
+        related_name="clubes_eliminados",
     )
 
     class Meta:
@@ -1388,13 +1426,16 @@ class Club(models.Model):
     def lineas_investigacion(self):
         """Retorna lista de líneas de investigación del club usando ClubLineaInvestigacion."""
         if self.pk:
-            lineas_nm = self.club_lineas.select_related('linea').filter(
-                linea__activa=True
-            ).order_by('orden').values_list('linea__nombre', flat=True)
+            lineas_nm = (
+                self.club_lineas.select_related("linea")
+                .filter(linea__activa=True)
+                .order_by("orden")
+                .values_list("linea__nombre", flat=True)
+            )
             lineas = list(lineas_nm)
             if lineas:
                 return lineas
-        return ['Sin líneas asignadas']
+        return ["Sin líneas asignadas"]
 
     @property
     def cupos_disponibles(self):
@@ -1447,46 +1488,46 @@ class Club(models.Model):
             if user.userprofile.institution == self.institucion_creadora:
                 return True
         return False
-    
+
     def contar_reenvios(self):
         """Cuenta cuántas veces se ha reenviado el club después de rechazos."""
         return self.historial.filter(
-            estado_anterior="rechazado",
-            estado_nuevo="pendiente"
+            estado_anterior="rechazado", estado_nuevo="pendiente"
         ).count()
-    
+
     def obtener_ultimo_rechazo(self):
         """Obtiene el último historial de rechazo con observaciones."""
-        return self.historial.filter(
-            estado_nuevo="rechazado"
-        ).order_by('-fecha').first()
+        return (
+            self.historial.filter(estado_nuevo="rechazado").order_by("-fecha").first()
+        )
 
     # =========================================================================
     # MÉTODOS DE CALIFICACIÓN
     # =========================================================================
-    
+
     @property
     def promedio_calificacion(self):
         """Retorna el promedio de calificación del club."""
         from django.db.models import Avg
-        resultado = self.calificaciones.aggregate(promedio=Avg('puntuacion'))
-        return resultado['promedio'] or 0
-    
+
+        resultado = self.calificaciones.aggregate(promedio=Avg("puntuacion"))
+        return resultado["promedio"] or 0
+
     @property
     def total_calificaciones(self):
         """Retorna el total de calificaciones del club."""
         return self.calificaciones.count()
-    
+
     @property
     def tiene_calificaciones(self):
         """Verifica si el club tiene calificaciones."""
         return self.calificaciones.exists()
-    
+
     @property
     def calificaciones_recientes(self):
         """Retorna las calificaciones más recientes (últimas 5)."""
-        return self.calificaciones.select_related('institucion').order_by('-fecha')[:5]
-    
+        return self.calificaciones.select_related("institucion").order_by("-fecha")[:5]
+
     def mi_calificacion(self, institucion):
         """Retorna la calificación de una institución específica."""
         return self.calificaciones.filter(institucion=institucion).first()
@@ -1495,21 +1536,21 @@ class Club(models.Model):
 class MembresiaClu(models.Model):
     """
     Modelo para gestionar solicitudes de membresía a clubes.
-    
+
     Flujo de Doble Aprobación (permisos_clubes.md - Sección 6):
     1. Solicitante crea registro con estado PENDIENTE_FILTRO
     2. Institución Fundadora da visto bueno -> VISTO_BUENO_FUNDADORA
     3. Ente Rector aprueba finalmente -> MIEMBRO_ACTIVO
-    
+
     Ninguna institución puede ser MIEMBRO_ACTIVO sin ambos checks.
     """
 
     # Estados federados para el flujo de doble aprobación
     ESTADO_CHOICES = [
-        ('pendiente_filtro', 'Pendiente de Filtro (Fundadora)'),
-        ('visto_bueno_fundadora', 'Visto Bueno Fundadora'),
-        ('miembro_activo', 'Miembro Activo'),
-        ('rechazada', 'Rechazada'),
+        ("pendiente_filtro", "Pendiente de Filtro (Fundadora)"),
+        ("visto_bueno_fundadora", "Visto Bueno Fundadora"),
+        ("miembro_activo", "Miembro Activo"),
+        ("rechazada", "Rechazada"),
     ]
 
     # Tipos de línea de investigación en la membresía
@@ -1534,10 +1575,7 @@ class MembresiaClu(models.Model):
     )
 
     estado = models.CharField(
-        max_length=25,
-        choices=ESTADO_CHOICES,
-        default='pendiente_filtro',
-        db_index=True
+        max_length=25, choices=ESTADO_CHOICES, default="pendiente_filtro", db_index=True
     )
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_respuesta = models.DateTimeField(null=True, blank=True)
@@ -1546,48 +1584,40 @@ class MembresiaClu(models.Model):
     # === Campos de Auditoría para Flujo Federado ===
     # Fase 1: Visto bueno de la Institución Fundadora
     visto_bueno_fundadora = models.BooleanField(
-        default=False,
-        verbose_name='Visto Bueno Fundadora'
+        default=False, verbose_name="Visto Bueno Fundadora"
     )
     visto_bueno_fundadora_por = models.ForeignKey(
-        'auth.User',
+        "auth.User",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='membresias_visto_bueno',
-        verbose_name='Visto bueno dado por'
+        related_name="membresias_visto_bueno",
+        verbose_name="Visto bueno dado por",
     )
     visto_bueno_fundadora_fecha = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='Fecha visto bueno'
+        null=True, blank=True, verbose_name="Fecha visto bueno"
     )
     observaciones_fundadora = models.TextField(
-        blank=True,
-        verbose_name='Observaciones de la Fundadora'
+        blank=True, verbose_name="Observaciones de la Fundadora"
     )
 
     # Fase 2: Aprobación del Ente Rector (Federación Central)
     aprobacion_ente_rector = models.BooleanField(
-        default=False,
-        verbose_name='Aprobación Ente Rector'
+        default=False, verbose_name="Aprobación Ente Rector"
     )
     aprobacion_ente_rector_por = models.ForeignKey(
-        'auth.User',
+        "auth.User",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='membresias_aprobadas_rector',
-        verbose_name='Aprobado por (Ente Rector)'
+        related_name="membresias_aprobadas_rector",
+        verbose_name="Aprobado por (Ente Rector)",
     )
     aprobacion_ente_rector_fecha = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='Fecha aprobación Ente Rector'
+        null=True, blank=True, verbose_name="Fecha aprobación Ente Rector"
     )
     observaciones_rector = models.TextField(
-        blank=True,
-        verbose_name='Observaciones del Ente Rector'
+        blank=True, verbose_name="Observaciones del Ente Rector"
     )
 
     class Meta:
@@ -1597,9 +1627,11 @@ class MembresiaClu(models.Model):
         indexes = [
             # Índice único parcial: solo para solicitudes activas
             models.Index(
-                fields=['club', 'institucion'],
-                name='idx_memb_club_inst_active',
-                condition=models.Q(estado__in=['pendiente_filtro', 'visto_bueno_fundadora'])
+                fields=["club", "institucion"],
+                name="idx_memb_club_inst_active",
+                condition=models.Q(
+                    estado__in=["pendiente_filtro", "visto_bueno_fundadora"]
+                ),
             ),
         ]
 
@@ -1636,19 +1668,18 @@ class InscripcionGrupoEvento(models.Model):
 
     def __str__(self):
         return f"{self.grupo.nombre} -> {self.evento.nombre}"
-    
+
     def clean(self):
         """Validar que el grupo puede inscribirse al evento."""
         super().clean()
-        
+
         if self.evento.es_evento_club:
             # Validar que la institución del grupo es miembro del club
             institucion_grupo = self.grupo.usuario_creador.userprofile.institution
             es_miembro = self.evento.club_organizador.membresias.filter(
-                institucion=institucion_grupo,
-                estado='miembro_activo'
+                institucion=institucion_grupo, estado="miembro_activo"
             ).exists()
-            
+
             if not es_miembro:
                 raise ValidationError(
                     f"Solo instituciones miembros del club '{self.evento.club_organizador.nombre}' "
@@ -1668,9 +1699,7 @@ class SolicitudEliminacionClub(models.Model):
     club = models.ForeignKey(
         Club, on_delete=models.CASCADE, related_name="solicitudes_eliminacion"
     )
-    institucion_solicitante = models.ForeignKey(
-        Institucion, on_delete=models.CASCADE
-    )
+    institucion_solicitante = models.ForeignKey(Institucion, on_delete=models.CASCADE)
     motivo = models.TextField(verbose_name="Motivo de la solicitud")
     estado = models.CharField(
         max_length=20, choices=ESTADO_CHOICES, default="pendiente", db_index=True
@@ -1691,7 +1720,9 @@ class SolicitudEliminacionClub(models.Model):
         verbose_name_plural = "Solicitudes de Eliminación de Clubes"
         ordering = ["-fecha_solicitud"]
         indexes = [
-            models.Index(fields=["estado", "fecha_solicitud"], name="idx_sol_elim_estado"),
+            models.Index(
+                fields=["estado", "fecha_solicitud"], name="idx_sol_elim_estado"
+            ),
         ]
 
     def __str__(self):
@@ -1721,9 +1752,7 @@ class Notificacion(models.Model):
     mensaje = models.TextField()
     leida = models.BooleanField(default=False, db_index=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
-    club = models.ForeignKey(
-        Club, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    club = models.ForeignKey(Club, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         verbose_name = "Notificación"
@@ -1746,9 +1775,7 @@ class Notificacion(models.Model):
 class HistorialClub(models.Model):
     """Registra todos los cambios de estado de un club para auditoría."""
 
-    club = models.ForeignKey(
-        Club, on_delete=models.CASCADE, related_name="historial"
-    )
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="historial")
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     estado_anterior = models.CharField(max_length=20)
     estado_nuevo = models.CharField(max_length=20)
@@ -1770,9 +1797,7 @@ class HistorialClub(models.Model):
 class ComentarioClub(models.Model):
     """Sistema de comentarios para revisión de clubes."""
 
-    club = models.ForeignKey(
-        Club, on_delete=models.CASCADE, related_name="comentarios"
-    )
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="comentarios")
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     comentario = models.TextField()
     es_federacion = models.BooleanField(default=False)
@@ -1805,7 +1830,9 @@ class CalificacionClub(models.Model):
         Club, on_delete=models.CASCADE, related_name="calificaciones"
     )
     institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
-    puntuacion = models.IntegerField(choices=PUNTUACION_CHOICES, verbose_name="Puntuación")
+    puntuacion = models.IntegerField(
+        choices=PUNTUACION_CHOICES, verbose_name="Puntuación"
+    )
     resena = models.TextField(blank=True, verbose_name="Reseña")
     fecha = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -1838,7 +1865,10 @@ class ClubEvento(models.Model):
         Evento, on_delete=models.CASCADE, related_name="clubes_vinculados"
     )
     rol = models.CharField(
-        max_length=20, choices=ROL_CHOICES, default="participante", verbose_name="Rol del Club"
+        max_length=20,
+        choices=ROL_CHOICES,
+        default="participante",
+        verbose_name="Rol del Club",
     )
     fecha_vinculacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True, db_index=True)
@@ -1858,41 +1888,35 @@ class ClubEvento(models.Model):
 
 class ClubLineaInvestigacion(models.Model):
     """Relación N:M entre clubes y líneas de investigación."""
-    
+
     TIPO_LINEA_CHOICES = [
-        ('principal', 'Principal'),
-        ('soporte', 'Soporte'),
-        ('afines', 'Afines'),
+        ("principal", "Principal"),
+        ("soporte", "Soporte"),
+        ("afines", "Afines"),
     ]
-    
-    club = models.ForeignKey(
-        Club,
-        on_delete=models.CASCADE,
-        related_name='club_lineas'
-    )
+
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="club_lineas")
     linea = models.ForeignKey(
-        LineaInvestigacion,
-        on_delete=models.PROTECT,
-        related_name='clubes'
+        LineaInvestigacion, on_delete=models.PROTECT, related_name="clubes"
     )
     tipo_linea = models.CharField(
         max_length=20,
         choices=TIPO_LINEA_CHOICES,
-        default='principal',
-        verbose_name="Tipo de Línea"
+        default="principal",
+        verbose_name="Tipo de Línea",
     )
     orden = models.IntegerField(default=0, verbose_name="Orden")
     fecha_vinculacion = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         verbose_name = "Club-Línea de Investigación"
         verbose_name_plural = "Clubes-Líneas de Investigación"
-        unique_together = ['club', 'linea']
-        ordering = ['orden']
+        unique_together = ["club", "linea"]
+        ordering = ["orden"]
         indexes = [
-            models.Index(fields=['club', 'orden'], name='idx_clublinea_club_orden'),
+            models.Index(fields=["club", "orden"], name="idx_clublinea_club_orden"),
         ]
-    
+
     def __str__(self):
         return f"{self.club.nombre} - {self.linea.nombre} ({self.tipo_linea})"
 
@@ -1900,10 +1924,10 @@ class ClubLineaInvestigacion(models.Model):
 class Tutor(models.Model):
     """
     Modelo para representar tutores de grupos.
-    
+
     Un tutor es una persona responsable que guía y acompaña
     a un grupo de participantes en eventos de robótica.
-    
+
     Attributes:
         id: UUID único para identificación.
         institucion: Institución a la que pertenece el tutor.
@@ -1917,10 +1941,10 @@ class Tutor(models.Model):
         status: Estado del tutor (activo/inactivo).
         created_at: Fecha de creación del registro.
     """
-    
+
     STATUS_CHOICES = [
-        ('activo', 'Activo'),
-        ('inactivo', 'Inactivo'),
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
     ]
     CODIGO_AREA_EVENTO_CHOICES = [
         ("0424", "0424"),
@@ -1930,333 +1954,294 @@ class Tutor(models.Model):
         ("0426", "0426"),
         ("0416", "0416"),
     ]
-    NACIONALIDAD_CHOICES = [
-        ("V", "Venezolano"),
-        ("E", "Extranjero"),
-    ]
-    
+
     id = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        primary_key=True,
-        verbose_name='ID'
+        default=uuid.uuid4, editable=False, primary_key=True, verbose_name="ID"
     )
     nacionalidad = models.CharField(
         max_length=1,
         choices=NACIONALIDAD_CHOICES,
         default="V",
-        verbose_name="Nacionalidad"
+        verbose_name="Nacionalidad",
     )
-    nombres = models.CharField(max_length=100, verbose_name='Nombres')
-    apellidos = models.CharField(max_length=100, verbose_name='Apellidos')
+    nombres = models.CharField(max_length=100, verbose_name="Nombres")
+    apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
     cedula = models.CharField(
         max_length=12,
         db_index=True,
         validators=[
             RegexValidator(
-                regex='^[0-9]+$',
-                message='La cédula debe contener solo números (sin letras V/E)'
+                regex="^[0-9]+$",
+                message="La cédula debe contener solo números (sin letras V/E)",
             )
         ],
-        verbose_name='Cédula',
-        help_text='Ingrese solo números, sin letras (V/E)'
+        verbose_name="Cédula",
+        help_text="Ingrese solo números, sin letras (V/E)",
     )
     telefono_codigo = models.CharField(
         max_length=4,
         choices=CODIGO_AREA_EVENTO_CHOICES,
         blank=True,
-        verbose_name='Código de Área',
-        help_text='Código de área del teléfono de contacto'
+        verbose_name="Código de Área",
+        help_text="Código de área del teléfono de contacto",
     )
     telefono = models.CharField(
         max_length=7,
         blank=True,
-        verbose_name='Número de Teléfono',
-        help_text='Número de teléfono de contacto (7 dígitos)'
+        verbose_name="Número de Teléfono",
+        help_text="Número de teléfono de contacto (7 dígitos)",
     )
-    email = models.EmailField(verbose_name='Correo Electrónico')
-    profesion = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name='Profesión'
-    )
-    experiencia = models.TextField(
-        blank=True,
-        verbose_name='Experiencia en Robótica'
-    )
+    email = models.EmailField(verbose_name="Correo Electrónico")
+    profesion = models.CharField(max_length=100, blank=True, verbose_name="Profesión")
+    experiencia = models.TextField(blank=True, verbose_name="Experiencia en Robótica")
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Fecha de Creación'
+        auto_now_add=True, verbose_name="Fecha de Creación"
     )
-    
+
     class Meta:
-        verbose_name = 'Tutor'
-        verbose_name_plural = 'Tutores'
-        ordering = ['-created_at']
+        verbose_name = "Tutor"
+        verbose_name_plural = "Tutores"
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['cedula'], name='idx_tutor_cedula'),
+            models.Index(fields=["cedula"], name="idx_tutor_cedula"),
         ]
-    
+
     def __str__(self) -> str:
         """Representación en string del tutor."""
         return f"{self.get_nombre_completo()} ({self.cedula})"
-    
+
     def get_nombre_completo(self) -> str:
         """Retorna el nombre completo del tutor."""
         return f"{self.nombres} {self.apellidos}"
-    
+
     def get_instituciones_activas(self):
         """Retorna instituciones donde el tutor está activo."""
         return Institucion.objects.filter(
-            tutores_vinculados__tutor=self,
-            tutores_vinculados__status='activo'
+            tutores_vinculados__tutor=self, tutores_vinculados__status="activo"
         ).distinct()
-    
+
     def esta_vinculado_a(self, institucion):
         """Verifica si el tutor está vinculado activamente a una institución."""
         return TutorInstitucion.objects.filter(
-            tutor=self,
-            institucion=institucion,
-            status='activo'
+            tutor=self, institucion=institucion, status="activo"
         ).exists()
 
 
 class TutorInstitucion(models.Model):
     """
     Relación M:N entre Tutor e Institución con metadatos.
-    
+
     Permite que un tutor esté vinculado a múltiples instituciones
     con roles y estados específicos por institución.
     """
-    
+
     ROL_CHOICES = [
-        ('coordinador', 'Coordinador'),
-        ('asistente', 'Asistente'),
-        ('colaborador', 'Colaborador'),
+        ("coordinador", "Coordinador"),
+        ("asistente", "Asistente"),
+        ("colaborador", "Colaborador"),
     ]
-    
+
     STATUS_CHOICES = [
-        ('activo', 'Activo'),
-        ('inactivo', 'Inactivo'),
-        ('suspendido', 'Suspendido'),
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
+        ("suspendido", "Suspendido"),
     ]
-    
-    id = models.UUIDField(
-        default=uuid.uuid4,
-        primary_key=True,
-        editable=False
-    )
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     tutor = models.ForeignKey(
         Tutor,
         on_delete=models.CASCADE,
-        related_name='vinculaciones',
-        verbose_name='Tutor'
+        related_name="vinculaciones",
+        verbose_name="Tutor",
     )
     institucion = models.ForeignKey(
         Institucion,
         on_delete=models.CASCADE,
-        related_name='tutores_vinculados',
-        verbose_name='Institución'
+        related_name="tutores_vinculados",
+        verbose_name="Institución",
     )
     rol = models.CharField(
-        max_length=20,
-        choices=ROL_CHOICES,
-        default='colaborador',
-        verbose_name='Rol'
+        max_length=20, choices=ROL_CHOICES, default="colaborador", verbose_name="Rol"
     )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='activo',
+        default="activo",
         db_index=True,
-        verbose_name='Estado'
+        verbose_name="Estado",
     )
     fecha_vinculacion = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Fecha de Vinculación'
+        auto_now_add=True, verbose_name="Fecha de Vinculación"
     )
     fecha_desvinculacion = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='Fecha de Desvinculación'
+        null=True, blank=True, verbose_name="Fecha de Desvinculación"
     )
-    observaciones = models.TextField(
-        blank=True,
-        verbose_name='Observaciones'
-    )
-    
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+
     class Meta:
-        verbose_name = 'Vinculación Tutor-Institución'
-        verbose_name_plural = 'Vinculaciones Tutor-Institución'
-        unique_together = [['tutor', 'institucion']]
-        ordering = ['-fecha_vinculacion']
+        verbose_name = "Vinculación Tutor-Institución"
+        verbose_name_plural = "Vinculaciones Tutor-Institución"
+        unique_together = [["tutor", "institucion"]]
+        ordering = ["-fecha_vinculacion"]
         indexes = [
-            models.Index(fields=['tutor', 'status'], name='idx_tutinst_tutor_st'),
-            models.Index(fields=['institucion', 'status'], name='idx_tutinst_inst_st'),
-            models.Index(fields=['status', '-fecha_vinculacion'], name='idx_tutinst_st_fecha'),
+            models.Index(fields=["tutor", "status"], name="idx_tutinst_tutor_st"),
+            models.Index(fields=["institucion", "status"], name="idx_tutinst_inst_st"),
+            models.Index(
+                fields=["status", "-fecha_vinculacion"], name="idx_tutinst_st_fecha"
+            ),
         ]
-    
+
     def __str__(self):
         return f"{self.tutor.get_nombre_completo()} @ {self.institucion.nombre} ({self.get_status_display()})"
-    
+
     def desvincular(self):
         """Desvincula el tutor de la institución."""
-        self.status = 'inactivo'
+        self.status = "inactivo"
         self.fecha_desvinculacion = timezone.now()
-        self.save(update_fields=['status', 'fecha_desvinculacion'])
+        self.save(update_fields=["status", "fecha_desvinculacion"])
 
 
 class ParticipanteInstitucion(models.Model):
     """
     Relación M:N entre Participante e Institución con metadatos.
-    
+
     Permite que un participante esté vinculado a múltiples instituciones
     con estados y grupos específicos por institución.
-    
+
     IMPORTANTE: Los estados son independientes por institución.
     Si una institución desactiva al participante, NO afecta su estado en otras instituciones.
     """
-    
+
     STATUS_CHOICES = [
-        ('activo', 'Activo'),
-        ('inactivo', 'Inactivo'),
-        ('suspendido', 'Suspendido'),
-        ('egresado', 'Egresado'),
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
+        ("suspendido", "Suspendido"),
+        ("egresado", "Egresado"),
     ]
-    
-    id = models.UUIDField(
-        default=uuid.uuid4,
-        primary_key=True,
-        editable=False
-    )
-    
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+
     participante = models.ForeignKey(
         Participante,
         on_delete=models.CASCADE,
-        related_name='vinculaciones',
-        verbose_name='Participante'
+        related_name="vinculaciones",
+        verbose_name="Participante",
     )
-    
+
     institucion = models.ForeignKey(
         Institucion,
         on_delete=models.CASCADE,
-        related_name='participantes_vinculados',
-        verbose_name='Institución'
+        related_name="participantes_vinculados",
+        verbose_name="Institución",
     )
-    
+
     # Grupo por defecto en esta institución
     grupo_actual = models.ForeignKey(
-        'Grupo',
+        "Grupo",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='participantes_actuales',
-        verbose_name='Grupo Actual'
+        related_name="participantes_actuales",
+        verbose_name="Grupo Actual",
     )
-    
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='activo',
+        default="activo",
         db_index=True,
-        verbose_name='Estado'
+        verbose_name="Estado",
     )
-    
+
     # Auditoría
     fecha_vinculacion = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Fecha de Vinculación'
+        auto_now_add=True, verbose_name="Fecha de Vinculación"
     )
-    
+
     fecha_desvinculacion = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='Fecha de Desvinculación'
+        null=True, blank=True, verbose_name="Fecha de Desvinculación"
     )
-    
+
     registrado_por = models.ForeignKey(
-        'auth.User',
+        "auth.User",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='participantes_registrados',
-        verbose_name='Registrado Por'
+        related_name="participantes_registrados",
+        verbose_name="Registrado Por",
     )
-    
-    observaciones = models.TextField(
-        blank=True,
-        verbose_name='Observaciones'
-    )
-    
+
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+
     class Meta:
-        verbose_name = 'Vinculación Participante-Institución'
-        verbose_name_plural = 'Vinculaciones Participante-Institución'
-        unique_together = [['participante', 'institucion']]
-        ordering = ['-fecha_vinculacion']
+        verbose_name = "Vinculación Participante-Institución"
+        verbose_name_plural = "Vinculaciones Participante-Institución"
+        unique_together = [["participante", "institucion"]]
+        ordering = ["-fecha_vinculacion"]
         indexes = [
-            models.Index(fields=['participante', 'status'], name='idx_partinst_part_st'),
-            models.Index(fields=['institucion', 'status'], name='idx_partinst_inst_st'),
-            models.Index(fields=['status', '-fecha_vinculacion'], name='idx_partinst_st_fecha'),
-            models.Index(fields=['grupo_actual'], name='idx_partinst_grupo'),
+            models.Index(
+                fields=["participante", "status"], name="idx_partinst_part_st"
+            ),
+            models.Index(fields=["institucion", "status"], name="idx_partinst_inst_st"),
+            models.Index(
+                fields=["status", "-fecha_vinculacion"], name="idx_partinst_st_fecha"
+            ),
+            models.Index(fields=["grupo_actual"], name="idx_partinst_grupo"),
         ]
-    
+
     def __str__(self):
         return f"{self.participante.nombre_completo} @ {self.institucion.nombre} ({self.get_status_display()})"
-    
+
     def desvincular(self):
         """Desvincula el participante de la institución."""
-        self.status = 'inactivo'
+        self.status = "inactivo"
         self.fecha_desvinculacion = timezone.now()
-        self.save(update_fields=['status', 'fecha_desvinculacion'])
-    
+        self.save(update_fields=["status", "fecha_desvinculacion"])
+
     def clean(self):
         """Validar que el grupo pertenece a la institución."""
         super().clean()
         if self.grupo_actual and self.grupo_actual.institucion != self.institucion:
-            raise ValidationError({
-                'grupo_actual': f'El grupo debe pertenecer a la institución {self.institucion.nombre}'
-            })
+            raise ValidationError(
+                {
+                    "grupo_actual": f"El grupo debe pertenecer a la institución {self.institucion.nombre}"
+                }
+            )
 
 
 class ParticipanteGrupo(models.Model):
     """
     Historial de participación en grupos.
-    
+
     Permite que un participante esté en múltiples grupos
     (incluso simultáneamente si son de diferentes instituciones).
     """
-    
-    id = models.UUIDField(
-        default=uuid.uuid4,
-        primary_key=True,
-        editable=False
-    )
-    
+
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+
     participante = models.ForeignKey(
-        Participante,
-        on_delete=models.CASCADE,
-        related_name='historial_grupos'
+        Participante, on_delete=models.CASCADE, related_name="historial_grupos"
     )
-    
+
     grupo = models.ForeignKey(
-        'Grupo',
-        on_delete=models.CASCADE,
-        related_name='historial_participantes'
+        "Grupo", on_delete=models.CASCADE, related_name="historial_participantes"
     )
-    
+
     fecha_ingreso = models.DateTimeField(auto_now_add=True)
     fecha_salida = models.DateTimeField(null=True, blank=True)
     activo = models.BooleanField(default=True, db_index=True)
-    
+
     class Meta:
-        verbose_name = 'Participante-Grupo'
-        verbose_name_plural = 'Participantes-Grupos'
-        unique_together = [['participante', 'grupo']]
-        ordering = ['-fecha_ingreso']
+        verbose_name = "Participante-Grupo"
+        verbose_name_plural = "Participantes-Grupos"
+        unique_together = [["participante", "grupo"]]
+        ordering = ["-fecha_ingreso"]
         indexes = [
-            models.Index(fields=['participante', 'activo'], name='idx_partgrp_part_act'),
-            models.Index(fields=['grupo', 'activo'], name='idx_partgrp_grp_act'),
+            models.Index(
+                fields=["participante", "activo"], name="idx_partgrp_part_act"
+            ),
+            models.Index(fields=["grupo", "activo"], name="idx_partgrp_grp_act"),
         ]
-    
+
     def __str__(self):
         return f"{self.participante.nombre_completo} → {self.grupo.nombre}"

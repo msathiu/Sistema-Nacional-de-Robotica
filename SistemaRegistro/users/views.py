@@ -2314,7 +2314,6 @@ def editar_evento(request, evento_id):
     }
     
     # Categorías desde el modelo (Single Source of Truth)
-    from registry.models import Evento
     categorias = [choice[1] for choice in Evento.TIPO_CHOICES]
 
     context = {
