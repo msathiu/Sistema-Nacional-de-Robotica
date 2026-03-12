@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
 
+from users.decorators import fed_central_cannot_create
+
 from .forms import TutorForm
 from .models import Grupo, Institucion, Tutor, TutorInstitucion
 from .services import TutorService
@@ -203,6 +205,7 @@ def lista_tutores(request):
 
 
 @login_required
+@fed_central_cannot_create('lista_tutores')
 def crear_tutor(request):
     """
     Vista para crear un nuevo tutor.
@@ -210,8 +213,9 @@ def crear_tutor(request):
     Usa TutorService para validar la cédula única.
     
     Permisos:
-    - Ente Rector puede crear tutores para cualquier institución.
+    - Ente Rector (superuser) puede crear tutores para cualquier institución.
     - Usuarios institucionales solo pueden crear tutores para su propia institución.
+    - fed_central NO puede crear tutores (bloqueado por decorador).
     """
     # Determinar instituciones disponibles según permisos
     puede_crear_cualquiera = False
@@ -219,7 +223,8 @@ def crear_tutor(request):
     
     if hasattr(request.user, 'userprofile'):
         user_type = request.user.userprofile.user_type
-        if user_type in ['fed_central', 'superuser'] or request.user.is_superuser:
+        
+        if user_type in ['superuser'] or request.user.is_superuser:
             puede_crear_cualquiera = True
         else:
             user_institution = request.user.userprofile.institution
@@ -246,6 +251,7 @@ def crear_tutor(request):
                         'nacionalidad': form.cleaned_data.get('nacionalidad', 'V'),
                         'nombres': form.cleaned_data['nombres'],
                         'apellidos': form.cleaned_data['apellidos'],
+                        'sexo': form.cleaned_data.get('sexo', 'M'),
                         'telefono_codigo': form.cleaned_data.get('telefono_codigo', ''),
                         'telefono': form.cleaned_data.get('telefono', ''),
                         'email': form.cleaned_data['email'],
@@ -332,6 +338,7 @@ def editar_tutor(request, tutor_id):
                 tutor.nacionalidad = form.cleaned_data.get('nacionalidad', 'V')
                 tutor.nombres = form.cleaned_data['nombres']
                 tutor.apellidos = form.cleaned_data['apellidos']
+                tutor.sexo = form.cleaned_data.get('sexo', 'M')
                 tutor.cedula = cedula
                 tutor.telefono_codigo = form.cleaned_data.get('telefono_codigo', '')
                 tutor.telefono = form.cleaned_data.get('telefono', '')
@@ -539,6 +546,7 @@ def verificar_tutor_cedula(request):
             'nacionalidad': tutor.nacionalidad,
             'nombres': tutor.nombres,
             'apellidos': tutor.apellidos,
+            'sexo': tutor.sexo,
             'cedula': tutor.cedula,
             'telefono_codigo': tutor.telefono_codigo,
             'telefono': tutor.telefono,

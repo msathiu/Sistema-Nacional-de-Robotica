@@ -169,3 +169,49 @@ def participante_required(view_func):
     return wrapper
 
 
+def fed_central_cannot_create(redirect_to='dashboard'):
+    """
+    Decorador que bloquea a usuarios fed_central de crear recursos.
+    
+    Los usuarios de Federación Central tienen permisos de visualización y gestión,
+    pero NO pueden crear nuevos participantes, tutores ni equipos.
+    
+    Uso:
+        @fed_central_cannot_create('lista_participantes')
+        def crear_participante(request):
+            ...
+    
+    Args:
+        redirect_to (str): Nombre de la URL a la que redirigir si se bloquea el acceso.
+                          Por defecto es 'dashboard'.
+    
+    Returns:
+        function: Vista decorada con validación de permisos.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            # Verificar que el usuario tenga perfil
+            if not hasattr(request.user, 'userprofile'):
+                messages.error(request, 'No tienes un perfil configurado.')
+                return redirect('dashboard')
+            
+            user_type = request.user.userprofile.user_type
+            
+            # Bloquear acceso a fed_central
+            if user_type == 'fed_central':
+                messages.error(
+                    request,
+                    '🚫 Los usuarios de Federación Central no tienen permisos de creación. '
+                    'Su rol es supervisar y gestionar datos existentes, no crear nuevos registros.'
+                )
+                return redirect(redirect_to)
+            
+            # Permitir acceso a otros roles
+            return view_func(request, *args, **kwargs)
+        
+        return wrapper
+    return decorator
+
+

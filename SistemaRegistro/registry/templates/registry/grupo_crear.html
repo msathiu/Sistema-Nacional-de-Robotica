@@ -392,7 +392,7 @@
                                     <i class="bi bi-bookmark-star"></i> Nombre del Equipo *
                                 </label>
                                 <input type="text" name="nombre" class="form-control form-control-custom" 
-                                       placeholder="Ej: Equipo Robótica Avanzada" required>
+                                       placeholder="Ej: Equipo Robótica Avanzada">
                             </div>
 
                             <div class="col-md-4">
@@ -408,7 +408,7 @@
                                 <label class="form-label-custom">
                                     <i class="bi bi-diagram-3"></i> Criterio de Agrupación *
                                 </label>
-                                <select name="criterio" id="id_criterio" class="form-select form-select-custom" required>
+                                <select name="criterio" id="id_criterio" class="form-select form-select-custom">
                                     <option value="">-- Seleccione un criterio --</option>
                                     {% for value, label in criterios %}
                                     <option value="{{ value }}">{{ label }}</option>
@@ -740,6 +740,49 @@
 let contadorParticipantes = 0;
 let participantesAgregados = new Map();
 
+// Función para mostrar alertas con diseño
+function mostrarAlerta(mensaje, tipo = 'warning') {
+    const iconos = {
+        'danger': 'exclamation-triangle-fill',
+        'warning': 'exclamation-triangle-fill',
+        'success': 'check-circle-fill',
+        'info': 'info-circle-fill'
+    };
+    
+    const alertasAnteriores = document.querySelectorAll('.alert-validacion-custom');
+    alertasAnteriores.forEach(a => a.remove());
+    
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm alert-validacion-custom`;
+    alerta.style.borderRadius = '8px';
+    alerta.style.marginBottom = '1rem';
+    
+    // SEGURIDAD: Crear elementos DOM en lugar de innerHTML
+    const icon = document.createElement('i');
+    icon.className = `bi bi-${iconos[tipo]} me-2`;
+    
+    const mensajeSpan = document.createElement('span');
+    mensajeSpan.innerHTML = mensaje; // Solo para mensajes controlados del sistema
+    
+    const btnClose = document.createElement('button');
+    btnClose.type = 'button';
+    btnClose.className = 'btn-close';
+    btnClose.setAttribute('data-bs-dismiss', 'alert');
+    
+    alerta.appendChild(icon);
+    alerta.appendChild(mensajeSpan);
+    alerta.appendChild(btnClose);
+    
+    const formBody = document.querySelector('.form-body');
+    formBody.insertAdjacentElement('afterbegin', alerta);
+    alerta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    setTimeout(() => {
+        alerta.classList.remove('show');
+        setTimeout(() => alerta.remove(), 150);
+    }, 8000);
+}
+
 // Navegación entre pasos
 function goToStep(step) {
     document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
@@ -798,7 +841,7 @@ document.getElementById('btnBuscarTutor')?.addEventListener('click', function() 
     const cedula = document.getElementById('buscarTutorCedula').value.trim().replace(/\D/g, '');
     
     if (!cedula) {
-        alert('Por favor ingrese una cédula');
+        mostrarAlerta('Por favor ingrese una cédula', 'warning');
         return;
     }
     
@@ -823,7 +866,7 @@ document.getElementById('btnBuscarTutor')?.addEventListener('click', function() 
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al buscar tutor');
+            mostrarAlerta('Error al buscar tutor', 'danger');
         })
         .finally(() => {
             btn.disabled = false;
@@ -863,17 +906,34 @@ function actualizarTabla() {
     let index = 1;
     participantesAgregados.forEach((data, id) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${index++}</td>
-            <td>${data.cedula}</td>
-            <td>${data.nombres}</td>
-            <td>${data.apellidos}</td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarParticipante(${id})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+        
+        // SEGURIDAD: Escapar datos del usuario
+        const tdIndex = document.createElement('td');
+        tdIndex.textContent = index++;
+        
+        const tdCedula = document.createElement('td');
+        tdCedula.textContent = data.cedula;
+        
+        const tdNombres = document.createElement('td');
+        tdNombres.textContent = data.nombres;
+        
+        const tdApellidos = document.createElement('td');
+        tdApellidos.textContent = data.apellidos;
+        
+        const tdAcciones = document.createElement('td');
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.className = 'btn btn-sm btn-danger';
+        btnEliminar.onclick = () => eliminarParticipante(id);
+        btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
+        tdAcciones.appendChild(btnEliminar);
+        
+        tr.appendChild(tdIndex);
+        tr.appendChild(tdCedula);
+        tr.appendChild(tdNombres);
+        tr.appendChild(tdApellidos);
+        tr.appendChild(tdAcciones);
+        
         tbody.appendChild(tr);
         
         // Crear nuevo input hidden con el ID del participante
@@ -910,7 +970,7 @@ function buscarParticipante(btn) {
     const cedula = card.querySelector('.cedula-participante').value.trim();
     
     if (!cedula) {
-        alert('Ingrese una cédula');
+        mostrarAlerta('Ingrese una cédula', 'warning');
         return;
     }
     
@@ -922,7 +982,7 @@ function buscarParticipante(btn) {
         .then(data => {
             if (data.found) {
                 if (participantesAgregados.has(data.id)) {
-                    alert('Este participante ya está en el equipo');
+                    mostrarAlerta('Este participante ya está en el equipo', 'warning');
                     card.remove();
                     return;
                 }
@@ -940,16 +1000,18 @@ function buscarParticipante(btn) {
                     document.getElementById('listaParticipantes').style.display = 'none';
                 }
             } else {
-                if (confirm('Participante no encontrado. ¿Desea registrar un nuevo participante?')) {
-                    window.open('{% url "crear_participante" %}', '_blank');
-                }
+                mostrarAlerta(
+                    '<strong>Participante no encontrado</strong><br>' +
+                    '<small>¿Desea <a href="{% url "crear_participante" %}" target="_blank" class="alert-link fw-bold">registrar un nuevo participante</a>?</small>',
+                    'warning'
+                );
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-search"></i> Buscar';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al buscar participante.');
+            mostrarAlerta('Error al buscar participante', 'danger');
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-search"></i> Buscar';
         });
@@ -960,14 +1022,14 @@ function procesarCargaMasiva() {
     const texto = textarea.value.trim();
     
     if (!texto) {
-        alert('Ingrese al menos una cédula');
+        mostrarAlerta('Ingrese al menos una cédula', 'warning');
         return;
     }
     
     const cedulas = texto.split(/[,\s\n]+/).filter(c => c.trim());
     
     if (cedulas.length === 0) {
-        alert('No se encontraron cédulas válidas');
+        mostrarAlerta('No se encontraron cédulas válidas', 'warning');
         return;
     }
     
@@ -1037,63 +1099,80 @@ document.getElementById('modalCargaMasiva').addEventListener('hidden.bs.modal', 
 
 // Validación del formulario
 document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
-    const tutorSeleccionado = document.getElementById('tutorSeleccionado').value;
-    if (!tutorSeleccionado) {
-        e.preventDefault();
-        alert('⚠️ Debe asignar al menos un tutor al equipo');
-        goToStep(2);
-        return false;
+    e.preventDefault();
+    console.log('Formulario enviado - iniciando validación');
+    
+    let errores = [];
+    
+    // 1. Validar nombre del equipo
+    const nombre = document.querySelector('[name="nombre"]')?.value.trim() || '';
+    if (!nombre) {
+        errores.push('El nombre del equipo es obligatorio');
     }
     
-    if (participantesAgregados.size === 0) {
-        e.preventDefault();
-        alert('⚠️ Debe agregar al menos un participante al equipo');
-        goToStep(3);
-        return false;
-    }
-    
-    const criterio = document.getElementById('id_criterio').value;
+    // 2. Validar criterio
+    const criterio = document.getElementById('id_criterio')?.value || '';
     if (!criterio) {
-        e.preventDefault();
-        alert('⚠️ Debe seleccionar un criterio de agrupación');
-        goToStep(1);
-        return false;
+        errores.push('Debe seleccionar un criterio de agrupación');
     }
     
+    // 3. Validar campos según criterio
     if (criterio === 'edad') {
-        const edadDesde = document.querySelector('[name="edad_desde"]').value;
-        const edadHasta = document.querySelector('[name="edad_hasta"]').value;
+        const edadDesde = document.querySelector('[name="edad_desde"]')?.value || '';
+        const edadHasta = document.querySelector('[name="edad_hasta"]')?.value || '';
         if (!edadDesde || !edadHasta) {
-            e.preventDefault();
-            alert('⚠️ Debe especificar el rango de edad');
-            goToStep(1);
-            return false;
-        }
-        if (parseInt(edadDesde) > parseInt(edadHasta)) {
-            e.preventDefault();
-            alert('⚠️ La edad desde no puede ser mayor que edad hasta');
-            goToStep(1);
-            return false;
+            errores.push('Debe especificar el rango de edad');
+        } else if (parseInt(edadDesde) > parseInt(edadHasta)) {
+            errores.push('La edad desde no puede ser mayor que edad hasta');
         }
     } else if (criterio === 'nivel') {
-        const nivel = document.querySelector('[name="nivel_educativo"]').value;
+        const nivel = document.querySelector('[name="nivel_educativo"]')?.value || '';
         if (!nivel) {
-            e.preventDefault();
-            alert('⚠️ Debe seleccionar un nivel educativo');
-            goToStep(1);
-            return false;
+            errores.push('Debe seleccionar un nivel educativo');
         }
     } else if (criterio === 'proyecto') {
-        const proyecto = document.querySelector('[name="nombre_proyecto"]').value.trim();
+        const proyecto = document.querySelector('[name="nombre_proyecto"]')?.value.trim() || '';
         if (!proyecto) {
-            e.preventDefault();
-            alert('⚠️ Debe ingresar el nombre del proyecto');
-            goToStep(1);
-            return false;
+            errores.push('Debe ingresar el nombre del proyecto');
         }
     }
     
-    return true;
+    // 4. Validar tutor
+    const tutorSeleccionado = document.getElementById('tutorSeleccionado')?.value || '';
+    if (!tutorSeleccionado) {
+        errores.push('Debe asignar al menos un tutor al equipo');
+    }
+    
+    // 5. Validar participantes
+    if (participantesAgregados.size === 0) {
+        errores.push('Debe agregar al menos un participante al equipo');
+    }
+    
+    console.log('Errores encontrados:', errores);
+    
+    // Si hay errores, mostrar y redirigir al paso correspondiente
+    if (errores.length > 0) {
+        const mensajeCompleto = errores.length === 1 
+            ? `<strong>⚠️ ${errores[0]}</strong>` 
+            : `<strong>⚠️ Se encontraron ${errores.length} errores que debe corregir:</strong><br><br>• ${errores.join('<br>• ')}`;
+        
+        mostrarAlerta(mensajeCompleto, 'warning');
+        
+        // Ir al primer paso con error
+        if (!nombre || !criterio || (criterio === 'edad' && (!document.querySelector('[name="edad_desde"]')?.value || !document.querySelector('[name="edad_hasta"]')?.value)) || (criterio === 'nivel' && !document.querySelector('[name="nivel_educativo"]')?.value) || (criterio === 'proyecto' && !document.querySelector('[name="nombre_proyecto"]')?.value.trim())) {
+            goToStep(1);
+        } else if (!tutorSeleccionado) {
+            goToStep(2);
+        } else if (participantesAgregados.size === 0) {
+            goToStep(3);
+        }
+        
+        return false;
+    }
+    
+    console.log('Validación exitosa - enviando formulario');
+    // Si todo está bien, enviar formulario
+    e.target.submit();
 });
 </script>
 {% endblock %}

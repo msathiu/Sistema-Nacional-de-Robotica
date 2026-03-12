@@ -107,6 +107,8 @@ DATABASES = {
         default=os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/db.sqlite3"),
         conn_max_age=600,
         conn_health_checks=True,
+        # Esto obliga a usar ssl si la URL lo pide (importante en prod)
+        ssl_require=not DEBUG if os.getenv("DATABASE_URL", "").startswith("postgres") else False,
     )
 }
 

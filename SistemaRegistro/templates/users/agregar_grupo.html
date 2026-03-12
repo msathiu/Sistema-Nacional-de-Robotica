@@ -19,25 +19,29 @@
                     <h5 class="mb-0 text-white fw-bold"><i class="bi bi-plus-circle me-2"></i>Nuevo Registro de Equipo</h5>
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST">
+                    <!-- Contenedor de alertas dinámicas -->
+                    <div id="alertContainer"></div>
+                    
+                    <form method="POST" id="formCrearGrupo" novalidate>
                         {% csrf_token %}
                         
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-dark">Nombre del Grupo</label>
+                            <label class="form-label fw-bold text-dark">Nombre del Grupo <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag-fill text-primary"></i></span>
-                                <input type="text" name="nombre_grupo" class="form-control border-start-0 bg-light" placeholder="Ej: CyberBots Caracas" required>
+                                <input type="text" name="nombre_grupo" id="nombre_grupo" class="form-control border-start-0 bg-light" placeholder="Ej: CyberBots Caracas" required>
                             </div>
                             <small class="text-muted">Asigna un nombre único y representativo para el equipo.</small>
+                            <div class="invalid-feedback" id="error_nombre_grupo"></div>
                         </div>
                         
                         <div class="mb-4">
                             <label class="form-label fw-bold text-dark d-flex justify-content-between">
-                                Seleccionar Miembros
+                                Seleccionar Miembros <span class="text-danger">*</span>
                                 <span class="badge bg-info-subtle text-info rounded-pill px-3">Disponibles: {{ participantes|length }}</span>
                             </label>
                             <div class="p-3 rounded-3 bg-light border">
-                                <select name="miembros" class="form-select border-0 bg-transparent" multiple style="min-height: 200px;">
+                                <select name="miembros" id="miembros" class="form-select border-0 bg-transparent" multiple style="min-height: 200px;" required>
                                     {% for p in participantes %}
                                     <option value="{{ p.id }}" class="py-2 px-3 mb-1 rounded-2 shadow-sm bg-white">
                                         {{ p.nombre|upper }} - ID: {{ p.id|add:"1000" }}
@@ -51,6 +55,7 @@
                                 <i class="bi bi-info-circle me-2"></i>
                                 <small>Mantén presionada la tecla <strong>Ctrl</strong> (o Cmd en Mac) para seleccionar varios.</small>
                             </div>
+                            <div class="invalid-feedback d-block" id="error_miembros"></div>
                         </div>
                         
                         <hr class="my-4 opacity-10">
@@ -86,5 +91,153 @@
         border-color: var(--accent-cyan);
         box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.15);
     }
+    .form-control.is-invalid, .form-select.is-invalid {
+        border-color: #dc3545;
+    }
+    .invalid-feedback {
+        display: none;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .invalid-feedback.d-block {
+        display: block !important;
+    }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formCrearGrupo');
+    const nombreGrupo = document.getElementById('nombre_grupo');
+    const miembros = document.getElementById('miembros');
+    const alertContainer = document.getElementById('alertContainer');
+    
+    // Función para mostrar alerta estilo sistema
+    function mostrarAlerta(mensaje, tipo = 'danger') {
+        const iconos = {
+            'danger': 'bi-exclamation-triangle-fill',
+            'warning': 'bi-exclamation-circle-fill',
+            'success': 'bi-check-circle-fill',
+            'info': 'bi-info-circle-fill'
+        };
+        
+        const colores = {
+            'danger': 'danger',
+            'warning': 'warning',
+            'success': 'success',
+            'info': 'info'
+        };
+        
+        const alerta = document.createElement('div');
+        alerta.className = `alert alert-${colores[tipo]} alert-dismissible fade show d-flex align-items-center shadow-sm mb-3`;
+        alerta.style.borderRadius = '12px';
+        alerta.style.border = `2px solid var(--bs-${colores[tipo]})`;
+        alerta.innerHTML = `
+            <i class="bi ${iconos[tipo]} me-3 fs-4"></i>
+            <div class="flex-grow-1">
+                <strong>${tipo === 'danger' ? 'Error de Validación' : tipo === 'warning' ? 'Advertencia' : 'Información'}:</strong>
+                <p class="mb-0">${mensaje}</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alerta);
+        
+        // Scroll suave hacia la alerta
+        alerta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        // Auto-cerrar después de 5 segundos
+        setTimeout(() => {
+            alerta.classList.remove('show');
+            setTimeout(() => alerta.remove(), 150);
+        }, 5000);
+    }
+    
+    // Función para limpiar errores
+    function limpiarErrores() {
+        nombreGrupo.classList.remove('is-invalid');
+        miembros.classList.remove('is-invalid');
+        document.getElementById('error_nombre_grupo').textContent = '';
+        document.getElementById('error_miembros').textContent = '';
+        document.getElementById('error_nombre_grupo').classList.remove('d-block');
+        document.getElementById('error_miembros').classList.remove('d-block');
+    }
+    
+    // Función para marcar campo con error
+    function marcarError(campo, mensaje) {
+        campo.classList.add('is-invalid');
+        const errorDiv = document.getElementById(`error_${campo.id}`);
+        if (errorDiv) {
+            errorDiv.textContent = mensaje;
+            errorDiv.classList.add('d-block');
+        }
+    }
+    
+    // Validación en tiempo real
+    nombreGrupo.addEventListener('input', function() {
+        if (this.value.trim()) {
+            this.classList.remove('is-invalid');
+            document.getElementById('error_nombre_grupo').classList.remove('d-block');
+        }
+    });
+    
+    miembros.addEventListener('change', function() {
+        if (this.selectedOptions.length > 0) {
+            this.classList.remove('is-invalid');
+            document.getElementById('error_miembros').classList.remove('d-block');
+        }
+    });
+    
+    // Validación al enviar formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        limpiarErrores();
+        
+        let errores = [];
+        let primerCampoError = null;
+        
+        // Validar nombre del grupo
+        if (!nombreGrupo.value.trim()) {
+            errores.push('El nombre del grupo es obligatorio');
+            marcarError(nombreGrupo, 'Este campo es obligatorio');
+            if (!primerCampoError) primerCampoError = nombreGrupo;
+        } else if (nombreGrupo.value.trim().length < 3) {
+            errores.push('El nombre del grupo debe tener al menos 3 caracteres');
+            marcarError(nombreGrupo, 'Mínimo 3 caracteres');
+            if (!primerCampoError) primerCampoError = nombreGrupo;
+        } else if (nombreGrupo.value.trim().length > 150) {
+            errores.push('El nombre del grupo no puede exceder 150 caracteres');
+            marcarError(nombreGrupo, 'Máximo 150 caracteres');
+            if (!primerCampoError) primerCampoError = nombreGrupo;
+        }
+        
+        // Validar selección de miembros
+        const miembrosSeleccionados = Array.from(miembros.selectedOptions);
+        if (miembrosSeleccionados.length === 0) {
+            errores.push('Debes seleccionar al menos un miembro para el equipo');
+            marcarError(miembros, 'Selecciona al menos un participante');
+            if (!primerCampoError) primerCampoError = miembros;
+        }
+        
+        // Si hay errores, mostrar alerta y enfocar primer campo
+        if (errores.length > 0) {
+            const mensajeError = errores.length === 1 
+                ? errores[0] 
+                : `Se encontraron ${errores.length} errores:<br>• ${errores.join('<br>• ')}`;
+            
+            mostrarAlerta(mensajeError, 'danger');
+            
+            if (primerCampoError) {
+                primerCampoError.focus();
+            }
+            
+            return false;
+        }
+        
+        // Si todo está bien, enviar formulario
+        form.submit();
+    });
+});
+</script>
 {% endblock %}

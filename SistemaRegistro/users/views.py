@@ -1,3 +1,4 @@
+import json
 import secrets
 import string
 from datetime import date, datetime
@@ -14,14 +15,13 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.functions import ExtractMonth
 from django.http import HttpResponse, JsonResponse
-import json
-from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.views.generic.edit import UpdateView
+from registry.forms import ParticipanteForm
 from registry.models import (
     Club,
     Dependencia,
@@ -30,16 +30,21 @@ from registry.models import (
     Grupo,
     Inscripcion,
     InscripcionGrupoEvento,
-    IntegranteEquipo,
     Institucion,
+    IntegranteEquipo,
     Municipio,
     Parroquia,
     Participante,
     ParticipanteInstitucion,
 )
-from registry.forms import ParticipanteForm
 
-from .decorators import admin_or_owner_required, admin_required, institucional_required, not_superuser_required
+from .decorators import (
+    admin_or_owner_required,
+    admin_required,
+    institucional_required,
+    not_superuser_required,
+    fed_central_cannot_create,
+)
 from .forms import (
     ClubRegistrationForm,
     InstitucionRegistrationForm,
@@ -142,87 +147,109 @@ def verificar_participante_duplicado(request):
     """
     Vista AJAX para verificar si existe un participante con datos similares.
     Busca por: cédula personal, cédula escolar, o combinación de nombres+apellidos+fecha_nacimiento
-    
+
     NUEVO: Retorna información de vinculación con la institución actual.
     """
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            nombres = data.get('nombres', '').strip()
-            apellidos = data.get('apellidos', '').strip()
-            fecha_nacimiento = data.get('fecha_nacimiento')
-            cedula_personal = data.get('cedula_personal', '').strip()
-            cedula_escolar = data.get('cedula_escolar', '').strip()
-            
+            nombres = data.get("nombres", "").strip()
+            apellidos = data.get("apellidos", "").strip()
+            fecha_nacimiento = data.get("fecha_nacimiento")
+            cedula_personal = data.get("cedula_personal", "").strip()
+            cedula_escolar = data.get("cedula_escolar", "").strip()
+
             # Obtener institución del usuario actual
             perfil = request.user.userprofile
             institucion_actual = perfil.institution
-            
+
             # Buscar duplicados
             participante_existente = None
-            
+
             # 1. Buscar por cédula personal (SOLO NÚMEROS en BD)
             if cedula_personal:
-                cedula_limpia = ''.join(filter(str.isdigit, cedula_personal))
+                cedula_limpia = "".join(filter(str.isdigit, cedula_personal))
                 if cedula_limpia:
                     participante_existente = Participante.objects.filter(
                         cedula=cedula_limpia
                     ).first()
-            
+
             # 2. Buscar por cédula escolar (SOLO NÚMEROS en BD)
             if not participante_existente and cedula_escolar:
-                cedula_escolar_limpia = ''.join(filter(str.isdigit, cedula_escolar))
+                cedula_escolar_limpia = "".join(filter(str.isdigit, cedula_escolar))
                 if cedula_escolar_limpia:
                     participante_existente = Participante.objects.filter(
                         cedula_escolar=cedula_escolar_limpia
                     ).first()
-            
+
             # 3. Buscar por nombres + apellidos + fecha de nacimiento
-            if not participante_existente and nombres and apellidos and fecha_nacimiento:
+            if (
+                not participante_existente
+                and nombres
+                and apellidos
+                and fecha_nacimiento
+            ):
                 participante_existente = Participante.objects.filter(
                     nombres__iexact=nombres,
                     apellidos__iexact=apellidos,
-                    fecha_nacimiento=fecha_nacimiento
+                    fecha_nacimiento=fecha_nacimiento,
                 ).first()
-            
+
             if participante_existente:
                 # Verificar si ya está vinculado a la institución actual
                 vinculacion = ParticipanteInstitucion.objects.filter(
-                    participante=participante_existente,
-                    institucion=institucion_actual
+                    participante=participante_existente, institucion=institucion_actual
                 ).first()
-                
+
                 # Formatear cédula para mostrar con nacionalidad
-                cedula_display = f"{participante_existente.nacionalidad or 'V'}-{participante_existente.cedula}" if participante_existente.cedula else 'N/A'
-                cedula_escolar_display = f"E-{participante_existente.cedula_escolar}" if participante_existente.cedula_escolar else 'N/A'
-                
+                cedula_display = (
+                    f"{participante_existente.nacionalidad or 'V'}-{participante_existente.cedula}"
+                    if participante_existente.cedula
+                    else "N/A"
+                )
+                cedula_escolar_display = (
+                    f"E-{participante_existente.cedula_escolar}"
+                    if participante_existente.cedula_escolar
+                    else "N/A"
+                )
+
                 # Obtener instituciones donde está vinculado
-                instituciones_vinculadas = participante_existente.get_instituciones_activas()
-                instituciones_nombres = [inst.nombre for inst in instituciones_vinculadas]
-                
-                return JsonResponse({
-                    'existe': True,
-                    'participante_id': str(participante_existente.id),
-                    'ya_vinculado': vinculacion is not None,
-                    'vinculacion_activa': vinculacion.status == 'activo' if vinculacion else False,
-                    'instituciones_vinculadas': instituciones_nombres,
-                    'total_instituciones': len(instituciones_nombres),
-                    'datos': {
-                        'nombres': participante_existente.nombres,
-                        'apellidos': participante_existente.apellidos,
-                        'fecha_nacimiento': participante_existente.fecha_nacimiento.strftime('%Y-%m-%d'),
-                        'cedula': cedula_display,
-                        'cedula_escolar': cedula_escolar_display,
-                        'edad': participante_existente.edad
+                instituciones_vinculadas = (
+                    participante_existente.get_instituciones_activas()
+                )
+                instituciones_nombres = [
+                    inst.nombre for inst in instituciones_vinculadas
+                ]
+
+                return JsonResponse(
+                    {
+                        "existe": True,
+                        "participante_id": str(participante_existente.id),
+                        "ya_vinculado": vinculacion is not None,
+                        "vinculacion_activa": vinculacion.status == "activo"
+                        if vinculacion
+                        else False,
+                        "instituciones_vinculadas": instituciones_nombres,
+                        "total_instituciones": len(instituciones_nombres),
+                        "datos": {
+                            "nombres": participante_existente.nombres,
+                            "apellidos": participante_existente.apellidos,
+                            "fecha_nacimiento": participante_existente.fecha_nacimiento.strftime(
+                                "%Y-%m-%d"
+                            ),
+                            "cedula": cedula_display,
+                            "cedula_escolar": cedula_escolar_display,
+                            "edad": participante_existente.edad,
+                        },
                     }
-                })
+                )
             else:
-                return JsonResponse({'existe': False})
-                
+                return JsonResponse({"existe": False})
+
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 
 @login_required
@@ -230,115 +257,126 @@ def verificar_participante_duplicado(request):
 def vincular_participante_existente(request):
     """
     Vista AJAX para vincular un participante existente a la institución actual.
-    
+
     Permite agregar participantes que ya existen en el sistema pero no están
     vinculados a la institución actual.
     """
     try:
         data = json.loads(request.body)
-        participante_id = data.get('participante_id')
-        
+        participante_id = data.get("participante_id")
+
         if not participante_id:
-            return JsonResponse({'success': False, 'error': 'ID de participante requerido'}, status=400)
-        
+            return JsonResponse(
+                {"success": False, "error": "ID de participante requerido"}, status=400
+            )
+
         # Obtener participante
         participante = get_object_or_404(Participante, id=participante_id)
-        
+
         # Obtener institución del usuario actual
         try:
             perfil = request.user.userprofile
         except UserProfile.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'No tienes un perfil configurado'
-            }, status=400)
-        
+            return JsonResponse(
+                {"success": False, "error": "No tienes un perfil configurado"},
+                status=400,
+            )
+
         # Validar que el usuario sea institucional y tenga institución asignada
-        if perfil.user_type != 'institucional':
-            return JsonResponse({
-                'success': False,
-                'error': 'Solo usuarios institucionales pueden vincular participantes'
-            }, status=403)
-        
+        if perfil.user_type != "institucional":
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Solo usuarios institucionales pueden vincular participantes",
+                },
+                status=403,
+            )
+
         institucion = perfil.institution
         if not institucion:
-            return JsonResponse({
-                'success': False,
-                'error': 'Tu usuario no tiene una institución asignada. Contacta al administrador.'
-            }, status=400)
-        
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Tu usuario no tiene una institución asignada. Contacta al administrador.",
+                },
+                status=400,
+            )
+
         # Verificar si ya existe vinculación
         vinculacion_existente = ParticipanteInstitucion.objects.filter(
-            participante=participante,
-            institucion=institucion
+            participante=participante, institucion=institucion
         ).first()
-        
+
         if vinculacion_existente:
-            if vinculacion_existente.status == 'activo':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'El participante ya está vinculado activamente a tu institución'
-                }, status=400)
+            if vinculacion_existente.status == "activo":
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "El participante ya está vinculado activamente a tu institución",
+                    },
+                    status=400,
+                )
             else:
                 # Reactivar vinculación existente
-                vinculacion_existente.status = 'activo'
+                vinculacion_existente.status = "activo"
                 vinculacion_existente.fecha_desvinculacion = None
                 vinculacion_existente.registrado_por = request.user
                 vinculacion_existente.save()
-                
+
                 messages.success(
                     request,
-                    f'✅ Participante "{participante.nombre_completo}" reactivado en tu institución.'
+                    f'✅ Participante "{participante.nombre_completo}" reactivado en tu institución.',
                 )
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Participante reactivado exitosamente',
-                    'accion': 'reactivado'
-                })
-        
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": "Participante reactivado exitosamente",
+                        "accion": "reactivado",
+                    }
+                )
+
         # Crear nueva vinculación
         with transaction.atomic():
             ParticipanteInstitucion.objects.create(
                 participante=participante,
                 institucion=institucion,
-                status='activo',
-                registrado_por=request.user
+                status="activo",
+                registrado_por=request.user,
             )
-            
+
             messages.success(
                 request,
-                f'✅ Participante "{participante.nombre_completo}" vinculado exitosamente a tu institución.'
+                f'✅ Participante "{participante.nombre_completo}" vinculado exitosamente a tu institución.',
             )
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Participante vinculado exitosamente',
-                'accion': 'vinculado'
-            })
-    
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "Participante vinculado exitosamente",
+                    "accion": "vinculado",
+                }
+            )
+
     except Participante.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Participante no encontrado'
-        }, status=404)
+        return JsonResponse(
+            {"success": False, "error": "Participante no encontrado"}, status=404
+        )
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error al vincular participante: {str(e)}'
-        }, status=500)
+        return JsonResponse(
+            {"success": False, "error": f"Error al vincular participante: {str(e)}"},
+            status=500,
+        )
 
 
 @login_required
+@fed_central_cannot_create('lista_participantes')
 def crear_participante(request):
     """
     Vista dedicada para crear participantes desde el panel institucional.
     Accessible para usuarios institucionales y administradores.
+    
+    Bloqueado para fed_central mediante decorador.
     """
-    # Verificar que el usuario esté autenticado
-    if not request.user.is_authenticated:
-        messages.error(request, "Debe iniciar sesión para registrar participantes.")
-        return redirect("login")
-
     # Obtener el perfil del usuario
     try:
         perfil = request.user.userprofile
@@ -346,11 +384,10 @@ def crear_participante(request):
         messages.error(request, "No tienes un perfil configurado.")
         return redirect("dashboard")
 
-    # Verificar tipo de usuario - permitir institucionales, fed_central, fed_regional, superuser
+    # Verificar tipo de usuario - permitir institucionales, fed_regional, superuser
     user_type = perfil.user_type
     roles_permitidos = [
         "institucional",
-        "fed_central",
         "fed_regional",
         "superuser",
         "tecnologico",
@@ -441,14 +478,18 @@ def crear_participante(request):
             try:
                 with transaction.atomic():
                     # 1. Obtener datos del formulario y limpiar cédulas
-                    nacionalidad = request.POST.get('nacionalidad', 'V')
-                    cedula_personal_raw = request.POST.get('cedula_personal', '').strip()
-                    cedula_escolar_raw = request.POST.get('cedula_escolar_input', '').strip()  # Nombre correcto del campo
-                    
+                    nacionalidad = request.POST.get("nacionalidad", "V")
+                    cedula_personal_raw = request.POST.get(
+                        "cedula_personal", ""
+                    ).strip()
+                    cedula_escolar_raw = request.POST.get(
+                        "cedula_escolar_input", ""
+                    ).strip()  # Nombre correcto del campo
+
                     # Limpiar cédulas: solo números (seguridad adicional)
-                    cedula_personal = ''.join(filter(str.isdigit, cedula_personal_raw))
-                    cedula_escolar = ''.join(filter(str.isdigit, cedula_escolar_raw))
-                    
+                    cedula_personal = "".join(filter(str.isdigit, cedula_personal_raw))
+                    cedula_escolar = "".join(filter(str.isdigit, cedula_escolar_raw))
+
                     # 2. Determinar cédula principal para el username (con formato V-)
                     if cedula_personal:
                         cedula_completa_username = f"{nacionalidad}-{cedula_personal}"
@@ -457,7 +498,10 @@ def crear_participante(request):
                         cedula_completa_username = f"E-{cedula_escolar}"
                         username = cedula_completa_username
                     else:
-                        messages.error(request, "Debe proporcionar al menos una cédula (personal o escolar)")
+                        messages.error(
+                            request,
+                            "Debe proporcionar al menos una cédula (personal o escolar)",
+                        )
                         return render(
                             request,
                             "users/register.html",
@@ -466,8 +510,16 @@ def crear_participante(request):
                                 "municipios": municipios,
                                 "institucion": institucion,
                                 "nombre_sede": nombre_sede,
-                                "estado": estado_seleccionado if estado_seleccionado else estado_inst,
-                                "estado_id": (estado_seleccionado.id if estado_seleccionado else estado_inst.id) if (estado_seleccionado or estado_inst) else None,
+                                "estado": estado_seleccionado
+                                if estado_seleccionado
+                                else estado_inst,
+                                "estado_id": (
+                                    estado_seleccionado.id
+                                    if estado_seleccionado
+                                    else estado_inst.id
+                                )
+                                if (estado_seleccionado or estado_inst)
+                                else None,
                                 "todos_estados": todos_estados,
                                 "es_admin_central": es_admin_central,
                             },
@@ -516,13 +568,13 @@ def crear_participante(request):
                         secrets.choice(string.ascii_letters + string.digits)
                         for _ in range(12)
                     )
-                    email = request.POST.get('email', '')
+                    email = request.POST.get("email", "")
                     user = User.objects.create_user(
                         username=username,
                         email=email,
                         password=password_aleatoria,
                     )
-                    
+
                     # 3. Crear perfil de usuario
                     UserProfile.objects.get_or_create(
                         user=user, defaults={"user_type": "participante"}
@@ -531,36 +583,42 @@ def crear_participante(request):
                     # 6. Preparar Participante
                     participante = participante_form.save(commit=False)
                     participante.user = user
-                    
+
                     # Asignar nacionalidad y cédulas (SOLO NÚMEROS en la BD)
                     participante.nacionalidad = nacionalidad  # V o E
-                    
+
                     # Asignar cédulas correctamente
                     participante.cedula = cedula_personal if cedula_personal else None
-                    participante.cedula_escolar = cedula_escolar if cedula_escolar else None
-                    
+                    participante.cedula_escolar = (
+                        cedula_escolar if cedula_escolar else None
+                    )
+
                     # Asignar email
                     participante.email = email
-                    
+
                     # Asignar condición TEA
-                    condicion_tea = request.POST.get('condicion_tea', 'False')
-                    participante.condicion_tea = (condicion_tea == 'True')
-                    
+                    condicion_tea = request.POST.get("condicion_tea", "False")
+                    participante.condicion_tea = condicion_tea == "True"
+
                     # Asignar título universitario
-                    titulo_universitario = request.POST.get('titulo_universitario', '').strip()
+                    titulo_universitario = request.POST.get(
+                        "titulo_universitario", ""
+                    ).strip()
                     if titulo_universitario:
                         participante.titulo_universitario = titulo_universitario
-                    
+
                     # Asignar campo1 (Otro)
-                    campo1 = request.POST.get('campo1', '').strip()
+                    campo1 = request.POST.get("campo1", "").strip()
                     if campo1:
                         participante.campo1 = campo1
-                    
+
                     # Asignar datos del representante con nacionalidad
-                    rep_nacionalidad = request.POST.get('rep_nacionalidad', 'V')
-                    cedula_rep_raw = request.POST.get('cedula_representante', '').strip()
+                    rep_nacionalidad = request.POST.get("rep_nacionalidad", "V")
+                    cedula_rep_raw = request.POST.get(
+                        "cedula_representante", ""
+                    ).strip()
                     if cedula_rep_raw:
-                        cedula_rep_limpia = ''.join(filter(str.isdigit, cedula_rep_raw))
+                        cedula_rep_limpia = "".join(filter(str.isdigit, cedula_rep_raw))
                         participante.cedula_representante = cedula_rep_limpia
                         participante.nacionalidad_representante = rep_nacionalidad
 
@@ -575,7 +633,7 @@ def crear_participante(request):
                     estado_seleccionado_id = request.POST.get("estado")
                     municipio_seleccionado_id = request.POST.get("municipio")
                     parroquia_seleccionada_id = request.POST.get("parroquia")
-                    
+
                     if es_admin_central and estado_seleccionado_id:
                         try:
                             participante.estado = Estado.objects.get(
@@ -585,7 +643,7 @@ def crear_participante(request):
                             participante.estado = estado_inst
                     else:
                         participante.estado = estado_inst
-                    
+
                     # Asignar municipio
                     if municipio_seleccionado_id:
                         try:
@@ -594,7 +652,7 @@ def crear_participante(request):
                             )
                         except Municipio.DoesNotExist:
                             pass
-                    
+
                     # Asignar parroquia
                     if parroquia_seleccionada_id:
                         try:
@@ -605,21 +663,21 @@ def crear_participante(request):
                             pass
 
                     # Asignar registrado_por_federacion según el tipo de usuario
-                    if user_type in ['fed_central', 'superuser']:
+                    if user_type in ["fed_central", "superuser"]:
                         participante.registrado_por_federacion = True
                     else:
                         participante.registrado_por_federacion = False
 
                     # 5. Guardar participante
                     participante.save()
-                    
+
                     # 6. CRÍTICO: Crear vinculación con la institución
                     if institucion:
                         ParticipanteInstitucion.objects.create(
                             participante=participante,
                             institucion=institucion,
-                            status='activo',
-                            registrado_por=request.user
+                            status="activo",
+                            registrado_por=request.user,
                         )
 
                 messages.success(
@@ -841,11 +899,11 @@ def dashboard(request):
     # Los superusuarios SOLO pueden acceder al admin de Django
     if request.user.is_superuser:
         messages.warning(
-            request, 
-            "Como superusuario, solo puedes acceder al panel de administración."
+            request,
+            "Como superusuario, solo puedes acceder al panel de administración.",
         )
         return redirect("/admin/")
-    
+
     try:
         user_profile = request.user.userprofile
         user_type = user_profile.user_type
@@ -873,7 +931,9 @@ def dashboard(request):
         total_participantes = Participante.objects.filter(filtros_part).count()
         total_instituciones = Institucion.objects.filter(filtros_inst).count()
         # Solo contar clubes APROBADOS según especificación
-        total_clubes = Club.objects.filter(filtros_club, status="aprobado", activo=True).count()
+        total_clubes = Club.objects.filter(
+            filtros_club, status="aprobado", activo=True
+        ).count()
 
         # Métricas adicionales de Clubes
         clubes_aprobados = Club.objects.filter(
@@ -893,15 +953,27 @@ def dashboard(request):
 
         total_eventos = Evento.objects.count()
 
+        # Contar equipos (grupos)
+        try:
+            from registry.models import Grupo
+
+            if user_type == "fed_regional" and user_estado:
+                total_equipos = Grupo.objects.filter(
+                    institucion__estado=user_estado
+                ).count()
+            else:
+                total_equipos = Grupo.objects.count()
+        except ImportError:
+            total_equipos = 0
+
         # Instituciones pendientes de aprobación:
         # 1. estatus="pendiente" Y activa=False (pendientes de aprobación)
         # 2. estatus="aprobado" Y activa=False (inconsistencia - deberían estar activas)
-        pendientes_aprobacion = Institucion.objects.filter(
-            filtros_inst, 
-            eliminado=False
-        ).exclude(
-            estatus="aprobado", activa=True
-        ).count()
+        pendientes_aprobacion = (
+            Institucion.objects.filter(filtros_inst, eliminado=False)
+            .exclude(estatus="aprobado", activa=True)
+            .count()
+        )
         cobertura_nacional = (
             Institucion.objects.filter(filtros_inst).values("estado").distinct().count()
         )
@@ -917,13 +989,21 @@ def dashboard(request):
                 .distinct()
                 .count()
             )
-        except Exception as e:
+        except Exception:
             # Si la columna no existe, contar tutores desde el nuevo modelo Tutor si está disponible
             try:
                 from registry.models import Tutor
-                total_tutores = Tutor.objects.filter(
-                    grupos__participantes__in=Participante.objects.filter(filtros_part)
-                ).values("cedula").distinct().count()
+
+                total_tutores = (
+                    Tutor.objects.filter(
+                        grupos__participantes__in=Participante.objects.filter(
+                            filtros_part
+                        )
+                    )
+                    .values("cedula")
+                    .distinct()
+                    .count()
+                )
             except ImportError:
                 # Si el modelo Tutor no existe, mostrar 0
                 total_tutores = 0
@@ -951,7 +1031,7 @@ def dashboard(request):
 
         # 4. ESPECIALIDADES DE CLUBES (Radar Chart) - Usando ClubLineaInvestigacion
         from registry.models import ClubLineaInvestigacion
-        
+
         clubes_stats = (
             ClubLineaInvestigacion.objects.filter(
                 club__in=Club.objects.filter(filtros_club)
@@ -961,7 +1041,8 @@ def dashboard(request):
             .order_by("-total")
         )
         clubes_labels = [
-            c["linea__nombre"] if c["linea__nombre"] else "General" for c in clubes_stats
+            c["linea__nombre"] if c["linea__nombre"] else "General"
+            for c in clubes_stats
         ]
         clubes_data = [c["total"] for c in clubes_stats]
         if not clubes_labels:
@@ -980,7 +1061,7 @@ def dashboard(request):
                 t["estado__nombre"] for t in tutores_stats if t["estado__nombre"]
             ]
             tutores_data = [t["total"] for t in tutores_stats if t["estado__nombre"]]
-        except Exception as e:
+        except Exception:
             # Si la columna no existe, mostrar datos vacíos
             tutores_labels = []
             tutores_data = []
@@ -1005,6 +1086,7 @@ def dashboard(request):
             "clubes_pendientes": clubes_pendientes,
             "membresias_pendientes": membresias_pendientes,
             "total_tutores": total_tutores,
+            "total_equipos": total_equipos,
             "total_eventos": total_eventos,
             "pendientes_aprobacion": pendientes_aprobacion,
             "cobertura_nacional": cobertura_nacional,
@@ -1108,10 +1190,13 @@ def dashboard_institucional(request):
     total_mis_grupos = mis_grupos.count()
 
     # Participantes vinculados a la institución del usuario
-    total_mis_participantes = Participante.objects.filter(
-        vinculaciones__institucion=institution,
-        vinculaciones__status='activo'
-    ).distinct().count()
+    total_mis_participantes = (
+        Participante.objects.filter(
+            vinculaciones__institucion=institution, vinculaciones__status="activo"
+        )
+        .distinct()
+        .count()
+    )
 
     # 4. Métricas de Eventos
     # Eventos globales que están por venir y están activos
@@ -1153,88 +1238,104 @@ def dashboard_institucional(request):
 @login_required
 def exportar_participantes_excel(request):
     """Exporta datos de participantes a Excel según permisos del usuario"""
-    from django.db.models import F, Value
-    from django.db.models.functions import Concat
-    
+
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    
+
     # Filtrar participantes según el tipo de usuario
-    if user_type in ['fed_central', 'superuser', 'tecnologico']:
+    if user_type in ["fed_central", "superuser", "tecnologico"]:
         # Administradores centrales: todos los participantes
         participantes = Participante.objects.all()
-    elif user_type == 'fed_regional':
+    elif user_type == "fed_regional":
         # Administradores regionales: participantes de su estado
         participantes = Participante.objects.filter(
             vinculaciones__institucion__estado=perfil.estado,
-            vinculaciones__status='activo'
+            vinculaciones__status="activo",
         ).distinct()
-    elif user_type == 'institucional':
+    elif user_type == "institucional":
         # Instituciones: solo sus participantes vinculados
         participantes = Participante.objects.filter(
             vinculaciones__institucion=perfil.institution,
-            vinculaciones__status='activo'
+            vinculaciones__status="activo",
         ).distinct()
     else:
         # Otros usuarios no tienen acceso
         messages.error(request, "No tienes permisos para exportar participantes.")
-        return redirect('dashboard')
-    
+        return redirect("dashboard")
+
     # Obtener participantes con datos relacionados
-    participantes = participantes.select_related(
-        'estado', 'municipio', 'parroquia'
-    )
-    
+    participantes = participantes.select_related("estado", "municipio", "parroquia")
+
     # Preparar datos para Excel
     data = []
     for p in participantes:
         # Cédula: personal o escolar
-        cedula = f"{p.nacionalidad or 'V'}-{p.cedula}" if p.cedula else (f"E-{p.cedula_escolar}" if p.cedula_escolar else "Sin cédula")
-        
+        cedula = (
+            f"{p.nacionalidad or 'V'}-{p.cedula}"
+            if p.cedula
+            else (f"E-{p.cedula_escolar}" if p.cedula_escolar else "Sin cédula")
+        )
+
         # Obtener institución desde vinculación activa
-        vinculacion = p.vinculaciones.filter(status='activo').select_related('institucion').first()
-        institucion_nombre = vinculacion.institucion.nombre if vinculacion else 'Federación'
-        
-        data.append({
-            'Nombres': p.nombres,
-            'Apellidos': p.apellidos,
-            'Cédula': cedula,
-            'Edad': p.edad,
-            'Sexo': p.get_sexo_display(),
-            'Nacionalidad': p.get_nacionalidad_display(),
-            'Email': p.email,
-            'Teléfono': f"{p.codigo_area}-{p.numero_telefono}" if p.numero_telefono else '',
-            'Condición TEA': 'Sí' if p.condicion_tea else 'No',
-            'Estado': p.estado.nombre if p.estado else '',
-            'Municipio': p.municipio.nombre if p.municipio else '',
-            'Parroquia': p.parroquia.nombre if p.parroquia else '',
-            'Dirección': p.direccion,
-            'Nivel Educativo': p.get_grado_escolar_display() if p.grado_escolar else '',
-            'Plantel/Universidad': p.nombre_escuela or '',
-            'Institución': institucion_nombre,
-            'Representante Legal': p.nombre_representante or '',
-            'Teléfono Representante': f"{p.codigo_area_representante}-{p.numero_telefono_representante}" if p.numero_telefono_representante else '',
-            'Fecha Registro': p.fecha_registro.strftime('%Y-%m-%d %H:%M') if hasattr(p, 'fecha_registro') and p.fecha_registro else ''
-        })
-    
+        vinculacion = (
+            p.vinculaciones.filter(status="activo")
+            .select_related("institucion")
+            .first()
+        )
+        institucion_nombre = (
+            vinculacion.institucion.nombre if vinculacion else "Federación"
+        )
+
+        data.append(
+            {
+                "Nombres": p.nombres,
+                "Apellidos": p.apellidos,
+                "Cédula": cedula,
+                "Edad": p.edad,
+                "Sexo": p.get_sexo_display(),
+                "Nacionalidad": p.get_nacionalidad_display(),
+                "Email": p.email,
+                "Teléfono": f"{p.codigo_area}-{p.numero_telefono}"
+                if p.numero_telefono
+                else "",
+                "Condición TEA": "Sí" if p.condicion_tea else "No",
+                "Estado": p.estado.nombre if p.estado else "",
+                "Municipio": p.municipio.nombre if p.municipio else "",
+                "Parroquia": p.parroquia.nombre if p.parroquia else "",
+                "Dirección": p.direccion,
+                "Nivel Educativo": p.get_grado_escolar_display()
+                if p.grado_escolar
+                else "",
+                "Plantel/Universidad": p.nombre_escuela or "",
+                "Institución": institucion_nombre,
+                "Representante Legal": p.nombre_representante or "",
+                "Teléfono Representante": f"{p.codigo_area_representante}-{p.numero_telefono_representante}"
+                if p.numero_telefono_representante
+                else "",
+                "Fecha Registro": p.fecha_registro.strftime("%Y-%m-%d %H:%M")
+                if hasattr(p, "fecha_registro") and p.fecha_registro
+                else "",
+            }
+        )
+
     # Crear DataFrame
     df = pd.DataFrame(data)
-    
+
     # Crear respuesta HTTP con nombre dinámico según usuario
-    if user_type == 'institucional':
+    if user_type == "institucional":
         filename = f"Participantes_{perfil.institution.nombre.replace(' ', '_')}.xlsx"
-    elif user_type == 'fed_regional':
+    elif user_type == "fed_regional":
         filename = f"Participantes_{perfil.estado.nombre.replace(' ', '_')}.xlsx"
     else:
         filename = "Padron_Nacional_Participantes.xlsx"
-    
+
     response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
     # Escribir a Excel
-    df.to_excel(response, index=False, engine='openpyxl')
+    df.to_excel(response, index=False, engine="openpyxl")
     return response
 
 
@@ -1431,13 +1532,13 @@ def lista_participantes(request):
     elif user_type == "fed_regional":
         participantes = Participante.objects.filter(
             vinculaciones__institucion__estado=perfil.estado,
-            vinculaciones__status='activo'
+            vinculaciones__status="activo",
         ).distinct()
     elif user_type == "institucional":
         # Obtener participantes vinculados a la institución
         participantes = Participante.objects.filter(
             vinculaciones__institucion_id=perfil.institution.id,
-            vinculaciones__status='activo'
+            vinculaciones__status="activo",
         ).distinct()
     else:
         return redirect("dashboard")
@@ -1465,15 +1566,20 @@ def lista_participantes(request):
     # 4. Agregar información de institución a cada participante
     participantes_list = list(participantes.order_by("-fecha_registro"))
     for p in participantes_list:
-        vinculacion = p.vinculaciones.filter(status='activo').select_related('institucion').first()
+        vinculacion = (
+            p.vinculaciones.filter(status="activo")
+            .select_related("institucion")
+            .first()
+        )
         if vinculacion:
             p.institucion = vinculacion.institucion
         else:
             # Si no tiene vinculación, mostrar "Federación"
-            p.institucion = type('obj', (object,), {
-                'nombre': 'Federación',
-                'tipo_institucion': 'federacion'
-            })()
+            p.institucion = type(
+                "obj",
+                (object,),
+                {"nombre": "Federación", "tipo_institucion": "federacion"},
+            )()
 
     # 5. Construcción del Contexto
     context = {
@@ -1508,10 +1614,9 @@ def editar_participante(request, pk):
     if user_type == "institucional":
         # Verificar que el participante esté vinculado a la institución
         vinculacion = participante.vinculaciones.filter(
-            institucion=perfil.institution,
-            status='activo'
+            institucion=perfil.institution, status="activo"
         ).exists()
-        
+
         if not vinculacion:
             messages.error(
                 request,
@@ -1527,35 +1632,43 @@ def editar_participante(request, pk):
     if participante.fecha_nacimiento:
         today = date.today()
         edad = today.year - participante.fecha_nacimiento.year
-        if (today.month, today.day) < (participante.fecha_nacimiento.month, participante.fecha_nacimiento.day):
+        if (today.month, today.day) < (
+            participante.fecha_nacimiento.month,
+            participante.fecha_nacimiento.day,
+        ):
             edad -= 1
 
     # Extraer cédula personal (quitar prefijo V- o E- si existe)
-    cedula_personal = ''
+    cedula_personal = ""
     if participante.cedula:
-        cedula_personal = ''.join(filter(str.isdigit, str(participante.cedula)))
+        cedula_personal = "".join(filter(str.isdigit, str(participante.cedula)))
 
     # Obtener cédula escolar
-    cedula_escolar = participante.cedula_escolar or ''
+    cedula_escolar = participante.cedula_escolar or ""
 
     # Obtener datos de ubicación para el template
     estado_id = participante.estado_id if participante.estado else None
     municipio_id = participante.municipio_id if participante.municipio else None
-    
+
     # Cargar municipios y parroquias según el participante
     from registry.models import Municipio, Parroquia
+
     municipios = []
     parroquias = []
-    
+
     if participante.estado:
         try:
-            municipios = Municipio.objects.filter(estado=participante.estado).order_by("nombre")
+            municipios = Municipio.objects.filter(estado=participante.estado).order_by(
+                "nombre"
+            )
         except:
             pass
-    
+
     if participante.municipio:
         try:
-            parroquias = Parroquia.objects.filter(municipio=participante.municipio).order_by("nombre")
+            parroquias = Parroquia.objects.filter(
+                municipio=participante.municipio
+            ).order_by("nombre")
         except:
             pass
 
@@ -1564,6 +1677,7 @@ def editar_participante(request, pk):
 
     # Obtener todos los estados para admin central
     from registry.models import Estado
+
     todos_estados = Estado.objects.all().order_by("nombre") if es_admin_central else []
 
     if request.method == "POST":
@@ -1572,32 +1686,37 @@ def editar_participante(request, pk):
             # Procesar campos de cédula separados
             cedula_personal_post = form.clean_cedula_personal()
             cedula_escolar_post = form.clean_cedula_escolar_input()
-            
+
             # Guardar el participante con los datos del form
             participante = form.save(commit=False)
-            
-            # Actualizar cédulas
-            if cedula_personal_post:
-                # Mantener la nacionalidad si existe, o usar V por defecto
-                nacionalidad = request.POST.get('nacionalidad', getattr(participante, 'nacionalidad', 'V') or 'V')
-                participante.cedula = cedula_personal_post
-                participante.nacionalidad = nacionalidad
-            
-            if cedula_escolar_post:
-                participante.cedula_escolar = cedula_escolar_post
-            
+
+            # Actualizar nacionalidad
+            nacionalidad = request.POST.get(
+                "nacionalidad", getattr(participante, "nacionalidad", "V") or "V"
+            )
+            participante.nacionalidad = nacionalidad
+
+            # Actualizar cédulas (SOLO NÚMEROS en BD)
+            # CRÍTICO: Guardar en los campos correctos
+            participante.cedula = cedula_personal_post if cedula_personal_post else None
+            participante.cedula_escolar = (
+                cedula_escolar_post if cedula_escolar_post else None
+            )
+
             # Actualizar nacionalidad del representante
-            rep_nacionalidad = request.POST.get('nacionalidad_representante')
+            rep_nacionalidad = request.POST.get("nacionalidad_representante")
             if rep_nacionalidad:
                 participante.nacionalidad_representante = rep_nacionalidad
-            
+
             # Limpiar cédula del representante (solo números)
-            cedula_rep = request.POST.get('cedula_representante', '').strip()
+            cedula_rep = request.POST.get("cedula_representante", "").strip()
             if cedula_rep:
-                participante.cedula_representante = ''.join(filter(str.isdigit, cedula_rep))
-            
+                participante.cedula_representante = "".join(
+                    filter(str.isdigit, cedula_rep)
+                )
+
             participante.save()
-            
+
             messages.success(
                 request,
                 f'Los datos de "{participante.nombres} {participante.apellidos}" se actualizaron correctamente.',
@@ -1693,40 +1812,43 @@ def crear_evento(request):
     """
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    
+
     # Validar permisos
-    roles_permitidos = ['institucional', 'fed_central', 'fed_regional', 'superuser']
+    roles_permitidos = ["institucional", "fed_central", "fed_regional", "superuser"]
     if user_type not in roles_permitidos:
         messages.error(request, "No tienes permisos para crear eventos.")
-        return redirect('dashboard')
-    
+        return redirect("dashboard")
+
     # Determinar si es federación
-    es_federacion = user_type in ['fed_central', 'fed_regional', 'superuser']
-    
+    es_federacion = user_type in ["fed_central", "fed_regional", "superuser"]
+
     # Obtener institución (solo si es institucional)
-    institution = perfil.institution if user_type == 'institucional' else None
-    
+    institution = perfil.institution if user_type == "institucional" else None
+
     # Obtener el estado según el tipo de usuario
     if es_federacion:
         estado_institucion = perfil.estado  # Estado de la federación regional
     else:
-        estado_institucion = institution.estado if institution and hasattr(institution, "estado") else None
+        estado_institucion = (
+            institution.estado
+            if institution and hasattr(institution, "estado")
+            else None
+        )
 
     # Obtener listas para los selects
     estados = Estado.objects.all().order_by("nombre")
     hoy = date.today().isoformat()
-    
+
     # Obtener clubes aprobados de la institución
     clubes_disponibles = []
-    if user_type == 'institucional' and institution:
+    if user_type == "institucional" and institution:
         clubes_disponibles = Club.objects.filter(
-            institucion_creadora=institution,
-            status='aprobado',
-            activo=True
-        ).select_related('institucion_creadora')
+            institucion_creadora=institution, status="aprobado", activo=True
+        ).select_related("institucion_creadora")
 
     # Categorías predefinidas desde el modelo (Single Source of Truth)
     from registry.models import Evento
+
     categorias = [choice[1] for choice in Evento.TIPO_CHOICES]
 
     if request.method == "POST":
@@ -1745,17 +1867,19 @@ def crear_evento(request):
         tipo_evento = request.POST.get("tipo_evento", "institucional")
         club_organizador_id = request.POST.get("club_organizador")
         audiencia = request.POST.get("audiencia", "publica")
-        
+
         # Campos de contacto
         telefono_codigo = request.POST.get("telefono_codigo", "")
         telefono_numero = request.POST.get("telefono_numero", "")
         email_contacto = request.POST.get("email_contacto", "")
-        
+
         # Validar audiencia según tipo de usuario y tipo de evento
-        if tipo_evento == 'club':
+        if tipo_evento == "club":
             # Eventos de club requieren club_organizador
             if not club_organizador_id:
-                messages.error(request, "❌ Debe seleccionar un club para eventos de club.")
+                messages.error(
+                    request, "❌ Debe seleccionar un club para eventos de club."
+                )
                 return render(
                     request,
                     "users/crear_evento.html",
@@ -1770,7 +1894,7 @@ def crear_evento(request):
                     },
                 )
             # Forzar audiencia club_exclusivo para eventos de club
-            audiencia = 'club_exclusivo'
+            audiencia = "club_exclusivo"
         else:
             # Eventos institucionales no pueden tener club_organizador
             club_organizador_id = None
@@ -1825,22 +1949,26 @@ def crear_evento(request):
                 ubicacion_completa = f"{direccion}, {municipio_obj.nombre}"
             elif estado_obj:
                 ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
-            
+
             # Determinar estado inicial según rol (TODOS requieren aprobación excepto fed_central)
-            if user_type == 'fed_central':
-                estado_inicial = 'aprobado'  # fed_central aprueba automáticamente
+            if user_type == "fed_central":
+                estado_inicial = "aprobado"  # fed_central aprueba automáticamente
                 es_publico = True  # Mantener compatibilidad con campo legacy
             else:
-                estado_inicial = 'borrador'  # Todos los demás inician en borrador
+                estado_inicial = "borrador"  # Todos los demás inician en borrador
                 es_publico = False
-            
+
             # Obtener club si es evento de club
             club_obj = None
-            if tipo_evento == 'club' and club_organizador_id:
+            if tipo_evento == "club" and club_organizador_id:
                 try:
-                    club_obj = Club.objects.get(id=club_organizador_id, status='aprobado')
+                    club_obj = Club.objects.get(
+                        id=club_organizador_id, status="aprobado"
+                    )
                 except Club.DoesNotExist:
-                    messages.error(request, "❌ El club seleccionado no existe o no está aprobado.")
+                    messages.error(
+                        request, "❌ El club seleccionado no existe o no está aprobado."
+                    )
                     return render(
                         request,
                         "users/crear_evento.html",
@@ -1867,33 +1995,33 @@ def crear_evento(request):
                 parroquia=parroquia_obj,
                 direccion=direccion,
                 requisitos=requisitos,
-                telefono_codigo=telefono_codigo if telefono_numero else '',
-                telefono_numero=telefono_numero if telefono_numero else '',
-                email_contacto=email_contacto if email_contacto else '',
+                telefono_codigo=telefono_codigo if telefono_numero else "",
+                telefono_numero=telefono_numero if telefono_numero else "",
+                email_contacto=email_contacto if email_contacto else "",
                 tipo_evento=tipo_evento,
-                institucion=institution if tipo_evento == 'institucional' else None,
-                club_organizador=club_obj if tipo_evento == 'club' else None,
+                institucion=institution if tipo_evento == "institucional" else None,
+                club_organizador=club_obj if tipo_evento == "club" else None,
                 audiencia=audiencia,
                 es_publico=es_publico,
                 estado_evento=estado_inicial,
                 creado_por=request.user,
                 activo=True,
             )
-            
-            if user_type == 'fed_central':
+
+            if user_type == "fed_central":
                 messages.success(
-                    request, 
+                    request,
                     f"✅ Evento '{nombre}' aprobado y publicado exitosamente. "
                     f"Tipo: {tipo_evento.upper()}. "
-                    f"Visible para: {evento.get_audiencia_display()}."
+                    f"Visible para: {evento.get_audiencia_display()}.",
                 )
                 return redirect("dashboard")
             else:
-                tipo_msg = "de club" if tipo_evento == 'club' else "institucional"
+                tipo_msg = "de club" if tipo_evento == "club" else "institucional"
                 messages.success(
                     request,
                     f"✅ Evento {tipo_msg} '{nombre}' creado en BORRADOR. "
-                    "Envíalo a revisión cuando esté listo para aprobación de Federación Venezolana de Robótica Creativa."
+                    "Envíalo a revisión cuando esté listo para aprobación de Federación Venezolana de Robótica Creativa.",
                 )
                 return redirect("seguimiento_eventos_inst")
 
@@ -1936,7 +2064,7 @@ def crear_evento(request):
 def eventos_disponibles(request):
     """
     Vista para mostrar eventos disponibles según audiencia y permisos.
-    
+
     Reglas de visibilidad por audiencia:
     - fed_central/superuser: ven TODOS los eventos aprobados
     - instituciones: ven eventos según audiencia:
@@ -1945,6 +2073,7 @@ def eventos_disponibles(request):
       * institucional_privado: solo si es su institución
     """
     from datetime import date
+
     from django.db import models
 
     hoy = date.today()
@@ -1960,35 +2089,35 @@ def eventos_disponibles(request):
     # Obtener perfil del usuario
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    institucion = getattr(perfil, 'institution', None)
+    institucion = getattr(perfil, "institution", None)
 
     # Query base: eventos aprobados, activos, no cancelados
+    # Los eventos creados por fed_central tienen estado 'aprobado' automáticamente
     eventos = Evento.objects.filter(
-        estado_evento='aprobado',
-        activo=True,
-        cancelado=False
+        estado_evento__in=["aprobado", "publicado", "abierto"], activo=True, cancelado=False
     ).select_related(
         "estado", "municipio", "parroquia", "institucion", "club_organizador"
     )
 
     # Aplicar filtros de VISIBILIDAD según audiencia
-    if user_type not in ['fed_central', 'superuser']:
+    if user_type not in ["fed_central", "superuser"]:
         from registry.models import MembresiaClu
-        
+
         # Obtener IDs de clubes donde la institución es miembro activo
         clubes_miembro = MembresiaClu.objects.filter(
-            institucion=institucion,
-            estado='miembro_activo'
-        ).values_list('club_id', flat=True)
-        
+            institucion=institucion, estado="miembro_activo"
+        ).values_list("club_id", flat=True)
+
         # Filtrar por audiencia:
         # 1. Eventos públicos (audiencia='publica')
         # 2. Eventos exclusivos de clubes donde es miembro
         # 3. Eventos privados de su institución
         eventos = eventos.filter(
-            models.Q(audiencia='publica') |
-            models.Q(audiencia='club_exclusivo', club_organizador_id__in=clubes_miembro) |
-            models.Q(audiencia='institucional_privado', institucion=institucion)
+            models.Q(audiencia="publica")
+            | models.Q(
+                audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro
+            )
+            | models.Q(audiencia="institucional_privado", institucion=institucion)
         )
 
     # Aplicar filtros adicionales
@@ -2000,7 +2129,7 @@ def eventos_disponibles(request):
 
     if modalidad_filtro:
         eventos = eventos.filter(modalidad=modalidad_filtro)
-    
+
     if audiencia_filtro:
         eventos = eventos.filter(audiencia=audiencia_filtro)
 
@@ -2053,86 +2182,107 @@ def eventos_disponibles(request):
 
 
 @login_required
-@institucional_required
 def gestionar_eventos_institucion(request):
-    """
-    Vista para que las instituciones gestionen sus eventos
-    """
-    institution = request.user.userprofile.institution
+    perfil = request.user.userprofile
+    user_type = perfil.user_type
+    institution = getattr(perfil, "institution", None)
     hoy = date.today()
 
-    # Filtros
+    es_fed_central = user_type in ["fed_central", "superuser", "tecnologico"]
+    es_institucional = user_type == "institucional"
+
+    # Actualizar estados automáticos (Esto está bien)
+    eventos_a_actualizar = Evento.objects.filter(
+        fecha__lte=hoy,
+        estado_evento__in=['aprobado', 'abierto']
+    ).exclude(
+        estado_evento__in=['finalizado', 'cancelado', 'pausado', 'en_proceso']
+    )
+    for evento in eventos_a_actualizar:
+        evento.actualizar_estado_por_fecha()
+
+    # --- INICIO DE LA CORRECCIÓN ---
+    # Inicializamos el QuerySet base con las relaciones ya cargadas
+    eventos = Evento.objects.select_related(
+        "estado", "municipio", "parroquia", "institucion", "club_organizador"
+    )
+
+    # Filtrar según rol usando lógica de Q
+    if es_fed_central:
+        # No aplicamos filtro extra, ya tiene Evento.objects.all()
+        pass 
+    elif es_institucional and institution:
+        # Usamos OR (|) para combinar lógica sin usar .union()
+        eventos = eventos.filter(
+            Q(institucion=institution) | 
+            Q(es_publico=True, estado_evento__in=['aprobado', 'abierto', 'en_proceso'])
+        ).distinct() # distinct() es importante cuando usamos OR para evitar duplicados
+    else:
+        eventos = Evento.objects.none()
+
+    # Ahora los filtros adicionales funcionarán sin problemas
     estado_filtro = request.GET.get("estado")
     tipo_filtro = request.GET.get("tipo")
     estado_evento_filtro = request.GET.get("estado_evento")
 
-    eventos = Evento.objects.filter(institucion=institution).select_related("estado")
-
     if estado_filtro:
         eventos = eventos.filter(estado_id=estado_filtro)
-
     if tipo_filtro:
         eventos = eventos.filter(tipo=tipo_filtro)
-
     if estado_evento_filtro:
         eventos = eventos.filter(estado_evento=estado_evento_filtro)
-    else:
-        # Por defecto, mostrar todos excepto cancelados
-        eventos = eventos.exclude(cancelado=True)
 
-    # Obtener todos los grupos disponibles de la institución
-    grupos_disponibles = Grupo.objects.filter(usuario_creador=request.user).order_by(
-        "nombre"
+    # El order_by ahora es legal porque no hay un union() previo
+    eventos = eventos.order_by("-fecha_creacion")
+    # --- FIN DE LA CORRECCIÓN ---
+    
+    # Estadísticas (Calculadas sobre el QuerySet filtrado)
+    # Calculamos todo de un solo golpe en la base de datos
+    stats = eventos.aggregate(
+    total=Count('id'),
+    borrador=Count('id', filter=Q(estado_evento="borrador")),
+    pendientes=Count('id', filter=Q(estado_evento="pendiente")),
+    aprobados=Count('id', filter=Q(estado_evento="aprobado")),
+    rechazados=Count('id', filter=Q(estado_evento="rechazado")),
+    activos=Count('id', filter=Q(estado_evento="abierto", fecha__gt=hoy, cancelado=False)),
+    en_proceso=Count('id', filter=Q(estado_evento="en_proceso")),
+    finalizados=Count('id', filter=Q(estado_evento="finalizado")),
+    pausados=Count('id', filter=Q(estado_evento="pausado")),
+    cancelados=Count('id', filter=Q(cancelado=True)),
     )
-
-    # Calcular total de inscripciones para las estadísticas
-    total_inscripciones = 0
+    
     for evento in eventos:
-        # CORREGIDO: usar inscripciones_grupo en lugar de inscripciones
-        total_inscripciones += evento.inscripciones_grupo.count()
+        # Creamos un atributo temporal "en vuelo" para el template
+        evento.puede_editar = evento.usuario_puede_gestionar(perfil)
+        # Permiso específico de estado (nuevo)
+        # Solo puede editar si tiene permiso de gestión Y el estado es borrador/rechazado
+        evento.puede_modificar_datos = evento.puede_editar and evento.es_editable_por_institucion
+    # ... resto del código (grupos_disponibles y context) ...
+    grupos_disponibles = Grupo.objects.filter(
+        usuario_creador=request.user, activo=True
+    ).order_by("nombre") if es_institucional else Grupo.objects.none()
 
-    # Calcular eventos activos (próximas fechas)
-    eventos_activos = eventos.filter(
-        fecha__gte=hoy, estado_evento="abierto", cancelado=False
-    ).count()
 
-    # Estadísticas
-    stats = {
-        "total": eventos.count(),
-        "activos": eventos.filter(
-            estado_evento="abierto", fecha__gte=hoy, cancelado=False
-        ).count(),
-        "pausados": eventos.filter(estado_evento="pausado", cancelado=False).count(),
-        "cerrados": eventos.filter(estado_evento="cerrado", cancelado=False).count(),
-        "finalizados": eventos.filter(
-            estado_evento="finalizado", cancelado=False
-        ).count(),
-        "cancelados": eventos.filter(cancelado=True).count(),
-        "hoy": eventos.filter(fecha=hoy, cancelado=False).count(),
-        "proximos": eventos.filter(
-            fecha__gt=hoy, estado_evento="abierto", cancelado=False
-        ).count(),
-    }
+    for evento in eventos:
+        # Permiso general (que ya tenías)
+        evento.puede_editar = evento.usuario_puede_gestionar(perfil)
+        
+
 
     context = {
-        "eventos": eventos.order_by("-fecha"),
+        "eventos": eventos,
         "grupos_disponibles": grupos_disponibles,
-        "total_inscripciones": total_inscripciones,
-        "eventos_activos": eventos_activos,
         "stats": stats,
         "hoy": hoy,
         "estados": Estado.objects.all().order_by("nombre"),
         "tipos": Evento.TIPO_CHOICES,
         "estados_evento": Evento.ESTADO_CHOICES,
+        "es_fed_central": es_fed_central,
+        "es_institucional": es_institucional,
+        "institution": institution,
     }
 
-    # Para depuración - imprime en la consola
-    print(f"Total equipos encontrados: {grupos_disponibles.count()}")
-    for grupo in grupos_disponibles:
-        print(f"Equipo: {grupo.nombre} - ID: {grupo.id}")
-
     return render(request, "users/gestionar_eventos.html", context)
-
 
 @login_required
 @institucional_required
@@ -2142,54 +2292,59 @@ def seguimiento_eventos_institucion(request):
     Muestra eventos agrupados por estado: Borradores, Pendientes, Aprobados, Rechazados.
     """
     institution = request.user.userprofile.institution
-    
+
     # Eventos por estado
-    eventos_borrador = Evento.objects.filter(
-        institucion=institution,
-        estado_evento='borrador'
-    ).select_related('estado').order_by('-fecha_creacion')
-    
-    eventos_pendientes = Evento.objects.filter(
-        institucion=institution,
-        estado_evento='pendiente'
-    ).select_related('estado').order_by('-fecha_creacion')
-    
-    eventos_aprobados = Evento.objects.filter(
-        institucion=institution,
-        estado_evento='aprobado'
-    ).select_related('estado').order_by('-fecha')
-    
-    eventos_rechazados = Evento.objects.filter(
-        institucion=institution,
-        estado_evento='rechazado'
-    ).select_related('estado').order_by('-fecha_creacion')
-    
+    eventos_borrador = (
+        Evento.objects.filter(institucion=institution, estado_evento="borrador")
+        .select_related("estado")
+        .order_by("-fecha_creacion")
+    )
+
+    eventos_pendientes = (
+        Evento.objects.filter(institucion=institution, estado_evento="pendiente")
+        .select_related("estado")
+        .order_by("-fecha_creacion")
+    )
+
+    eventos_aprobados = (
+        Evento.objects.filter(institucion=institution, estado_evento="aprobado")
+        .select_related("estado")
+        .order_by("-fecha")
+    )
+
+    eventos_rechazados = (
+        Evento.objects.filter(institucion=institution, estado_evento="rechazado")
+        .select_related("estado")
+        .order_by("-fecha_creacion")
+    )
+
     # Grupos disponibles del usuario
-    grupos_disponibles = Grupo.objects.filter(
-        usuario_creador=request.user,
-        activo=True
-    ).prefetch_related('participantes').order_by('nombre')
-    
+    grupos_disponibles = (
+        Grupo.objects.filter(usuario_creador=request.user, activo=True)
+        .prefetch_related("participantes")
+        .order_by("nombre")
+    )
+
     # Estadísticas
     stats = {
-        'total_borradores': eventos_borrador.count(),
-        'total_pendientes': eventos_pendientes.count(),
-        'total_aprobados': eventos_aprobados.count(),
-        'total_rechazados': eventos_rechazados.count(),
-        'total': Evento.objects.filter(institucion=institution).count(),
+        "total_borradores": eventos_borrador.count(),
+        "total_pendientes": eventos_pendientes.count(),
+        "total_aprobados": eventos_aprobados.count(),
+        "total_rechazados": eventos_rechazados.count(),
+        "total": Evento.objects.filter(institucion=institution).count(),
     }
-    
+
     context = {
-        'eventos_borrador': eventos_borrador,
-        'eventos_pendientes': eventos_pendientes,
-        'eventos_aprobados': eventos_aprobados,
-        'eventos_rechazados': eventos_rechazados,
-        'grupos_disponibles': grupos_disponibles,
-        'stats': stats,
-        'institution': institution,
+        "eventos_borrador": eventos_borrador,
+        "eventos_pendientes": eventos_pendientes,
+        "eventos_aprobados": eventos_aprobados,
+        "eventos_rechazados": eventos_rechazados,
+        "grupos_disponibles": grupos_disponibles,
+        "stats": stats,
+        "institution": institution,
     }
-    
-    return render(request, 'users/seguimiento_eventos.html', context)
+
+    return render(request, "users/seguimiento_eventos.html", context)
 
 
 @login_required
@@ -2198,35 +2353,33 @@ def enviar_evento_revision(request, evento_id):
     """
     Vista para enviar un evento en borrador a revisión (cambiar estado a pendiente).
     """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
-    
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "error": "Método no permitido"}, status=405
+        )
+
     try:
         institution = request.user.userprofile.institution
         evento = get_object_or_404(
-            Evento,
-            id=evento_id,
-            institucion=institution,
-            estado_evento='borrador'
+            Evento, id=evento_id, institucion=institution, estado_evento="borrador"
         )
-        
+
         # Cambiar estado a pendiente
-        evento.estado_evento = 'pendiente'
-        evento.save(update_fields=['estado_evento'])
-        
-        messages.success(request, f'✅ Evento "{evento.nombre}" enviado a revisión exitosamente')
-        return JsonResponse({'success': True})
-        
+        evento.estado_evento = "pendiente"
+        evento.save(update_fields=["estado_evento"])
+
+        messages.success(
+            request, f'✅ Evento "{evento.nombre}" enviado a revisión exitosamente'
+        )
+        return JsonResponse({"success": True})
+
     except Evento.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Evento no encontrado o no está en borrador'
-        }, status=404)
+        return JsonResponse(
+            {"success": False, "error": "Evento no encontrado o no está en borrador"},
+            status=404,
+        )
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 @login_required
@@ -2247,7 +2400,9 @@ def editar_evento(request, evento_id):
             messages.error(request, "El nombre del evento es obligatorio.")
         else:
             evento.nombre = nombre
-            evento.tipo = request.POST.get("categoria", "")  # El form usa 'categoria' pero se guarda en 'tipo'
+            evento.tipo = request.POST.get(
+                "categoria", ""
+            )  # El form usa 'categoria' pero se guarda en 'tipo'
             evento.fecha = request.POST.get("fecha")
             evento.descripcion = request.POST.get("descripcion", "")
             evento.modalidad = request.POST.get("modalidad")
@@ -2261,7 +2416,7 @@ def editar_evento(request, evento_id):
             evento.telefono_codigo = request.POST.get("telefono_codigo", "")
             evento.telefono_numero = request.POST.get("telefono_numero", "")
             evento.email_contacto = request.POST.get("email_contacto", "")
-            
+
             # Club organizador
             club_id = request.POST.get("club_organizador")
             if club_id:
@@ -2284,35 +2439,38 @@ def editar_evento(request, evento_id):
     parroquias = (
         Parroquia.objects.filter(municipio=evento.municipio) if evento.municipio else []
     )
-    
+
     # Obtener clubes aprobados de la institución
     from registry.models import Club
+
     clubes_disponibles = Club.objects.filter(
-        institucion_creadora=request.user.userprofile.institution,
-        status='aprobado'
+        institucion_creadora=request.user.userprofile.institution, status="aprobado"
     )
-    
+
     # Preparar valores previos para el formulario
     valores_previos = {
-        'nombre': evento.nombre or '',
-        'categoria': evento.tipo or '',  # El campo 'tipo' del modelo se mapea a 'categoria' en el form
-        'tipo_evento': evento.tipo_evento if hasattr(evento, 'tipo_evento') else 'institucional',
-        'fecha': evento.fecha.strftime('%Y-%m-%d') if evento.fecha else '',
-        'modalidad': evento.modalidad or 'presencial',
-        'estado_evento': evento.estado_evento or 'borrador',
-        'audiencia': getattr(evento, 'audiencia', 'publica'),
-        'estado': evento.estado_id,
-        'municipio': evento.municipio_id,
-        'parroquia': evento.parroquia_id,
-        'direccion': evento.direccion or '',
-        'telefono_codigo': getattr(evento, 'telefono_codigo', ''),
-        'telefono_numero': getattr(evento, 'telefono_numero', ''),
-        'email_contacto': getattr(evento, 'email_contacto', ''),
-        'descripcion': evento.descripcion or '',
-        'requisitos': evento.requisitos or '',
-        'club_organizador': getattr(evento, 'club_organizador_id', None),
+        "nombre": evento.nombre or "",
+        "categoria": evento.tipo
+        or "",  # El campo 'tipo' del modelo se mapea a 'categoria' en el form
+        "tipo_evento": evento.tipo_evento
+        if hasattr(evento, "tipo_evento")
+        else "institucional",
+        "fecha": evento.fecha.strftime("%Y-%m-%d") if evento.fecha else "",
+        "modalidad": evento.modalidad or "presencial",
+        "estado_evento": evento.estado_evento or "borrador",
+        "audiencia": getattr(evento, "audiencia", "publica"),
+        "estado": evento.estado_id,
+        "municipio": evento.municipio_id,
+        "parroquia": evento.parroquia_id,
+        "direccion": evento.direccion or "",
+        "telefono_codigo": getattr(evento, "telefono_codigo", ""),
+        "telefono_numero": getattr(evento, "telefono_numero", ""),
+        "email_contacto": getattr(evento, "email_contacto", ""),
+        "descripcion": evento.descripcion or "",
+        "requisitos": evento.requisitos or "",
+        "club_organizador": getattr(evento, "club_organizador_id", None),
     }
-    
+
     # Categorías desde el modelo (Single Source of Truth)
     categorias = [choice[1] for choice in Evento.TIPO_CHOICES]
 
@@ -2325,7 +2483,9 @@ def editar_evento(request, evento_id):
         "valores_previos": valores_previos,
         "categorias": categorias,
         "es_federacion": False,
-        "estado_institucion": request.user.userprofile.institution.estado if hasattr(request.user.userprofile, 'institution') else None,
+        "estado_institucion": request.user.userprofile.institution.estado
+        if hasattr(request.user.userprofile, "institution")
+        else None,
     }
     return render(request, "users/editar_evento.html", context)
 
@@ -2407,27 +2567,26 @@ def eliminar_evento(request, evento_id):
     try:
         evento = Evento.objects.get(id=evento_id, institucion=institution)
     except Evento.DoesNotExist:
-        messages.error(request, "El evento no existe o no tienes permiso para eliminarlo.")
+        messages.error(
+            request, "El evento no existe o no tienes permiso para eliminarlo."
+        )
         return redirect("gestionar_eventos_inst")
 
     # Validar que no tenga inscripciones de grupos
     # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
     if evento.inscripciones_grupo.exists():
         messages.warning(
-            request, 
-            f"❌ No se puede eliminar '{evento.nombre}' porque ya tiene equipos inscritos."
+            request,
+            f"❌ No se puede eliminar '{evento.nombre}' porque ya tiene equipos inscritos.",
         )
         return redirect("gestionar_eventos_inst")
 
     # Ejecución de la eliminación
     nombre_guardado = evento.nombre
     evento.delete()
-    
-    messages.success(
-        request, 
-        f"✅ Evento '{nombre_guardado}' eliminado correctamente."
-    )
-    
+
+    messages.success(request, f"✅ Evento '{nombre_guardado}' eliminado correctamente.")
+
     return redirect("gestionar_eventos_inst")
 
 
@@ -2442,7 +2601,7 @@ def detalle_evento(request, evento_id):
     """
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    
+
     # Obtener el evento
     evento = get_object_or_404(
         Evento.objects.select_related(
@@ -2451,21 +2610,21 @@ def detalle_evento(request, evento_id):
         id=evento_id,
         activo=True,
     )
-    
+
     # Validar permisos según el tipo de usuario
-    if user_type not in ['fed_central', 'superuser']:
+    if user_type not in ["fed_central", "superuser"]:
         # fed_regional: solo eventos de su estado
-        if user_type == 'fed_regional':
+        if user_type == "fed_regional":
             if evento.estado != perfil.estado:
                 messages.error(request, "No tienes permiso para ver este evento.")
-                return redirect('dashboard')
+                return redirect("dashboard")
         # institucional: solo eventos públicos o de su institución
-        elif user_type == 'institucional':
+        elif user_type == "institucional":
             institucion = perfil.institution
             if not (evento.es_publico or evento.institucion == institucion):
                 messages.error(request, "No tienes permiso para ver este evento.")
-                return redirect('eventos_disponibles')
-    
+                return redirect("eventos_disponibles")
+
     context = {
         "evento": evento,
         "puede_inscribirse": evento.puede_inscribirse
@@ -2563,26 +2722,97 @@ def buscar_usuarios(request):
 
 @login_required
 def agregar_grupo(request):
-    """Vista para agregar un grupo (prototipo con select estático)"""
-    # Lista de participantes de ejemplo
-    participantes = [
-        {"id": 1, "nombre": "Juan Pérez"},
-        {"id": 2, "nombre": "María Gómez"},
-        {"id": 3, "nombre": "Luis Rodríguez"},
-    ]
+    """Vista para agregar un grupo con validaciones completas"""
+    # Obtener participantes de la institución del usuario
+    try:
+        perfil = request.user.userprofile
+        institucion = perfil.institution
+
+        # Obtener participantes vinculados activamente a la institución
+        participantes = (
+            Participante.objects.filter(
+                vinculaciones__institucion=institucion, vinculaciones__status="activo"
+            )
+            .distinct()
+            .order_by("nombres", "apellidos")
+        )
+    except (AttributeError, UserProfile.DoesNotExist):
+        participantes = []
 
     if request.method == "POST":
-        nombre_grupo = request.POST.get("nombre_grupo")
+        nombre_grupo = request.POST.get("nombre_grupo", "").strip()
         miembros_ids = request.POST.getlist("miembros")
-        # Solo para el ejemplo: filtramos los nombres seleccionados
-        miembros = [p["nombre"] for p in participantes if str(p["id"]) in miembros_ids]
 
-        # Guardamos en sesión temporal para el ejemplo
-        grupos = request.session.get("grupos", [])
-        grupos.append({"nombre": nombre_grupo, "miembros": miembros})
-        request.session["grupos"] = grupos
+        # Validaciones backend
+        errores = []
 
-        return redirect("dashboard_participante")
+        # 1. Validar nombre del grupo
+        if not nombre_grupo:
+            errores.append("❌ El nombre del grupo es obligatorio")
+        elif len(nombre_grupo) < 3:
+            errores.append("❌ El nombre del grupo debe tener al menos 3 caracteres")
+        elif len(nombre_grupo) > 150:
+            errores.append("❌ El nombre del grupo no puede exceder 150 caracteres")
+
+        # 2. Validar selección de miembros
+        if not miembros_ids or len(miembros_ids) == 0:
+            errores.append("❌ Debes seleccionar al menos un miembro para el equipo")
+
+        # Si hay errores, mostrar y retornar al formulario
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+            return render(
+                request,
+                "users/agregar_grupo.html",
+                {
+                    "participantes": participantes,
+                    "nombre_grupo_prev": nombre_grupo,
+                    "miembros_prev": miembros_ids,
+                },
+            )
+
+        # Si las validaciones pasan, crear el grupo
+        try:
+            with transaction.atomic():
+                # Crear grupo
+                nuevo_grupo = Grupo.objects.create(
+                    nombre=nombre_grupo,
+                    usuario_creador=request.user,
+                    institucion=institucion,
+                    criterio="proyecto",  # Valor por defecto
+                    activo=True,
+                )
+
+                # Agregar miembros
+                for miembro_id in miembros_ids:
+                    try:
+                        participante = Participante.objects.get(
+                            id=miembro_id,
+                            vinculaciones__institucion=institucion,
+                            vinculaciones__status="activo",
+                        )
+                        nuevo_grupo.participantes.add(participante)
+                    except Participante.DoesNotExist:
+                        pass
+
+                messages.success(
+                    request,
+                    f"✅ ¡Equipo '{nombre_grupo}' creado exitosamente con {len(miembros_ids)} miembro(s)!",
+                )
+                return redirect("mis_grupos")
+
+        except Exception as e:
+            messages.error(request, f"❌ Error al crear el equipo: {str(e)}")
+            return render(
+                request,
+                "users/agregar_grupo.html",
+                {
+                    "participantes": participantes,
+                    "nombre_grupo_prev": nombre_grupo,
+                    "miembros_prev": miembros_ids,
+                },
+            )
 
     return render(request, "users/agregar_grupo.html", {"participantes": participantes})
 
@@ -3003,25 +3233,31 @@ def mi_perfil_institucional(request):
             )
         elif form_type == "editar_perfil":
             try:
-                institucion = Institucion.objects.filter(userprofile__user=usuario).first()
+                institucion = Institucion.objects.filter(
+                    userprofile__user=usuario
+                ).first()
                 if institucion:
-                    institucion.nombre = request.POST.get('nombre', institucion.nombre)
-                    institucion.email = request.POST.get('email', institucion.email)
-                    institucion.telefono = request.POST.get('telefono', institucion.telefono)
-                    institucion.direccion = request.POST.get('direccion', institucion.direccion)
-                    
-                    estado_id = request.POST.get('estado')
+                    institucion.nombre = request.POST.get("nombre", institucion.nombre)
+                    institucion.email = request.POST.get("email", institucion.email)
+                    institucion.telefono = request.POST.get(
+                        "telefono", institucion.telefono
+                    )
+                    institucion.direccion = request.POST.get(
+                        "direccion", institucion.direccion
+                    )
+
+                    estado_id = request.POST.get("estado")
                     if estado_id:
                         institucion.estado_id = estado_id
-                    
-                    municipio_id = request.POST.get('municipio')
+
+                    municipio_id = request.POST.get("municipio")
                     if municipio_id:
                         institucion.municipio_id = municipio_id
-                    
-                    parroquia_id = request.POST.get('parroquia')
+
+                    parroquia_id = request.POST.get("parroquia")
                     if parroquia_id:
                         institucion.parroquia_id = parroquia_id
-                    
+
                     institucion.save()
                     usuario.email = institucion.email
                     usuario.save()
@@ -3042,7 +3278,7 @@ def mi_perfil_institucional(request):
         "fecha_unido": usuario.date_joined,
         "password_form": password_form,
         "open_password_modal": open_password_modal,
-        "estados": Estado.objects.all().order_by('nombre'),
+        "estados": Estado.objects.all().order_by("nombre"),
     }
     return render(request, "users/mi_perfil.html", context)
 
@@ -3068,9 +3304,7 @@ def mis_grupos(request):
                     # Eliminar el grupo
                     grupo.delete()
 
-                messages.success(
-                    request, "El Equipo ha sido eliminado correctamente."
-                )
+                messages.success(request, "El Equipo ha sido eliminado correctamente.")
                 return redirect("mis_grupos")
 
             except Grupo.DoesNotExist:
@@ -3108,7 +3342,9 @@ def mis_grupos(request):
                             try:
                                 idx = int(idx_str)
                                 if idx < len(participantes_actuales):
-                                    grupo.participantes.remove(participantes_actuales[idx])
+                                    grupo.participantes.remove(
+                                        participantes_actuales[idx]
+                                    )
                             except (ValueError, IndexError):
                                 pass
 
@@ -3117,16 +3353,26 @@ def mis_grupos(request):
                     for cedula in nuevas_cedulas:
                         if cedula.strip():
                             try:
-                                participante = Participante.objects.get(cedula=cedula.strip())
+                                participante = Participante.objects.get(
+                                    cedula=cedula.strip()
+                                )
                                 grupo.participantes.add(participante)
                             except Participante.DoesNotExist:
-                                messages.warning(request, f"Participante con cédula {cedula} no encontrado")
+                                messages.warning(
+                                    request,
+                                    f"Participante con cédula {cedula} no encontrado",
+                                )
 
-                    messages.success(request, f"El equipo '{grupo.nombre}' ha sido actualizado correctamente.")
+                    messages.success(
+                        request,
+                        f"El equipo '{grupo.nombre}' ha sido actualizado correctamente.",
+                    )
                     return redirect("mis_grupos")
 
             except Grupo.DoesNotExist:
-                messages.error(request, "El Equipo no existe o no tienes permiso para editarlo.")
+                messages.error(
+                    request, "El Equipo no existe o no tienes permiso para editarlo."
+                )
                 return redirect("mis_grupos")
             except Exception as e:
                 print(f"DEBUG ERROR EDITAR: {str(e)}")
@@ -3158,22 +3404,34 @@ def mis_grupos(request):
                     if tutor_id:
                         try:
                             from registry.models import Tutor
-                            tutor = Tutor.objects.get(id=tutor_id, status='activo')
+
+                            tutor = Tutor.objects.get(id=tutor_id, status="activo")
                             nuevo_grupo.tutores.add(tutor)
                         except Tutor.DoesNotExist:
-                            messages.warning(request, "Tutor no encontrado, grupo creado sin tutor")
+                            messages.warning(
+                                request, "Tutor no encontrado, grupo creado sin tutor"
+                            )
 
                     # Procesar participantes
-                    cedulas_participantes = request.POST.getlist("participante_cedulas[]")
+                    cedulas_participantes = request.POST.getlist(
+                        "participante_cedulas[]"
+                    )
                     for cedula in cedulas_participantes:
                         if cedula.strip():
                             try:
-                                participante = Participante.objects.get(cedula=cedula.strip())
+                                participante = Participante.objects.get(
+                                    cedula=cedula.strip()
+                                )
                                 nuevo_grupo.participantes.add(participante)
                             except Participante.DoesNotExist:
-                                messages.warning(request, f"Participante con cédula {cedula} no encontrado")
+                                messages.warning(
+                                    request,
+                                    f"Participante con cédula {cedula} no encontrado",
+                                )
 
-                    messages.success(request, f"¡El equipo '{nombre_grupo}' ha sido registrado!")
+                    messages.success(
+                        request, f"¡El equipo '{nombre_grupo}' ha sido registrado!"
+                    )
                     return redirect("mis_grupos")
 
             except Exception as e:
@@ -3184,7 +3442,11 @@ def mis_grupos(request):
     # ============================================
     # LÓGICA GET
     # ============================================
-    grupos = Grupo.objects.filter(usuario_creador=usuario, activo=True).prefetch_related('tutores', 'participantes').order_by("-fecha_registro")
+    grupos = (
+        Grupo.objects.filter(usuario_creador=usuario, activo=True)
+        .prefetch_related("tutores", "participantes")
+        .order_by("-fecha_registro")
+    )
 
     # Calcular total de participantes
     total_participantes = sum(grupo.participantes.count() for grupo in grupos)
@@ -3497,11 +3759,12 @@ def api_buscar_participante(request, cedula):
         )
     except Participante.DoesNotExist:
         pass
-    
+
     # 2. Buscar en el modelo Tutor (si no se encontró en Participante)
     try:
         from registry.models import Tutor
-        t = Tutor.objects.get(cedula=cedula, status='activo')
+
+        t = Tutor.objects.get(cedula=cedula, status="activo")
         return JsonResponse(
             {
                 "encontrado": True,
@@ -3522,6 +3785,7 @@ def api_buscar_participante(request, cedula):
         return JsonResponse({"encontrado": False})
 
     # ============================================
+
 
 def cargar_municipios_evento(request):
     """
@@ -3614,33 +3878,43 @@ def detalle_institucion_api(request, institucion_id):
     Vista API para obtener detalles completos de una institución (AJAX)
     """
     from django.http import JsonResponse
-    
+
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    
+
     # Verificar permisos
     roles_admin = ["fed_central", "fed_regional", "superuser", "tecnologico"]
     if user_type not in roles_admin:
         return JsonResponse({"error": "No tienes permisos"}, status=403)
-    
+
     try:
         institucion = Institucion.objects.select_related(
             "estado", "municipio", "parroquia"
         ).get(id=institucion_id, eliminado=False)
-        
+
         # Verificar territorio para regionales
         if user_type == "fed_regional" and institucion.estado != perfil.estado:
-            return JsonResponse({"error": "No tienes permiso sobre esta región"}, status=403)
-        
+            return JsonResponse(
+                {"error": "No tienes permiso sobre esta región"}, status=403
+            )
+
         # Construir respuesta
         # Para particulares, usar cédula en lugar de RIF
-        if institucion.tipo_institucion == 'particular':
-            rif_o_cedula = f"{institucion.particular_nacionalidad}-{institucion.particular_cedula}" if institucion.particular_cedula else "N/A"
-            nombre_completo = f"{institucion.particular_nombres} {institucion.particular_apellidos}" if institucion.particular_nombres else institucion.nombre
+        if institucion.tipo_institucion == "particular":
+            rif_o_cedula = (
+                f"{institucion.particular_nacionalidad}-{institucion.particular_cedula}"
+                if institucion.particular_cedula
+                else "N/A"
+            )
+            nombre_completo = (
+                f"{institucion.particular_nombres} {institucion.particular_apellidos}"
+                if institucion.particular_nombres
+                else institucion.nombre
+            )
         else:
             rif_o_cedula = institucion.rif or "N/A"
             nombre_completo = institucion.nombre
-        
+
         data = {
             "nombre": nombre_completo,
             "codigo": institucion.codigo or "N/A",
@@ -3649,25 +3923,35 @@ def detalle_institucion_api(request, institucion_id):
             "telefono": institucion.telefono or "N/A",
             "direccion": institucion.direccion or "N/A",
             "estado": institucion.estado.nombre if institucion.estado else "N/A",
-            "municipio": institucion.municipio.nombre if institucion.municipio else "N/A",
-            "parroquia": institucion.parroquia.nombre if institucion.parroquia else "N/A",
-            "tipo_institucion": institucion.get_tipo_institucion_display() if hasattr(institucion, 'get_tipo_institucion_display') else (institucion.tipo_institucion or "N/A"),
+            "municipio": institucion.municipio.nombre
+            if institucion.municipio
+            else "N/A",
+            "parroquia": institucion.parroquia.nombre
+            if institucion.parroquia
+            else "N/A",
+            "tipo_institucion": institucion.get_tipo_institucion_display()
+            if hasattr(institucion, "get_tipo_institucion_display")
+            else (institucion.tipo_institucion or "N/A"),
             "tipo_institucion_key": institucion.tipo_institucion or "otra",
-            "naturaleza": institucion.get_naturaleza_display() if hasattr(institucion, 'get_naturaleza_display') else (getattr(institucion, 'naturaleza', None) or "N/A"),
-            "codigo_mppe": getattr(institucion, 'codigo_mppe', None) or "N/A",
+            "naturaleza": institucion.get_naturaleza_display()
+            if hasattr(institucion, "get_naturaleza_display")
+            else (getattr(institucion, "naturaleza", None) or "N/A"),
+            "codigo_mppe": getattr(institucion, "codigo_mppe", None) or "N/A",
             "dependencia": institucion.dependencia or "N/A",
             "estatus": institucion.estatus or "pendiente",
             "activa": institucion.activa,
-            "fecha_registro": institucion.fecha_registro.strftime("%d/%m/%Y %H:%M") if institucion.fecha_registro else "N/A",
+            "fecha_registro": institucion.fecha_registro.strftime("%d/%m/%Y %H:%M")
+            if institucion.fecha_registro
+            else "N/A",
         }
-        
+
         return JsonResponse(data)
-        
+
     except Institucion.DoesNotExist:
         return JsonResponse({"error": "Institución no encontrada"}, status=404)
     except Exception as e:
         import traceback
-        return JsonResponse({"error": str(e), "traceback": traceback.format_exc()}, status=500)
 
-
-
+        return JsonResponse(
+            {"error": str(e), "traceback": traceback.format_exc()}, status=500
+        )

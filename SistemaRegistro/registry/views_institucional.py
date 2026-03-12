@@ -152,8 +152,10 @@ def eventos_disponibles_institucion(request):
 def inscribir_grupo_evento(request, evento_id):
     """Inscribir un grupo a un evento."""
     evento = get_object_or_404(Evento, id=evento_id)
-
-    if evento.estado_evento not in ["abierto"]:
+    
+    # Los eventos deben estarapproved o abiertos para permitir inscripciones
+    # Esta es la lógica del modelo de eventos dondefed_central aprueba eventos
+    if evento.estado_evento not in ["abierto", "aprobado", "publicado"]:
         messages.error(request, "Este evento no está disponible para inscripciones.")
         return redirect("eventos_disponibles_institucion")
 
@@ -221,9 +223,33 @@ def clubes_lista(request):
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
-    # Si es federación, mostrar todos los clubes
-    if user_type in ["fed_central", "fed_regional", "superuser"]:
+    # Si es federación regional o superuser, redirigir a revisar clubes
+    if user_type in ["fed_regional", "superuser"]:
         return redirect("revisar_clubes")
+    
+    # fed_central puede crear clubes, mostrar su vista especial
+    if user_type == "fed_central":
+        # Clubes creados por fed_central (sin institución creadora)
+        mis_clubes_creados = Club.objects.filter(
+            institucion_creadora__isnull=True,
+            eliminado=False
+        ).order_by("-fecha_creacion")
+        
+        # Todos los clubes aprobados para visualización
+        clubes_aprobados = Club.objects.filter(
+            status="aprobado",
+            activo=True,
+            eliminado=False
+        ).order_by("-fecha_aprobacion")
+        
+        context = {
+            "mis_clubes_creados": mis_clubes_creados,
+            "clubes_aprobados": clubes_aprobados,
+            "total_creados": mis_clubes_creados.count(),
+            "total_aprobados": clubes_aprobados.count(),
+            "es_fed_central": True,
+        }
+        return render(request, "registry/clubes_lista.html", context)
     
     institucion = request.user.userprofile.institution
 
@@ -279,10 +305,14 @@ def clubes_lista(request):
 @login_required
 def crear_club(request):
     """Crear un nuevo club - Se guarda como BORRADOR inicialmente."""
-    if (
-        not hasattr(request.user, "userprofile")
-        or request.user.userprofile.user_type != "institucional"
-    ):
+    if not hasattr(request.user, "userprofile"):
+        messages.error(request, "No tienes acceso a esta sección.")
+        return redirect("dashboard")
+    
+    user_type = request.user.userprofile.user_type
+    
+    # Permitir a institucionales y fed_central
+    if user_type not in ["institucional", "fed_central"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -292,11 +322,21 @@ def crear_club(request):
         
         if form.is_valid():
             try:
-                institucion = request.user.userprofile.institution
                 club = form.save(commit=False)
-                club.institucion_creadora = institucion
-                club.coordinador = request.user
-                club.status = "borrador"
+                
+                # Si es fed_central, el club es público y aprobado automáticamente
+                if user_type == "fed_central":
+                    club.institucion_creadora = None  # Club de federación
+                    club.coordinador = request.user
+                    club.status = "aprobado"  # Aprobado automáticamente
+                    club.fecha_aprobacion = timezone.now()
+                else:
+                    # Institucional: flujo normal
+                    institucion = request.user.userprofile.institution
+                    club.institucion_creadora = institucion
+                    club.coordinador = request.user
+                    club.status = "borrador"
+                
                 club.save()
                 
                 # Ahora guardar las líneas manualmente
@@ -318,10 +358,19 @@ def crear_club(request):
                             orden=orden
                         )
                 
-                messages.success(
-                    request,
-                    f'Club "{club.nombre}" creado exitosamente en estado BORRADOR. Complete los datos y envíe a revisión.',
-                )
+                # Mensaje según tipo de usuario
+                if user_type == "fed_central":
+                    messages.success(
+                        request,
+                        f'Club "{club.nombre}" creado exitosamente y APROBADO automáticamente. '
+                        f'Las instituciones pueden postularse ahora.'
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f'Club "{club.nombre}" creado exitosamente en estado BORRADOR. '
+                        f'Complete los datos y envíe a revisión.'
+                    )
                 return redirect("clubes_lista")
             except Exception as e:
                 messages.error(request, f"Error al crear club: {str(e)}")
@@ -336,6 +385,7 @@ def crear_club(request):
     context = {
         "form": form,
         "estados_vinculacion": Club.ESTADO_VINCULACION_CHOICES,
+        "es_fed_central": user_type == "fed_central",
     }
     return render(request, "registry/club_crear.html", context)
 

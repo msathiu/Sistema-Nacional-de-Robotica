@@ -52,8 +52,13 @@ class SedeRegionalForm(forms.Form):
     
     # Teléfono (Formato Código + Número de 7 dígitos)
     CODIGOS_AREA = [
-        ('0412', '0412'), ('0414', '0414'), ('0424', '0424'), 
-        ('0416', '0416'), ('0426', '0426'), ('0212', '0212')
+    ("0424", "0424"),
+    ("0414", "0414"),
+    ("0422", "0422"),
+    ("0412", "0412"),
+    ("0426", "0426"),
+    ("0416", "0416"),
+    ("0212", "0212"),
     ]
     codigo_area = forms.ChoiceField(
         choices=CODIGOS_AREA, 
@@ -431,10 +436,12 @@ class InstitucionRegistrationForm(forms.ModelForm):
                     self.add_error("particular_cedula", "La cédula debe contener números.")
                 elif len(cedula_limpia) > 10:
                     self.add_error("particular_cedula", "La cédula no puede tener más de 10 dígitos.")
+                elif len(cedula_limpia) < 6:
+                    self.add_error("particular_cedula", "La cédula debe tener al menos 6 dígitos.")
                 else:
                     # Validación atómica: verificar que no exista otra institución con la misma cédula
                     from registry.models import Institucion
-                    if Institucion.objects.filter(particular_cedula=cedula_limpia).exists():
+                    if Institucion.objects.filter(particular_cedula=cedula_limpia, eliminado=False).exists():
                         self.add_error(
                             "particular_cedula",
                             f"Ya existe un registro con la cédula {cedula_limpia}. No se puede registrar más de una vez."
@@ -445,6 +452,20 @@ class InstitucionRegistrationForm(forms.ModelForm):
             rif_numero = cleaned_data.get("rif_numero")
             if not rif_numero:
                 self.add_error("rif_numero", "El RIF es obligatorio para instituciones.")
+            else:
+                # Validar formato de RIF
+                rif_limpio = rif_numero.replace("-", "").strip()
+                if not rif_limpio.isdigit():
+                    self.add_error("rif_numero", "El RIF debe contener solo números.")
+                elif len(rif_limpio) != 9:
+                    self.add_error("rif_numero", "El RIF debe tener exactamente 9 dígitos (8 + dígito verificador).")
+        
+        # Validación de email único
+        email = cleaned_data.get("email")
+        if email:
+            from registry.models import Institucion
+            if Institucion.objects.filter(email__iexact=email, eliminado=False).exists():
+                self.add_error("email", "Ya existe una institución registrada con este correo electrónico.")
         
         # Validación atómica de duplicados: tipo_institucion + nombre + rif + estado + municipio + parroquia
         if not self.errors:  # Solo validar si no hay errores previos
@@ -493,13 +514,24 @@ class InstitucionRegistrationForm(forms.ModelForm):
         
         # Validaciones de seguridad de contraseña
         if len(password) < 8:
-            self.add_error("password", "La contrasena debe tener al menos 8 caracteres.")
+            self.add_error("password", "La contraseña debe tener al menos 8 caracteres.")
         if not any(ch.isupper() for ch in password):
-            self.add_error("password", "Debe incluir al menos una letra mayuscula.")
+            self.add_error("password", "Debe incluir al menos una letra mayúscula.")
         if not any(ch.isdigit() for ch in password):
-            self.add_error("password", "Debe incluir al menos un numero.")
+            self.add_error("password", "Debe incluir al menos un número.")
+        if not any(ch in '!@#$%^&*(),.?":{}|<>' for ch in password):
+            self.add_error("password", "Debe incluir al menos un carácter especial (!@#$%^&*(),.?\":{}|<>).")
         if password != confirm_password:
-            self.add_error("confirm_password", "Las contrasenas no coinciden.")
+            self.add_error("confirm_password", "Las contraseñas no coinciden.")
+        
+        # Validación contra contraseñas comunes
+        contraseñas_comunes = [
+            'password', '12345678', 'qwerty123', 'admin123', 'password123',
+            'Venezuela123', 'Robotica123'
+        ]
+        if password.lower() in [p.lower() for p in contraseñas_comunes]:
+            self.add_error("password", "Esta contraseña es demasiado común. Por favor elija una más segura.")
+        
         return cleaned_data
 
     def save(self, commit=True):

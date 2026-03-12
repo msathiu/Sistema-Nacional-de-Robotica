@@ -9,7 +9,6 @@ Características:
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.crypto import get_random_string
 from .models import Grupo, Tutor, Participante
 
 
@@ -144,25 +143,14 @@ class GrupoForm(forms.ModelForm):
         
         return nombre
     
-    def generar_codigo_unico(self):
-        """Genera un código único para el equipo con formato EQP-XXXXXXXX."""
-        chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        max_intentos = 100
-        
-        for _ in range(max_intentos):
-            codigo = f"EQP-{get_random_string(8, chars)}"
-            if not Grupo.objects.filter(codigo=codigo).exists():
-                return codigo
-        
-        raise ValueError("No se pudo generar un código único después de múltiples intentos")
-    
     def save(self, commit=True):
         """Guardar equipo con código automático."""
         grupo = super().save(commit=False)
         
-        # Generar código si es nuevo
+        # Generar código si es nuevo usando el método del modelo
+        # para mantener consistencia con el formato EQP-YYMMDD-6CHARS
         if not grupo.codigo:
-            grupo.codigo = self.generar_codigo_unico()
+            grupo.codigo = grupo.generar_codigo_grupo()
         
         # Asignar institución y usuario
         if self.institucion:

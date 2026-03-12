@@ -17,9 +17,9 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold text-white" 
-                   style="background: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                    <i class="bi bi-plus-circle-fill me-2"></i> Nuevo Evento
+                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Nuevo Evento
                 </a>
             </div>
         </div>
@@ -97,8 +97,13 @@
                     <thead class="bg-light">
                         <tr class="text-uppercase small fw-bold text-muted">
                             <th class="px-4 py-3">Evento / Descripción</th>
+                            <th class="py-3 text-center">Tipo Evento</th>
+                            <th class="py-3 text-center">Tipo</th>
+                            <th class="py-3 text-center">Modalidad</th>
                             <th class="py-3 text-center">Inscritos</th>
                             <th class="py-3">Fecha y Sede</th>
+                            <th class="py-3">Teléfono</th>
+                            <th class="py-3">Institución</th>
                             <th class="py-3">Estatus</th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
@@ -118,6 +123,21 @@
                                 </div>
                             </td>
                             <td class="text-center">
+                                <span class="badge bg-{% if evento.tipo_evento == 'institucional' %}primary{% elif evento.tipo_evento == 'club' %}info{% else %}warning{% endif %}">
+                                    {% if evento.tipo_evento == 'institucional' %}Institucional{% elif evento.tipo_evento == 'club' %}Club{% else %}Federación{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="small fw-bold text-dark">{{ evento.tipo }}</div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border">
+                                    {% if evento.modalidad == 'presencial' %}Presencial
+                                    {% elif evento.modalidad == 'virtual' %}Virtual
+                                    {% elif evento.modalidad == 'hibrido' %}Híbrido{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-center">
                                 <div class="fw-bold text-primary">{{ evento.inscripciones_grupo.count }}</div>
                                 <div class="x-small text-muted text-uppercase">Grupos</div>
                             </td>
@@ -129,29 +149,81 @@
                                 {% endif %}
                             </td>
                             <td>
+                                {% if evento.telefono_numero %}
+                                <div class="small"><i class="bi bi-telephone-fill me-1 text-success"></i> {{ evento.telefono_codigo }}-{{ evento.telefono_numero }}</div>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                                {% if evento.email_contacto %}
+                                <div class="x-small text-muted">{{ evento.email_contacto|truncatechars:20 }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if evento.tipo_evento == 'club' and evento.club_organizador %}
+                                <div class="small fw-bold text-dark">{{ evento.club_organizador.nombre }}</div>
+                                <div class="x-small text-muted">{{ evento.club_organizador.institucion_creadora.nombre|truncatechars:25 }}</div>
+                                {% elif evento.institucion %}
+                                <div class="small fw-bold text-dark">{{ evento.institucion.nombre|truncatechars:25 }}</div>
+                                {% else %}
+                                <div class="small fw-bold text-primary"><i class="bi bi-bank me-1"></i> Federación</div>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if evento.cancelado %}
                                 <span class="status-pill-mini bg-danger">Cancelado</span>
+                                {% elif evento.estado_evento == 'borrador' %}
+                                <span class="status-pill-mini bg-secondary">Borrador</span>
+                                {% elif evento.estado_evento == 'pendiente' %}
+                                <span class="status-pill-mini bg-warning">Pendiente</span>
+                                {% elif evento.estado_evento == 'en_revision' %}
+                                <span class="status-pill-mini bg-info">En Revisión</span>
+                                {% elif evento.estado_evento == 'aprobado' %}
+                                <span class="status-pill-mini bg-success">Aprobado</span>
+                                {% elif evento.estado_evento == 'publicado' %}
+                                <span class="status-pill-mini bg-primary">Publicado</span>
                                 {% elif evento.estado_evento == 'abierto' and evento.fecha >= hoy %}
                                 <span class="status-pill-mini bg-success">Abierto</span>
+                                {% elif evento.estado_evento == 'en_proceso' %}
+                                <span class="status-pill-mini bg-primary">En Proceso</span>
+                                {% elif evento.estado_evento == 'finalizado' or evento.fecha < hoy %}
+                                <span class="status-pill-mini bg-gray">Finalizado</span>
+                                {% elif evento.estado_evento == 'rechazado' %}
+                                <span class="status-pill-mini bg-danger">Rechazado</span>
                                 {% elif evento.estado_evento == 'pausado' %}
                                 <span class="status-pill-mini bg-warning">Pausado</span>
                                 {% elif evento.estado_evento == 'cerrado' %}
                                 <span class="status-pill-mini bg-secondary">Cerrado</span>
-                                {% elif evento.estado_evento == 'finalizado' or evento.fecha < hoy %}
-                                <span class="status-pill-mini bg-gray">Finalizado</span>
                                 {% endif %}
                             </td>
                             <td class="text-center px-4">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <button class="btn-action btn-gray btn-gestionar-inscripcion" 
+                                    <!-- Botón de enviar a aprobación (solo para borradores) -->
+                                    {% if evento.estado_evento == 'borrador' and es_institucional and evento.institucion == institution %}
+                                    <button class="btn-action btn-warning btn-enviar-aprobacion" 
+                                            data-id="{{ evento.id }}"
+                                            data-nombre="{{ evento.nombre|escapejs }}"
+                                            title="Enviar para Aprobación">
+                                        <i class="bi bi-send-fill"></i>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <!-- Botón de gestionar inscripciones (solo eventos aprobados/abiertos) -->
+                                   {% if evento.estado_evento == 'aprobado' or evento.estado_evento == 'abierto' or evento.estado_evento == 'en_proceso' %}
+                                    <button class="btn-action btn-success btn-gestionar-inscripcion" 
                                             data-id="{{ evento.id }}"
                                             title="Gestionar Inscritos">
                                         <i class="bi bi-people-fill"></i>
                                     </button>
-                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-gray" title="Ver Detalle del Evento">
+                                    {% endif %}
+                                    
+                                    <!-- Botón de ver detalles -->
+                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-info" title="Ver Detalle del Evento">
                                         <i class="bi bi-eye-fill"></i>
                                     </a>
-                                    <button class="btn-action btn-gray btn-editar-evento" 
+                                    
+                                    <!-- Botón de editar (solo si puede ser editado) -->
+                                    {% if evento.puede_ser_editado and es_institucional and evento.institucion == institution %}
+                                    <button class="btn-action btn-primary btn-editar-evento" 
                                             data-id="{{ evento.id }}"
                                             data-nombre="{{ evento.nombre|escapejs }}"
                                             data-fecha="{{ evento.fecha|date:'Y-m-d' }}"
@@ -163,12 +235,31 @@
                                             title="Editar Evento">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
-                                    <button class="btn-action btn-red btn-eliminar-evento" 
+                                    {% endif %}
+                                    
+                                    <!-- Botón de pausar/cancelar (fed_central o institución creadora) -->
+                                    {% if evento.es_editable_o_activo %}{% endif %}
+                                    {% if evento.puede_editar %}
+<button class="btn-action btn-secondary btn-pausar-evento" 
+        data-id="{{ evento.id }}"
+        data-nombre="{{ evento.nombre|escapejs }}"
+        data-fecha="{{ evento.fecha|date:'Y-m-d' }}"
+        data-estado-evento="{{ evento.estado_evento }}"
+        title="Pausar/Cancelar Evento">
+    <i class="bi bi-pause-fill"></i>
+</button>
+{% endif %}
+                                  
+                                    
+                                    <!-- Botón de eliminar (solo borradores y rechazados) -->
+                                    {% if evento.puede_modificar_datos %}
+                                    <button class="btn-action btn-danger btn-eliminar-evento" 
                                             data-id="{{ evento.id }}"
                                             data-nombre="{{ evento.nombre|escapejs }}"
                                             title="Eliminar">
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -234,11 +325,18 @@
                             <i class="bi bi-activity me-1 text-primary"></i> Estatus del Evento
                         </label>
                         <select name="estado_evento" id="edit_estado_evento" class="form-select" required>
+                            <option value="borrador">Borrador</option>
+                            <option value="pendiente">Pendiente Aprobación</option>
+                            <option value="en_revision">En Revisión</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="publicado">Publicado</option>
                             <option value="abierto">Abierto - En inscripciones</option>
-                            <option value="pausado">Pausado - Inscripciones detenidas</option>
-                            <option value="cerrado">Cerrado - Inscripciones cerradas</option>
-                            <option value="finalizado">Finalizado - Evento realizado</option>
-                            <option value="cancelado">Cancelado - Evento no se realizará</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="rechazado">Rechazado</option>
+                            <option value="pausado">Pausado</option>
+                            <option value="cerrado">Cerrado</option>
+                            <option value="cancelado">Cancelado</option>
                         </select>
                     </div>
 
@@ -395,6 +493,8 @@
     .bg-secondary { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
     .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     .bg-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .bg-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .bg-primary { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
 
     .btn-action { 
         width: 36px; height: 36px; 
@@ -507,6 +607,78 @@
                 document.getElementById('select_grupo').value = '';
                 
                 modalInscripcion.show();
+            });
+        });
+        
+        // ============================================
+        // BOTONES DE ENVIAR APROBACIÓN
+        // ============================================
+        document.querySelectorAll('.btn-enviar-aprobacion').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                
+                if (confirm(`¿Enviar el evento "${nombre}" a aprobación de la Federación Central?`)) {
+                    fetch(`/institucion/eventos/enviar-revision/${id}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert(data.error || 'Error al enviar evento');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error de conexión');
+                    });
+                }
+            });
+        });
+        
+        // ============================================
+        // BOTONES DE PAUSAR/CANCELAR EVENTOS
+        // ============================================
+        document.querySelectorAll('.btn-pausar-evento').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const id = this.dataset.id;
+                const nombre = this.dataset.nombre;
+                const fecha = this.dataset.fecha;
+                const estadoEvento = this.dataset.estadoEvento;
+                
+                // Llenar el modal de edición para pausar/cancelar
+                document.getElementById('edit_evento_id').value = id;
+                document.getElementById('edit_nombre_display').value = nombre;
+                document.getElementById('edit_nombre_hidden').value = nombre;
+                document.getElementById('edit_fecha').value = fecha;
+                
+                // Mostrar solo opciones de pausar/cancelar
+                const selectEstado = document.getElementById('edit_estado_evento');
+                selectEstado.innerHTML = `
+                    <option value="pausado" ${estadoEvento === 'pausado' ? 'selected' : ''}>Pausado</option>
+                    <option value="cancelado" ${estadoEvento === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                    <option value="aprobado" ${estadoEvento === 'aprobado' ? 'selected' : ''}>Aprobado</option>
+                    <option value="abierto" ${estadoEvento === 'abierto' ? 'selected' : ''}>Abierto - En inscripciones</option>
+                `;
+                
+                // Establecer acción del formulario
+                document.getElementById('formEditarEvento').action = `/eventos/editar/${id}/`;
+                
+                // Cambiar título del modal
+                document.querySelector('#modalEditarEvento .modal-header h5').innerHTML = 
+                    '<i class="bi bi-pause-circle me-2"></i> PAUSAR/CANCELAR EVENTO';
+                
+                modalEditar.show();
             });
         });
         

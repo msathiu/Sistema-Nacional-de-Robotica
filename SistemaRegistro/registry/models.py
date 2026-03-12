@@ -3,6 +3,7 @@ import random
 import string
 import uuid
 from datetime import date
+import uuid6
 
 from django.apps import apps
 from django.conf import settings
@@ -17,6 +18,131 @@ from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
 
 logger = logging.getLogger(__name__)
+
+
+def normalizar_texto_titulo(texto):
+    """
+    Normaliza un texto usando Title Case de forma inteligente para español.
+
+    Mantiene en minúsculas las partículas статьи:
+    - Preposiciones: de, del, desde, hacia, hasta, para, por, sin, con, sobre, entre, bajo, sin
+    - Conjunciones: y, e, u, o, ni, que, porque, aunque
+    - Artículos: el, la, los, las, un, una, unos, unas
+
+    Args:
+        texto: Cadena de texto a normalizar
+
+    Returns:
+        str: Texto normalizado con capitalización de título
+    """
+    if not texto:
+        return texto
+
+    # Convertir a string si no lo es
+    texto = str(texto)
+
+    # Si está todo en mayúsculas, convertir a title case directamente
+    if texto.isupper():
+        return texto.title()
+
+    # Si ya está en minúsculas o mixto, aplicar title case
+    texto_normalizado = texto.title()
+
+    # Lista de partículas que deben estar en minúsculas en español
+    particulas_minusculas = {
+        "de",
+        "del",
+        "desde",
+        "hacia",
+        "hasta",
+        "para",
+        "por",
+        "sin",
+        "con",
+        "sobre",
+        "entre",
+        "bajo",
+        "tras",
+        "ante",
+        "desde",
+        "hacia",
+        "e",
+        "y",
+        "u",
+        "o",
+        "ni",
+        "que",
+        "porque",
+        "aunque",
+        "el",
+        "la",
+        "los",
+        "las",
+        "un",
+        "una",
+        "unos",
+        "unas",
+        "al",
+        "se",
+        "su",
+        "sus",
+        "lo",
+        "le",
+        "les",
+        "me",
+        "te",
+        "nos",
+        "os",
+    }
+
+    # Palabras a siempre capitalizar (excepciones importantes)
+    palabras_siempre_mayusculas = {
+        "venezuela",
+        "venezuelana",
+        "venezolano",
+        "venezolana",
+        "bolivar",
+        "bolivariana",
+        "chavez",
+        "miranda",
+        "caracas",
+        "mppe",
+        "federacion",
+        "rnr",
+        "cii",
+        "onu",
+        "unesco",
+    }
+
+    # Procesar cada palabra
+    palabras = texto_normalizado.split()
+    resultado = []
+
+    for i, palabra in enumerate(palabras):
+        palabra_lower = palabra.lower()
+
+        # Si es la primera palabra, siempre mayúscula
+        if i == 0:
+            # Verificar si es una palabra que debe ser mayúscula
+            if palabra_lower in palabras_siempre_mayusculas:
+                resultado.append(palabra.upper())
+            else:
+                resultado.append(palabra)
+        # Si es la última palabra, siempre mayúscula
+        elif i == len(palabras) - 1:
+            if palabra_lower in palabras_siempre_mayusculas:
+                resultado.append(palabra.upper())
+            else:
+                resultado.append(palabra)
+        # Para palabras intermedias
+        elif palabra_lower in particulas_minusculas:
+            resultado.append(palabra_lower)
+        elif palabra_lower in palabras_siempre_mayusculas:
+            resultado.append(palabra.upper())
+        else:
+            resultado.append(palabra)
+
+    return " ".join(resultado)
 
 
 class Estado(models.Model):
@@ -149,15 +275,15 @@ class Institucion(models.Model):
     ]
 
     TIPO_INSTITUCION_CHOICES = [
-        ("educativa", "Institucion educativa (Adscrita a MPPE)"),
-        ("publica", "Publica"),
+        ("educativa", "Institución Educativa (Adscrita a MPPE)"),
+        ("publica", "Pública"),
         ("privada", "Privada"),
         ("otra", "Otras Instituciones"),
         ("particular", "Particular (Persona Natural)"),
     ]
 
     NATURALEZA_CHOICES = [
-        ("publica", "Publica"),
+        ("publica", "Pública"),
         ("privada", "Privada"),
     ]
 
@@ -362,12 +488,31 @@ class Institucion(models.Model):
         Proceso:
             1. Si se activa la institución, genera código RNR permanente
             2. Vincula el usuario con la institución si existe
-            3. Guarda la institución
-            4. Sincroniza el username del usuario con el código RNR
+            3. Normaliza los campos de texto (nombre, dirección, etc.)
+            4. Guarda la institución
+            5. Sincroniza el username del usuario con el código RNR
 
         Nota: El envío de correo se maneja automáticamente mediante señales
         (ver registry/signals.py)
         """
+        # 0. Normalizar campos de texto ANTES de guardar
+        if self.nombre:
+            self.nombre = normalizar_texto_titulo(self.nombre)
+        if self.direccion:
+            self.direccion = normalizar_texto_titulo(self.direccion)
+        if self.dependencia:
+            self.dependencia = normalizar_texto_titulo(self.dependencia)
+        if self.codigo_mppe:
+            self.codigo_mppe = self.codigo_mppe.strip().upper()
+
+        # Para personas naturales
+        if self.particular_nombres:
+            self.particular_nombres = normalizar_texto_titulo(self.particular_nombres)
+        if self.particular_apellidos:
+            self.particular_apellidos = normalizar_texto_titulo(
+                self.particular_apellidos
+            )
+
         # 1. Si se activa la institucion y tiene un codigo temporal o vacio
         if self.activa and (not self.codigo or self.codigo.startswith("TEMP-")):
             self.codigo = self.generar_codigo_rnr()
@@ -446,6 +591,7 @@ CODIGO_AREA_CHOICES = [
     ("0412", "0412"),
     ("0426", "0426"),
     ("0416", "0416"),
+    ("0212", "0212"),
 ]
 
 GRADO_CHOICES = [
@@ -485,7 +631,7 @@ class Participante(models.Model):
     """
 
     # === DATOS PERSONALES (ÚNICOS) ===
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
 
     nacionalidad = models.CharField(
         max_length=1,
@@ -727,6 +873,39 @@ class Participante(models.Model):
                 if errores:
                     raise ValidationError(errores)
 
+    def save(self, *args, **kwargs):
+        """
+        Guarda el participante aplicando normalización de texto a los campos correspondientes.
+
+        Aplica normalizar_texto_titulo a los campos de texto libre para mantener
+        consistencia en el formato de los datos.
+
+        Campos normalizados:
+            - nombres
+            - apellidos
+            - direccion
+            - nombre_escuela
+            - titulo_universitario
+            - campo1
+            - nombre_representante
+        """
+        # Normalizar campos de texto usando normalizar_texto_titulo
+        campos_titulo = [
+            "nombres",
+            "apellidos",
+            "direccion",
+            "nombre_escuela",
+            "titulo_universitario",
+            "campo1",
+            "nombre_representante",
+        ]
+        for campo in campos_titulo:
+            valor = getattr(self, campo)
+            if valor:  # Si el campo no está vacío
+                setattr(self, campo, normalizar_texto_titulo(valor))
+
+        super().save(*args, **kwargs)
+
 
 class AsistenciaEvento(models.Model):
     """
@@ -794,24 +973,24 @@ class EventoManager(models.Manager):
         return self.de_club().filter(estado_evento="pendiente")
 
     def pendientes_aprobacion_todos(self):
-        """NUEVO: Todos los eventos pendientes de aprobación (institucionales y de club)."""
+        """Todos los eventos pendientes de aprobación (institucionales y de club)."""
         return self.filter(estado_evento="pendiente")
 
     def publicos(self):
-        """NUEVO: Eventos con audiencia pública y publicados."""
+        """Eventos con audiencia pública y publicados."""
         return self.filter(
             audiencia="publica", estado_evento__in=["publicado", "abierto", "aprobado"]
         )
 
     def exclusivos_club(self):
-        """NUEVO: Eventos exclusivos de club publicados."""
+        """Eventos exclusivos de club publicados."""
         return self.filter(
             audiencia="club_exclusivo",
             estado_evento__in=["publicado", "abierto", "aprobado"],
         )
 
     def privados(self):
-        """NUEVO: Eventos privados institucionales publicados."""
+        """Eventos privados institucionales publicados."""
         return self.filter(
             audiencia="institucional_privado",
             estado_evento__in=["publicado", "abierto", "aprobado"],
@@ -823,6 +1002,27 @@ class EventoManager(models.Manager):
             models.Q(estado_evento__in=["publicado", "abierto", "aprobado"]),
             activo=True,
             cancelado=False,
+        )
+
+    def de_federacion(self):
+        """Eventos creados por la federación central (es_publico=True)."""
+        return self.filter(es_publico=True)
+
+    def por_estado(self, estado_evento):
+        """Eventos filtrados por estado."""
+        return self.filter(estado_evento=estado_evento)
+
+    def activos(self):
+        """Eventos activos (no cancelados, no finalizados)."""
+        return self.filter(activo=True, cancelado=False)
+
+    def vigentes(self):
+        """Eventos vigentes (activos y con fecha futura o actual)."""
+        from datetime import date
+        return self.filter(
+            activo=True, 
+            cancelado=False, 
+            fecha__gte=date.today()
         )
 
 
@@ -849,19 +1049,17 @@ class Evento(models.Model):
     ]
 
     ESTADO_CHOICES = [
-        ("borrador", "Borrador"),
-        ("pendiente", "Pendiente Aprobación"),
-        ("en_revision", "En Revisión"),
+        ("abierto", "Abierto para Inscripción"),
         ("aprobado", "Aprobado"),
-        ("publicado", "Publicado"),
+        ("borrador", "Borrador"),
+        ("cancelado", "Cancelado"),
+        ("cerrado", "Cerrado para Inscripción"),
         ("en_proceso", "En Proceso"),
         ("finalizado", "Finalizado"),
-        ("rechazado", "Rechazado"),
-        ("cancelado", "Cancelado"),
-        # Mantener compatibilidad con estados antiguos
-        ("abierto", "Abierto"),
         ("pausado", "Pausado"),
-        ("cerrado", "Cerrado"),
+        ("pendiente", "Pendiente Aprobación"),
+        ("publicado", "Publicado"),
+        ("rechazado", "Rechazado"),
     ]
 
     TIPO_EVENTO_CHOICES = [
@@ -887,7 +1085,7 @@ class Evento(models.Model):
     )
     ubicacion = models.CharField(max_length=255, blank=True)
     estado_evento = models.CharField(
-        max_length=20, choices=ESTADO_CHOICES, default="abierto", db_index=True
+        max_length=20, choices=ESTADO_CHOICES, default="borrador", db_index=True
     )
     estado = models.ForeignKey(
         "Estado", on_delete=models.SET_NULL, null=True, blank=True
@@ -903,18 +1101,9 @@ class Evento(models.Model):
     requisitos = models.TextField(blank=True)
 
     # Contacto del evento
-    CODIGO_AREA_EVENTO_CHOICES = [
-        ("0424", "0424"),
-        ("0414", "0414"),
-        ("0422", "0422"),
-        ("0412", "0412"),
-        ("0426", "0426"),
-        ("0416", "0416"),
-    ]
-
     telefono_codigo = models.CharField(
         max_length=4,
-        choices=CODIGO_AREA_EVENTO_CHOICES,
+        choices=CODIGO_AREA_CHOICES,
         blank=True,
         verbose_name="Código de Área",
         help_text="Código de área del teléfono de contacto",
@@ -998,6 +1187,36 @@ class Evento(models.Model):
 
     objects = EventoManager()
 
+    def actualizar_estado_por_fecha(self):
+        """
+        Actualiza automáticamente el estado del evento según la fecha actual.
+        - Si fecha == hoy: estado_evento = 'en_proceso'
+        - Si fecha < hoy: estado_evento = 'finalizado'
+        """
+        hoy = date.today()
+        
+        if self.fecha == hoy and self.estado_evento not in ['finalizado', 'cancelado', 'pausado']:
+            self.estado_evento = 'en_proceso'
+            self.save(update_fields=['estado_evento'])
+        elif self.fecha < hoy and self.estado_evento not in ['finalizado', 'cancelado', 'pausado']:
+            self.estado_evento = 'finalizado'
+            self.save(update_fields=['estado_evento'])
+    
+    def puede_ser_editado(self):
+        """Determina si el evento puede ser editado según su estado y fecha."""
+        return self.estado_evento not in ['finalizado', 'en_proceso', 'cancelado']
+    
+    def puede_ser_enviado_aprobacion(self):
+        """Determina si el evento puede ser enviado a aprobación."""
+        return self.estado_evento == 'borrador' and self.institucion is not None
+    
+    def es_visible_para_todos(self):
+        """Determina si el evento debe ser visible para todas las instituciones."""
+        return (
+            self.estado_evento in ['aprobado', 'abierto', 'en_proceso'] and 
+            (self.es_publico or self.estado_evento == 'aprobado')
+        )
+
     class Meta:
         verbose_name = "Evento"
         verbose_name_plural = "Eventos"
@@ -1045,6 +1264,31 @@ class Evento(models.Model):
     def __str__(self):
         return f"{self.nombre} - {self.fecha}"
 
+    def usuario_puede_gestionar(self, perfil):
+        """
+        Verifica si el perfil proporcionado tiene permiso sobre este evento.
+        """
+        # 1. Si es central/admin, siempre puede
+        if perfil.user_type in ["fed_central", "superuser", "tecnologico"]:
+            return True
+            
+        # 2. Si es institucional, solo si es su propia institución
+        if perfil.user_type == "institucional":
+            return self.institucion == perfil.institution
+            
+        return False
+
+    @property
+    def es_editable_por_institucion(self):
+        """Retorna True si el evento está en un estado donde la institución aún puede modificarlo."""
+        return self.estado_evento in ['borrador', 'rechazado']
+
+    @property
+    def es_editable_o_activo(self):
+        # Retorna True si NO está en los estados terminales
+        estados_finales = ['finalizado', 'cancelado', 'rechazado']
+        return self.estado_evento not in estados_finales
+
     @property
     def es_evento_club(self):
         """Indica si es un evento de club."""
@@ -1057,17 +1301,33 @@ class Evento(models.Model):
 
     @property
     def requiere_aprobacion(self):
-        """Indica si el evento requiere aprobación.
+        """Indica si el evento requiere aprobación de fed_central.
 
-        NUEVO: TODOS los eventos requieren aprobación de fed_central.
+        Los eventos creados por fed_central no requieren aprobación adicional.
+        Los eventos de instituciones siempre requieren aprobación.
         """
+        # Eventos de fed_central no requieren aprobación
+        if self.es_publico:
+            return False
+        # Eventos de instituciones requieren aprobación
         return True
+
+    @property
+    def creado_por_fed_central(self):
+        """Indica si el evento fue creado por la federación central."""
+        if self.es_publico:
+            return True
+        # Verificar si el creador es fed_central
+        if self.creado_por and hasattr(self.creado_por, 'userprofile'):
+            return self.creado_por.userprofile.user_type == 'fed_central'
+        return False
 
     @property
     def puede_inscribirse(self):
         """Indica si se pueden inscribir grupos.
 
-        NUEVO: Solo eventos en estado 'publicado' aceptan inscripciones.
+        Solo eventos en estado 'aprobado', 'publicado' o 'abierto' aceptan inscripciones.
+        Los eventos deben estar activos y no cancelados.
         """
         return (
             self.estado_evento in ["publicado", "abierto", "aprobado"]
@@ -1293,14 +1553,57 @@ class Grupo(models.Model):
             self.edad_hasta = None
             self.nivel_educativo = None
 
+    def generar_codigo_grupo(self):
+        """
+        Genera código único con formato EQP-[DD][MM][YY]-[8CHARS].
+
+        Formato:
+            - EQP: Prefijo de Equipo
+            - DD: Día (2 dígitos)
+            - MM: Mes (2 dígitos)
+            - YY: Últimos 2 dígitos del año
+            - 8CHARS: Secuencia aleatoria alfanumérica
+
+        Ejemplo: EQP-120324-A3X9K2ZQ
+
+        Returns:
+            str: Código único generado.
+
+        Raises:
+            ValueError: Si no se puede generar código único después de 100 intentos.
+        """
+        from django.utils import timezone
+
+        now = timezone.now()
+        year = str(now.year)[2:]  # Últimos 2 dígitos
+        month = str(now.month).zfill(2)
+        day = str(now.day).zfill(2)
+
+        prefijo = f"EQP-{day}{month}{year}-"
+        chars = string.ascii_uppercase + string.digits
+
+        max_intentos = 100
+        for intento in range(max_intentos):
+            secuencia = get_random_string(length=8, allowed_chars=chars)
+            nuevo_codigo = f"{prefijo}{secuencia}"
+
+            if not Grupo.objects.filter(codigo=nuevo_codigo).exists():
+                return nuevo_codigo
+
+        # Fallback con UUID si falla
+        import uuid
+
+        fallback = f"EQP-{day}{month}{year}-{str(uuid6.uuid7())[:8].upper()}"
+        logger.warning(
+            f"No se pudo generar código de grupo después de {max_intentos} intentos. "
+            f"Usando fallback: {fallback}"
+        )
+        return fallback
+
     def save(self, *args, **kwargs):
+        """Guarda el grupo generando código único si no existe."""
         if not self.codigo:
-            chars = string.ascii_uppercase + string.digits
-            while True:
-                codigo = "GRP-" + get_random_string(length=8, allowed_chars=chars)
-                if not Grupo.objects.filter(codigo=codigo).exists():
-                    self.codigo = codigo
-                    break
+            self.codigo = self.generar_codigo_grupo()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1946,17 +2249,9 @@ class Tutor(models.Model):
         ("activo", "Activo"),
         ("inactivo", "Inactivo"),
     ]
-    CODIGO_AREA_EVENTO_CHOICES = [
-        ("0424", "0424"),
-        ("0414", "0414"),
-        ("0422", "0422"),
-        ("0412", "0412"),
-        ("0426", "0426"),
-        ("0416", "0416"),
-    ]
 
     id = models.UUIDField(
-        default=uuid.uuid4, editable=False, primary_key=True, verbose_name="ID"
+        default=uuid6.uuid7, editable=False, primary_key=True, verbose_name="ID"
     )
     nacionalidad = models.CharField(
         max_length=1,
@@ -1966,6 +2261,12 @@ class Tutor(models.Model):
     )
     nombres = models.CharField(max_length=100, verbose_name="Nombres")
     apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
+    sexo = models.CharField(
+        max_length=1,
+        choices=SEXO_CHOICES,
+        default="M",
+        verbose_name="Sexo",
+    )
     cedula = models.CharField(
         max_length=12,
         db_index=True,
@@ -1980,7 +2281,7 @@ class Tutor(models.Model):
     )
     telefono_codigo = models.CharField(
         max_length=4,
-        choices=CODIGO_AREA_EVENTO_CHOICES,
+        choices=CODIGO_AREA_CHOICES,
         blank=True,
         verbose_name="Código de Área",
         help_text="Código de área del teléfono de contacto",
@@ -2047,7 +2348,7 @@ class TutorInstitucion(models.Model):
         ("suspendido", "Suspendido"),
     ]
 
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
     tutor = models.ForeignKey(
         Tutor,
         on_delete=models.CASCADE,
@@ -2119,7 +2420,7 @@ class ParticipanteInstitucion(models.Model):
         ("egresado", "Egresado"),
     ]
 
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
 
     participante = models.ForeignKey(
         Participante,
@@ -2217,7 +2518,7 @@ class ParticipanteGrupo(models.Model):
     (incluso simultáneamente si son de diferentes instituciones).
     """
 
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
 
     participante = models.ForeignKey(
         Participante, on_delete=models.CASCADE, related_name="historial_grupos"

@@ -354,6 +354,18 @@
 <script>
     const universalModal = new bootstrap.Modal(document.getElementById('modalUniversal'));
     const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
+    
+    // Función de sanitización para prevenir XSS
+    function sanitizeHTML(str) {
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    }
+    
+    // Obtener CSRF token de forma segura
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
 
     function aplicarFiltros() {
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
@@ -437,12 +449,12 @@
                 throw new Error(data.error);
             }
             
-            // Sección Principal
-            document.getElementById('detNombre').innerText = data.nombre || 'N/A';
-            document.getElementById('detUser').innerText = data.codigo || 'N/A';
+            // Sección Principal - Sanitización de datos
+            document.getElementById('detNombre').textContent = data.nombre || 'N/A';
+            document.getElementById('detUser').textContent = data.codigo || 'N/A';
             
             // Sección Identificación - CORREGIDO: Mostrar cédula para particulares
-            document.getElementById('detRif').innerText = data.rif || 'N/A';
+            document.getElementById('detRif').textContent = data.rif || 'N/A';
             
             const tipoColors = {
                 'particular': '#8b5cf6',
@@ -457,27 +469,27 @@
                 `<span class="badge rounded-pill px-3 py-1" style="background: ${tipoColor}; color: white;">${data.tipo_institucion}</span>` : 
                 '<span class="text-muted">N/A</span>';
             
-            document.getElementById('detNaturaleza').innerText = data.naturaleza || 'N/A';
-            document.getElementById('detCodigoMPPE').innerText = data.codigo_mppe || 'N/A';
+            document.getElementById('detNaturaleza').textContent = data.naturaleza || 'N/A';
+            document.getElementById('detCodigoMPPE').textContent = data.codigo_mppe || 'N/A';
             
             // Mostrar dependencia solo si el tipo es "otra"
             const dependenciaContainer = document.getElementById('detDependenciaContainer');
             if (data.tipo_institucion_key === 'otra') {
-                document.getElementById('detDependencia').innerText = data.dependencia || 'N/A';
+                document.getElementById('detDependencia').textContent = data.dependencia || 'N/A';
                 dependenciaContainer.style.display = 'block';
             } else {
                 dependenciaContainer.style.display = 'none';
             }
             
             // Sección Contacto
-            document.getElementById('detEmail').querySelector('span').innerText = data.email || 'Sin correo';
-            document.getElementById('detTel').querySelector('span').innerText = data.telefono || 'Sin teléfono';
+            document.getElementById('detEmail').querySelector('span').textContent = data.email || 'Sin correo';
+            document.getElementById('detTel').querySelector('span').textContent = data.telefono || 'Sin teléfono';
             
             // Sección Ubicación
-            document.getElementById('detEstado').innerText = data.estado || 'N/A';
-            document.getElementById('detMunicipio').innerText = data.municipio || 'N/A';
-            document.getElementById('detParroquia').innerText = data.parroquia || 'N/A';
-            document.getElementById('detDir').innerText = data.direccion || 'Sin dirección';
+            document.getElementById('detEstado').textContent = data.estado || 'N/A';
+            document.getElementById('detMunicipio').textContent = data.municipio || 'N/A';
+            document.getElementById('detParroquia').textContent = data.parroquia || 'N/A';
+            document.getElementById('detDir').textContent = data.direccion || 'Sin dirección';
             
             // Sección Administrativa
             const estatusColors = {
@@ -494,13 +506,13 @@
                 '<span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>ACTIVA</span>' : 
                 '<span class="badge bg-secondary px-3 py-2"><i class="bi bi-x-circle me-1"></i>INACTIVA</span>';
             
-            document.getElementById('detFechaRegistro').innerText = data.fecha_registro || 'N/A';
+            document.getElementById('detFechaRegistro').textContent = data.fecha_registro || 'N/A';
             
             detalleModal.show();
         })
         .catch(error => {
-            console.error('Error completo:', error);
-            alert(`Error al cargar los detalles: ${error.message}\nPor favor intente de nuevo.`);
+            console.error('Error al cargar detalles');
+            alert('Error al cargar los detalles. Por favor intente de nuevo.');
         })
         .finally(() => {
             if (btn) {
@@ -632,7 +644,7 @@
             universalModal.show();
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error al cargar datos');
             alert('Error al cargar los datos. Por favor intente de nuevo.');
         })
         .finally(() => {
@@ -648,12 +660,13 @@
         const header = document.getElementById('modalHeader');
         header.style.background = activa ? "#10b981" : "#f59e0b";
         document.getElementById('modalTitle').innerHTML = activa ? 
-            '<i class="bi bi-check-circle me-2"></i> VALIDAR SEDE' : 
-            '<i class="bi bi-pause-circle me-2"></i> SUSPENDER ACCESO';
+            '<i class="bi bi-check-circle me-2"></i> Habilitar Institución' : 
+            '<i class="bi bi-pause-circle me-2"></i> Suspender Acceso al sistema';
         
+        const safeNombre = sanitizeHTML(nombre);
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-3">
-                <p class="fs-5 mb-0">¿Confirmar cambio para <b>${nombre}</b>?</p>
+                <p class="fs-5 mb-0">¿Confirmar cambio para <b>${safeNombre}</b>?</p>
             </div>`;
                 
         const submit = document.getElementById('modalSubmitBtn');
@@ -670,7 +683,7 @@
             
             fetch(url, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                headers: { 'X-CSRFToken': getCSRFToken() }
             })
             .then(response => {
                 if (response.ok) window.location.reload();
@@ -696,10 +709,11 @@
         header.style.background = "#ef4444";
         document.getElementById('modalTitle').innerHTML = `<i class="bi bi-trash3-fill me-2"></i> ELIMINAR REGISTRO`;
         
+        const safeNombreElim = sanitizeHTML(nombre);
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-2">
                 <h5 class="fw-bold text-danger">¡ACCIÓN IRREVERSIBLE!</h5>
-                <p class="text-muted">Escriba <b>CONFIRMAR</b> para eliminar:<br><strong>${nombre}</strong></p>
+                <p class="text-muted">Escriba <b>CONFIRMAR</b> para eliminar:<br><strong>${safeNombreElim}</strong></p>
                 <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR">
             </div>`;
             

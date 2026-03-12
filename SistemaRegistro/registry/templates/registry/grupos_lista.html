@@ -17,10 +17,12 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
+                {% if puede_crear %}
                 <a href="{% url 'crear_grupo' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Crear Equipo
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -162,11 +164,17 @@
                 <div class="alert alert-info text-center py-4">
                     <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
                     <strong>No se encontraron equipos</strong>
+                    {% if puede_crear %}
                     <p class="mb-0 mt-2">
                         <a href="{% url 'crear_grupo' %}" class="btn btn-primary">
                             <i class="bi bi-plus-circle me-1"></i> Crear el primer equipo
                         </a>
                     </p>
+                    {% else %}
+                    <p class="mb-0 mt-2 text-muted">
+                        No hay equipos disponibles para visualizar
+                    </p>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>

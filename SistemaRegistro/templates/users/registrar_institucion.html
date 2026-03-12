@@ -331,7 +331,7 @@
             <label class="form-label required">Tipo de Institucion</label>
             <select class="form-select" id="tipoInstitucion" name="tipo_institucion" required>
               <option value="">Seleccione el tipo de institucion</option>
-              <option value="educativa" {% if form.tipo_institucion.value == 'educativa' %}selected{% endif %}>Institucion educativa (Adscrita a MPPE)</option>
+              <option value="educativa" {% if form.tipo_institucion.value == 'educativa' %}selected{% endif %}>Institución Educativa (Adscrita a MPPE)</option>
               <option value="publica" {% if form.tipo_institucion.value == 'publica' %}selected{% endif %}>Pública</option>
               <option value="privada" {% if form.tipo_institucion.value == 'privada' %}selected{% endif %}>Privada</option>
               <option value="otra" {% if form.tipo_institucion.value == 'otra' %}selected{% endif %}>Otras Instituciones</option>
@@ -720,6 +720,9 @@
       document.getElementById('particularApellidos').removeAttribute('required');
       document.getElementById('particularNacionalidad').removeAttribute('required');
       document.getElementById('particularCedula').removeAttribute('required');
+      
+      // LIMPIAR campo Razón Social al cambiar de particular a institución
+      razonSocial.value = '';
       
       // Hacer Razón Social y RIF obligatorios
       razonSocial.setAttribute('required', 'required');

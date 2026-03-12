@@ -57,6 +57,7 @@ class TutorService:
             nacionalidad=datos_tutor.get('nacionalidad', 'V'),
             nombres=datos_tutor['nombres'],
             apellidos=datos_tutor['apellidos'],
+            sexo=datos_tutor.get('sexo', 'M'),
             cedula=cedula_limpia,
             telefono_codigo=datos_tutor.get('telefono_codigo', ''),
             telefono=datos_tutor.get('telefono', ''),

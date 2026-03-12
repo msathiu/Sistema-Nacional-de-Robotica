@@ -78,8 +78,8 @@
                                 <small class="text-muted">Ingrese solo números (ej: 12345678)</small>
                             </div>
 
-                            <!-- Nombres y Apellidos -->
-                            <div class="col-md-6">
+                            <!-- Nombres, Apellidos y Sexo -->
+                            <div class="col-md-5">
                                 <label class="form-label fw-bold">
                                     <i class="bi bi-person me-1"></i> Nombres
                                 </label>
@@ -88,13 +88,22 @@
                                     <span class="text-danger small">{{ form.nombres.errors.0 }}</span>
                                 {% endif %}
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-5">
                                 <label class="form-label fw-bold">
                                     <i class="bi bi-person me-1"></i> Apellidos
                                 </label>
                                 {{ form.apellidos }}
                                 {% if form.apellidos.errors %}
                                     <span class="text-danger small">{{ form.apellidos.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-gender-ambiguous me-1"></i> Sexo
+                                </label>
+                                {{ form.sexo }}
+                                {% if form.sexo.errors %}
+                                    <span class="text-danger small">{{ form.sexo.errors.0 }}</span>
                                 {% endif %}
                             </div>
 
@@ -290,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('id_nacionalidad').value = tutor.nacionalidad;
         document.getElementById('id_nombres').value = tutor.nombres;
         document.getElementById('id_apellidos').value = tutor.apellidos;
+        if (tutor.sexo) document.getElementById('id_sexo').value = tutor.sexo;
         document.getElementById('id_telefono_codigo').value = tutor.telefono_codigo;
         document.getElementById('id_telefono').value = tutor.telefono;
         document.getElementById('id_email').value = tutor.email;

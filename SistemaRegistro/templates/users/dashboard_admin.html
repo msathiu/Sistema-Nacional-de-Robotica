@@ -18,10 +18,22 @@
         </div>
         
         <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
-            <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
-               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                <i class="bi bi-plus-circle-fill me-2"></i> Crear Evento
-            </a>
+            {% if perfil.user_type != 'fed_central' %}
+            <div class="dropdown">
+                <button class="btn shadow-sm px-4 fw-bold dropdown-toggle" 
+                        style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Nueva Gestión
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 12px; min-width: 200px;">
+                    <li>
+                        <a href="{% url 'crear_evento' %}" class="dropdown-item py-3">
+                            <i class="bi bi-calendar-event me-2 text-info"></i> Crear Evento
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
 
             <a href="{% url 'exportar_participantes_excel' %}" class="btn tech-report-btn shadow-sm">
                 <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
@@ -77,21 +89,21 @@
         <div class="col-md-2">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
-                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Clubes</div>
-                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_clubes|default:0 }}">0</h3>
-                    <i class="bi bi-robot position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
-                </div>
-                <div style="height: 4px; background: #3b82f6;"></div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Tutores</div>
                     <h3 class="fw-bold mb-0 counter" data-target="{{ total_tutores|default:0 }}">0</h3>
                     <i class="bi bi-person-workspace position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: #a855f7;"></div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                <div class="card-body p-3 position-relative z-1">
+                    <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Equipos</div>
+                    <h3 class="fw-bold mb-0 counter" data-target="{{ total_equipos|default:0 }}">0</h3>
+                    <i class="bi bi-microsoft-teams position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
+                </div>
+                <div style="height: 4px; background: #06b6d4;"></div>
             </div>
         </div>
         <div class="col-md-2">
@@ -206,6 +218,17 @@
         text-decoration: none; color: #1e293b; font-weight: 600; transition: all 0.3s ease;
     }
     .tech-report-btn:hover { background: white; border-color: var(--accent-cyan); transform: translateY(-2px); }
+    
+    /* Efecto hover sutil para cards de métricas */
+    .card-stat-tech {
+        cursor: default;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card-stat-tech:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(11, 44, 109, 0.25) !important;
+    }
 </style>
 {% endblock %}
 

@@ -454,6 +454,17 @@
                         </div>
 
                         <!-- Nota Importante -->
+                        {% if es_fed_central %}
+                        <div class="alert-modern alert-info mb-4">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-info-circle fs-5 me-3 mt-1" style="color: #0891b2;"></i>
+                                <div>
+                                    <strong>Federación Central:</strong> El club se creará en estado <strong>"APROBADO"</strong> automáticamente. 
+                                    Las instituciones podrán postularse inmediatamente después de su creación.
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
                         <div class="alert-modern alert-info mb-4">
                             <div class="d-flex align-items-start">
                                 <i class="bi bi-info-circle fs-5 me-3 mt-1" style="color: #0891b2;"></i>
@@ -463,6 +474,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
 
                         <div class="d-flex justify-content-end gap-3">
                             <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-cancel-dark">
@@ -528,9 +540,20 @@
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-clock-history"></i>
                     </div>
-                    <h5 class="mb-0 fw-bold">Estado: BORRADOR</h5>
+                    <h5 class="mb-0 fw-bold">Estado: {% if es_fed_central %}APROBADO{% else %}BORRADOR{% endif %}</h5>
                 </div>
                 <div class="card-body p-4">
+                    {% if es_fed_central %}
+                    <div class="alert-modern alert-info mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-check-circle fs-5 me-3 mt-1" style="color: #059669;"></i>
+                            <div>
+                                <strong>Club de Federación</strong>
+                                <p class="mb-0 small">El club estará visible y disponible para postulaciones inmediatamente.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
                     <div class="alert-modern alert-warning mb-3">
                         <div class="d-flex align-items-start">
                             <i class="bi bi-exclamation-triangle fs-5 me-3 mt-1" style="color: #d97706;"></i>
@@ -540,10 +563,15 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                     <hr>
                     <p class="small mb-0 text-muted">
                         <i class="bi bi-info-circle me-1"></i>
+                        {% if es_fed_central %}
+                        Después de crear el club, las instituciones podrán postularse desde el directorio de clubes.
+                        {% else %}
                         Después de crear el club, podrá enviarlo a revisión desde la lista de clubes.
+                        {% endif %}
                     </p>
                 </div>
             </div>

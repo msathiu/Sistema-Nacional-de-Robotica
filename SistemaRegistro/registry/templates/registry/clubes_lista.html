@@ -13,7 +13,7 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Clubes</h2>
-                    <p class="text-muted mb-0 small">Mis Clubes y Postulaciones</p>
+                    <p class="text-muted mb-0 small">{% if es_fed_central %}Clubes de la Federación{% else %}Mis Clubes y Postulaciones{% endif %}</p>
                 </div>
             </div>
             <div class="d-flex gap-2">
@@ -34,7 +34,7 @@
         <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0b2c6d, #051636);">
             <div class="d-flex align-items-center">
                 <i class="bi bi-folder-fill text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">Mis Clubes Creados</h5>
+                <h5 class="fw-bold mb-0 text-white">{% if es_fed_central %}Clubes de la Federación{% else %}Mis Clubes Creados{% endif %}</h5>
             </div>
             <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_creados }}</span>
         </div>
@@ -150,8 +150,12 @@
             {% else %}
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i> 
-                    No has creado ningún club aún.
-                    <a href="{% url 'crear_club' %}" class="alert-link">Crear mi primer club</a>
+                    {% if es_fed_central %}
+                        No has creado ningún club de la federación aún.
+                    {% else %}
+                        No has creado ningún club aún.
+                    {% endif %}
+                    <a href="{% url 'crear_club' %}" class="alert-link">Crear {% if es_fed_central %}club de la federación{% else %}mi primer club{% endif %}</a>
                 </div>
             {% endif %}
         </div>
@@ -204,6 +208,7 @@
         </div>
     </div>
 
+    {% if not es_fed_central %}
     <!-- SECCIÓN 3: CLUBES DISPONIBLES PARA POSTULAR -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
         <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
@@ -291,6 +296,7 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 <style>

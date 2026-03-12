@@ -17,10 +17,12 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
+                {% if perfil.user_type != 'fed_central' %}
                 <a href="{% url 'crear_tutor' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Tutor
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -147,11 +149,17 @@
                 <div class="alert alert-info text-center py-4">
                     <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
                     <strong>No se encontraron tutores</strong>
+                    {% if perfil.user_type != 'fed_central' %}
                     <p class="mb-0 mt-2">
                         <a href="{% url 'crear_tutor' %}" class="btn btn-primary">
                             <i class="bi bi-plus-circle me-1"></i> Registrar el primer tutor
                         </a>
                     </p>
+                    {% else %}
+                    <p class="mb-0 mt-2 text-muted">
+                        No hay tutores disponibles para visualizar
+                    </p>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
@@ -161,19 +169,20 @@
 <!-- Modal de Confirmación -->
 <div class="modal fade" id="confirmToggleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div id="modalHeaderTutor" class="modal-header border-0 pt-4 px-4 text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold mb-0" id="modalTitleTutor">
                     <i class="bi bi-question-circle me-2"></i>Confirmar Cambio de Estado
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro que desea <strong id="actionText"></strong> al tutor <strong id="tutorName"></strong>?</p>
+            <div class="modal-body px-4 py-4">
+                <div class="text-center py-3">
+                    <p class="fs-5 mb-0">¿Está seguro que desea <strong id="actionText"></strong> al tutor <strong id="tutorName"></strong>?</p>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="confirmToggleBtn">
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn rounded-pill px-4 fw-bold w-100 text-white shadow" id="confirmToggleBtn">
                     <i class="bi bi-check-lg me-1"></i> Confirmar
                 </button>
             </div>
@@ -320,7 +329,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const tutorNombre = this.dataset.tutorNombre;
             newStatus = this.checked ? 'activo' : 'inactivo';
             const action = newStatus === 'activo' ? 'activar' : 'desactivar';
-
+            
+            // Actualizar estilo del modal según acción
+            const modalHeader = document.getElementById('modalHeaderTutor');
+            const modalTitle = document.getElementById('modalTitleTutor');
+            const confirmButton = document.getElementById('confirmToggleBtn');
+            
+            if (newStatus === 'activo') {
+                modalHeader.style.background = '#10b981';
+                modalTitle.innerHTML = '<i class="bi bi-check-circle me-2"></i>Habilitar Tutor';
+                confirmButton.style.background = '#10b981';
+            } else {
+                modalHeader.style.background = '#f59e0b';
+                modalTitle.innerHTML = '<i class="bi bi-pause-circle me-2"></i>Suspender Acceso';
+                confirmButton.style.background = '#f59e0b';
+            }
+            
             actionText.textContent = action;
             tutorName.textContent = tutorNombre;
             const modal = new bootstrap.Modal(modalElement);

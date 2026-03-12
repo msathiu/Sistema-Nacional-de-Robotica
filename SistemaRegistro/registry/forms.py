@@ -571,6 +571,7 @@ class TutorForm(forms.ModelForm):
             'nacionalidad',
             'nombres',
             'apellidos',
+            'sexo',
             'cedula',
             'telefono_codigo',
             'telefono',
@@ -589,6 +590,9 @@ class TutorForm(forms.ModelForm):
             'apellidos': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Apellidos del tutor',
+            }),
+            'sexo': forms.Select(attrs={
+                'class': 'form-select',
             }),
             'cedula': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -627,6 +631,7 @@ class TutorForm(forms.ModelForm):
             'nacionalidad': 'Nacionalidad',
             'nombres': 'Nombres',
             'apellidos': 'Apellidos',
+            'sexo': 'Sexo',
             'cedula': 'Cédula de Identidad',
             'telefono_codigo': 'Código de Área',
             'telefono': 'Número de Teléfono',

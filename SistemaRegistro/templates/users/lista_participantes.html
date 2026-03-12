@@ -19,10 +19,12 @@
                     <i class="bi bi-download me-2"></i> Exportar
                 </a>
                 {% endif %}
+                {% if perfil.user_type != 'fed_central' %}
                 <a href="{% url 'crear_participante' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-person-plus-fill me-2"></i> Agregar Participante
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -117,8 +119,11 @@
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
                             <th class="px-4 py-3">Participante / ID</th>
-                            <th class="py-3">Demografía</th>
-                            <th class="py-3">Institución / Encargado</th>
+                            <th class="py-3">Edad</th>
+                            <th class="py-3">Sexo</th>
+                            <th class="py-3">Correo / Teléfono</th>
+                            <th class="py-3">Estado (Región)</th>
+                            <th class="py-3">Institución</th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -165,17 +170,24 @@
                             </td>
                             <td>
                                 <div class="small fw-bold text-dark">{{ p.edad }} años</div>
+                            </td>
+                            <td>
                                 <span class="status-pill-mini {% if p.sexo == 'M' %}bg-blue{% else %}bg-pink{% endif %}">{{ p.sexo }}</span>
+                            </td>
+                            <td>
+                                <div class="small text-primary text-decoration-underline">{{ p.email|default:"Sin correo" }}</div>
+                                <div class="x-small text-muted">{{ p.codigo_area }}-{{ p.numero_telefono }}</div>
+                            </td>
+                            <td>
+                                <div class="small text-dark">{{ p.estado.nombre|default:"N/A" }}</div>
                             </td>
                             <td>
                                 {% if p.institucion.tipo_institucion == 'particular' %}
                                     <div class="small text-dark text-truncate" style="max-width: 180px;">
                                         <i class="bi bi-person-badge me-1 text-primary"></i>{{ p.institucion.nombre }}
                                     </div>
-                                    <div class="x-small text-muted">Encargado</div>
                                 {% else %}
                                     <div class="small text-dark text-truncate" style="max-width: 180px;">{{ p.institucion.nombre }}</div>
-                                    <div class="x-small text-muted">{{ p.estado.nombre }}</div>
                                 {% endif %}
                             </td>
                             <td class="text-center px-4" onclick="event.stopPropagation();">
