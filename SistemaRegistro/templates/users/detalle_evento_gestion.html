@@ -17,7 +17,7 @@
                     <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
                 </div>
             </div>
-            <a href="{% url 'gestionar_eventos_inst' %}" class="btn shadow-sm px-4 fw-bold" 
+            <a href="{% if es_fed_central %}{% url 'admin_todos_eventos' %}{% else %}{% url 'gestionar_eventos_inst' %}{% endif %}" class="btn shadow-sm px-4 fw-bold" 
                style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                 <i class="bi bi-arrow-left me-2"></i> Volver
             </a>
@@ -100,7 +100,7 @@
             </div>
 
             <div class="row g-4 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
                         <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
                             <i class="bi bi-geo-alt-fill text-white"></i>
@@ -117,7 +117,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
                         <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
                             <i class="bi bi-building text-white"></i>
@@ -128,6 +128,84 @@
                             {% if evento.institucion.rif %}
                             <span class="text-muted d-block small">{{ evento.institucion.rif }}</span>
                             {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-eye-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Audiencia</small>
+                            <span class="fw-bold text-dark">{{ evento.get_audiencia_display }}</span>
+                            {% if evento.es_publico %}
+                            <span class="text-muted d-block small">Evento público federal</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mt-2">
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-tag-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Tipo</small>
+                            <span class="fw-bold text-dark">{{ evento.get_tipo_display }}</span>
+                            {% if evento.tipo_evento %}
+                            <span class="text-muted d-block small">{{ evento.get_tipo_evento_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-people-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Capacidad</small>
+                            <span class="fw-bold text-dark">
+                                {% if evento.capacidad_maxima %}{{ evento.capacidad_maxima }} participantes{% else %}Sin límite{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-telephone-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Contacto</small>
+                            {% if evento.telefono_codigo and evento.telefono_numero %}
+                            <span class="fw-bold text-dark">({{ evento.telefono_codigo }}) {{ evento.telefono_numero }}</span>
+                            {% endif %}
+                            {% if evento.email_contacto %}
+                            <span class="text-muted d-block small">{{ evento.email_contacto }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-start gap-3 p-3 bg-light rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: var(--blue-main);">
+                            <i class="bi bi-shield-check-fill text-white"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold d-block">Estado</small>
+                            <div>
+                                <span class="badge {% if evento.estado_evento == 'aprobado' %}bg-success{% elif evento.estado_evento == 'pendiente' %}bg-warning{% elif evento.estado_evento == 'borrador' %}bg-secondary{% elif evento.estado_evento == 'rechazado' %}bg-danger{% else %}bg-info{% endif %}">
+                                    {{ evento.get_estado_evento_display }}
+                                </span>
+                                {% if evento.cancelado %}
+                                <span class="badge bg-danger">Cancelado</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -194,6 +272,7 @@
                             <th class="py-3">Tutor</th>
                             <th class="py-3 text-center">Participantes</th>
                             <th class="py-3">Fecha Inscripción</th>
+                            <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,6 +293,14 @@
                                 <div class="small fw-bold">{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</div>
                                 <div class="x-small text-muted">{{ inscripcion.fecha_inscripcion|date:"H:i" }}</div>
                             </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes" 
+                                        data-grupo-id="{{ inscripcion.grupo.id }}" 
+                                        data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
+                                        title="Ver participantes del grupo">
+                                    <i class="bi bi-eye me-1"></i>Ver
+                                </button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -226,6 +313,33 @@
                 <p class="text-muted mb-0">Los grupos inscritos aparecerán aquí</p>
             </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver participantes del grupo -->
+<div class="modal fade" id="participantesModal" tabindex="-1" aria-labelledby="participantesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0" style="background: var(--blue-main);">
+                <h5 class="modal-title text-white" id="participantesModalLabel">
+                    <i class="bi bi-people-fill me-2"></i>Participantes del Grupo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="participantesContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Cargando participantes...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -275,4 +389,111 @@
         background-color: #f8fafc !important;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar clic en botones de ver participantes
+    document.querySelectorAll('.btn-ver-participantes').forEach(button => {
+        button.addEventListener('click', function() {
+            const grupoId = this.getAttribute('data-grupo-id');
+            const grupoNombre = this.getAttribute('data-grupo-nombre');
+            
+            // Actualizar título del modal
+            document.getElementById('participantesModalLabel').innerHTML = 
+                '<i class="bi bi-people-fill me-2"></i>Participantes del Grupo: ' + grupoNombre;
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('participantesModal'));
+            modal.show();
+            
+            // Cargar participantes
+            cargarParticipantes(grupoId);
+        });
+    });
+});
+
+function cargarParticipantes(grupoId) {
+    fetch(`/api/grupos/${grupoId}/participantes/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar participantes');
+            }
+            return response.json();
+        })
+        .then(data => {
+            mostrarParticipantes(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('participantesContent').innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error al cargar los participantes. Por favor, intente nuevamente.
+                </div>
+            `;
+        });
+}
+
+function mostrarParticipantes(participantes) {
+    const content = document.getElementById('participantesContent');
+    
+    if (participantes.length === 0) {
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-person-x display-4 text-muted mb-3"></i>
+                <h5 class="text-muted">No hay participantes en este grupo</h5>
+                <p class="text-muted">Este grupo aún no tiene participantes registrados.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="bg-light">
+                    <tr class="text-uppercase small fw-bold text-muted">
+                        <th class="px-4 py-3">#</th>
+                        <th class="py-3">Nombre Completo</th>
+                        <th class="py-3">Cédula</th>
+                        <th class="py-3">Edad</th>
+                        <th class="py-3">Género</th>
+                        <th class="py-3">Talla Camisa</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    participantes.forEach((participante, index) => {
+        html += `
+            <tr>
+                <td class="px-4 fw-bold">${index + 1}</td>
+                <td class="fw-bold">${participante.nombre} ${participante.apellido}</td>
+                <td class="font-monospace small">${participante.cedula}</td>
+                <td>${participante.edad || 'N/A'}</td>
+                <td>
+                    <span class="badge bg-info">${participante.genero || 'N/A'}</span>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">${participante.talla_camisa || 'N/A'}</span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center py-3 bg-light">
+            <small class="text-muted">
+                <i class="bi bi-people-fill me-1"></i>
+                Total: ${participantes.length} participante${participantes.length !== 1 ? 's' : ''}
+            </small>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+</script>
 {% endblock %}

@@ -138,8 +138,10 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.inscripciones_grupo.count }}</div>
-                                <div class="x-small text-muted text-uppercase">Grupos</div>
+                                <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="text-decoration-none">
+                                    <div class="fw-bold text-primary">{{ evento.inscripciones_grupo.count }}</div>
+                                    <div class="x-small text-muted text-uppercase">Grupos</div>
+                                </a>
                             </td>
                             <td>
                                 <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.fecha|date:"d M, Y" }}</div>
@@ -207,8 +209,8 @@
                                     </button>
                                     {% endif %}
                                     
-                                    <!-- Botón de gestionar inscripciones (solo eventos aprobados/abiertos) -->
-                                   {% if evento.estado_evento == 'aprobado' or evento.estado_evento == 'abierto' or evento.estado_evento == 'en_proceso' %}
+                                    <!-- Botón de gestionar inscripciones (solo cuando el evento acepta inscripciones) -->
+                                   {% if evento.puede_inscribirse %}
                                     <button class="btn-action btn-success btn-gestionar-inscripcion" 
                                             data-id="{{ evento.id }}"
                                             title="Gestionar Inscritos">

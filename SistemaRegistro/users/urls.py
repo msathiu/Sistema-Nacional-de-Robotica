@@ -249,4 +249,10 @@ urlpatterns = [
         views.inscribir_grupo_evento,
         name="inscribir_grupo_evento",
     ),
+    # API endpoints
+    path(
+        "api/grupos/<int:grupo_id>/participantes/",
+        views.api_participantes_grupo,
+        name="api_participantes_grupo",
+    ),
 ]

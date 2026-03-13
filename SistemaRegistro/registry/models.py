@@ -4,7 +4,6 @@ import string
 import uuid
 from datetime import date
 import uuid6
-
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,40 +15,233 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.db import transaction
+from django.db.models import UniqueConstraint
+from django.db.models.functions import Lower
+from django.db.models import Avg
 
 logger = logging.getLogger(__name__)
+from typing import Optional
+
+import re
 
 
-def normalizar_texto_titulo(texto):
+def normalizar_texto_titulo(texto: Optional[str]) -> Optional[str]:
     """
-    Normaliza un texto usando Title Case de forma inteligente para español.
+    Normaliza texto para títulos en español de manera profesional y robusta.
 
-    Mantiene en minúsculas las partículas статьи:
-    - Preposiciones: de, del, desde, hacia, hasta, para, por, sin, con, sobre, entre, bajo, sin
-    - Conjunciones: y, e, u, o, ni, que, porque, aunque
-    - Artículos: el, la, los, las, un, una, unos, unas
+    Características:
+    - Protege siglas, números romanos y nombres propios
+    - Maneja correctamente palabras como "mi" según el contexto
+    - Respeta acentos y caracteres especiales
+    - Considera reglas gramaticales del español
+    - Maneja casos especiales como "McDonald" o "O'Higgins"
 
     Args:
-        texto: Cadena de texto a normalizar
+        texto: String a normalizar
 
     Returns:
-        str: Texto normalizado con capitalización de título
+        String normalizado o None si la entrada es inválida
     """
+    if not texto or not isinstance(texto, str):
+        return texto
+
+    # Limpieza básica
+    texto = texto.strip()
     if not texto:
         return texto
 
-    # Convertir a string si no lo es
-    texto = str(texto)
+    # 1. Definición de conjuntos (optimizados)
+    PARTICULAS_MINUSCULAS = {
+        # Artículos
+        "el",
+        "la",
+        "los",
+        "las",
+        "un",
+        "una",
+        "unos",
+        "unas",
+        # Preposiciones
+        "a",
+        "ante",
+        "bajo",
+        "cabe",
+        "con",
+        "contra",
+        "de",
+        "desde",
+        "durante",
+        "en",
+        "entre",
+        "hacia",
+        "hasta",
+        "mediante",
+        "para",
+        "por",
+        "según",
+        "sin",
+        "so",
+        "sobre",
+        "tras",
+        "versus",
+        "vía",
+        # Contracciones
+        "al",
+        "del",
+        # Conjunciones
+        "y",
+        "e",
+        "ni",
+        "que",
+        "o",
+        "u",
+        "pero",
+        "mas",
+        "sino",
+        "aunque",
+        # Pronombres átonos
+        "me",
+        "te",
+        "se",
+        "nos",
+        "os",
+        "lo",
+        "la",
+        "le",
+        "los",
+        "las",
+        "les",
+        # Palabras problemáticas (contextuales)
+        "mi",  # Se mantiene minúscula cuando es pronombre posesivo
+    }
 
-    # Si está todo en mayúsculas, convertir a title case directamente
-    if texto.isupper():
-        return texto.title()
+    # Siglas y acrónimos (siempre mayúsculas)
+    SIGLAS = {
+        "MPPE",
+        "RNR",
+        "CII",
+        "ONU",
+        "UNESCO",
+        "IVSS",
+        "SENIAT",
+        "RIF",
+        "CI",
+        "ONG",
+        "IVA",
+        "ISLR",
+        "CNE",
+        "TSJ",
+        "FAO",
+        "OEA",
+        "FMI",
+        "BM",
+        "BCV",
+    }
 
-    # Si ya está en minúsculas o mixto, aplicar title case
-    texto_normalizado = texto.title()
+    # Nombres propios comunes (primera letra mayúscula)
+    NOMBRES_PROPIOS = {
+        "Venezuela",
+        "Bolívar",
+        "Chávez",
+        "Miranda",
+        "Caracas",
+        "Federación",
+        "Andrés",
+        "José",
+        "María",
+        "Simón",
+        "Antonio",
+        "Juan",
+        "Carlos",
+    }
 
-    # Lista de partículas que deben estar en minúsculas en español
-    particulas_minusculas = {
+    # Palabras que siempre van en minúscula incluso al inicio/fin
+    EXCEPCIONES_INICIO_FIN = {"a", "y", "o", "e", "u", "con", "sin"}
+
+    # Patrón para palabras con apóstrofe (ej: O'Higgins, D'Angelo)
+    RE_APOSTROFE = re.compile(r"^([dD]'|[lL]'|[oO]'|[mM]c)(\w+)")
+
+    def capitalizar_palabra(palabra: str, posicion: int, total: int) -> str:
+        """
+        Capitaliza una palabra según su contexto.
+
+        Args:
+            palabra: Palabra a capitalizar
+            posicion: Índice en la frase (0 para primera)
+            total: Total de palabras
+
+        Returns:
+            Palabra capitalizada apropiadamente
+        """
+        # Preservar el caso original si ya está bien formateado
+        if palabra.isupper() and len(palabra) > 1:
+            return palabra
+
+        palabra_lower = palabra.lower()
+
+        # 1. Verificar siglas (si está en minúsculas, capitalizamos)
+        if palabra_lower.upper() in SIGLAS:
+            return palabra_lower.upper()
+
+        # 3. Manejar apóstrofes (O'Higgins, D'Angelo)
+        match = RE_APOSTROFE.match(palabra)
+        if match:
+            prefijo, resto = match.groups()
+            return f"{prefijo.capitalize()}{resto.capitalize()}"
+
+        # 4. Reglas contextuales
+        es_primera = posicion == 0
+        es_ultima = posicion == total - 1
+        es_nombre_propio = palabra_lower in {p.lower() for p in NOMBRES_PROPIOS}
+
+        # Primera o última palabra (con excepciones)
+        if (es_primera or es_ultima) and palabra_lower not in EXCEPCIONES_INICIO_FIN:
+            return palabra_lower.capitalize()
+
+        # Nombres propios
+        if es_nombre_propio:
+            return next(p for p in NOMBRES_PROPIOS if p.lower() == palabra_lower)
+
+        # Partículas que van en minúscula
+        if palabra_lower in PARTICULAS_MINUSCULAS:
+            return palabra_lower
+
+        # Por defecto, capitalizar
+        return palabra_lower.capitalize()
+
+    # Procesar el texto
+    palabras = texto.split()
+    total = len(palabras)
+
+    # Caso especial: títulos completos en mayúsculas
+    if all(p.isupper() for p in palabras if len(p) > 1):
+        # Probablemente es un título en mayúsculas, normalizamos todo
+        palabras = [p.lower() for p in palabras]
+
+    resultado = [
+        capitalizar_palabra(palabra, i, total) for i, palabra in enumerate(palabras)
+    ]
+
+    # Unir y limpiar espacios extras
+    texto_normalizado = " ".join(resultado)
+
+    # Correcciones post-procesamiento
+    texto_normalizado = re.sub(r"\s+([,;.:!?])", r"\1", texto_normalizado)
+
+    return texto_normalizado
+
+
+def normalizar_texto_titulo_op(texto):
+    """
+    Normaliza texto para títulos en español, protegiendo Siglas,
+    Nombres Propios y Números Romanos.
+    """
+    if not texto or not isinstance(texto, str):
+        return texto
+
+    # 1. Definición de sets para búsqueda rápida (O(1))
+    PARTICULAS_MINUSCULAS = {
         "de",
         "del",
         "desde",
@@ -64,8 +256,6 @@ def normalizar_texto_titulo(texto):
         "bajo",
         "tras",
         "ante",
-        "desde",
-        "hacia",
         "e",
         "y",
         "u",
@@ -93,54 +283,48 @@ def normalizar_texto_titulo(texto):
         "te",
         "nos",
         "os",
+        "mi",
     }
 
-    # Palabras a siempre capitalizar (excepciones importantes)
-    palabras_siempre_mayusculas = {
-        "venezuela",
-        "venezuelana",
-        "venezolano",
-        "venezolana",
-        "bolivar",
-        "bolivariana",
-        "chavez",
-        "miranda",
-        "caracas",
+    SIEMPRE_MAYUSCULAS = {
         "mppe",
-        "federacion",
         "rnr",
         "cii",
         "onu",
         "unesco",
+        "ivss",
+        "seniat",
+        "rif",
+        "ci",
     }
 
-    # Procesar cada palabra
-    palabras = texto_normalizado.split()
+    NOMBRES_PROPIOS = {
+        "venezuela",
+        "bolivar",
+        "chavez",
+        "miranda",
+        "caracas",
+        "federacion",
+    }
+
+    palabras = texto.lower().split()
     resultado = []
+    total = len(palabras)
 
     for i, palabra in enumerate(palabras):
-        palabra_lower = palabra.lower()
+        palabra_clean = palabra.lower()
 
-        # Si es la primera palabra, siempre mayúscula
-        if i == 0:
-            # Verificar si es una palabra que debe ser mayúscula
-            if palabra_lower in palabras_siempre_mayusculas:
-                resultado.append(palabra.upper())
-            else:
-                resultado.append(palabra)
-        # Si es la última palabra, siempre mayúscula
-        elif i == len(palabras) - 1:
-            if palabra_lower in palabras_siempre_mayusculas:
-                resultado.append(palabra.upper())
-            else:
-                resultado.append(palabra)
-        # Para palabras intermedias
-        elif palabra_lower in particulas_minusculas:
-            resultado.append(palabra_lower)
-        elif palabra_lower in palabras_siempre_mayusculas:
+        # --- CASO 1: Siglas (comparar en minúsculas) ---
+        if palabra_clean in SIEMPRE_MAYUSCULAS:
             resultado.append(palabra.upper())
+            continue
+        # --- CASO 3, 4 y 5: ---
+        if i == 0 or i == total - 1 or palabra_clean in NOMBRES_PROPIOS:
+            resultado.append(palabra.capitalize())
+        elif palabra_clean in PARTICULAS_MINUSCULAS:
+            resultado.append(palabra_clean)
         else:
-            resultado.append(palabra)
+            resultado.append(palabra.capitalize())
 
     return " ".join(resultado)
 
@@ -462,18 +646,16 @@ class Institucion(models.Model):
             return False
 
     def aprobar_y_generar_codigo(self):
-        """
-        Método profesional para activar la cuenta.
-        Se debe llamar desde el Admin o una vista de revisión.
-        """
-        if self.estatus == "pendiente":
-            self.codigo = self.generar_codigo_rnr()
-            self.estatus = "aprobado"
-            self.activa = True
-            self.save()
-            # Enviar correo de activación
-            self.enviar_correo_activacion()
-            return True
+        with transaction.atomic():
+            if self.estatus == "pendiente":
+                self.codigo = self.generar_codigo_rnr()
+                self.estatus = "aprobado"
+                self.activa = True
+                self.save()
+                # Idealmente, el envío de correo podría ser una tarea de Celery (asíncrona)
+                # para que el Admin no se quede "pegado" esperando al servidor de correo.
+                self.enviar_correo_activacion()
+                return True
         return False
 
     def save(self, *args, **kwargs):
@@ -496,22 +678,26 @@ class Institucion(models.Model):
         (ver registry/signals.py)
         """
         # 0. Normalizar campos de texto ANTES de guardar
-        if self.nombre:
-            self.nombre = normalizar_texto_titulo(self.nombre)
-        if self.direccion:
-            self.direccion = normalizar_texto_titulo(self.direccion)
-        if self.dependencia:
-            self.dependencia = normalizar_texto_titulo(self.dependencia)
-        if self.codigo_mppe:
-            self.codigo_mppe = self.codigo_mppe.strip().upper()
+        # 1. Definimos los grupos de campos según su tratamiento
+        campos_a_normalizar = [
+            "nombre",
+            "direccion",
+            "dependencia",
+            "particular_nombres",
+            "particular_apellidos",
+        ]
 
-        # Para personas naturales
-        if self.particular_nombres:
-            self.particular_nombres = normalizar_texto_titulo(self.particular_nombres)
-        if self.particular_apellidos:
-            self.particular_apellidos = normalizar_texto_titulo(
-                self.particular_apellidos
-            )
+        # 2. Procesamos los campos de título (Capitalización Inteligente)
+        for nombre_campo in campos_a_normalizar:
+            valor = getattr(self, nombre_campo, None)
+            if isinstance(valor, str) and valor.strip():
+                nuevo_valor = normalizar_texto_titulo(valor)
+                if valor != nuevo_valor:
+                    setattr(self, nombre_campo, nuevo_valor)
+
+        # 3. Procesamos códigos o siglas (Upper y Strip directo)
+        if self.codigo_mppe and isinstance(self.codigo_mppe, str):
+            self.codigo_mppe = self.codigo_mppe.strip().upper()
 
         # 1. Si se activa la institucion y tiene un codigo temporal o vacio
         if self.activa and (not self.codigo or self.codigo.startswith("TEMP-")):
@@ -875,21 +1061,9 @@ class Participante(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Guarda el participante aplicando normalización de texto a los campos correspondientes.
-
-        Aplica normalizar_texto_titulo a los campos de texto libre para mantener
-        consistencia en el formato de los datos.
-
-        Campos normalizados:
-            - nombres
-            - apellidos
-            - direccion
-            - nombre_escuela
-            - titulo_universitario
-            - campo1
-            - nombre_representante
+        Guarda el participante aplicando normalización de texto inteligente.
         """
-        # Normalizar campos de texto usando normalizar_texto_titulo
+        # 1. Definición de campos a procesar
         campos_titulo = [
             "nombres",
             "apellidos",
@@ -899,11 +1073,21 @@ class Participante(models.Model):
             "campo1",
             "nombre_representante",
         ]
-        for campo in campos_titulo:
-            valor = getattr(self, campo)
-            if valor:  # Si el campo no está vacío
-                setattr(self, campo, normalizar_texto_titulo(valor))
 
+        # 2. Iteración y normalización
+        for campo in campos_titulo:
+            # Usamos getattr con un default None para mayor seguridad
+            valor = getattr(self, campo, None)
+
+            # Verificamos que sea una cadena y no esté vacía (incluyendo espacios)
+            if isinstance(valor, str) and valor.strip():
+                nuevo_valor = normalizar_texto_titulo(valor)
+
+                # Solo actualizamos el atributo si hubo un cambio real
+                if valor != nuevo_valor:
+                    setattr(self, campo, nuevo_valor)
+
+        # 3. Llamada al método save original
         super().save(*args, **kwargs)
 
 
@@ -1018,12 +1202,8 @@ class EventoManager(models.Manager):
 
     def vigentes(self):
         """Eventos vigentes (activos y con fecha futura o actual)."""
-        from datetime import date
-        return self.filter(
-            activo=True, 
-            cancelado=False, 
-            fecha__gte=date.today()
-        )
+
+        return self.filter(activo=True, cancelado=False, fecha__gte=date.today())
 
 
 class Evento(models.Model):
@@ -1187,34 +1367,78 @@ class Evento(models.Model):
 
     objects = EventoManager()
 
+    def save(self, *args, **kwargs):
+        # Si update_fields está presente y NO contiene campos de texto,
+        # saltamos la normalización para ahorrar CPU.
+        campos_titulo = ["nombre", "categoria", "ubicacion", "direccion"]
+
+        update_fields = kwargs.get("update_fields")
+
+        # Solo normalizamos si:
+        # a) Se está guardando todo el modelo (update_fields es None)
+        # b) Se está especificando uno de los campos de texto en update_fields
+        if update_fields is None or any(f in update_fields for f in campos_titulo):
+            for campo in campos_titulo:
+                valor = getattr(self, campo, None)
+                if isinstance(valor, str) and valor.strip():
+                    nuevo_valor = normalizar_texto_titulo(valor)
+                    if valor != nuevo_valor:
+                        setattr(self, campo, nuevo_valor)
+
+            # Limpieza de email siempre que se guarde el modelo completo o el email
+            if (
+                update_fields is None or "email_contacto" in update_fields
+            ) and self.email_contacto:
+                self.email_contacto = self.email_contacto.strip().lower()
+
+        # Actualizar fecha de modificación manualmente si usamos update_fields
+        if update_fields is not None and "fecha_actualizacion" not in update_fields:
+            # Convertimos update_fields a lista si es una tupla para poder modificarla
+            kwargs["update_fields"] = list(update_fields) + ["fecha_actualizacion"]
+
+        super().save(*args, **kwargs)
+
     def actualizar_estado_por_fecha(self):
         """
         Actualiza automáticamente el estado del evento según la fecha actual.
-        - Si fecha == hoy: estado_evento = 'en_proceso'
-        - Si fecha < hoy: estado_evento = 'finalizado'
         """
         hoy = date.today()
-        
-        if self.fecha == hoy and self.estado_evento not in ['finalizado', 'cancelado', 'pausado']:
-            self.estado_evento = 'en_proceso'
-            self.save(update_fields=['estado_evento'])
-        elif self.fecha < hoy and self.estado_evento not in ['finalizado', 'cancelado', 'pausado']:
-            self.estado_evento = 'finalizado'
-            self.save(update_fields=['estado_evento'])
-    
+        nuevo_estado = None
+
+        # Determinamos el nuevo estado según la lógica de negocio
+        if self.fecha == hoy and self.estado_evento not in [
+            "finalizado",
+            "cancelado",
+            "pausado",
+        ]:
+            nuevo_estado = "en_proceso"
+        elif self.fecha < hoy and self.estado_evento not in [
+            "finalizado",
+            "cancelado",
+            "pausado",
+        ]:
+            nuevo_estado = "finalizado"
+
+        # Solo guardamos si realmente hay un cambio de estado
+        if nuevo_estado and self.estado_evento != nuevo_estado:
+            self.estado_evento = nuevo_estado
+            # Usamos save con update_fields para eficiencia,
+            # pero recuerda que esto NO guardará cambios en 'nombre' o 'direccion'
+            # self.save(update_fields=["estado_evento", "fecha_actualizacion"])
+            self.save(update_fields=["estado_evento"])
+
     def puede_ser_editado(self):
         """Determina si el evento puede ser editado según su estado y fecha."""
-        return self.estado_evento not in ['finalizado', 'en_proceso', 'cancelado']
-    
+        return self.estado_evento not in ["finalizado", "en_proceso", "cancelado"]
+
     def puede_ser_enviado_aprobacion(self):
         """Determina si el evento puede ser enviado a aprobación."""
-        return self.estado_evento == 'borrador' and self.institucion is not None
-    
+        return self.estado_evento == "borrador" and self.institucion is not None
+
     def es_visible_para_todos(self):
         """Determina si el evento debe ser visible para todas las instituciones."""
-        return (
-            self.estado_evento in ['aprobado', 'abierto', 'en_proceso'] and 
-            (self.es_publico or self.estado_evento == 'aprobado')
+        return self.estado_evento in ["aprobado", "abierto", "en_proceso"] and (
+            self.es_publico or self.estado_evento == "aprobado"
         )
 
     class Meta:
@@ -1271,22 +1495,22 @@ class Evento(models.Model):
         # 1. Si es central/admin, siempre puede
         if perfil.user_type in ["fed_central", "superuser", "tecnologico"]:
             return True
-            
+
         # 2. Si es institucional, solo si es su propia institución
         if perfil.user_type == "institucional":
             return self.institucion == perfil.institution
-            
+
         return False
 
     @property
     def es_editable_por_institucion(self):
         """Retorna True si el evento está en un estado donde la institución aún puede modificarlo."""
-        return self.estado_evento in ['borrador', 'rechazado']
+        return self.estado_evento in ["borrador", "rechazado"]
 
     @property
     def es_editable_o_activo(self):
         # Retorna True si NO está en los estados terminales
-        estados_finales = ['finalizado', 'cancelado', 'rechazado']
+        estados_finales = ["finalizado", "cancelado", "rechazado"]
         return self.estado_evento not in estados_finales
 
     @property
@@ -1318,8 +1542,8 @@ class Evento(models.Model):
         if self.es_publico:
             return True
         # Verificar si el creador es fed_central
-        if self.creado_por and hasattr(self.creado_por, 'userprofile'):
-            return self.creado_por.userprofile.user_type == 'fed_central'
+        if self.creado_por and hasattr(self.creado_por, "userprofile"):
+            return self.creado_por.userprofile.user_type == "fed_central"
         return False
 
     @property
@@ -1403,6 +1627,20 @@ class Inscripcion(models.Model):
 
     def __str__(self):
         return f"{self.evento.nombre} - {self.lider.username}"
+
+    def save(self, *args, **kwargs):
+        # 1. Normalizar nombre del proyecto
+        if self.nombre_proyecto and isinstance(self.nombre_proyecto, str):
+            original = self.nombre_proyecto
+            normalizado = normalizar_texto_titulo(original.strip())
+            if original != normalizado:
+                self.nombre_proyecto = normalizado
+
+            # 2. Limpieza de descripción
+        if self.descripcion_proyecto and isinstance(self.descripcion_proyecto, str):
+            self.descripcion_proyecto = self.descripcion_proyecto.strip()
+
+        super().save(*args, **kwargs)
 
 
 class IntegranteEquipo(models.Model):
@@ -1506,6 +1744,12 @@ class Grupo(models.Model):
             models.Index(fields=["criterio"], name="idx_grupo_criterio"),
             models.Index(fields=["institucion"], name="idx_grupo_institucion"),
         ]
+        # Esta es la nueva restricción de unicidad inteligente
+        constraints = [
+            UniqueConstraint(
+                Lower("nombre"), "evento", name="unique_nombre_evento_case_insensitive"
+            )
+        ]
 
     def clean(self):
         """Validaciones del modelo según el criterio seleccionado."""
@@ -1572,8 +1816,6 @@ class Grupo(models.Model):
         Raises:
             ValueError: Si no se puede generar código único después de 100 intentos.
         """
-        from django.utils import timezone
-
         now = timezone.now()
         year = str(now.year)[2:]  # Últimos 2 dígitos
         month = str(now.month).zfill(2)
@@ -1590,9 +1832,6 @@ class Grupo(models.Model):
             if not Grupo.objects.filter(codigo=nuevo_codigo).exists():
                 return nuevo_codigo
 
-        # Fallback con UUID si falla
-        import uuid
-
         fallback = f"EQP-{day}{month}{year}-{str(uuid6.uuid7())[:8].upper()}"
         logger.warning(
             f"No se pudo generar código de grupo después de {max_intentos} intentos. "
@@ -1601,9 +1840,19 @@ class Grupo(models.Model):
         return fallback
 
     def save(self, *args, **kwargs):
-        """Guarda el grupo generando código único si no existe."""
+        """Guarda el grupo normalizando textos y generando código único."""
+
+        # 1. Normalización de campos de texto
+        if self.nombre and isinstance(self.nombre, str):
+            self.nombre = normalizar_texto_titulo(self.nombre.strip())
+
+        if self.nombre_proyecto and isinstance(self.nombre_proyecto, str):
+            self.nombre_proyecto = normalizar_texto_titulo(self.nombre_proyecto.strip())
+
+        # 2. Generación de código (tu lógica original)
         if not self.codigo:
             self.codigo = self.generar_codigo_grupo()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -1713,16 +1962,31 @@ class Club(models.Model):
         return f"{self.nombre} ({self.get_status_display()})"
 
     def save(self, *args, **kwargs):
-        """Override save para cerrar automáticamente cuando no hay cupos."""
-        # Calcular cupos disponibles antes de guardar
+        # --- 1. NORMALIZACIÓN DE TEXTOS ---
+        campos_titulo = ["nombre", "ubicacion", "documento_legal"]
+
+        # Filtramos si estamos haciendo un guardado parcial (update_fields)
+        update_fields = kwargs.get("update_fields")
+
+        if update_fields is None or any(f in update_fields for f in campos_titulo):
+            for campo in campos_titulo:
+                valor = getattr(self, campo, None)
+                if isinstance(valor, str) and valor.strip():
+                    nuevo_valor = normalizar_texto_titulo(valor.strip())
+                    if valor != nuevo_valor:
+                        setattr(self, campo, nuevo_valor)
+
+        # --- 2. LÓGICA DE NEGOCIO (Cupos) ---
+        # Aseguramos que la lógica de cupos solo corra si es un guardado completo
+        # o si estamos tocando campos relacionados a miembros
         if self.cupo_maximo and self.pk:
             miembros_actuales = self.membresias.filter(estado="miembro_activo").count()
             cupos = max(0, self.cupo_maximo - miembros_actuales)
 
-            # Si no hay cupos disponibles y está abierto, cerrar automáticamente
             if cupos == 0 and self.estado_vinculacion == "abierto":
                 self.estado_vinculacion = "cerrado"
 
+        # --- 3. GUARDADO FINAL ---
         super().save(*args, **kwargs)
 
     @property
@@ -1768,7 +2032,6 @@ class Club(models.Model):
 
     def aprobar(self):
         """Aprueba el club."""
-        from django.utils import timezone
 
         self.status = "aprobado"
         self.fecha_aprobacion = timezone.now()
@@ -1811,7 +2074,6 @@ class Club(models.Model):
     @property
     def promedio_calificacion(self):
         """Retorna el promedio de calificación del club."""
-        from django.db.models import Avg
 
         resultado = self.calificaciones.aggregate(promedio=Avg("puntuacion"))
         return resultado["promedio"] or 0
@@ -2307,6 +2569,34 @@ class Tutor(models.Model):
             models.Index(fields=["cedula"], name="idx_tutor_cedula"),
         ]
 
+    def save(self, *args, **kwargs):
+        """Guarda el tutor aplicando normalización de texto y limpieza de datos."""
+
+        # 1. Normalización de nombres y apellidos (Título)
+        if self.nombres and isinstance(self.nombres, str):
+            self.nombres = normalizar_texto_titulo(self.nombres.strip())
+
+        if self.apellidos and isinstance(self.apellidos, str):
+            self.apellidos = normalizar_texto_titulo(self.apellidos.strip())
+
+        # 2. Normalización de profesión (Título)
+        if self.profesion and isinstance(self.profesion, str):
+            self.profesion = normalizar_texto_titulo(self.profesion.strip())
+
+        # 3. Limpieza de campo de texto largo (Solo strip)
+        if self.experiencia and isinstance(self.experiencia, str):
+            self.experiencia = self.experiencia.strip()
+
+        # 4. Email siempre en minúsculas
+        if self.email and isinstance(self.email, str):
+            self.email = self.email.strip().lower()
+
+        # 5. Teléfono: strip para asegurar consistencia
+        if self.telefono and isinstance(self.telefono, str):
+            self.telefono = self.telefono.strip()
+
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         """Representación en string del tutor."""
         return f"{self.get_nombre_completo()} ({self.cedula})"
@@ -2326,6 +2616,14 @@ class Tutor(models.Model):
         return TutorInstitucion.objects.filter(
             tutor=self, institucion=institucion, status="activo"
         ).exists()
+
+    @property
+    def nombre_formateado(self) -> str:
+        """
+        Retorna el nombre en formato 'Apellido, Nombre'.
+        Ideal para ordenamiento alfabético en listados administrativos.
+        """
+        return f"{self.apellidos}, {self.nombres}"
 
 
 class TutorInstitucion(models.Model):

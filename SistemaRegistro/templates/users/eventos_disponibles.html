@@ -22,7 +22,7 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Totales</div>
-                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ eventos.count|default:0 }}">0</h2>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ eventos|length|default:0 }}">0</h2>
                     <i class="bi bi-layers position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: var(--accent-cyan);"></div>
@@ -88,7 +88,7 @@
                 <i class="bi bi-list-stars text-white me-3 fs-5"></i>
                 <h5 class="fw-bold mb-0 text-white">LISTADO DE EVENTOS</h5>
             </div>
-            <span class="badge bg-white text-dark rounded-pill fw-bold">{{ eventos.count }} Convocatorias</span>
+            <span class="badge bg-white text-dark rounded-pill fw-bold">{{ eventos|length }} Convocatorias</span>
         </div>
         <div class="card-body p-0">
             {% if eventos %}
@@ -102,6 +102,7 @@
                             <th class="py-3">Audiencia</th>
                             <th class="py-3">Estatus</th>
                             <th class="py-3 text-center">Acciones</th>
+                            <th class="py-3 text-center">Detalles</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -124,7 +125,9 @@
                             </td>
                             <td>
                                 <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.fecha|date:"d M, Y" }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {{ evento.estado.nombre }}</div>
+                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> 
+                                    {% if evento.estado %}{{ evento.estado.nombre }}{% else %}No especificado{% endif %}
+                                </div>
                             </td>
                             <td>
                                 {% if evento.audiencia == 'publica' %}
@@ -160,6 +163,13 @@
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
                                 </div>
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'detalle_evento_gestion' evento.id %}" 
+                                   class="btn-action btn-view" 
+                                   title="Ver detalle del evento">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -223,6 +233,11 @@
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .btn-red:hover { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
     .btn-gray:hover { color: var(--blue-main); border-color: var(--blue-main); background: #f8fafc; }
+    .btn-view:hover { 
+        color: var(--accent-cyan); 
+        border-color: var(--accent-cyan); 
+        background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
+    }
     
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }

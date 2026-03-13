@@ -157,6 +157,7 @@
                             <th class="py-3 text-center">Origen</th>
                             <th class="py-3 text-center">Estado</th>
                             <th class="py-3 text-center">Acciones</th>
+                            <th class="py-3 text-center">Detalles</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,6 +230,13 @@
                                 {% else %}
                                     <span class="text-success small"><i class="bi bi-check-all"></i> Activo</span>
                                 {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'detalle_evento_gestion_admin' evento.id %}" 
+                                   class="btn-action btn-view" 
+                                   title="Ver detalles del evento">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -330,6 +338,11 @@
         color: #ef4444; 
         border-color: #ef4444; 
         background: linear-gradient(145deg, #fef2f2, #fee2e2);
+    }
+    .btn-view:hover { 
+        color: var(--blue-main); 
+        border-color: var(--blue-main); 
+        background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
     }
 </style>
 

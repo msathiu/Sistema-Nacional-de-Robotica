@@ -56,15 +56,47 @@ from .models import Municipios, UserProfile
 
 
 @login_required
+@require_http_methods(["POST", "GET"])
 def detalle_evento_inscripcion(request, evento_id):
     """
     Vista para ver detalles de un evento e inscribir Equipos
     """
-    evento = get_object_or_404(
-        Evento.objects.select_related("estado", "municipio", "parroquia"),
-        id=evento_id,
-        activo=True,
-    )
+    # Obtener el perfil del usuario para verificar permisos
+    user_profile = request.user.userprofile
+    
+    # fed_central puede ver todos los eventos
+    if user_profile.user_type == 'fed_central':
+        evento = get_object_or_404(
+            Evento.objects.select_related("estado", "municipio", "parroquia"),
+            id=evento_id,
+            activo=True,
+        )
+    else:
+        # Aplicar mismas reglas de visibilidad que eventos_disponibles
+        institucion = user_profile.institution
+        evento_query = Evento.objects.filter(
+            id=evento_id,
+            estado_evento__in=["aprobado", "publicado", "abierto"], 
+            activo=True, 
+            cancelado=False
+        ).select_related("estado", "municipio", "parroquia", "institucion", "club_organizador")
+        
+        # Aplicar filtros de VISIBILIDAD según audiencia
+        from registry.models import MembresiaClu
+        
+        clubes_miembro = MembresiaClu.objects.filter(
+            institucion=institucion, estado="miembro_activo"
+        ).values_list("club_id", flat=True)
+        
+        evento = evento_query.filter(
+            Q(audiencia="publica")
+            | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
+            | Q(audiencia="institucional_privado", institucion=institucion)
+        ).first()
+        
+        if not evento:
+            messages.error(request, "El evento no existe o no tienes permiso para verlo.")
+            return redirect("eventos_disponibles")
 
     # Obtener grupos del usuario actual que no están inscritos en este evento
     grupos_disponibles = Grupo.objects.filter(
@@ -91,10 +123,47 @@ def detalle_evento_inscripcion(request, evento_id):
 @transaction.atomic
 def inscribir_grupo_evento(request, evento_id):
     """
-    Vista para inscribir un Equipos en un evento
+    Vista para inscribir un Equipos en un evento.
+
+    Reglas:
+    - El evento debe permitir inscripciones según la lógica de negocio
+      (estado 'aprobado', 'publicado' o 'abierto', activo y no cancelado).
+    - Solo se pueden inscribir grupos del usuario autenticado.
     """
     if request.method == "POST":
-        evento = get_object_or_404(Evento, id=evento_id, activo=True)
+        # Obtener el perfil del usuario para verificar permisos
+        user_profile = request.user.userprofile
+        
+        # fed_central puede ver todos los eventos
+        if user_profile.user_type == 'fed_central':
+            evento = get_object_or_404(Evento, id=evento_id, activo=True)
+        else:
+            # Aplicar mismas reglas de visibilidad que eventos_disponibles
+            institucion = user_profile.institution
+            evento_query = Evento.objects.filter(
+                id=evento_id,
+                estado_evento__in=["aprobado", "publicado", "abierto"], 
+                activo=True, 
+                cancelado=False
+            )
+            
+            # Aplicar filtros de VISIBILIDAD según audiencia
+            from registry.models import MembresiaClu
+            
+            clubes_miembro = MembresiaClu.objects.filter(
+                institucion=institucion, estado="miembro_activo"
+            ).values_list("club_id", flat=True)
+            
+            evento = evento_query.filter(
+                Q(audiencia="publica")
+                | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
+                | Q(audiencia="institucional_privado", institucion=institucion)
+            ).first()
+            
+            if not evento:
+                messages.error(request, "El evento no existe o no tienes permiso para inscribirte en él.")
+                return redirect("eventos_disponibles")
+        
         grupo_id = request.POST.get("grupo_id")
         rol = request.POST.get("rol", "participante")
 
@@ -106,9 +175,12 @@ def inscribir_grupo_evento(request, evento_id):
             )
             return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
-        # Verificar que el evento esté abierto
-        if evento.estado_evento != "abierto":
-            messages.error(request, "❌ El evento no está abierto para inscripciones.")
+        # Verificar que el evento acepte inscripciones
+        if not evento.puede_inscribirse:
+            messages.error(
+                request,
+                "❌ Este evento no está disponible para inscripciones en este momento.",
+            )
             return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
         # Verificar fecha
@@ -2139,11 +2211,17 @@ def eventos_disponibles(request):
     if fecha_hasta:
         eventos = eventos.filter(fecha__lte=fecha_hasta)
 
+    # Añadir campo total_inscritos calculado para cada evento
+    eventos_con_inscritos = []
+    for evento in eventos:
+        evento.total_inscritos = evento.inscripciones_grupo.count()
+        eventos_con_inscritos.append(evento)
+
     # Separar eventos por fecha
-    eventos_activos = eventos.filter(fecha__gte=hoy).order_by("fecha")
-    eventos_hoy = eventos.filter(fecha=hoy).order_by("fecha")
-    eventos_proximos = eventos.filter(fecha__gt=hoy).order_by("fecha")
-    eventos_pasados = eventos.filter(fecha__lt=hoy).order_by("-fecha")[:10]
+    eventos_activos = eventos_con_inscritos.filter(fecha__gte=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha >= hoy]
+    eventos_hoy = eventos_con_inscritos.filter(fecha=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha == hoy]
+    eventos_proximos = eventos_con_inscritos.filter(fecha__gt=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha > hoy]
+    eventos_pasados = eventos_con_inscritos.filter(fecha__lt=hoy).order_by("-fecha")[:10] if isinstance(eventos_con_inscritos, list) else sorted([e for e in eventos_con_inscritos if e.fecha < hoy], key=lambda x: x.fecha, reverse=True)[:10]
 
     # Agrupar por estado geográfico
     estados_con_eventos = []
@@ -2153,8 +2231,8 @@ def eventos_disponibles(request):
             estados_con_eventos.append({"estado": estado, "eventos": eventos_estado})
 
     # Estadísticas
-    total_eventos = eventos.count()
-    total_activos = eventos_activos.count()
+    total_eventos = len(eventos_con_inscritos)
+    total_activos = len(eventos_activos)
 
     context = {
         "estados_con_eventos": estados_con_eventos,
@@ -2162,9 +2240,11 @@ def eventos_disponibles(request):
         "eventos_hoy": eventos_hoy,
         "eventos_proximos": eventos_proximos,
         "eventos_pasados": eventos_pasados,
+        "eventos": eventos_con_inscritos,  # Usar la lista con total_inscritos
         "total_eventos": total_eventos,
         "total_activos": total_activos,
         "hoy": hoy,
+        "today": hoy,  # Añadir today para compatibilidad con el template
         "filtros": {
             "estado": estado_filtro,
             "tipo": tipo_filtro,
@@ -2201,26 +2281,32 @@ def gestionar_eventos_institucion(request):
     for evento in eventos_a_actualizar:
         evento.actualizar_estado_por_fecha()
 
-    # --- INICIO DE LA CORRECCIÓN ---
-    # Inicializamos el QuerySet base con las relaciones ya cargadas
+    # === VISIBILIDAD POR ROL ===
+    # Base con relaciones para evitar N+1
     eventos = Evento.objects.select_related(
         "estado", "municipio", "parroquia", "institucion", "club_organizador"
-    )
+    ).filter(activo=True)
 
-    # Filtrar según rol usando lógica de Q
     if es_fed_central:
-        # No aplicamos filtro extra, ya tiene Evento.objects.all()
-        pass 
+        # Federación central ve TODOS los eventos (institucionales y de club)
+        # El conteo de inscritos se obtiene en el template vía related_name
+        eventos = eventos
     elif es_institucional and institution:
-        # Usamos OR (|) para combinar lógica sin usar .union()
+        # Usuario institucional:
+        # - Solo debe ver eventos institucionales "aprobados"
+        # - Creados por la Federación Central (es_publico=True o user_type='fed_central')
         eventos = eventos.filter(
-            Q(institucion=institution) | 
-            Q(es_publico=True, estado_evento__in=['aprobado', 'abierto', 'en_proceso'])
-        ).distinct() # distinct() es importante cuando usamos OR para evitar duplicados
+            estado_evento="aprobado",
+            tipo_evento="institucional",
+            cancelado=False,
+        ).filter(
+            Q(es_publico=True)
+            | Q(creado_por__userprofile__user_type="fed_central")
+        ).distinct()
     else:
         eventos = Evento.objects.none()
 
-    # Ahora los filtros adicionales funcionarán sin problemas
+    # Filtros adicionales desde la UI
     estado_filtro = request.GET.get("estado")
     tipo_filtro = request.GET.get("tipo")
     estado_evento_filtro = request.GET.get("estado_evento")
@@ -2232,48 +2318,55 @@ def gestionar_eventos_institucion(request):
     if estado_evento_filtro:
         eventos = eventos.filter(estado_evento=estado_evento_filtro)
 
-    # El order_by ahora es legal porque no hay un union() previo
     eventos = eventos.order_by("-fecha_creacion")
-    # --- FIN DE LA CORRECCIÓN ---
-    
-    # Estadísticas (Calculadas sobre el QuerySet filtrado)
-    # Calculamos todo de un solo golpe en la base de datos
+
+    # Estadísticas (calculadas sobre el queryset filtrado)
     stats = eventos.aggregate(
-    total=Count('id'),
-    borrador=Count('id', filter=Q(estado_evento="borrador")),
-    pendientes=Count('id', filter=Q(estado_evento="pendiente")),
-    aprobados=Count('id', filter=Q(estado_evento="aprobado")),
-    rechazados=Count('id', filter=Q(estado_evento="rechazado")),
-    activos=Count('id', filter=Q(estado_evento="abierto", fecha__gt=hoy, cancelado=False)),
-    en_proceso=Count('id', filter=Q(estado_evento="en_proceso")),
-    finalizados=Count('id', filter=Q(estado_evento="finalizado")),
-    pausados=Count('id', filter=Q(estado_evento="pausado")),
-    cancelados=Count('id', filter=Q(cancelado=True)),
+        total=Count("id"),
+        borrador=Count("id", filter=Q(estado_evento="borrador")),
+        pendientes=Count("id", filter=Q(estado_evento="pendiente")),
+        aprobados=Count("id", filter=Q(estado_evento="aprobado")),
+        rechazados=Count("id", filter=Q(estado_evento="rechazado")),
+        activos=Count(
+            "id",
+            filter=Q(estado_evento="abierto", fecha__gt=hoy, cancelado=False),
+        ),
+        en_proceso=Count("id", filter=Q(estado_evento="en_proceso")),
+        finalizados=Count("id", filter=Q(estado_evento="finalizado")),
+        pausados=Count("id", filter=Q(estado_evento="pausado")),
+        cancelados=Count("id", filter=Q(cancelado=True)),
     )
-    
+
+    # Métricas de dashboard
+    # Total de inscripciones activas en los eventos visibles para este usuario
+    total_inscripciones = eventos.aggregate(
+        total_inscripciones=Count(
+            "inscripciones_grupo",
+            filter=Q(inscripciones_grupo__activo=True),
+        )
+    )["total_inscripciones"] or 0
+
+    # Cantidad de eventos con fecha futura o de hoy (vigentes en calendario)
+    eventos_activos = eventos.filter(fecha__gte=hoy, cancelado=False).count()
+
     for evento in eventos:
-        # Creamos un atributo temporal "en vuelo" para el template
         evento.puede_editar = evento.usuario_puede_gestionar(perfil)
-        # Permiso específico de estado (nuevo)
-        # Solo puede editar si tiene permiso de gestión Y el estado es borrador/rechazado
         evento.puede_modificar_datos = evento.puede_editar and evento.es_editable_por_institucion
-    # ... resto del código (grupos_disponibles y context) ...
-    grupos_disponibles = Grupo.objects.filter(
-        usuario_creador=request.user, activo=True
-    ).order_by("nombre") if es_institucional else Grupo.objects.none()
 
-
-    for evento in eventos:
-        # Permiso general (que ya tenías)
-        evento.puede_editar = evento.usuario_puede_gestionar(perfil)
-        
-
+    grupos_disponibles = (
+        Grupo.objects.filter(usuario_creador=request.user, activo=True)
+        .order_by("nombre")
+        if es_institucional
+        else Grupo.objects.none()
+    )
 
     context = {
         "eventos": eventos,
         "grupos_disponibles": grupos_disponibles,
         "stats": stats,
         "hoy": hoy,
+        "total_inscripciones": total_inscripciones,
+        "eventos_activos": eventos_activos,
         "estados": Estado.objects.all().order_by("nombre"),
         "tipos": Evento.TIPO_CHOICES,
         "estados_evento": Evento.ESTADO_CHOICES,
@@ -3127,18 +3220,60 @@ def dashboard_mapa(request):
 @institucional_required
 def detalle_evento_institucion(request, evento_id):
     """Ver quiénes están inscritos en un evento específico y gestionar"""
-    evento = get_object_or_404(
-        Evento, id=evento_id, institucion=request.user.userprofile.institution
-    )
+    try:
+        # Obtener el perfil del usuario para verificar permisos
+        user_profile = request.user.userprofile
+        institucion = user_profile.institution
+        
+        # Obtener el evento aplicando las mismas reglas de visibilidad que eventos_disponibles
+        evento_query = Evento.objects.filter(
+            id=evento_id,
+            estado_evento__in=["aprobado", "publicado", "abierto"], 
+            activo=True, 
+            cancelado=False
+        ).select_related(
+            "estado", "municipio", "parroquia", "institucion", "club_organizador"
+        )
+        
+        # Aplicar filtros de VISIBILIDAD según audiencia (misma lógica que eventos_disponibles)
+        from registry.models import MembresiaClu
+        
+        # Obtener IDs de clubes donde la institución es miembro activo
+        clubes_miembro = MembresiaClu.objects.filter(
+            institucion=institucion, estado="miembro_activo"
+        ).values_list("club_id", flat=True)
+        
+        # Filtrar por audiencia:
+        # 1. Eventos públicos (audiencia='publica')
+        # 2. Eventos exclusivos de clubes donde es miembro
+        # 3. Eventos privados de su institución
+        evento = evento_query.filter(
+            Q(audiencia="publica")
+            | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
+            | Q(audiencia="institucional_privado", institucion=institucion)
+        ).first()
+        
+        if not evento:
+            messages.error(request, "El evento no existe o no tienes permiso para verlo.")
+            return redirect("eventos_disponibles")
+        
+        # Obtener inscripciones de grupos (usando la misma lógica que la vista mejorada)
+        # RESTRICCIÓN DE SEGURIDAD: Solo mostrar grupos de la institución del usuario logueado
+        inscripciones = evento.inscripciones_grupo.filter(
+            grupo__usuario_creador__userprofile__institution=institucion
+        ).select_related("grupo")
 
-    # Supongamos que tienes un modelo Inscripcion que vincula al Evento
-    inscripciones = evento.inscripcion_set.all().select_related("lider")
+        context = {
+            "evento": evento,
+            "inscripciones": inscripciones,
+            "total_inscritos": inscripciones.count(),
+            "es_fed_central": False,  # Vista institucional, siempre es False
+        }
+        return render(request, "users/detalle_evento_gestion.html", context)
 
-    return render(
-        request,
-        "users/detalle_evento_gestion.html",
-        {"evento": evento, "inscripciones": inscripciones},
-    )
+    except Evento.DoesNotExist:
+        messages.error(request, "El evento no existe o no tienes permiso para verlo.")
+        return redirect("eventos_disponibles")
 
 
 @login_required
@@ -3823,9 +3958,17 @@ def detalle_evento_gestion(request, evento_id):
     Vista para ver detalles del evento y gestionar inscritos
     """
     try:
-        # Obtener la institución del usuario actual
-        institution = request.user.userprofile.institution
-        evento = Evento.objects.get(id=evento_id, institucion=institution)
+        # Obtener el perfil del usuario para verificar permisos
+        user_profile = request.user.userprofile
+        
+        # fed_central puede ver todos los eventos
+        if user_profile.user_type == 'fed_central':
+            evento = get_object_or_404(Evento, id=evento_id)
+        else:
+            # Otros usuarios solo pueden ver eventos de su institución
+            institution = user_profile.institution
+            evento = get_object_or_404(Evento, id=evento_id, institucion=institution)
+        
         # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
         inscripciones = evento.inscripciones_grupo.all().select_related("grupo")
 
@@ -3833,12 +3976,112 @@ def detalle_evento_gestion(request, evento_id):
             "evento": evento,
             "inscripciones": inscripciones,
             "total_inscritos": inscripciones.count(),
+            "es_fed_central": user_profile.user_type == 'fed_central',
         }
         return render(request, "users/detalle_evento_gestion.html", context)
 
     except Evento.DoesNotExist:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
-        return redirect("gestionar_eventos_inst")
+        return redirect("admin_todos_eventos" if user_profile.user_type == 'fed_central' else "gestionar_eventos_inst")
+
+
+# ============================================
+# API ENDPOINTS
+# ============================================
+
+@login_required
+def api_participantes_grupo(request, grupo_id):
+    """
+    API endpoint para obtener los participantes de un grupo en formato JSON
+    """
+    try:
+        # Obtener el perfil del usuario para verificar permisos
+        user_profile = request.user.userprofile
+        
+        # fed_central puede ver todos los grupos
+        if user_profile.user_type == 'fed_central':
+            grupo = get_object_or_404(Grupo, id=grupo_id)
+        else:
+            # Para usuarios institucionales, verificar si tienen acceso al grupo
+            # a través de un evento que pueden ver (según reglas de audiencia)
+            grupo = Grupo.objects.filter(id=grupo_id).first()
+            if not grupo:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'El grupo no existe.'
+                }, status=404)
+            
+            # Verificar si el usuario tiene acceso a este grupo a través de algún evento
+            # donde su institución puede ver el evento
+            from registry.models import MembresiaClu
+            
+            institucion = user_profile.institution
+            clubes_miembro = MembresiaClu.objects.filter(
+                institucion=institucion, estado="miembro_activo"
+            ).values_list("club_id", flat=True)
+            
+            # Buscar eventos donde este grupo está inscrito y el usuario tiene permiso para ver
+            eventos_accesibles = InscripcionGrupoEvento.objects.filter(
+                grupo=grupo,
+                evento__estado_evento__in=["aprobado", "publicado", "abierto"], 
+                evento__activo=True, 
+                evento__cancelado=False
+            ).filter(
+                Q(evento__audiencia="publica")
+                | Q(evento__audiencia="club_exclusivo", evento__club_organizador_id__in=clubes_miembro)
+                | Q(evento__audiencia="institucional_privado", evento__institucion=institucion)
+            )
+            
+            # RESTRICCIÓN DE SEGURIDAD: Solo permitir ver participantes si el grupo pertenece a la institución del usuario
+            if grupo.usuario_creador.userprofile.institution != institucion:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No tienes permiso para ver los participantes de este grupo.'
+                }, status=403)
+            
+            # Alternativamente, permitir si el usuario es el creador del grupo (redundante pero mantiene compatibilidad)
+            if not eventos_accesibles.exists() and grupo.usuario_creador != request.user:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No tienes permiso para ver los participantes de este grupo.'
+                }, status=403)
+        
+        # Obtener participantes con sus datos
+        participantes = grupo.participantes.all().order_by('apellido', 'nombre')
+        
+        # Construir respuesta JSON
+        participantes_data = []
+        for participante in participantes:
+            participantes_data.append({
+                'id': str(participante.id),
+                'nombre': participante.nombres,
+                'apellido': participante.apellidos,
+                'cedula': participante.cedula,
+                'edad': participante.edad,
+                'genero': participante.genero,
+                'talla_camisa': participante.talla_camisa,
+                'fecha_nacimiento': participante.fecha_nacimiento.strftime('%d/%m/%Y') if participante.fecha_nacimiento else None,
+                'email': participante.email,
+                'telefono': participante.telefono,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'participantes': participantes_data,
+            'total': len(participantes_data),
+            'grupo_nombre': grupo.nombre
+        })
+        
+    except Grupo.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'El grupo no existe o no tienes permiso para verlo.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error interno del servidor: {str(e)}'
+        }, status=500)
 
 
 # ============================================
