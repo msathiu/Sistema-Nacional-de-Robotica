@@ -3,74 +3,178 @@
 
 {% block title %}Postular a Club de Robótica{% endblock %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+    }
+    
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .card-header-modern {
+        background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-dark) 100%);
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        border: none;
+        position: relative;
+    }
+    
+    .card-header-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--accent-cyan);
+    }
+    
+    .card-header-info {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+
+    .card-header-status {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+
+    .btn-modern {
+        border-radius: 50px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary-modern {
+        background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-dark) 100%);
+        border: none;
+        color: white;
+    }
+
+    .btn-primary-modern:hover {
+        background: linear-gradient(135deg, var(--blue-dark) 0%, #0a265d 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(11, 44, 109, 0.3);
+    }
+    
+    .btn-outline-modern {
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        background: transparent;
+    }
+    
+    .btn-outline-modern:hover {
+        background: #f1f5f9;
+        color: #334155;
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+    }
+
+    .form-label {
+        color: #334155;
+    }
+
+    .form-select, .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.625rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-select:focus, .form-control:focus {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.1);
+    }
+    
+    .badge-modern {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-weight: 500;
+        background: rgba(8, 145, 178, 0.1);
+        color: #0891b2;
+        border: 1px solid rgba(8, 145, 178, 0.2);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-paper-plane text-primary"></i> Postular a Club</h2>
-            <p class="text-muted mb-0">Complete el formulario de postulación</p>
+        <div class="d-flex align-items-center">
+            <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(135deg, var(--blue-main), var(--blue-dark)); border: 1px solid var(--accent-cyan);">
+                <i class="bi bi-send-fill fs-2 text-white"></i>
+            </div>
+            <div>
+                <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Postular a Club</h2>
+                <p class="text-muted mb-0 small">Complete el formulario de postulación a {{ club.nombre }}</p>
+            </div>
         </div>
-        <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Volver a Clubes
+        <a href="{% url 'clubes_lista' %}" class="btn btn-modern btn-outline-modern bg-white">
+            <i class="bi bi-arrow-left"></i> Volver a Clubes
         </a>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+            <div class="card modern-card mb-4">
+                <div class="card-header card-header-modern text-white">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text me-2"></i>Datos de la Postulación</h5>
+                </div>
                 <div class="card-body p-4">
-                    <!-- Información del Club -->
-                    <div class="alert alert-primary mb-4">
-                        <h5 class="alert-heading">
-                            <i class="fas fa-robot me-2"></i>{{ club.nombre }}
-                            {% if club.siglas %}<span class="text-muted">({{ club.siglas }})</span>{% endif %}
-                        </h5>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Institución Creadora:</strong> {{ club.institucion_creadora.nombre_publico }}</p>
-                                <p class="mb-1"><strong>Líneas de Investigación:</strong> 
-                                    {% if club.lineas_investigacion %}
-                                        {% for linea in club.lineas_investigacion %}
-                                            <span class="badge bg-info me-1">{{ linea }}</span>
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">No especificadas</span>
-                                    {% endif %}
-                                </p>
+                    <!-- Información del Club compacta -->
+                    <div class="alert alert-info rounded-3 mb-4" style="background: rgba(8, 145, 178, 0.05); border-left: 4px solid #0891b2; border-top:none; border-right:none; border-bottom:none;">
+                        <div class="row align-items-center">
+                            <div class="col-md-7">
+                                <h5 class="mb-1 text-dark fw-bold"><i class="bi bi-robot me-2 text-info"></i>{{ club.nombre }}</h5>
+                                <p class="mb-0 small text-muted">Institución Creadora: <strong>{{ club.institucion_creadora.nombre_publico }}</strong></p>
                             </div>
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Cupos Disponibles:</strong> {{ club.cupos_disponibles }} / {{ club.cupo_maximo }}</p>
-                                <p class="mb-0"><strong>Estado:</strong> {{ club.get_estado_vinculacion_display }}</p>
+                            <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                                <p class="mb-1 small"><strong>Cupos Disponibles:</strong> <span class="badge bg-success rounded-pill">{{ club.cupos_disponibles }} / {{ club.cupo_maximo }}</span></p>
+                                <p class="mb-0 small"><strong>Estado:</strong> {{ club.get_estado_vinculacion_display }}</p>
                             </div>
                         </div>
                     </div>
 
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        
-                        <h5 class="fw-bold mb-4">
-                            <i class="fas fa-file-alt text-info me-2"></i>Datos de la Postulación
-                        </h5>
 
                         <div class="mb-4">
                             <label for="carta_intencion" class="form-label fw-bold">Carta de Intención *</label>
                             <textarea class="form-control" id="carta_intencion" name="carta_intencion" 
                                       rows="5" placeholder="Explique por qué su institución desea formar parte de este club..." required></textarea>
-                            <small class="text-muted">Describa los objetivos y motivaciones de su institución</small>
+                            <small class="text-muted d-block mt-1">Describa los objetivos y motivaciones de su institución.</small>
                         </div>
 
                         <div class="mb-4">
                             <label for="propuesta_tecnica" class="form-label fw-bold">Propuesta Técnica *</label>
                             <textarea class="form-control" id="propuesta_tecnica" name="propuesta_tecnica" 
                                       rows="5" placeholder="Describa las capacidades técnicas y recursos que aportará..." required></textarea>
-                            <small class="text-muted">Detalle el equipamiento, experiencia y recursos disponibles</small>
+                            <small class="text-muted d-block mt-1">Detalle el equipamiento, experiencia y recursos disponibles.</small>
                         </div>
 
                         <div class="mb-4">
                             <label for="representante_legal" class="form-label fw-bold">Representante Legal *</label>
-                            <input type="text" class="form-control" id="representante_legal" name="representante_legal" 
-                                   placeholder="Nombre completo del representante legal" required>
+                            <div class="input-group">
+                                <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0; border-right: none; background: #f8fafc;"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="representante_legal" name="representante_legal" 
+                                       placeholder="Nombre completo del representante legal" required style="border-radius: 0 12px 12px 0;">
+                            </div>
                         </div>
 
                         <div class="mb-4">
@@ -81,17 +185,17 @@
                                 <option value="{{ value }}">{{ label }}</option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted">Seleccione el tipo de participación en el club</small>
+                            <small class="text-muted d-block mt-1">Seleccione el tipo de participación que tendrá en el club.</small>
                         </div>
 
-                        <hr>
+                        <hr class="my-4">
 
-                        <div class="d-flex justify-content-between gap-3">
-                            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Cancelar
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'clubes_lista' %}" class="btn btn-modern btn-outline-modern">
+                                <i class="bi bi-x-lg"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-2"></i>Enviar Postulación
+                            <button type="submit" class="btn btn-modern btn-primary-modern">
+                                <i class="bi bi-send"></i> Enviar Postulación
                             </button>
                         </div>
                     </form>
@@ -100,58 +204,81 @@
         </div>
 
         <div class="col-lg-4">
-            <!-- Información del Club -->
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
-                <div class="card-header bg-primary text-white" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Detalles del Club</h5>
+            <!-- Detalles del Club -->
+            <div class="card modern-card mb-4">
+                <div class="card-header card-header-info text-white">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2"></i>Detalles del Club</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     {% if club.descripcion %}
-                    <div class="mb-3">
-                        <small class="text-muted d-block fw-bold">Descripción</small>
-                        <p class="mb-0 small">{{ club.descripcion }}</p>
+                    <div class="mb-4">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Descripción</small>
+                        <p class="mb-0 mt-1 small" style="color: #475569;">{{ club.descripcion }}</p>
                     </div>
                     {% endif %}
 
                     {% if club.lineas_investigacion %}
-                    <div class="mb-3">
-                        <small class="text-muted d-block fw-bold">Líneas de Investigación</small>
-                        <div>
+                    <div class="mb-4">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Líneas de Investigación</small>
+                        <div class="mt-2 d-flex flex-wrap gap-2">
                             {% for linea in club.lineas_investigacion %}
-                                <span class="badge bg-info me-1 mb-1">{{ linea }}</span>
+                                <span class="badge-modern">{{ linea }}</span>
                             {% endfor %}
                         </div>
                     </div>
                     {% endif %}
 
                     {% if club.ubicacion %}
-                    <div class="mb-3">
-                        <small class="text-muted d-block fw-bold">Ubicación</small>
-                        <p class="mb-0 small">{{ club.ubicacion }}</p>
+                    <div class="mb-4">
+                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Ubicación</small>
+                        <p class="mb-0 mt-1 small" style="color: #475569;"><i class="bi bi-geo-alt me-1 text-muted"></i>{{ club.ubicacion }}</p>
                     </div>
                     {% endif %}
 
                     {% if club.requisitos %}
                     <div class="mb-0">
-                        <small class="text-muted d-block fw-bold">Requisitos</small>
-                        <p class="mb-0 small">{{ club.requisitos }}</p>
+                        <small class="text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Requisitos</small>
+                        <div class="p-3 mt-2 rounded bg-light border">
+                            <p class="mb-0 small" style="color: #475569;">{{ club.requisitos }}</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Estado de la Postulación -->
-            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
-                <div class="card-header bg-info text-white" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Estado de la Solicitud</h5>
+            <div class="card modern-card">
+                <div class="card-header card-header-status text-white">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Proceso</h5>
                 </div>
-                <div class="card-body">
-                    <p class="small mb-2">Su postulación será revisada por el coordinador del club.</p>
-                    <hr>
-                    <p class="small mb-0 text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Recibirá una notificación cuando su solicitud sea procesada.
-                    </p>
+                <div class="card-body p-4">
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-1-circle-fill fs-4 text-success"></i>
+                        </div>
+                        <div class="ms-3 pt-1">
+                            <h6 class="fw-bold mb-1">Postulación</h6>
+                            <p class="small text-muted mb-0">Envío de la carta y propuesta técnica.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-2-circle fs-4 text-muted"></i>
+                        </div>
+                        <div class="ms-3 pt-1">
+                            <h6 class="fw-bold mb-1 text-muted">Revisión</h6>
+                            <p class="small text-muted mb-0">Evaluación por el coordinador del club.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-3-circle fs-4 text-muted"></i>
+                        </div>
+                        <div class="ms-3 pt-1">
+                            <h6 class="fw-bold mb-1 text-muted">Aprobación</h6>
+                            <p class="small text-muted mb-0">Confirmación de ingreso al club.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,4 +302,3 @@
     })();
 </script>
 {% endblock %}
-

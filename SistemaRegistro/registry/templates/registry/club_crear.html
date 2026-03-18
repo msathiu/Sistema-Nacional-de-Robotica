@@ -14,51 +14,6 @@
         --warning: #f59e0b;
     }
     
-    .page-header {
-        background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 100%);
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 200px;
-        height: 200px;
-        background: var(--accent-cyan);
-        opacity: 0.1;
-        border-radius: 50%;
-    }
-    
-    .page-header::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: 10%;
-        width: 150px;
-        height: 150px;
-        background: var(--accent-cyan);
-        opacity: 0.05;
-        border-radius: 50%;
-    }
-    
-    .page-header h2 {
-        color: white;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    .page-header .subtitle {
-        color: rgba(255,255,255,0.7);
-        font-weight: 500;
-    }
-    
     .main-card {
         border: none;
         border-radius: 20px;
@@ -106,7 +61,7 @@
     }
     
     .section-card .card-header.lines-gradient {
-        background: linear-gradient(145deg, #d97706, #b45309);
+        background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));
     }
     
     .section-card .card-header.config-gradient {
@@ -288,23 +243,24 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="page-header animate-fade-in">
-        <div class="d-flex justify-content-between align-items-center">
+    <!-- Header unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <div class="club-info-icon me-3">
-                    <i class="bi bi-robot fs-4 text-white"></i>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-plus-circle fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2><i class="bi bi-plus-circle me-2"></i>Crear Nuevo Club</h2>
-                    <p class="subtitle">Complete los datos del club de robótica</p>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Crear Nuevo Club</h2>
+                    <p class="text-muted mb-0 small">Complete los datos del club de robótica</p>
                 </div>
             </div>
-            <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-cancel">
-                <i class="bi bi-arrow-left"></i> Volver a Clubes
+            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i> Volver a Clubes
             </a>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     <div class="row">
         <div class="col-lg-8">

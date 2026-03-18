@@ -2,53 +2,139 @@
 
 {% block title %}Aprobar Evento{% endblock %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+    }
+    
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .card-header-success-modern {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+
+    .btn-modern {
+        border-radius: 50px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-success-modern {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        border: none;
+        color: white;
+    }
+
+    .btn-success-modern:hover {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-outline-modern {
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        background: transparent;
+    }
+    
+    .btn-outline-modern:hover {
+        background: #f1f5f9;
+        color: #334155;
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+    }
+    
+    .form-control, .form-label {
+        color: #334155;
+    }
+    
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.625rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Aprobar Evento de Club</h4>
+        <div class="col-md-8 col-lg-7">
+            <div class="card modern-card mt-4">
+                <div class="card-header card-header-success-modern text-white">
+                    <h4 class="mb-0 fw-bold" style="font-family: 'Space Grotesk', sans-serif;">
+                        <i class="bi bi-check-circle me-2"></i> Aprobar Evento de Club
+                    </h4>
                 </div>
-                <div class="card-body">
-                    <h5>{{ evento.nombre }}</h5>
-                    <p class="text-muted">Club: {{ evento.club_organizador.nombre }}</p>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-1 text-dark">{{ evento.nombre }}</h5>
+                        <p class="text-muted small mb-0"><i class="bi bi-robot me-1"></i>Club: {{ evento.club_organizador.nombre }}</p>
+                    </div>
                     
-                    <hr>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Tipo:</strong> {{ evento.get_tipo_display }}</p>
-                            <p><strong>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}</p>
-                            <p><strong>Capacidad:</strong> {{ evento.capacidad_maxima|default:"Sin límite" }}</p>
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <p class="mb-1 small"><strong>Tipo:</strong> <span class="badge bg-secondary">{{ evento.get_tipo_display }}</span></p>
+                                <p class="mb-0 small"><strong>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1 small"><strong>Fecha:</strong> <i class="bi bi-calendar-event me-1 text-muted"></i>{{ evento.fecha|date:"d/m/Y" }}</p>
+                                <p class="mb-0 small"><strong>Capacidad:</strong> {{ evento.capacidad_maxima|default:"Sin límite" }}</p>
+                            </div>
                         </div>
                     </div>
 
                     {% if evento.descripcion %}
-                        <p><strong>Descripción:</strong></p>
-                        <p>{{ evento.descripcion }}</p>
+                        <div class="mb-4">
+                            <h6 class="fw-bold fs-6 text-dark mb-1">Descripción:</h6>
+                            <p class="small text-muted bg-white p-3 border rounded-3">{{ evento.descripcion }}</p>
+                        </div>
                     {% endif %}
 
                     <form method="post" class="mt-4">
                         {% csrf_token %}
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label fw-bold">Comentario de Aprobación *</label>
                             <textarea name="observaciones" class="form-control" rows="4" required 
                                 placeholder="Ej: Evento aprobado, cumple con los requisitos establecidos..."></textarea>
                         </div>
 
-                        <div class="alert alert-success">
-                            <i class="bi bi-info-circle"></i>
-                            Al aprobar, el club podrá comenzar a recibir inscripciones de sus miembros.
+                        <div class="alert alert-success rounded-3" style="background: rgba(16, 185, 129, 0.1); border:none; border-left: 4px solid #10b981;">
+                            <i class="bi bi-info-circle-fill me-2 text-success"></i>
+                            <span class="text-dark small">Al aprobar, el club podrá comenzar a recibir inscripciones de sus miembros.</span>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'revisar_eventos_club' %}" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Aprobar Evento
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'revisar_eventos_club' %}" class="btn btn-modern btn-outline-modern">
+                                <i class="bi bi-x-lg"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-modern btn-success-modern">
+                                <i class="bi bi-check-lg"></i> Aprobar Evento
                             </button>
                         </div>
                     </form>
