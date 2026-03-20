@@ -21,6 +21,38 @@ from .forms_grupos import GrupoForm
 from .models import Grupo, Participante, Tutor
 
 
+def _usuario_puede_ver_grupo(user, grupo) -> bool:
+    """Determina si el usuario puede ver el detalle del grupo."""
+    if not hasattr(user, "userprofile"):
+        return False
+
+    user_type = user.userprofile.user_type
+
+    if user.is_superuser or user_type in ["fed_central", "superuser"]:
+        return True
+
+    if user_type != "institucional":
+        return False
+
+    institucion_usuario = getattr(user.userprofile, "institution", None)
+    return bool(institucion_usuario and grupo.institucion == institucion_usuario)
+
+
+def _usuario_puede_modificar_grupo(user, grupo) -> bool:
+    """Determina si el usuario puede editar o eliminar el grupo."""
+    if not hasattr(user, "userprofile"):
+        return False
+
+    if user.is_superuser:
+        return True
+
+    if user.userprofile.user_type != "institucional":
+        return False
+
+    institucion_usuario = getattr(user.userprofile, "institution", None)
+    return bool(institucion_usuario and grupo.institucion == institucion_usuario)
+
+
 @login_required
 @fed_central_cannot_create('mis_grupos')
 def crear_equipo(request):
@@ -309,16 +341,28 @@ def ver_equipo(request, grupo_id):
             "tutores", "participantes", "inscripciones"
         ),
         id=grupo_id,
-        usuario_creador=request.user,
         activo=True,
     )
+
+    if not _usuario_puede_ver_grupo(request.user, grupo):
+        messages.error(request, "No tienes permisos para ver este equipo.")
+        return redirect("mis_grupos")
+
+    puede_modificar = _usuario_puede_modificar_grupo(request.user, grupo)
 
     context = {
         "grupo": grupo,
         "tutores": grupo.tutores.all(),
         "participantes": grupo.participantes.all(),
         "inscripciones": grupo.inscripciones.select_related("evento").all(),
-        "puede_editar": grupo.estado_grupo == "editable",
+        "puede_editar": puede_modificar and grupo.estado_grupo == "editable",
+        "puede_eliminar": (
+            puede_modificar and grupo.estado_grupo == "editable" and not grupo.evento
+        ),
+        "dashboard_url": (
+            "dashboard" if request.user.userprofile.user_type == "fed_central"
+            else "dashboard_institucional"
+        ),
     }
     return render(request, "registry/grupo_detalle.html", context)
 
@@ -538,6 +582,11 @@ def mis_grupos(request):
                 "id": grupo.id,
                 "nombre": grupo.nombre,
                 "codigo": grupo.codigo,
+                "institucion_nombre": (
+                    grupo.institucion.nombre_publico
+                    if grupo.institucion
+                    else "Sin institución"
+                ),
                 "criterio": grupo.criterio,  # Valor del campo para filtros
                 "criterio_display": grupo.get_criterio_display(),  # Display para mostrar
                 "criterio_detalle": criterio_detalle,  # Detalle específico del criterio
@@ -550,7 +599,15 @@ def mis_grupos(request):
                 "tutor_apellidos": tutor_principal.apellidos if tutor_principal else "",
                 "fecha_registro": grupo.fecha_registro,
                 "tiene_evento": grupo.evento is not None,
-                "puede_eliminar": grupo.estado_grupo == "editable" and not grupo.evento,
+                "puede_editar": (
+                    _usuario_puede_modificar_grupo(request.user, grupo)
+                    and grupo.estado_grupo == "editable"
+                ),
+                "puede_eliminar": (
+                    _usuario_puede_modificar_grupo(request.user, grupo)
+                    and grupo.estado_grupo == "editable"
+                    and not grupo.evento
+                ),
             }
         )
 
@@ -558,6 +615,7 @@ def mis_grupos(request):
         "grupos": grupos_data,
         "total_grupos": len(grupos_data),
         "puede_crear": puede_crear,  # Pasar al template para controlar botones
+        "mostrar_institucion": user_type == "fed_central",
     }
 
     return render(request, "registry/grupos_lista.html", context)

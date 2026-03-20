@@ -252,11 +252,6 @@ urlpatterns = [
         name="eventos_club",
     ),
     path(
-        "clubes/<int:club_id>/eventos/crear/",
-        views_eventos.crear_evento_club,
-        name="crear_evento_club",
-    ),
-    path(
         "eventos-club/<int:evento_id>/detalle/",
         views_eventos.detalle_evento_club,
         name="detalle_evento_club",

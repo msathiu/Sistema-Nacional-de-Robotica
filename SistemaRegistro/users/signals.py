@@ -35,8 +35,15 @@ def detectar_activacion_usuario(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def sincronizar_activacion_usuario(sender, instance, created, **kwargs):
-    # ... (Tu código actual de sincronizar_activacion) ...
+    """
+    Sincroniza la activación del usuario con su institución.
+    """
     if created:
+        return
+
+    # Si fue manejado por un servicio explícito, no duplicar lógica
+    if getattr(instance, "_identity_service_handled", False):
+        logger.info(f"Omitiendo señales para {instance.username} (Manejado por IdentityService)")
         return
 
     if not hasattr(instance, "_estado_anterior") or instance._estado_anterior is None:

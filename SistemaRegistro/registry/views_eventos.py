@@ -8,119 +8,8 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Club, Evento, Grupo, InscripcionGrupoEvento
+from .models import Club, EstadoEvento, Evento, Grupo, InscripcionGrupoEvento
 
-
-@login_required
-def crear_evento_club(request, club_id):
-    """Crear evento de club (solo propietario del club)."""
-    club = get_object_or_404(Club, id=club_id)
-    
-    # Validar que el usuario es propietario del club
-    if not hasattr(request.user, 'userprofile'):
-        messages.error(request, "No tienes acceso a esta sección.")
-        return redirect('dashboard')
-    
-    institucion = request.user.userprofile.institution
-    if club.institucion_creadora != institucion:
-        messages.error(request, "No tienes permiso para crear eventos de este club.")
-        return redirect('detalle_club', club_id=club.id)
-    
-    # Validar que el club esté aprobado
-    if club.status != 'aprobado':
-        messages.error(request, "Solo clubes aprobados pueden crear eventos.")
-        return redirect('detalle_club', club_id=club.id)
-    
-    if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                from registry.models import Estado, Municipio, Parroquia
-                
-                estado_id = request.POST.get('estado')
-                municipio_id = request.POST.get('municipio')
-                parroquia_id = request.POST.get('parroquia')
-                direccion = request.POST.get('direccion', '')
-                
-                estado_obj = Estado.objects.get(id=estado_id) if estado_id else None
-                municipio_obj = Municipio.objects.get(id=municipio_id) if municipio_id else None
-                parroquia_obj = Parroquia.objects.get(id=parroquia_id) if parroquia_id else None
-                
-                ubicacion_completa = direccion
-                if parroquia_obj:
-                    ubicacion_completa = f"{direccion}, {parroquia_obj.nombre}"
-                elif municipio_obj:
-                    ubicacion_completa = f"{direccion}, {municipio_obj.nombre}"
-                elif estado_obj:
-                    ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
-                
-                evento = Evento.objects.create(
-                    nombre=request.POST.get('nombre'),
-                    tipo=request.POST.get('categoria', 'competencia'),
-                    categoria=request.POST.get('categoria', ''),
-                    descripcion=request.POST.get('descripcion', ''),
-                    fecha=request.POST.get('fecha'),
-                    modalidad=request.POST.get('modalidad', 'presencial'),
-                    ubicacion=ubicacion_completa,
-                    estado=estado_obj,
-                    municipio=municipio_obj,
-                    parroquia=parroquia_obj,
-                    direccion=direccion,
-                    capacidad_maxima=request.POST.get('capacidad_maxima') or None,
-                    requisitos=request.POST.get('requisitos', ''),
-                    tipo_evento='club',
-                    club_organizador=club,
-                    audiencia='club_exclusivo',  # Eventos de club son exclusivos por defecto
-                    creado_por=request.user,
-                    estado_evento='borrador',
-                    activo=True
-                )
-                
-                messages.success(
-                    request,
-                    f'Evento "{evento.nombre}" creado exitosamente en estado BORRADOR. '
-                    'Envíalo a revisión cuando esté listo.'
-                )
-                return redirect('eventos_club', club_id=club.id)
-        except Exception as e:
-            messages.error(request, f"Error al crear evento: {str(e)}")
-    
-    # Obtener datos para el formulario
-    from registry.models import Estado
-    from datetime import date
-    
-    estados = Estado.objects.all().order_by('nombre')
-    hoy = date.today().isoformat()
-    
-    # Obtener estado del club (si tiene)
-    estado_club = None
-    if club.institucion_creadora and hasattr(club.institucion_creadora, 'estado'):
-        estado_club = club.institucion_creadora.estado
-    
-    # Categorías predefinidas
-    categorias = [
-        "Competencia",
-        "Taller",
-        "Seminario",
-        "Conferencia",
-        "Exhibición",
-        "Hackathon",
-        "Feria",
-        "Encuentro",
-        "Capacitación",
-        "Otro",
-    ]
-    
-    context = {
-        'club': club,
-        'tipos': Evento.TIPO_CHOICES,
-        'modalidades': Evento.MODALIDAD_CHOICES,
-        'estados': estados,
-        'hoy': hoy,
-        'estado_club': estado_club,
-        'categorias': categorias,
-        'valores_previos': {},
-    }
-    return render(request, 'registry/evento_club_crear_nuevo.html', context)
 
 
 @login_required
@@ -142,7 +31,7 @@ def listar_eventos_club(request, club_id):
     # Propietario del club ve todos sus eventos
     elif club.institucion_creadora == institucion:
         eventos = club.eventos.all()
-    # Miembros del club solo ven eventos aprobados
+    # Miembros del club solo ven eventos ya visibles en el ciclo real.
     else:
         es_miembro = club.membresias.filter(
             institucion=institucion,
@@ -150,7 +39,14 @@ def listar_eventos_club(request, club_id):
         ).exists()
         
         if es_miembro:
-            eventos = club.eventos.filter(estado_evento='aprobado')
+            eventos = club.eventos.filter(
+                estado_evento__in=[
+                    EstadoEvento.ABIERTO,
+                    EstadoEvento.PAUSADO,
+                    EstadoEvento.EN_PROCESO,
+                    EstadoEvento.FINALIZADO,
+                ]
+            )
         else:
             messages.error(request, "No tienes acceso a los eventos de este club.")
             return redirect('detalle_club', club_id=club.id)
@@ -181,15 +77,15 @@ def enviar_evento_revision(request, evento_id):
         return redirect('eventos_club', club_id=evento.club_organizador.id)
     
     # Validar estado
-    if evento.estado_evento not in ['borrador', 'rechazado']:
+    if evento.estado_evento not in [EstadoEvento.BORRADOR, EstadoEvento.RECHAZADO]:
         messages.warning(
             request,
-            f"El evento ya está en revisión o aprobado. Estado: {evento.get_estado_evento_display()}"
+            f"El evento ya fue enviado o procesado. Estado: {evento.get_estado_evento_display()}"
         )
         return redirect('eventos_club', club_id=evento.club_organizador.id)
     
     if request.method == 'POST':
-        evento.estado_evento = 'pendiente'
+        evento.estado_evento = EstadoEvento.REVISION
         evento.save(update_fields=['estado_evento'])
         
         messages.success(
@@ -200,43 +96,43 @@ def enviar_evento_revision(request, evento_id):
     
     context = {
         'evento': evento,
-        'es_reenvio': evento.estado_evento == 'rechazado',
+        'es_reenvio': evento.estado_evento == EstadoEvento.RECHAZADO,
     }
     return render(request, 'registry/evento_club_enviar_revision.html', context)
 
 
 @staff_member_required
 def revisar_eventos_club(request):
-    """Vista para que federación revise eventos de club pendientes."""
-    eventos_pendientes = Evento.objects.pendientes_aprobacion().select_related(
+    """Vista para que federación revise eventos de club en revisión."""
+    eventos_revision = Evento.objects.pendientes_aprobacion().select_related(
         'club_organizador', 'creado_por'
     ).order_by('-fecha_creacion')
     
     context = {
-        'eventos_pendientes': eventos_pendientes,
+        'eventos_revision': eventos_revision,
     }
     return render(request, 'registry/revisar_eventos_club.html', context)
 
 
 @staff_member_required
 def aprobar_evento_club(request, evento_id):
-    """Aprobar evento de club."""
+    """Abrir evento de club desde revisión."""
     evento = get_object_or_404(Evento, id=evento_id, tipo_evento='club')
     
-    if evento.estado_evento != 'pendiente':
-        messages.error(request, "Este evento no puede ser aprobado en su estado actual.")
+    if evento.estado_evento != EstadoEvento.REVISION:
+        messages.error(request, "Este evento no puede abrirse desde su estado actual.")
         return redirect('revisar_eventos_club')
     
     if request.method == 'POST':
         observaciones = request.POST.get('observaciones', '').strip()
         
         if not observaciones:
-            messages.error(request, "Debes agregar un comentario de aprobación.")
+            messages.error(request, "Debes agregar un comentario de apertura.")
             return render(request, 'registry/aprobar_evento_club.html', {'evento': evento})
         
         try:
             with transaction.atomic():
-                evento.estado_evento = 'aprobado'
+                evento.estado_evento = EstadoEvento.ABIERTO
                 evento.fecha_aprobacion = timezone.now()
                 evento.aprobado_por = request.user
                 evento.observaciones_aprobacion = observaciones
@@ -246,11 +142,11 @@ def aprobar_evento_club(request, evento_id):
                 
                 messages.success(
                     request,
-                    f'Evento "{evento.nombre}" ha sido APROBADO. '
+                    f'Evento "{evento.nombre}" ha sido abierto. '
                     'El club puede comenzar a recibir inscripciones.'
                 )
         except Exception as e:
-            messages.error(request, f"Error al aprobar evento: {str(e)}")
+            messages.error(request, f"Error al abrir evento: {str(e)}")
             return redirect('revisar_eventos_club')
         
         return redirect('revisar_eventos_club')
@@ -264,7 +160,7 @@ def rechazar_evento_club(request, evento_id):
     """Rechazar evento de club."""
     evento = get_object_or_404(Evento, id=evento_id, tipo_evento='club')
     
-    if evento.estado_evento != 'pendiente':
+    if evento.estado_evento != EstadoEvento.REVISION:
         messages.error(request, "Este evento no puede ser rechazado en su estado actual.")
         return redirect('revisar_eventos_club')
     
@@ -275,9 +171,10 @@ def rechazar_evento_club(request, evento_id):
             messages.error(request, "Debes especificar el motivo del rechazo.")
             return render(request, 'registry/rechazar_evento_club.html', {'evento': evento})
         
-        evento.estado_evento = 'rechazado'
+        evento.estado_evento = EstadoEvento.RECHAZADO
         evento.observaciones_aprobacion = observaciones
-        evento.save(update_fields=['estado_evento', 'observaciones_aprobacion'])
+        evento.observacion_estado = observaciones
+        evento.save(update_fields=['estado_evento', 'observaciones_aprobacion', 'observacion_estado'])
         
         messages.success(request, f'Evento "{evento.nombre}" ha sido RECHAZADO.')
         return redirect('revisar_eventos_club')
@@ -314,8 +211,13 @@ def detalle_evento_club(request, evento_id):
     if not puede_ver:
         puede_ver = evento.club_organizador.institucion_creadora == institucion
     
-    # Miembros del club solo ven eventos aprobados
-    if not puede_ver and evento.estado_evento == 'aprobado':
+    # Miembros del club solo ven eventos ya abiertos para su club.
+    if not puede_ver and evento.estado_evento in [
+        EstadoEvento.ABIERTO,
+        EstadoEvento.PAUSADO,
+        EstadoEvento.EN_PROCESO,
+        EstadoEvento.FINALIZADO,
+    ]:
         puede_ver = evento.club_organizador.membresias.filter(
             institucion=institucion,
             estado='miembro_activo'

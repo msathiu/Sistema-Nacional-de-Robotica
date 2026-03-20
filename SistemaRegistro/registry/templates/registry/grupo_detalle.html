@@ -41,7 +41,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard_institucional' %}"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url dashboard_url %}"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{% url 'mis_grupos' %}">Mis Equipos</a></li>
             <li class="breadcrumb-item active">{{ grupo.nombre }}</li>
         </ol>
@@ -281,7 +281,7 @@
 </div>
 
 <!-- Modal Confirmar Eliminación -->
-{% if puede_editar %}
+{% if puede_eliminar %}
 <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

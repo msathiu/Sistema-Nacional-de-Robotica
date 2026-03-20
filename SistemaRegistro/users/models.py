@@ -47,6 +47,11 @@ class UserProfile(models.Model):
 def sync_user_permissions(sender, instance, **kwargs):
     """Sincroniza permisos: Central y Tecnológico tienen acceso al admin (staff)"""
     user = instance.user
+    
+    # Si fue manejado por un servicio explícito, no duplicar lógica
+    if getattr(user, "_identity_service_handled", False):
+        return
+
     updated = False
     
     # Superusuario y Tecnológico: Acceso total a infraestructura

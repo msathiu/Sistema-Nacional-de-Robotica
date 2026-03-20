@@ -7,7 +7,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('registry', '0049_fix_all_participante_fk_uuid'),
-        ('registry', '0050_add_participante_unique_constraints'),
     ]
 
     operations = [

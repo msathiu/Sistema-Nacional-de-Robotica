@@ -1,0 +1,153 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Inscripción al Evento - {{ evento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-people-fill fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ evento.nombre }}</h2>
+                    <p class="text-muted mb-0 small">Detalle e inscripción de grupos</p>
+                </div>
+            </div>
+            <a href="{% url 'eventos_disponibles' %}" class="btn shadow-sm px-4 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Información del Evento</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning text-dark{% elif evento.estado_evento == 'en_proceso' %}bg-primary{% else %}bg-secondary{% endif %}">
+                            {{ evento.get_estado_evento_display }}
+                        </span>
+                        <span class="badge bg-light text-dark border">{{ evento.get_audiencia_display }}</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Fecha</small>
+                                <span class="fw-bold">{{ evento.fecha|date:"d/m/Y" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Ubicación</small>
+                                <span class="fw-bold">{{ evento.ubicacion|default:"No especificada" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if evento.descripcion %}
+                    <div class="mt-4">
+                        <small class="text-muted text-uppercase fw-bold d-block mb-2">Descripción</small>
+                        <p class="mb-0">{{ evento.descripcion }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if evento.requisitos %}
+                    <div class="mt-4">
+                        <small class="text-muted text-uppercase fw-bold d-block mb-2">Requisitos</small>
+                        <p class="mb-0">{{ evento.requisitos|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
+                    <div class="alert mt-4 mb-0" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
+                        <strong><i class="bi bi-pause-circle me-2"></i>Evento en pausa:</strong><br>
+                        {{ evento.observacion_estado|linebreaks }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mt-4" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: #0f766e;">
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-list-check me-2"></i>Grupos Inscritos</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if grupos_inscritos %}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr class="text-uppercase small text-muted">
+                                    <th>Grupo</th>
+                                    <th>Institución</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inscripcion in grupos_inscritos %}
+                                <tr>
+                                    <td class="fw-bold">{{ inscripcion.grupo.nombre }}</td>
+                                    <td>{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
+                                    <td>{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Aún no hay grupos inscritos en este evento.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4" style="background: #10b981;">
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-send-check me-2"></i>Inscribir Grupo</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if evento.estado_evento == 'abierto' %}
+                        {% if grupos_disponibles %}
+                        <form method="post" action="{% url 'inscribir_grupo_evento' evento.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Grupo</label>
+                                <select name="grupo_id" class="form-select" required>
+                                    <option value="">Seleccione un grupo</option>
+                                    {% for grupo in grupos_disponibles %}
+                                    <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Rol de participación</label>
+                                <select name="rol" class="form-select">
+                                    <option value="participante">Participante</option>
+                                    <option value="competidor">Competidor</option>
+                                    <option value="expositor">Expositor</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                <i class="bi bi-plus-circle me-2"></i>Inscribir Grupo
+                            </button>
+                        </form>
+                        {% else %}
+                        <p class="text-muted mb-0">No tienes grupos disponibles para inscribir en este evento.</p>
+                        {% endif %}
+                    {% elif evento.estado_evento == 'pausado' %}
+                    <p class="text-warning fw-bold mb-0">Las inscripciones están temporalmente suspendidas.</p>
+                    {% else %}
+                    <p class="text-muted mb-0">Este evento no admite inscripciones en este momento.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

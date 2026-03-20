@@ -36,7 +36,8 @@
                         <option value="">Todos los estados</option>
                         <option value="abierto">Abierto</option>
                         <option value="pausado">Pausado</option>
-                        <option value="cerrado">Cerrado</option>
+                        <option value="en_proceso">En proceso</option>
+                        <option value="finalizado">Finalizado</option>
                     </select>
                 </div>
             </div>
@@ -51,7 +52,7 @@
                 <div class="card-header 
                     {% if evento.estado_evento == 'abierto' %}bg-success
                     {% elif evento.estado_evento == 'pausado' %}bg-warning
-                    {% elif evento.estado_evento == 'cerrado' %}bg-danger
+                    {% elif evento.estado_evento == 'en_proceso' %}bg-primary
                     {% else %}bg-secondary{% endif %} text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="badge bg-white text-dark">{{ evento.get_tipo_display }}</span>
@@ -88,9 +89,9 @@
                         <button class="btn btn-secondary w-100" disabled>
                             <i class="fas fa-pause"></i> Inscripciones Pausadas
                         </button>
-                    {% elif evento.estado_evento == 'cerrado' %}
-                        <button class="btn btn-danger w-100" disabled>
-                            <i class="fas fa-lock"></i> Cerrado
+                    {% elif evento.estado_evento == 'en_proceso' %}
+                        <button class="btn btn-info w-100" disabled>
+                            <i class="fas fa-play"></i> En Proceso
                         </button>
                     {% else %}
                         <button class="btn btn-secondary w-100" disabled>

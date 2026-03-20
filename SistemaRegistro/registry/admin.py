@@ -180,9 +180,10 @@ class ParticipanteAdmin(admin.ModelAdmin):
 # 1. Definimos la acción
 @admin.action(description="Aprobar y generar código RNR")
 def aprobar_registros(modeladmin, request, queryset):
+    from .services.admission_service import AdmissionService
     count = 0
-    for institucion in queryset:
-        if institucion.aprobar_y_generar_codigo():
+    for institucion in queryset.filter(estatus="pendiente"):
+        if AdmissionService.approve_institution(institucion, request.user):
             count += 1
     modeladmin.message_user(
         request, f"Se han aprobado {count} instituciones correctamente."
@@ -259,15 +260,14 @@ class InstitucionAdmin(admin.ModelAdmin):
     )
 
     def aprobar_instituciones(self, request, queryset):
+        from .services.admission_service import AdmissionService
         count = 0
         for inst in queryset.filter(estatus="pendiente"):
-            inst.activa = True
-            inst.estatus = "aprobado"
-            inst.save()
-            count += 1
+            if AdmissionService.approve_institution(inst, request.user):
+                count += 1
         self.message_user(
             request,
-            f"{count} instituciones han sido aprobadas y sus códigos RNR generados.",
+            f"{count} instituciones han sido aprobadas exitosamente.",
         )
 
     aprobar_instituciones.short_description = "✅ Aprobar y generar códigos RNR"

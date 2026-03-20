@@ -23,6 +23,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Participante, ParticipanteInstitucion, ParticipanteGrupo, Institucion, Grupo
+from users.services.identity_service import IdentityService
 
 logger = logging.getLogger(__name__)
 
@@ -30,20 +31,43 @@ logger = logging.getLogger(__name__)
 class ParticipanteService:
     """
     Servicio que maneja las operaciones relacionadas con participantes multi-institución.
-    
-    Garantiza la integridad de datos y separación de responsabilidades.
-    
-    Usage:
-        >>> from registry.services import ParticipanteService
-        >>> # Registrar participante
-        >>> participante, vinculacion, creado = ParticipanteService.registrar_participante_con_institucion(
-        ...     institucion=institucion,
-        ...     datos_participante=datos,
-        ...     grupo=grupo,
-        ...     usuario=request.user
-        ... )
     """
-    
+
+    @staticmethod
+    def onboard_participante(username, email, password, datos_personales, institucion_inicial=None):
+        """
+        Crea un usuario del sistema y su registro de Participante asociado.
+        Sustituye la creación implícita vía signals.
+        """
+        with transaction.atomic():
+            # 1. Crear Usuario y Perfil (vía IdentityService)
+            # El IdentityService ya maneja el flag para silenciar signals
+            user, profile = IdentityService.create_user_with_profile(
+                username=username,
+                email=email,
+                password=password,
+                user_type='participante',
+                institution=institucion_inicial
+            )
+            
+            # 2. Activar usuario inmediatamente para participantes (o según política)
+            IdentityService.toggle_user_status(user, is_active=True)
+            
+            # 3. Crear el registro de Participante vinculado al usuario
+            datos_personales['user'] = user
+            participante = ParticipanteService.crear_participante(datos_personales)
+            
+            # 4. Vincular a la institución inicial si se proporcionó
+            if institucion_inicial:
+                ParticipanteService.vincular_participante_institucion(
+                    participante=participante,
+                    institucion=institucion_inicial,
+                    usuario=user # El propio participante se registra
+                )
+            
+            logger.info(f"Onboarding completado para participante: {username}")
+            return participante, user
+
     @staticmethod
     def buscar_por_cedula(cedula: str) -> Optional[Participante]:
         """

@@ -43,8 +43,12 @@
                         <h5 class="fw-bold" style="color: var(--blue-main);">Información del Evento</h5>
                         <span class="badge 
                             {% if evento.estado_evento == 'borrador' %}bg-secondary
-                            {% elif evento.estado_evento == 'pendiente' %}bg-warning
-                            {% elif evento.estado_evento == 'aprobado' %}bg-success
+                            {% elif evento.estado_evento == 'revision' %}bg-warning
+                            {% elif evento.estado_evento == 'abierto' %}bg-success
+                            {% elif evento.estado_evento == 'pausado' %}bg-warning
+                            {% elif evento.estado_evento == 'en_proceso' %}bg-primary
+                            {% elif evento.estado_evento == 'finalizado' %}bg-info
+                            {% elif evento.estado_evento == 'cancelado' %}bg-dark
                             {% elif evento.estado_evento == 'rechazado' %}bg-danger
                             {% endif %} fs-6">
                             {{ evento.get_estado_evento_display }}
@@ -75,6 +79,22 @@
                         <div class="alert mb-0" style="background: linear-gradient(135deg, #e0f2fe, #f0f9ff); border-radius: 12px; border-left: 4px solid #0891b2;">
                             <strong><i class="bi bi-info-circle me-2" style="color: #0891b2;"></i>Observaciones de la Federación:</strong><br>
                             {{ evento.observaciones_aprobacion }}
+                        </div>
+                    {% endif %}
+
+                    {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
+                        <hr>
+                        <div class="alert mb-0" style="background: linear-gradient(135deg, #fff7ed, #fffbeb); border-radius: 12px; border-left: 4px solid #f59e0b;">
+                            <strong><i class="bi bi-pause-circle me-2" style="color: #b45309;"></i>Evento en pausa:</strong><br>
+                            {{ evento.observacion_estado }}
+                        </div>
+                    {% endif %}
+
+                    {% if evento.estado_evento == 'cancelado' and evento.motivo_cancelacion %}
+                        <hr>
+                        <div class="alert mb-0" style="background: linear-gradient(135deg, #fef2f2, #fff1f2); border-radius: 12px; border-left: 4px solid #dc2626;">
+                            <strong><i class="bi bi-x-octagon me-2" style="color: #b91c1c;"></i>Evento cancelado:</strong><br>
+                            {{ evento.motivo_cancelacion }}
                         </div>
                     {% endif %}
                 </div>
@@ -147,7 +167,7 @@
                     <p class="small mb-0"><strong><i class="bi bi-clock me-2"></i>Fecha de creación:</strong><br>{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</p>
                     {% if evento.fecha_aprobacion %}
                         <hr>
-                        <p class="small mb-0"><strong><i class="bi bi-check-circle me-2"></i>Aprobado:</strong><br>{{ evento.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                        <p class="small mb-0"><strong><i class="bi bi-check-circle me-2"></i>Abierto desde:</strong><br>{{ evento.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
                     {% endif %}
                 </div>
             </div>

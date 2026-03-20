@@ -267,3 +267,22 @@ def notificar_membresia_rechazada(membresia, motivo=''):
             club=club
         )
 
+
+def notificar_institucion_activada(institucion):
+    """Notifica a la institución que su cuenta ha sido activada y aprobada.
+    
+    Args:
+        institucion: Objeto Institucion activado
+    """
+    if hasattr(institucion, 'usuario') and institucion.usuario:
+        mensaje = f'Tu institución "{institucion.nombre}" ha sido aprobada y activada exitosamente.'
+        mensaje += f'\n\n✅ Tu código RNR oficial es: {institucion.codigo}'
+        mensaje += f'\n\n🔑 Ya puedes acceder al sistema con tus credenciales.'
+        
+        crear_notificacion(
+            destinatario=institucion.usuario,
+            tipo='sistema',
+            titulo=f'✅ Institución Activada: {institucion.nombre}',
+            mensaje=mensaje
+        )
+

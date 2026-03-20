@@ -26,12 +26,14 @@ from registry.models import (
     Club,
     Dependencia,
     Estado,
+    EstadoEvento,
     Evento,
     Grupo,
     Inscripcion,
     InscripcionGrupoEvento,
     Institucion,
     IntegranteEquipo,
+    MembresiaClu,
     Municipio,
     Parroquia,
     Participante,
@@ -53,6 +55,70 @@ from .forms import (
     SedeRegionalForm,
 )
 from .models import Municipios, UserProfile
+from .services.identity_service import IdentityService
+from registry.services.admission_service import AdmissionService
+
+
+ESTADOS_EVENTO_PUBLICABLES = [
+    EstadoEvento.ABIERTO,
+    EstadoEvento.PAUSADO,
+    EstadoEvento.EN_PROCESO,
+    EstadoEvento.FINALIZADO,
+]
+
+USUARIOS_RECTORES_EVENTOS = ["fed_central", "superuser", "tecnologico"]
+
+
+def _clubes_miembro_activo(institucion):
+    if not institucion:
+        return MembresiaClu.objects.none().values_list("club_id", flat=True)
+    return MembresiaClu.objects.filter(
+        institucion=institucion,
+        estado="miembro_activo",
+    ).values_list("club_id", flat=True)
+
+
+def _es_rector_eventos(perfil):
+    return getattr(perfil, "user_type", None) in USUARIOS_RECTORES_EVENTOS
+
+
+def _eventos_visibles_queryset(perfil, *, incluir_propios=False):
+    user_type = getattr(perfil, "user_type", None)
+    institucion = getattr(perfil, "institution", None)
+
+    eventos = Evento.objects.filter(
+        estado_evento__in=ESTADOS_EVENTO_PUBLICABLES,
+        activo=True,
+        cancelado=False,
+    ).select_related(
+        "estado",
+        "municipio",
+        "parroquia",
+        "institucion",
+        "club_organizador",
+        "creado_por",
+    )
+
+    if user_type in USUARIOS_RECTORES_EVENTOS:
+        return eventos
+
+    if user_type == "fed_regional" and getattr(perfil, "estado", None):
+        return eventos.filter(estado=perfil.estado)
+
+    if user_type != "institucional" or not institucion:
+        return Evento.objects.none()
+
+    clubes_miembro = _clubes_miembro_activo(institucion)
+    eventos = eventos.filter(
+        Q(audiencia="publica")
+        | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
+        | Q(audiencia="institucional_privado", institucion=institucion)
+    )
+
+    if incluir_propios:
+        return eventos
+
+    return eventos.exclude(institucion=institucion)
 
 
 @login_required
@@ -64,39 +130,13 @@ def detalle_evento_inscripcion(request, evento_id):
     # Obtener el perfil del usuario para verificar permisos
     user_profile = request.user.userprofile
     
-    # fed_central puede ver todos los eventos
-    if user_profile.user_type == 'fed_central':
-        evento = get_object_or_404(
-            Evento.objects.select_related("estado", "municipio", "parroquia"),
-            id=evento_id,
-            activo=True,
-        )
-    else:
-        # Aplicar mismas reglas de visibilidad que eventos_disponibles
-        institucion = user_profile.institution
-        evento_query = Evento.objects.filter(
-            id=evento_id,
-            estado_evento__in=["aprobado", "publicado", "abierto"], 
-            activo=True, 
-            cancelado=False
-        ).select_related("estado", "municipio", "parroquia", "institucion", "club_organizador")
-        
-        # Aplicar filtros de VISIBILIDAD según audiencia
-        from registry.models import MembresiaClu
-        
-        clubes_miembro = MembresiaClu.objects.filter(
-            institucion=institucion, estado="miembro_activo"
-        ).values_list("club_id", flat=True)
-        
-        evento = evento_query.filter(
-            Q(audiencia="publica")
-            | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
-            | Q(audiencia="institucional_privado", institucion=institucion)
-        ).first()
-        
-        if not evento:
-            messages.error(request, "El evento no existe o no tienes permiso para verlo.")
-            return redirect("eventos_disponibles")
+    evento = _eventos_visibles_queryset(user_profile, incluir_propios=True).filter(
+        id=evento_id
+    ).first()
+
+    if not evento:
+        messages.error(request, "El evento no existe o no tienes permiso para verlo.")
+        return redirect("eventos_disponibles")
 
     # Obtener grupos del usuario actual que no están inscritos en este evento
     grupos_disponibles = Grupo.objects.filter(
@@ -126,43 +166,24 @@ def inscribir_grupo_evento(request, evento_id):
     Vista para inscribir un Equipos en un evento.
 
     Reglas:
-    - El evento debe permitir inscripciones según la lógica de negocio
-      (estado 'aprobado', 'publicado' o 'abierto', activo y no cancelado).
+    - El evento debe estar visible para el usuario según audiencia.
+    - La inscripción real solo procede si `evento.puede_inscribirse`.
     - Solo se pueden inscribir grupos del usuario autenticado.
     """
     if request.method == "POST":
         # Obtener el perfil del usuario para verificar permisos
         user_profile = request.user.userprofile
         
-        # fed_central puede ver todos los eventos
-        if user_profile.user_type == 'fed_central':
-            evento = get_object_or_404(Evento, id=evento_id, activo=True)
-        else:
-            # Aplicar mismas reglas de visibilidad que eventos_disponibles
-            institucion = user_profile.institution
-            evento_query = Evento.objects.filter(
-                id=evento_id,
-                estado_evento__in=["aprobado", "publicado", "abierto"], 
-                activo=True, 
-                cancelado=False
+        evento = _eventos_visibles_queryset(user_profile, incluir_propios=True).filter(
+            id=evento_id
+        ).first()
+
+        if not evento:
+            messages.error(
+                request,
+                "El evento no existe o no tienes permiso para inscribirte en él.",
             )
-            
-            # Aplicar filtros de VISIBILIDAD según audiencia
-            from registry.models import MembresiaClu
-            
-            clubes_miembro = MembresiaClu.objects.filter(
-                institucion=institucion, estado="miembro_activo"
-            ).values_list("club_id", flat=True)
-            
-            evento = evento_query.filter(
-                Q(audiencia="publica")
-                | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
-                | Q(audiencia="institucional_privado", institucion=institucion)
-            ).first()
-            
-            if not evento:
-                messages.error(request, "El evento no existe o no tienes permiso para inscribirte en él.")
-                return redirect("eventos_disponibles")
+            return redirect("eventos_disponibles")
         
         grupo_id = request.POST.get("grupo_id")
         rol = request.POST.get("rol", "participante")
@@ -1509,13 +1530,10 @@ def registrar_institucion(request):
                 with transaction.atomic():
                     institucion = form.save(commit=False)
 
-                    # A. Lógica de Activación
-                    if es_central:
-                        institucion.activa = True
-                        institucion.estatus = "aprobado"
-                    else:
-                        institucion.activa = False
-                        institucion.estatus = "pendiente"
+                    # A. Lógica de Activación: Siempre nacen como pendientes
+                    # Independientemente de quién registre, el objetivo es el flujo de dos pasos
+                    institucion.activa = False
+                    institucion.estatus = "pendiente"
 
                     # B. Forzar Estado si es Regional (Seguridad lado servidor)
                     if es_regional and perfil_admin.estado:
@@ -1879,8 +1897,8 @@ def estadisticas_por_estado(request):
 def crear_evento(request):
     """
     Vista unificada para crear eventos.
-    - Federación: Publica directamente (estado: publicado)
-    - Instituciones: Crea en borrador
+    - Instituciones: crean en borrador.
+    - fed_central/superuser/tecnologico: crean directamente en abierto.
     """
     perfil = request.user.userprofile
     user_type = perfil.user_type
@@ -1911,11 +1929,25 @@ def crear_evento(request):
     estados = Estado.objects.all().order_by("nombre")
     hoy = date.today().isoformat()
 
+    # Manejar pre-selección de club vía GET
+    club_preseleccionado_id = request.GET.get('club_id')
+    valores_iniciales = {}
+    if club_preseleccionado_id:
+        valores_iniciales = {
+            'club_organizador': club_preseleccionado_id,
+            'tipo_evento': 'club'
+        }
+
     # Obtener clubes aprobados de la institución
     clubes_disponibles = []
     if user_type == "institucional" and institution:
         clubes_disponibles = Club.objects.filter(
             institucion_creadora=institution, status="aprobado", activo=True
+        ).select_related("institucion_creadora")
+    elif es_federacion:
+        # Federación puede crear eventos para cualquier club aprobado
+        clubes_disponibles = Club.objects.filter(
+            status="aprobado", activo=True
         ).select_related("institucion_creadora")
 
     # Categorías predefinidas desde el modelo (Single Source of Truth)
@@ -1935,7 +1967,6 @@ def crear_evento(request):
         parroquia_id = request.POST.get("parroquia")
         direccion = request.POST.get("direccion", "")
         requisitos = request.POST.get("requisitos")
-        estado_evento = request.POST.get("estado_evento", "abierto")
         tipo_evento = request.POST.get("tipo_evento", "institucional")
         club_organizador_id = request.POST.get("club_organizador")
         audiencia = request.POST.get("audiencia", "publica")
@@ -2022,24 +2053,27 @@ def crear_evento(request):
             elif estado_obj:
                 ubicacion_completa = f"{direccion}, {estado_obj.nombre}"
 
-            # Determinar estado inicial según rol (TODOS requieren aprobación excepto fed_central)
-            if user_type == "fed_central":
-                estado_inicial = "aprobado"  # fed_central aprueba automáticamente
-                es_publico = True  # Mantener compatibilidad con campo legacy
+            # Determinar estado inicial según rol.
+            if user_type in ["fed_central", "superuser", "tecnologico"]:
+                estado_inicial = EstadoEvento.ABIERTO
+                es_publico = audiencia == "publica"
             else:
-                estado_inicial = "borrador"  # Todos los demás inician en borrador
+                estado_inicial = EstadoEvento.BORRADOR
                 es_publico = False
 
             # Obtener club si es evento de club
             club_obj = None
             if tipo_evento == "club" and club_organizador_id:
                 try:
-                    club_obj = Club.objects.get(
-                        id=club_organizador_id, status="aprobado"
-                    )
+                    filtros_club = Q(id=club_organizador_id, status="aprobado")
+                    # Si es institucional, solo sus propios clubes
+                    if user_type == "institucional":
+                        filtros_club &= Q(institucion_creadora=institution)
+                    
+                    club_obj = Club.objects.get(filtros_club)
                 except Club.DoesNotExist:
                     messages.error(
-                        request, "❌ El club seleccionado no existe o no está aprobado."
+                        request, "❌ El club seleccionado no existe, no está aprobado o no tienes permisos."
                     )
                     return render(
                         request,
@@ -2080,14 +2114,14 @@ def crear_evento(request):
                 activo=True,
             )
 
-            if user_type == "fed_central":
+            if user_type in ["fed_central", "superuser", "tecnologico"]:
                 messages.success(
                     request,
-                    f"✅ Evento '{nombre}' aprobado y publicado exitosamente. "
+                    f"✅ Evento '{nombre}' creado y abierto exitosamente. "
                     f"Tipo: {tipo_evento.upper()}. "
                     f"Visible para: {evento.get_audiencia_display()}.",
                 )
-                return redirect("dashboard")
+                return redirect("admin_eventos")
             else:
                 tipo_msg = "de club" if tipo_evento == "club" else "institucional"
                 messages.success(
@@ -2095,7 +2129,7 @@ def crear_evento(request):
                     f"✅ Evento {tipo_msg} '{nombre}' creado en BORRADOR. "
                     "Envíalo a revisión cuando esté listo para aprobación de Federación Venezolana de Robótica Creativa.",
                 )
-                return redirect("seguimiento_eventos_inst")
+                return redirect("mis_eventos")
 
         except Exception as e:
             messages.error(request, f"❌ Error al crear el evento: {str(e)}")
@@ -2112,10 +2146,21 @@ def crear_evento(request):
             )
 
     # Valores por defecto para el formulario
-    valores_default = {
-        "estado_evento": "abierto",
+    valores_iniciales = {
+        "estado_evento": EstadoEvento.BORRADOR,
         "modalidad": "presencial",
     }
+
+    # Pre-seleccionar club si se pasa en la URL (GET parameter)
+    club_id_get = request.GET.get("club_id")
+    if club_id_get:
+        try:
+            # Validar que el club_id sea válido y esté en clubes_disponibles
+            if clubes_disponibles.filter(id=club_id_get).exists():
+                valores_iniciales["club_organizador"] = club_id_get
+                valores_iniciales["tipo_evento"] = "club" # Si se preselecciona un club, el tipo de evento es "club"
+        except ValueError:
+            pass # Ignorar si club_id_get no es un entero válido
 
     return render(
         request,
@@ -2125,7 +2170,7 @@ def crear_evento(request):
             "hoy": hoy,
             "categorias": categorias,
             "estado_institucion": estado_institucion,
-            "valores_default": valores_default,
+            "valores_previos": valores_iniciales, # Usar valores_iniciales para el GET request
             "es_federacion": es_federacion,
             "clubes_disponibles": clubes_disponibles,
         },
@@ -2135,19 +2180,12 @@ def crear_evento(request):
 @login_required
 def eventos_disponibles(request):
     """
-    Vista para mostrar eventos disponibles según audiencia y permisos.
+    Catálogo de eventos visibles para el usuario.
 
-    Reglas de visibilidad por audiencia:
-    - fed_central/superuser: ven TODOS los eventos aprobados
-    - instituciones: ven eventos según audiencia:
-      * publica: todos pueden ver
-      * club_exclusivo: solo si son miembros activos del club
-      * institucional_privado: solo si es su institución
+    Para instituciones:
+    - muestra eventos abiertos a su institución según audiencia
+    - excluye sus propios eventos de la vista general
     """
-    from datetime import date
-
-    from django.db import models
-
     hoy = date.today()
 
     # Obtener parámetros de filtro
@@ -2161,36 +2199,7 @@ def eventos_disponibles(request):
     # Obtener perfil del usuario
     perfil = request.user.userprofile
     user_type = perfil.user_type
-    institucion = getattr(perfil, "institution", None)
-
-    # Query base: eventos aprobados, activos, no cancelados
-    # Los eventos creados por fed_central tienen estado 'aprobado' automáticamente
-    eventos = Evento.objects.filter(
-        estado_evento__in=["aprobado", "publicado", "abierto"], activo=True, cancelado=False
-    ).select_related(
-        "estado", "municipio", "parroquia", "institucion", "club_organizador"
-    )
-
-    # Aplicar filtros de VISIBILIDAD según audiencia
-    if user_type not in ["fed_central", "superuser"]:
-        from registry.models import MembresiaClu
-
-        # Obtener IDs de clubes donde la institución es miembro activo
-        clubes_miembro = MembresiaClu.objects.filter(
-            institucion=institucion, estado="miembro_activo"
-        ).values_list("club_id", flat=True)
-
-        # Filtrar por audiencia:
-        # 1. Eventos públicos (audiencia='publica')
-        # 2. Eventos exclusivos de clubes donde es miembro
-        # 3. Eventos privados de su institución
-        eventos = eventos.filter(
-            models.Q(audiencia="publica")
-            | models.Q(
-                audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro
-            )
-            | models.Q(audiencia="institucional_privado", institucion=institucion)
-        )
+    eventos = _eventos_visibles_queryset(perfil, incluir_propios=False)
 
     # Aplicar filtros adicionales
     if estado_filtro:
@@ -2211,23 +2220,25 @@ def eventos_disponibles(request):
     if fecha_hasta:
         eventos = eventos.filter(fecha__lte=fecha_hasta)
 
-    # Añadir campo total_inscritos calculado para cada evento
-    eventos_con_inscritos = []
-    for evento in eventos:
-        evento.total_inscritos = evento.inscripciones_grupo.count()
-        eventos_con_inscritos.append(evento)
+    eventos = eventos.order_by("fecha", "nombre")
+    eventos_con_inscritos = list(eventos)
+    for evento in eventos_con_inscritos:
+        evento.total_inscritos = evento.inscripciones_grupo.filter(activo=True).count()
 
-    # Separar eventos por fecha
-    eventos_activos = eventos_con_inscritos.filter(fecha__gte=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha >= hoy]
-    eventos_hoy = eventos_con_inscritos.filter(fecha=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha == hoy]
-    eventos_proximos = eventos_con_inscritos.filter(fecha__gt=hoy).order_by("fecha") if isinstance(eventos_con_inscritos, list) else [e for e in eventos_con_inscritos if e.fecha > hoy]
-    eventos_pasados = eventos_con_inscritos.filter(fecha__lt=hoy).order_by("-fecha")[:10] if isinstance(eventos_con_inscritos, list) else sorted([e for e in eventos_con_inscritos if e.fecha < hoy], key=lambda x: x.fecha, reverse=True)[:10]
+    eventos_hoy = [e for e in eventos_con_inscritos if e.fecha == hoy]
+    eventos_proximos = [e for e in eventos_con_inscritos if e.fecha > hoy]
+    eventos_pasados = sorted(
+        [e for e in eventos_con_inscritos if e.fecha < hoy],
+        key=lambda x: x.fecha,
+        reverse=True,
+    )[:10]
+    eventos_activos = [e for e in eventos_con_inscritos if e.fecha >= hoy]
 
     # Agrupar por estado geográfico
     estados_con_eventos = []
     for estado in Estado.objects.all().order_by("nombre"):
-        eventos_estado = eventos_activos.filter(estado=estado)
-        if eventos_estado.exists():
+        eventos_estado = [e for e in eventos_activos if e.estado_id == estado.id]
+        if eventos_estado:
             estados_con_eventos.append({"estado": estado, "eventos": eventos_estado})
 
     # Estadísticas
@@ -2240,11 +2251,11 @@ def eventos_disponibles(request):
         "eventos_hoy": eventos_hoy,
         "eventos_proximos": eventos_proximos,
         "eventos_pasados": eventos_pasados,
-        "eventos": eventos_con_inscritos,  # Usar la lista con total_inscritos
+        "eventos": eventos_con_inscritos,
         "total_eventos": total_eventos,
         "total_activos": total_activos,
         "hoy": hoy,
-        "today": hoy,  # Añadir today para compatibilidad con el template
+        "today": hoy,
         "filtros": {
             "estado": estado_filtro,
             "tipo": tipo_filtro,
@@ -2263,48 +2274,41 @@ def eventos_disponibles(request):
 
 @login_required
 def gestionar_eventos_institucion(request):
+    """
+    Tablero Administrativo de Eventos (Federación).
+    Si un usuario institucional accede, se le redirige a sus propios eventos.
+    """
     perfil = request.user.userprofile
     user_type = perfil.user_type
     institution = getattr(perfil, "institution", None)
     hoy = date.today()
 
-    es_fed_central = user_type in ["fed_central", "superuser", "tecnologico"]
-    es_institucional = user_type == "institucional"
+    es_fed_central = _es_rector_eventos(perfil)
+    
+    # Redirección de seguridad para instituciones
+    if not es_fed_central and user_type == "institucional":
+        return redirect("mis_eventos")
 
-    # Actualizar estados automáticos (Esto está bien)
+    if not es_fed_central and user_type not in ["fed_regional", "superuser"]:
+        messages.error(request, "No tienes permisos para acceder a la administración de eventos.")
+        return redirect("dashboard")
+
+    # Actualizar estados automáticos
     eventos_a_actualizar = Evento.objects.filter(
         fecha__lte=hoy,
-        estado_evento__in=['aprobado', 'abierto']
-    ).exclude(
-        estado_evento__in=['finalizado', 'cancelado', 'pausado', 'en_proceso']
+        estado_evento__in=[EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO],
     )
     for evento in eventos_a_actualizar:
         evento.actualizar_estado_por_fecha()
 
-    # === VISIBILIDAD POR ROL ===
-    # Base con relaciones para evitar N+1
+    # === VISIBILIDAD ADMINISTRATIVA ===
     eventos = Evento.objects.select_related(
         "estado", "municipio", "parroquia", "institucion", "club_organizador"
     ).filter(activo=True)
 
-    if es_fed_central:
-        # Federación central ve TODOS los eventos (institucionales y de club)
-        # El conteo de inscritos se obtiene en el template vía related_name
-        eventos = eventos
-    elif es_institucional and institution:
-        # Usuario institucional:
-        # - Solo debe ver eventos institucionales "aprobados"
-        # - Creados por la Federación Central (es_publico=True o user_type='fed_central')
-        eventos = eventos.filter(
-            estado_evento="aprobado",
-            tipo_evento="institucional",
-            cancelado=False,
-        ).filter(
-            Q(es_publico=True)
-            | Q(creado_por__userprofile__user_type="fed_central")
-        ).distinct()
-    else:
-        eventos = Evento.objects.none()
+    # Si es regional, filtrar por su estado
+    if user_type == "fed_regional" and getattr(perfil, "estado", None):
+        eventos = eventos.filter(estado=perfil.estado)
 
     # Filtros adicionales desde la UI
     estado_filtro = request.GET.get("estado")
@@ -2320,25 +2324,24 @@ def gestionar_eventos_institucion(request):
 
     eventos = eventos.order_by("-fecha_creacion")
 
-    # Estadísticas (calculadas sobre el queryset filtrado)
+    # Estadísticas Globales
     stats = eventos.aggregate(
         total=Count("id"),
-        borrador=Count("id", filter=Q(estado_evento="borrador")),
-        pendientes=Count("id", filter=Q(estado_evento="pendiente")),
-        aprobados=Count("id", filter=Q(estado_evento="aprobado")),
-        rechazados=Count("id", filter=Q(estado_evento="rechazado")),
+        borrador=Count("id", filter=Q(estado_evento=EstadoEvento.BORRADOR)),
+        revision=Count("id", filter=Q(estado_evento=EstadoEvento.REVISION)),
+        abiertos=Count("id", filter=Q(estado_evento=EstadoEvento.ABIERTO)),
+        rechazados=Count("id", filter=Q(estado_evento=EstadoEvento.RECHAZADO)),
         activos=Count(
             "id",
-            filter=Q(estado_evento="abierto", fecha__gt=hoy, cancelado=False),
+            filter=Q(estado_evento=EstadoEvento.ABIERTO, fecha__gt=hoy, cancelado=False),
         ),
-        en_proceso=Count("id", filter=Q(estado_evento="en_proceso")),
-        finalizados=Count("id", filter=Q(estado_evento="finalizado")),
-        pausados=Count("id", filter=Q(estado_evento="pausado")),
+        en_proceso=Count("id", filter=Q(estado_evento=EstadoEvento.EN_PROCESO)),
+        finalizados=Count("id", filter=Q(estado_evento=EstadoEvento.FINALIZADO)),
+        pausados=Count("id", filter=Q(estado_evento=EstadoEvento.PAUSADO)),
         cancelados=Count("id", filter=Q(cancelado=True)),
     )
 
-    # Métricas de dashboard
-    # Total de inscripciones activas en los eventos visibles para este usuario
+    # Métricas de dashboard administrativo
     total_inscripciones = eventos.aggregate(
         total_inscripciones=Count(
             "inscripciones_grupo",
@@ -2346,32 +2349,25 @@ def gestionar_eventos_institucion(request):
         )
     )["total_inscripciones"] or 0
 
-    # Cantidad de eventos con fecha futura o de hoy (vigentes en calendario)
     eventos_activos = eventos.filter(fecha__gte=hoy, cancelado=False).count()
 
     for evento in eventos:
-        evento.puede_editar = evento.usuario_puede_gestionar(perfil)
-        evento.puede_modificar_datos = evento.puede_editar and evento.es_editable_por_institucion
-
-    grupos_disponibles = (
-        Grupo.objects.filter(usuario_creador=request.user, activo=True)
-        .order_by("nombre")
-        if es_institucional
-        else Grupo.objects.none()
-    )
+        evento.puede_editar = True  # Admin siempre puede gestionar
+        evento.puede_modificar_datos = True
+        evento.puede_pausar_usuario = evento.puede_pausar(request.user)
+        evento.puede_cancelar_usuario = evento.puede_cancelar(request.user)
 
     context = {
         "eventos": eventos,
-        "grupos_disponibles": grupos_disponibles,
         "stats": stats,
         "hoy": hoy,
         "total_inscripciones": total_inscripciones,
         "eventos_activos": eventos_activos,
         "estados": Estado.objects.all().order_by("nombre"),
         "tipos": Evento.TIPO_CHOICES,
-        "estados_evento": Evento.ESTADO_CHOICES,
+        "estados_evento": EstadoEvento.choices,
         "es_fed_central": es_fed_central,
-        "es_institucional": es_institucional,
+        "es_institucional": False, # En esta vista administrativa
         "institution": institution,
     }
 
@@ -2381,34 +2377,43 @@ def gestionar_eventos_institucion(request):
 @institucional_required
 def seguimiento_eventos_institucion(request):
     """
-    Vista para seguimiento de eventos creados por la institución.
-    Muestra eventos agrupados por estado: Borradores, Pendientes, Aprobados, Rechazados.
+    Vista de Mis Eventos para la institución autenticada.
     """
     institution = request.user.userprofile.institution
 
-    # Eventos por estado
+    # Eventos por estado usando constantes
     eventos_borrador = (
-        Evento.objects.filter(institucion=institution, estado_evento="borrador")
+        Evento.objects.filter(institucion=institution, estado_evento=EstadoEvento.BORRADOR)
         .select_related("estado")
         .order_by("-fecha_creacion")
     )
 
-    eventos_pendientes = (
-        Evento.objects.filter(institucion=institution, estado_evento="pendiente")
+    eventos_revision = (
+        Evento.objects.filter(institucion=institution, estado_evento=EstadoEvento.REVISION)
         .select_related("estado")
         .order_by("-fecha_creacion")
     )
 
-    eventos_aprobados = (
-        Evento.objects.filter(institucion=institution, estado_evento="aprobado")
+    eventos_abiertos = (
+        Evento.objects.filter(institucion=institution, estado_evento=EstadoEvento.ABIERTO)
         .select_related("estado")
         .order_by("-fecha")
     )
 
     eventos_rechazados = (
-        Evento.objects.filter(institucion=institution, estado_evento="rechazado")
+        Evento.objects.filter(institucion=institution, estado_evento=EstadoEvento.RECHAZADO)
         .select_related("estado")
         .order_by("-fecha_creacion")
+    )
+
+    # También incluir pausados y cancelados para visibilidad completa en Mis Eventos
+    eventos_otros = (
+        Evento.objects.filter(
+            institucion=institution, 
+            estado_evento__in=[EstadoEvento.PAUSADO, EstadoEvento.CANCELADO, EstadoEvento.EN_PROCESO, EstadoEvento.FINALIZADO]
+        )
+        .select_related("estado")
+        .order_by("-fecha")
     )
 
     # Grupos disponibles del usuario
@@ -2421,17 +2426,19 @@ def seguimiento_eventos_institucion(request):
     # Estadísticas
     stats = {
         "total_borradores": eventos_borrador.count(),
-        "total_pendientes": eventos_pendientes.count(),
-        "total_aprobados": eventos_aprobados.count(),
+        "total_revision": eventos_revision.count(),
+        "total_abiertos": eventos_abiertos.count(),
         "total_rechazados": eventos_rechazados.count(),
+        "total_otros": eventos_otros.count(),
         "total": Evento.objects.filter(institucion=institution).count(),
     }
 
     context = {
         "eventos_borrador": eventos_borrador,
-        "eventos_pendientes": eventos_pendientes,
-        "eventos_aprobados": eventos_aprobados,
+        "eventos_revision": eventos_revision,
+        "eventos_abiertos": eventos_abiertos,
         "eventos_rechazados": eventos_rechazados,
+        "eventos_otros": eventos_otros,
         "grupos_disponibles": grupos_disponibles,
         "stats": stats,
         "institution": institution,
@@ -2444,7 +2451,7 @@ def seguimiento_eventos_institucion(request):
 @institucional_required
 def enviar_evento_revision(request, evento_id):
     """
-    Vista para enviar un evento en borrador a revisión (cambiar estado a pendiente).
+    Envía un evento propio de `borrador` o `rechazado` a `revision`.
     """
     if request.method != "POST":
         return JsonResponse(
@@ -2454,11 +2461,21 @@ def enviar_evento_revision(request, evento_id):
     try:
         institution = request.user.userprofile.institution
         evento = get_object_or_404(
-            Evento, id=evento_id, institucion=institution, estado_evento="borrador"
+            Evento,
+            id=evento_id,
+            institucion=institution,
         )
 
-        # Cambiar estado a pendiente
-        evento.estado_evento = "pendiente"
+        if evento.estado_evento not in [EstadoEvento.BORRADOR, EstadoEvento.RECHAZADO]:
+            return JsonResponse(
+                {
+                    "success": False,
+                    "error": "Solo puedes enviar a revisión eventos en borrador o rechazados.",
+                },
+                status=400,
+            )
+
+        evento.estado_evento = EstadoEvento.REVISION
         evento.save(update_fields=["estado_evento"])
 
         messages.success(
@@ -2468,7 +2485,7 @@ def enviar_evento_revision(request, evento_id):
 
     except Evento.DoesNotExist:
         return JsonResponse(
-            {"success": False, "error": "Evento no encontrado o no está en borrador"},
+            {"success": False, "error": "Evento no encontrado o no está disponible para envío."},
             status=404,
         )
     except Exception as e:
@@ -2485,6 +2502,14 @@ def editar_evento(request, evento_id):
         Evento, id=evento_id, institucion=request.user.userprofile.institution
     )
 
+    if not evento.puede_ser_editado():
+        messages.error(
+            request,
+            "Solo puedes editar eventos en borrador o rechazados. "
+            "Para los demas estados usa las acciones de gestion correspondientes.",
+        )
+        return redirect("mis_eventos")
+
     if request.method == "POST":
         nombre = request.POST.get("nombre")
 
@@ -2492,6 +2517,35 @@ def editar_evento(request, evento_id):
         if not nombre:
             messages.error(request, "El nombre del evento es obligatorio.")
         else:
+            tipo_evento = request.POST.get("tipo_evento", evento.tipo_evento or "institucional")
+            club_id = request.POST.get("club_organizador")
+            audiencia = request.POST.get("audiencia", evento.audiencia or "publica")
+
+            if tipo_evento == "club":
+                if not club_id:
+                    messages.error(request, "Debes seleccionar un club para eventos de club.")
+                    return redirect("editar_evento", evento_id=evento.id)
+
+                try:
+                    club_obj = Club.objects.get(
+                        id=club_id,
+                        status="aprobado",
+                        institucion_creadora=request.user.userprofile.institution,
+                    )
+                except Club.DoesNotExist:
+                    messages.error(
+                        request,
+                        "El club seleccionado no existe, no esta aprobado o no pertenece a tu institucion.",
+                    )
+                    return redirect("editar_evento", evento_id=evento.id)
+
+                audiencia = "club_exclusivo"
+                evento.institucion = None
+                evento.club_organizador = club_obj
+            else:
+                evento.institucion = request.user.userprofile.institution
+                evento.club_organizador = None
+
             evento.nombre = nombre
             evento.tipo = request.POST.get(
                 "categoria", ""
@@ -2504,25 +2558,19 @@ def editar_evento(request, evento_id):
             evento.parroquia_id = request.POST.get("parroquia") or None
             evento.direccion = request.POST.get("direccion", "")
             evento.requisitos = request.POST.get("requisitos", "")
-            evento.estado_evento = request.POST.get("estado_evento")
-            evento.audiencia = request.POST.get("audiencia", "publica")
+            evento.tipo_evento = tipo_evento
+            evento.audiencia = audiencia
             evento.telefono_codigo = request.POST.get("telefono_codigo", "")
             evento.telefono_numero = request.POST.get("telefono_numero", "")
             evento.email_contacto = request.POST.get("email_contacto", "")
 
-            # Club organizador
-            club_id = request.POST.get("club_organizador")
-            if club_id:
-                evento.club_organizador_id = club_id
-            else:
-                evento.club_organizador = None
-
             try:
+                evento.full_clean()
                 evento.save()
                 messages.success(
                     request, f"Evento '{evento.nombre}' actualizado correctamente."
                 )
-                return redirect("seguimiento_eventos_inst")
+                return redirect("mis_eventos")
             except Exception as e:
                 messages.error(request, f"Error al guardar los cambios: {e}")
 
@@ -2587,7 +2635,7 @@ def editar_evento(request, evento_id):
 @institucional_required
 def cambiar_estado_evento(request, evento_id):
     """
-    Vista para cambiar el estado de un evento (abierto/pausado/cerrado/finalizado)
+    Vista institucional para cancelar un evento propio segun la maquina de estados.
     """
     if request.method == "POST":
         evento = get_object_or_404(
@@ -2595,17 +2643,120 @@ def cambiar_estado_evento(request, evento_id):
         )
 
         nuevo_estado = request.POST.get("estado_evento")
-        if nuevo_estado in dict(Evento.ESTADO_CHOICES).keys():
-            evento.estado_evento = nuevo_estado
-            evento.save()
-            messages.success(
+        motivo = request.POST.get("motivo", "").strip()
+
+        if nuevo_estado == EstadoEvento.CANCELADO and evento.puede_cancelar(request.user):
+            if evento.cancelar(motivo):
+                messages.warning(
+                    request,
+                    f"Evento '{evento.nombre}' cancelado correctamente.",
+                )
+            else:
+                messages.error(
+                    request,
+                    "El evento no puede cancelarse desde su estado actual.",
+                )
+        elif nuevo_estado == EstadoEvento.CANCELADO:
+            messages.error(request, "No tienes permiso para cancelar este evento.")
+        else:
+            messages.error(
                 request,
-                f"✅ Estado del evento cambiado a '{evento.get_estado_evento_display()}'.",
+                "Los cambios de estado distintos a cancelado no pueden hacerse desde esta vista.",
+            )
+
+    return redirect("admin_eventos")
+
+
+@login_required
+@require_http_methods(["POST"])
+def gestionar_estado_evento(request, evento_id):
+    """
+    Gestion centralizada de pausa, reapertura y cancelacion por ente rector.
+    """
+    perfil = request.user.userprofile
+    if not _es_rector_eventos(perfil):
+        messages.error(request, "No tienes permiso para gestionar el estado de este evento.")
+        return redirect("admin_eventos")
+
+    evento = get_object_or_404(Evento, id=evento_id)
+    nuevo_estado = request.POST.get("estado_evento")
+    observacion = request.POST.get("observacion", "").strip()
+    nueva_fecha_raw = request.POST.get("nueva_fecha", "").strip()
+    update_fields = []
+
+    if nueva_fecha_raw:
+        try:
+            nueva_fecha = datetime.strptime(nueva_fecha_raw, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "La nueva fecha indicada no es valida.")
+            return redirect("admin_eventos")
+
+        if nueva_fecha < date.today():
+            messages.error(request, "La nueva fecha no puede ser anterior a hoy.")
+            return redirect("admin_eventos")
+    else:
+        nueva_fecha = None
+
+    if nuevo_estado == EstadoEvento.PAUSADO:
+        if not evento.puede_pausar(request.user):
+            messages.error(request, "Este evento no puede pausarse desde su estado actual.")
+            return redirect("admin_eventos")
+        if not observacion:
+            messages.error(request, "Debes indicar una observacion visible al pausar el evento.")
+            return redirect("admin_eventos")
+
+        if nueva_fecha and nueva_fecha != evento.fecha:
+            evento.fecha = nueva_fecha
+            update_fields.append("fecha")
+
+        if evento.pausar(observacion):
+            if update_fields:
+                evento.save(update_fields=update_fields)
+            messages.warning(
+                request,
+                f"Evento '{evento.nombre}' pausado correctamente."
+                + (" La fecha fue reprogramada." if nueva_fecha else ""),
             )
         else:
-            messages.error(request, "❌ Estado no válido.")
+            messages.error(request, "No fue posible pausar el evento.")
 
-    return redirect("gestionar_eventos_inst")
+    elif nuevo_estado == EstadoEvento.ABIERTO:
+        if evento.estado_evento != EstadoEvento.PAUSADO or not evento.puede_transicionar(EstadoEvento.ABIERTO):
+            messages.error(request, "Solo se pueden reabrir eventos que esten pausados.")
+            return redirect("admin_eventos")
+
+        if nueva_fecha and nueva_fecha != evento.fecha:
+            evento.fecha = nueva_fecha
+            update_fields.append("fecha")
+
+        evento.estado_evento = EstadoEvento.ABIERTO
+        if observacion:
+            evento.observacion_estado = observacion
+            update_fields.append("observacion_estado")
+        elif evento.observacion_estado:
+            evento.observacion_estado = ""
+            update_fields.append("observacion_estado")
+
+        update_fields.append("estado_evento")
+        evento.save(update_fields=update_fields)
+        messages.success(
+            request,
+            f"Evento '{evento.nombre}' reabierto correctamente."
+            + (" La fecha fue actualizada." if nueva_fecha else ""),
+        )
+
+    elif nuevo_estado == EstadoEvento.CANCELADO:
+        if not observacion:
+            messages.error(request, "Debes indicar el motivo de cancelacion.")
+            return redirect("admin_eventos")
+        if evento.cancelar(observacion):
+            messages.warning(request, f"Evento '{evento.nombre}' cancelado correctamente.")
+        else:
+            messages.error(request, "Este evento no puede cancelarse desde su estado actual.")
+    else:
+        messages.error(request, "Estado no soportado para esta accion.")
+
+    return redirect("admin_eventos")
 
 
 @login_required
@@ -2621,18 +2772,17 @@ def cancelar_evento(request, evento_id):
 
         motivo = request.POST.get("motivo", "")
 
-        if not evento.cancelado:
-            evento.cancelado = True
-            evento.activo = False
-            evento.estado_evento = "cerrado"
-            evento.motivo_cancelacion = motivo
-            evento.save()
-
+        if not evento.cancelado and evento.cancelar(motivo):
             messages.warning(request, f"⚠️ Evento '{evento.nombre}' ha sido cancelado.")
+        elif not evento.cancelado:
+            messages.error(
+                request,
+                "El evento no puede cancelarse desde su estado actual.",
+            )
         else:
             messages.info(request, "ℹ️ El evento ya estaba cancelado.")
 
-    return redirect("gestionar_eventos_inst")
+    return redirect("admin_eventos")
 
 
 @login_required
@@ -2647,14 +2797,14 @@ def eliminar_evento(request, evento_id):
     """
     if request.method != "POST":
         messages.error(request, "Acción no permitida.")
-        return redirect("gestionar_eventos_inst")
+        return redirect("admin_eventos")
 
     # Obtener la institución del usuario actual
     try:
         institution = request.user.userprofile.institution
     except Exception:
         messages.error(request, "No tienes una institución asociada.")
-        return redirect("gestionar_eventos_inst")
+        return redirect("admin_eventos")
 
     # Buscar el evento que pertenezca a esta institución
     try:
@@ -2663,7 +2813,7 @@ def eliminar_evento(request, evento_id):
         messages.error(
             request, "El evento no existe o no tienes permiso para eliminarlo."
         )
-        return redirect("gestionar_eventos_inst")
+        return redirect("admin_eventos")
 
     # Validar que no tenga inscripciones de grupos
     # CORREGIDO: usar inscripciones_grupo en lugar de proyectos
@@ -2672,7 +2822,7 @@ def eliminar_evento(request, evento_id):
             request,
             f"❌ No se puede eliminar '{evento.nombre}' porque ya tiene equipos inscritos.",
         )
-        return redirect("gestionar_eventos_inst")
+        return redirect("admin_eventos")
 
     # Ejecución de la eliminación
     nombre_guardado = evento.nombre
@@ -2680,7 +2830,7 @@ def eliminar_evento(request, evento_id):
 
     messages.success(request, f"✅ Evento '{nombre_guardado}' eliminado correctamente.")
 
-    return redirect("gestionar_eventos_inst")
+    return redirect("admin_eventos")
 
 
 @login_required
@@ -2713,8 +2863,10 @@ def detalle_evento(request, evento_id):
                 return redirect("dashboard")
         # institucional: solo eventos públicos o de su institución
         elif user_type == "institucional":
-            institucion = perfil.institution
-            if not (evento.es_publico or evento.institucion == institucion):
+            evento_visible = _eventos_visibles_queryset(perfil, incluir_propios=True).filter(
+                id=evento.id
+            ).exists()
+            if not evento_visible:
                 messages.error(request, "No tienes permiso para ver este evento.")
                 return redirect("eventos_disponibles")
 
@@ -2723,6 +2875,7 @@ def detalle_evento(request, evento_id):
         "puede_inscribirse": evento.puede_inscribirse
         if hasattr(evento, "puede_inscribirse")
         else False,
+        "es_fed_central": _es_rector_eventos(perfil),
     }
     return render(request, "users/detalle_evento.html", context)
 
@@ -2939,63 +3092,60 @@ def aprobar_institucion(request, institucion_id):
     perfil_admin = request.user.userprofile
     institucion = get_object_or_404(Institucion, id=institucion_id)
 
-    # 1. SEGURIDAD: Validar si el administrador tiene competencia territorial
-    # Un regional de Miranda no puede validar una sede de Carabobo.
-    if (
-        perfil_admin.user_type == "fed_regional"
-        and institucion.estado != perfil_admin.estado
-    ):
+    try:
+        # Caso A: La institución es nueva y está PENDIENTE de su primera aprobación
+        if institucion.estatus == 'pendiente':
+            # Solo el Ente Rector puede hacer la primera aprobación (genera RNR)
+            # El AdmissionService ya contiene la lógica de validación de rol 'fed_central'
+            if AdmissionService.approve_institution(institucion, request.user):
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "message": f"Institución {institucion.nombre} aprobada con éxito. Código RNR: {institucion.codigo}",
+                    }
+                )
+        
+        # Caso B: La institución ya fue aprobada anteriormente (estatus 'aprobado') 
+        # pero estaba desactivada/suspendida.
+        elif institucion.estatus == 'aprobado':
+            # SEGURIDAD: Validar territorio si es un administrador regional
+            if perfil_admin.user_type == "fed_regional" and institucion.estado != perfil_admin.estado:
+                return JsonResponse(
+                    {"status": "error", "message": f"No tienes permiso para habilitar sedes fuera de {perfil_admin.estado.nombre}."},
+                    status=403,
+                )
+
+            # Usamos IdentityService para re-activar en cascada (User -> Institucion)
+            if institucion.usuario:
+                IdentityService.toggle_user_status(institucion.usuario, is_active=True)
+            else:
+                # Si por alguna razón no tiene usuario, activamos la ficha
+                institucion.activa = True
+                institucion._identity_service_handled = True
+                institucion.save(update_fields=['activa'])
+
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": f"Acceso habilitado para {institucion.nombre}.",
+                }
+            )
+
+        # Si llegamos aquí, algo no coincide
         return JsonResponse(
             {
                 "status": "error",
-                "message": f"No tienes permiso para validar sedes fuera de {perfil_admin.estado.nombre}.",
+                "message": f"Estado de institución no válido para esta operación ({institucion.estatus}).",
             },
-            status=403,
+            status=400
         )
 
-    try:
-        with transaction.atomic():
-            # 2. PROCESO DE ACTIVACIÓN
-            # Guardamos si era temporal para saber si enviar correo después
-            era_pendiente = institucion.estatus == "pendiente"
-
-            institucion.activa = True
-            institucion.estatus = "aprobado"
-            # Aquí, el método save() de tu modelo debería disparar la lógica del RNR
-            institucion.save()
-
-            # 3. ACTIVACIÓN DE ACCESO (Django User)
-            # Buscamos el usuario vinculado a esta institución
-            perfil_inst = UserProfile.objects.filter(institution=institucion).first()
-
-            if perfil_inst and perfil_inst.user:
-                user = perfil_inst.user
-                user.is_active = True
-
-                # Sincronizamos el username con el nuevo código oficial (si cambió)
-                if institucion.codigo:
-                    user.username = institucion.codigo
-
-                user.save()
-
-                # 4. NOTIFICACIÓN (Opcional)
-                if era_pendiente:
-                    try:
-                        # institucion.enviar_correo_bienvenida()
-                        pass
-                    except:
-                        pass
-
-        # Respuesta para el Switch de JavaScript
-        return JsonResponse(
-            {
-                "status": "success",
-                "message": f"Institución {institucion.nombre} validada con éxito.",
-            }
-        )
-
+    except PermissionDenied as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=403)
     except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+        import traceback
+        logger.error(f"Error en aprobar_institucion: {str(e)}\n{traceback.format_exc()}")
+        return JsonResponse({"status": "error", "message": "Ocurrió un error interno en el servidor."}, status=500)
 
 
 # 2. SUSPENDER / DESACTIVAR
@@ -3013,12 +3163,15 @@ def desactivar_institucion(request, institucion_id):
         )
 
     try:
-        with transaction.atomic():
+        # Usamos IdentityService para desactivar en cascada (User -> Institucion)
+        # Buscamos el usuario vinculado
+        if inst.usuario:
+            IdentityService.toggle_user_status(inst.usuario, is_active=False)
+        else:
+            # Si no hay usuario, desactivamos solo la institución
             inst.activa = False
-            inst.save()
-
-            # Desactivar acceso de TODOS los usuarios vinculados a esa institución
-            User.objects.filter(userprofile__institution=inst).update(is_active=False)
+            inst._identity_service_handled = True
+            inst.save(update_fields=['activa'])
 
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"status": "success"})
@@ -3225,32 +3378,8 @@ def detalle_evento_institucion(request, evento_id):
         user_profile = request.user.userprofile
         institucion = user_profile.institution
         
-        # Obtener el evento aplicando las mismas reglas de visibilidad que eventos_disponibles
-        evento_query = Evento.objects.filter(
-            id=evento_id,
-            estado_evento__in=["aprobado", "publicado", "abierto"], 
-            activo=True, 
-            cancelado=False
-        ).select_related(
-            "estado", "municipio", "parroquia", "institucion", "club_organizador"
-        )
-        
-        # Aplicar filtros de VISIBILIDAD según audiencia (misma lógica que eventos_disponibles)
-        from registry.models import MembresiaClu
-        
-        # Obtener IDs de clubes donde la institución es miembro activo
-        clubes_miembro = MembresiaClu.objects.filter(
-            institucion=institucion, estado="miembro_activo"
-        ).values_list("club_id", flat=True)
-        
-        # Filtrar por audiencia:
-        # 1. Eventos públicos (audiencia='publica')
-        # 2. Eventos exclusivos de clubes donde es miembro
-        # 3. Eventos privados de su institución
-        evento = evento_query.filter(
-            Q(audiencia="publica")
-            | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro)
-            | Q(audiencia="institucional_privado", institucion=institucion)
+        evento = _eventos_visibles_queryset(user_profile, incluir_propios=True).filter(
+            id=evento_id
         ).first()
         
         if not evento:
@@ -3976,13 +4105,13 @@ def detalle_evento_gestion(request, evento_id):
             "evento": evento,
             "inscripciones": inscripciones,
             "total_inscritos": inscripciones.count(),
-            "es_fed_central": user_profile.user_type == 'fed_central',
+            "es_fed_central": _es_rector_eventos(user_profile),
         }
         return render(request, "users/detalle_evento_gestion.html", context)
 
     except Evento.DoesNotExist:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
-        return redirect("admin_todos_eventos" if user_profile.user_type == 'fed_central' else "gestionar_eventos_inst")
+        return redirect("admin_eventos" if _es_rector_eventos(user_profile) else "mis_eventos")
 
 
 # ============================================
@@ -4023,7 +4152,7 @@ def api_participantes_grupo(request, grupo_id):
             # Buscar eventos donde este grupo está inscrito y el usuario tiene permiso para ver
             eventos_accesibles = InscripcionGrupoEvento.objects.filter(
                 grupo=grupo,
-                evento__estado_evento__in=["aprobado", "publicado", "abierto"], 
+                evento__estado_evento__in=ESTADOS_EVENTO_PUBLICABLES,
                 evento__activo=True, 
                 evento__cancelado=False
             ).filter(

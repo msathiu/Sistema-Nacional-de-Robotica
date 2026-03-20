@@ -155,7 +155,7 @@
                                     <div class="form-check form-switch d-inline-block">
                                         <input class="form-check-input switch-status" type="checkbox" role="switch" 
                                                {% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}checked{% endif %}
-                                               onchange="confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
+                                               onchange="event.stopPropagation(); confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
                                     </div>
                                 </div>
                                 <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
@@ -657,51 +657,80 @@
         const activa = checkbox.checked;
         const url = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
         
+        // Configurar modal
         const header = document.getElementById('modalHeader');
         header.style.background = activa ? "#10b981" : "#f59e0b";
         document.getElementById('modalTitle').innerHTML = activa ? 
             '<i class="bi bi-check-circle me-2"></i> Habilitar Institución' : 
-            '<i class="bi bi-pause-circle me-2"></i> Suspender Acceso al sistema';
+            '<i class="bi bi-pause-circle me-2"></i> Suspender Acceso';
         
         const safeNombre = sanitizeHTML(nombre);
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-3">
-                <p class="fs-5 mb-0">¿Confirmar cambio para <b>${safeNombre}</b>?</p>
+                <p class="fs-5 mb-0">¿Estás seguro de que deseas <b>${activa ? 'habilitar' : 'suspender'}</b> a:<br><b>${safeNombre}</b>?</p>
+                ${activa ? '<p class="text-muted small mt-2"><i class="bi bi-info-circle me-1"></i> Se generará su código RNR y se activarán sus credenciales de acceso.</p>' : ''}
             </div>`;
                 
         const submit = document.getElementById('modalSubmitBtn');
-        submit.innerText = "Confirmar";
+        submit.innerText = "Confirmar y Procesar";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
         submit.style.background = activa ? "#10b981" : "#f59e0b";
+        submit.disabled = false; // Asegurar que esté habilitado al abrir
         
         const form = document.getElementById('modalForm');
-        form.action = ""; // Limpiar acción estándar para usar fetch
+        // Importante: Remover el atributo action para evitar el envío tradicional del formulario
+        form.removeAttribute('action');
         
+        // Manejar el envío mediante AJAX
         form.onsubmit = function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            
             submit.disabled = true;
+            submit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
             
             fetch(url, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken() }
+                headers: { 
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
-            .then(response => {
-                if (response.ok) window.location.reload();
-                else throw new Error('Error en el servidor');
+            .then(async response => {
+                const data = await response.json();
+                if (response.ok) {
+                    // Éxito: Mostrar mensaje breve y recargar
+                    document.getElementById('modalBody').innerHTML = `
+                        <div class="text-center py-3">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                            <p class="fs-5 mt-2">${data.message || 'Operación exitosa'}</p>
+                        </div>`;
+                    submit.style.display = 'none';
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    throw new Error(data.message || 'Error en el servidor');
+                }
             })
             .catch(error => {
-                alert("Error al procesar la solicitud.");
-                checkbox.checked = !activa;
+                alert("Error: " + error.message);
+                checkbox.checked = !activa; // Revertir el switch
                 universalModal.hide();
             });
+            
+            return false;
         };
         
         universalModal.show();
         
-        // Si cierran el modal sin confirmar, revertir el switch
-        document.getElementById('modalUniversal').addEventListener('hidden.bs.modal', function () {
-            if (!submit.disabled) checkbox.checked = !activa;
-        }, {once: true});
+        // Si cierran el modal (clic fuera o X) sin haber confirmado (submit no deshabilitado)
+        const modalElement = document.getElementById('modalUniversal');
+        const revertHandler = function () {
+            if (!submit.disabled) {
+                checkbox.checked = !activa;
+            }
+            modalElement.removeEventListener('hidden.bs.modal', revertHandler);
+        };
+        modalElement.addEventListener('hidden.bs.modal', revertHandler);
     }
 
     function abrirModalEliminar(id, nombre) {

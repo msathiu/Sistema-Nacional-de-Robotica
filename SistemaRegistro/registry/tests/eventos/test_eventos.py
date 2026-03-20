@@ -15,6 +15,7 @@ from registry.models import (
     Grupo,
     InscripcionGrupoEvento,
     Estado,
+    EstadoEvento,
     Municipio,
     Parroquia,
 )
@@ -133,20 +134,20 @@ class EventoModelTestCase(TestCase):
             nombre="Evento Pendiente",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="pendiente",
+            estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
         Evento.objects.create(
             nombre="Evento Aprobado",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="aprobado",
+            estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
         
         pendientes = Evento.objects.pendientes_aprobacion()
         self.assertEqual(pendientes.count(), 1)
-        self.assertEqual(pendientes.first().estado_evento, "pendiente")
+        self.assertEqual(pendientes.first().estado_evento, EstadoEvento.REVISION)
 
     def test_propiedad_organizador(self):
         """Test: Propiedad organizador retorna correcto."""
@@ -179,7 +180,7 @@ class EventoModelTestCase(TestCase):
             nombre="Evento Club",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="aprobado",
+            estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
         
@@ -265,7 +266,7 @@ class InscripcionEventoClubTestCase(TestCase):
             nombre="Evento Club",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="aprobado",
+            estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
 
@@ -354,13 +355,15 @@ class EventoClubViewsTestCase(TestCase):
 
     def test_crear_evento_club_requiere_login(self):
         """Test: Crear evento requiere autenticación."""
-        response = self.client.get(reverse("crear_evento_club", args=[self.club.id]))
+        url = reverse("crear_evento") + f"?club_id={self.club.id}"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 302)  # Redirect a login
 
     def test_crear_evento_club_propietario(self):
         """Test: Propietario puede crear evento."""
         self.client.login(username="test_user", password="test123")
-        response = self.client.get(reverse("crear_evento_club", args=[self.club.id]))
+        url = reverse("crear_evento") + f"?club_id={self.club.id}"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_listar_eventos_club(self):
@@ -384,67 +387,66 @@ class EventoClubViewsTestCase(TestCase):
         """Test: Federación puede revisar eventos."""
         self.client.login(username="federacion", password="test123")
         
-        # Crear evento pendiente
+        # Crear evento pendiente (REVISION)
         Evento.objects.create(
             nombre="Evento Pendiente",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="pendiente",
+            estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
-        response = self.client.get(reverse("revisar_eventos_club"))
+
+        response = self.client.get(reverse("admin_eventos"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Evento Pendiente")
 
     def test_aprobar_evento_club(self):
         """Test: Federación puede aprobar evento."""
         self.client.login(username="federacion", password="test123")
-        
+
         evento = Evento.objects.create(
             nombre="Evento Test",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="pendiente",
+            estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         response = self.client.post(
-            reverse("aprobar_evento_club", args=[evento.id]),
-            {"comentario": "Aprobado correctamente"},
+            reverse("aprobar_evento", args=[evento.id]),
+            {"observaciones": "Aprobado correctamente"},
             follow=True,
         )
-        
+
         evento.refresh_from_db()
         # Verificar que el estado cambió o que hubo redirect exitoso
         self.assertTrue(
-            evento.estado_evento == "aprobado" or response.status_code == 200
+            evento.estado_evento == EstadoEvento.ABIERTO or response.status_code == 200
         )
 
     def test_rechazar_evento_club(self):
         """Test: Federación puede rechazar evento."""
         self.client.login(username="federacion", password="test123")
-        
+
         evento = Evento.objects.create(
             nombre="Evento Test",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="pendiente",
+            estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         response = self.client.post(
-            reverse("rechazar_evento_club", args=[evento.id]),
-            {"motivo": "Información incompleta"},
+            reverse("rechazar_evento", args=[evento.id]),
+            {"observaciones": "Información incompleta"},
             follow=True,
         )
-        
+
         evento.refresh_from_db()
         # Verificar que el estado cambió o que hubo redirect exitoso
         self.assertTrue(
-            evento.estado_evento == "rechazado" or response.status_code == 200
+            evento.estado_evento == EstadoEvento.RECHAZADO or response.status_code == 200
         )
-
 
 class EventoClubPermisosTestCase(TestCase):
     """Tests de permisos para eventos de club."""
@@ -503,13 +505,16 @@ class EventoClubPermisosTestCase(TestCase):
         """Test: Solo propietario puede crear evento."""
         # User1 (propietario) puede
         self.client.login(username="user1", password="test123")
-        response = self.client.get(reverse("crear_evento_club", args=[self.club.id]))
+        url = reverse("crear_evento") + f"?club_id={self.club.id}"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
-        # User2 (no propietario) no puede (redirect o 403)
+        # User2 (no propietario) no obtiene el club dentro de sus opciones disponibles.
         self.client.login(username="user2", password="test123")
-        response = self.client.get(reverse("crear_evento_club", args=[self.club.id]))
-        self.assertIn(response.status_code, [302, 403])  # Redirect o Forbidden
+        url = reverse("crear_evento") + f"?club_id={self.club.id}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.club, list(response.context["clubes_disponibles"]))
 
     def test_solo_federacion_aprueba(self):
         """Test: Solo federación puede aprobar."""
@@ -517,11 +522,11 @@ class EventoClubPermisosTestCase(TestCase):
             nombre="Evento Test",
             tipo_evento="club",
             club_organizador=self.club,
-            estado_evento="pendiente",
+            estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
         
         # Usuario institucional no puede
         self.client.login(username="user1", password="test123")
-        response = self.client.get(reverse("aprobar_evento_club", args=[evento.id]))
+        response = self.client.get(reverse("aprobar_evento", args=[evento.id]))
         self.assertEqual(response.status_code, 302)  # Redirect

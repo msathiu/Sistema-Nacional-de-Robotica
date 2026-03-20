@@ -9,19 +9,19 @@
                     <i class="bi bi-calendar-event fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Eventos</h2>
-                    <p class="text-muted mb-0 small">Administración de convocatorias institucionales - {{ institucion.nombre }}</p>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Eventos</h2>
+                    <p class="text-muted mb-0 small">Catálogo visible para tu institución</p>
                 </div>
             </div>
-            
         </div>
     </div>
     <hr class="mt-2 mb-4 opacity-10">
+
     <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Totales</div>
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Visibles</div>
                     <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ eventos|length|default:0 }}">0</h2>
                     <i class="bi bi-layers position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
                 </div>
@@ -31,9 +31,9 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
-                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Proyectos Inscritos</div>
-                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_proyectos|default:0 }}">0</h2>
-                    <i class="bi bi-rocket-takeoff position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Inscripciones Activas</div>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ total_activos|default:0 }}">0</h2>
+                    <i class="bi bi-people-fill position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>
             </div>
@@ -42,7 +42,7 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Próximas Fechas</div>
-                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ eventos_activos|default:0 }}">0</h2>
+                    <h2 class="display-6 fw-bold mb-0 counter" data-target="{{ eventos_proximos|length|default:0 }}">0</h2>
                     <i class="bi bi-clock-history position-absolute opacity-10" style="font-size: 4rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #f59e0b;"></div>
@@ -61,7 +61,7 @@
                 </div>
                 <div class="col-md-3">
                     <select name="audiencia" class="form-select border-0 bg-light">
-                        <option value="">Todas las Audiencias</option>
+                        <option value="">Todas las audiencias</option>
                         <option value="publica" {% if request.GET.audiencia == 'publica' %}selected{% endif %}>Públicos</option>
                         <option value="club_exclusivo" {% if request.GET.audiencia == 'club_exclusivo' %}selected{% endif %}>Exclusivos Club</option>
                         <option value="institucional_privado" {% if request.GET.audiencia == 'institucional_privado' %}selected{% endif %}>Privados</option>
@@ -69,14 +69,16 @@
                 </div>
                 <div class="col-md-2">
                     <select name="estado" class="form-select border-0 bg-light">
-                        <option value="">Cualquier Estado</option>
-                        <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>Activos</option>
-                        <option value="finalizado" {% if request.GET.estado == 'finalizado' %}selected{% endif %}>Finalizados</option>
+                        <option value="">Cualquier estado</option>
+                        <option value="abierto" {% if request.GET.estado == 'abierto' %}selected{% endif %}>Abierto</option>
+                        <option value="pausado" {% if request.GET.estado == 'pausado' %}selected{% endif %}>Pausado</option>
+                        <option value="en_proceso" {% if request.GET.estado == 'en_proceso' %}selected{% endif %}>En proceso</option>
+                        <option value="finalizado" {% if request.GET.estado == 'finalizado' %}selected{% endif %}>Finalizado</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3">Buscar</button>
-                    <a href="{% url 'gestionar_eventos_inst' %}" class="btn btn-light w-50 rounded-3"><i class="bi bi-arrow-counterclockwise"></i></a>
+                    <button type="submit" class="btn w-100 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;"><i class="bi bi-search me-1"></i>Buscar</button>
+                    <a href="{% url 'eventos_disponibles' %}" class="btn btn-light w-50 rounded-3"><i class="bi bi-arrow-counterclockwise"></i></a>
                 </div>
             </form>
         </div>
@@ -101,7 +103,7 @@
                             <th class="py-3">Fecha y Sede</th>
                             <th class="py-3">Audiencia</th>
                             <th class="py-3">Estatus</th>
-                            <th class="py-3 text-center">Acciones</th>
+                            <th class="py-3 text-center">Acción</th>
                             <th class="py-3 text-center">Detalles</th>
                         </tr>
                     </thead>
@@ -116,18 +118,21 @@
                                     <div>
                                         <div class="fw-bold text-dark">{{ evento.nombre }}</div>
                                         <div class="text-muted x-small text-uppercase tracking-wider">{{ evento.descripcion|truncatechars:45 }}</div>
+                                        {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
+                                        <div class="x-small text-warning fw-bold mt-1">
+                                            <i class="bi bi-pause-circle me-1"></i>{{ evento.observacion_estado|truncatechars:70 }}
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>
                             <td class="text-center">
                                 <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Proyectos</div>
+                                <div class="x-small text-muted text-uppercase">Grupos</div>
                             </td>
                             <td>
                                 <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.fecha|date:"d M, Y" }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> 
-                                    {% if evento.estado %}{{ evento.estado.nombre }}{% else %}No especificado{% endif %}
-                                </div>
+                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% else %}No especificado{% endif %}</div>
                             </td>
                             <td>
                                 {% if evento.audiencia == 'publica' %}
@@ -139,35 +144,33 @@
                                     <i class="bi bi-shield-lock me-1"></i>Club
                                 </span>
                                 {% else %}
-                                <span class="badge-audiencia bg-secondary" data-bs-toggle="tooltip" title="Solo mi institución">
+                                <span class="badge-audiencia bg-secondary" data-bs-toggle="tooltip" title="Solo tu institución">
                                     <i class="bi bi-lock me-1"></i>Privado
                                 </span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if evento.fecha >= today %}
-                                <span class="status-pill-mini bg-blue">Activo</span>
+                                {% if evento.estado_evento == 'abierto' %}
+                                <span class="status-pill-mini bg-blue">Abierto</span>
+                                {% elif evento.estado_evento == 'pausado' %}
+                                <span class="status-pill-mini bg-warning">Pausado</span>
+                                {% elif evento.estado_evento == 'en_proceso' %}
+                                <span class="status-pill-mini bg-blue">En proceso</span>
                                 {% else %}
                                 <span class="status-pill-mini bg-gray">Finalizado</span>
                                 {% endif %}
                             </td>
                             <td class="text-center px-4">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-gray" title="Gestionar Inscritos">
-                                        <i class="bi bi-people-fill"></i>
-                                    </a>
-                                    <button class="btn-action btn-gray" title="Editar Evento">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </button>
-                                    <button class="btn-action btn-red" title="Eliminar">
-                                        <i class="bi bi-trash3-fill"></i>
-                                    </button>
-                                </div>
+                                {% if evento.estado_evento == 'abierto' %}
+                                <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn-action btn-gray" title="Ver e inscribir">
+                                    <i class="bi bi-people-fill"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">Sin acciones</span>
+                                {% endif %}
                             </td>
                             <td class="text-center">
-                                <a href="{% url 'detalle_evento_gestion' evento.id %}" 
-                                   class="btn-action btn-view" 
-                                   title="Ver detalle del evento">
+                                <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn-action btn-view" title="Ver detalle del evento">
                                     <i class="bi bi-eye-fill"></i>
                                 </a>
                             </td>
@@ -179,8 +182,7 @@
             {% else %}
             <div class="text-center py-5">
                 <i class="bi bi-calendar-x display-1 text-light mb-3"></i>
-                <h4 class="text-muted">No has registrado eventos todavía</h4>
-
+                <h4 class="text-muted">No hay eventos visibles en este momento</h4>
             </div>
             {% endif %}
         </div>
@@ -194,11 +196,15 @@
     }
 
     .avatar-circle-event {
-        width: 45px; height: 45px;
+        width: 45px;
+        height: 45px;
         background: rgba(11, 44, 109, 0.05);
         border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        color: var(--blue-main); font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--blue-main);
+        font-size: 1.2rem;
         border: 1px solid rgba(11, 44, 109, 0.1);
     }
 
@@ -213,6 +219,10 @@
 
     .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .bg-warning { background: #fef3c7 !important; color: #92400e !important; border: 1px solid #fcd34d; }
+    .bg-success { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac; }
+    .bg-info { background: #e0f2fe !important; color: #075985 !important; border: 1px solid #7dd3fc; }
+    .bg-secondary { background: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1; }
 
     .badge-audiencia {
         padding: 0.35rem 0.75rem;
@@ -223,22 +233,22 @@
         align-items: center;
     }
 
-    .btn-action { 
-        width: 36px; height: 36px; 
-        display: flex; align-items: center; justify-content: center; 
-        border-radius: 10px; border: 1px solid #e2e8f0; 
-        background: white; transition: all 0.2s; color: #64748b;
+    .btn-action {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        transition: all 0.2s;
+        color: #64748b;
         text-decoration: none;
     }
     .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .btn-red:hover { color: #dc2626; border-color: #dc2626; background: #fef2f2; }
     .btn-gray:hover { color: var(--blue-main); border-color: var(--blue-main); background: #f8fafc; }
-    .btn-view:hover { 
-        color: var(--accent-cyan); 
-        border-color: var(--accent-cyan); 
-        background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
-    }
-    
+    .btn-view:hover { color: #8b5cf6; border-color: #8b5cf6; background: #faf5ff; }
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }
 </style>
@@ -247,20 +257,20 @@
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const counters = document.querySelectorAll('.counter');
-        counters.forEach(counter => {
+        document.querySelectorAll('.counter').forEach(counter => {
             const updateCount = () => {
                 const target = parseInt(counter.getAttribute('data-target')) || 0;
                 const count = parseInt(counter.innerText);
                 if (count < target) {
                     counter.innerText = count + Math.ceil(target / 40);
                     setTimeout(updateCount, 25);
-                } else { counter.innerText = target; }
+                } else {
+                    counter.innerText = target;
+                }
             };
             updateCount();
         });
 
-        // Inicializar tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);

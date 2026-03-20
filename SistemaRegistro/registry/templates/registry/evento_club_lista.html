@@ -1,93 +1,212 @@
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}Eventos del Club{% endblock %}
+{% block title %}Eventos del Club - {{ club.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --blue-main: #0b2c6d;
+        --blue-dark: #051636;
+        --accent-cyan: #00d4ff;
+    }
+
+    .modern-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    .modern-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.13);
+    }
+
+    /* Badge de estado de evento */
+    .estado-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+    .estado-borrador   { background: rgba(107,114,128,0.15); color: #4b5563; border: 1px solid #9ca3af; }
+    .estado-revision   { background: rgba(217,119,6,0.15);   color: #b45309; border: 1px solid #d97706; }
+    .estado-abierto    { background: rgba(5,150,105,0.15);   color: #059669; border: 1px solid #059669; }
+    .estado-rechazado  { background: rgba(220,38,38,0.15);   color: #dc2626; border: 1px solid #dc2626; }
+
+    /* Badge de audiencia */
+    .aud-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .aud-publica    { background: rgba(11,44,109,0.1);   color: var(--blue-main); border: 1px solid var(--blue-main); }
+    .aud-exclusivo  { background: rgba(8,145,178,0.1);   color: #0891b2;          border: 1px solid #0891b2; }
+    .aud-privado    { background: rgba(107,114,128,0.12);color: #4b5563;           border: 1px solid #9ca3af; }
+
+    /* Info row inside card */
+    .info-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: #64748b; margin-bottom: 0.4rem; }
+    .info-row i { color: var(--blue-main); opacity: 0.7; }
+
+    /* Botón acción */
+    .btn-action-sm {
+        border-radius: 50px;
+        padding: 0.4rem 1rem;
+        font-weight: 600;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.25s ease;
+    }
+    .btn-action-sm:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+    .btn-ver   { background: var(--blue-main); color: white; border: none; }
+    .btn-ver:hover { background: #0f3d8f; color: white; }
+    .btn-enviar{ background: #f59e0b; color: white; border: none; }
+    .btn-enviar:hover { background: #d97706; color: white; }
+    .btn-crear { background: var(--accent-cyan); color: var(--blue-main); border: none; font-weight: 700; }
+    .btn-crear:hover { background: #00bcd4; color: var(--blue-main); }
+
+    /* Empty state */
+    .empty-state { padding: 3rem 1rem; text-align: center; }
+    .empty-state i { font-size: 4rem; color: #cbd5e1; display: block; margin-bottom: 1rem; }
+
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
+    .delay-4 { animation-delay: 0.2s; }
+    .delay-5 { animation-delay: 0.25s; }
+    .delay-6 { animation-delay: 0.3s; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="bi bi-calendar-event"></i> Eventos del Club</h2>
-            <p class="text-muted mb-0">{{ club.nombre }}</p>
-        </div>
-        <div>
-            {% if es_propietario %}
-                <a href="{% url 'crear_evento_club' club.id %}" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> Crear Evento
+
+    <!-- Header unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-calendar-event fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Eventos del Club</h2>
+                    <p class="text-muted mb-0 small">{{ club.nombre }}{% if club.siglas %} · {{ club.siglas }}{% endif %}</p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                {% if es_propietario %}
+                <a href="{% url 'crear_evento' %}?club_id={{ club.id }}" class="btn btn-crear btn-action-sm shadow-sm" style="border-radius: 12px; padding: 0.55rem 1.3rem;">
+                    <i class="bi bi-plus-circle-fill"></i> Crear Evento
                 </a>
-            {% endif %}
-            <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Volver al Club
-            </a>
+                {% endif %}
+                <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                    <i class="bi bi-arrow-left me-2"></i> Volver al Club
+                </a>
+            </div>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     {% if eventos %}
+        <!-- Grid de eventos -->
         <div class="row g-4">
             {% for evento in eventos %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h5 class="card-title mb-0">{{ evento.nombre }}</h5>
-                                <div class="d-flex flex-column gap-1">
-                                    <span class="badge 
-                                        {% if evento.estado_evento == 'borrador' %}bg-secondary
-                                        {% elif evento.estado_evento == 'pendiente' %}bg-warning
-                                        {% elif evento.estado_evento == 'aprobado' %}bg-success
-                                        {% elif evento.estado_evento == 'rechazado' %}bg-danger
-                                        {% endif %}">
-                                        {{ evento.get_estado_evento_display }}
-                                    </span>
-                                    {% if evento.audiencia == 'publica' %}
-                                    <span class="badge bg-primary" data-bs-toggle="tooltip" title="Visible para todos">
-                                        <i class="bi bi-globe"></i> Público
-                                    </span>
-                                    {% elif evento.audiencia == 'club_exclusivo' %}
-                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="Solo miembros del club">
-                                        <i class="bi bi-shield-lock"></i> Exclusivo
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Solo mi institución">
-                                        <i class="bi bi-lock"></i> Privado
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-calendar"></i> {{ evento.fecha|date:"d/m/Y" }}
-                            </p>
-                            <p class="text-muted small mb-2">
-                                <i class="bi bi-tag"></i> {{ evento.get_tipo_display }}
-                            </p>
-                            <p class="text-muted small mb-3">
-                                <i class="bi bi-geo-alt"></i> {{ evento.get_modalidad_display }}
-                            </p>
-
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Ver
-                                </a>
-                                {% if es_propietario and evento.estado_evento in 'borrador,rechazado' %}
-                                    <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-send"></i> Enviar
-                                    </a>
-                                {% endif %}
+            <div class="col-md-6 col-lg-4 animate-fade-in delay-{{ forloop.counter }}">
+                <div class="modern-card h-100">
+                    <!-- Cabecera de la card con gradiente -->
+                    <div class="px-4 pt-4 pb-3" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="fw-bold text-white mb-2 pe-2" style="line-height: 1.4; font-size: 0.95rem;">{{ evento.nombre }}</h6>
+                            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                <!-- Badge estado -->
+                                <span class="estado-badge
+                                    {% if evento.estado_evento == 'borrador' %}estado-borrador
+                                    {% elif evento.estado_evento == 'revision' %}estado-revision
+                                    {% elif evento.estado_evento == 'abierto' %}estado-abierto
+                                    {% elif evento.estado_evento == 'rechazado' %}estado-rechazado
+                                    {% endif %}">
+                                    <i class="bi
+                                        {% if evento.estado_evento == 'borrador' %}bi-pencil
+                                        {% elif evento.estado_evento == 'revision' %}bi-hourglass-split
+                                        {% elif evento.estado_evento == 'abierto' %}bi-check-circle-fill
+                                        {% elif evento.estado_evento == 'rechazado' %}bi-x-circle-fill
+                                        {% endif %}"></i>
+                                    {{ evento.get_estado_evento_display }}
+                                </span>
+                                <!-- Badge audiencia -->
+                                <span class="aud-badge
+                                    {% if evento.audiencia == 'publica' %}aud-publica
+                                    {% elif evento.audiencia == 'club_exclusivo' %}aud-exclusivo
+                                    {% else %}aud-privado
+                                    {% endif %}">
+                                    <i class="bi
+                                        {% if evento.audiencia == 'publica' %}bi-globe
+                                        {% elif evento.audiencia == 'club_exclusivo' %}bi-shield-lock
+                                        {% else %}bi-lock
+                                        {% endif %}"></i>
+                                    {% if evento.audiencia == 'publica' %}Público
+                                    {% elif evento.audiencia == 'club_exclusivo' %}Exclusivo
+                                    {% else %}Privado{% endif %}
+                                </span>
                             </div>
                         </div>
                     </div>
+                    <!-- Cuerpo de la card -->
+                    <div class="card-body px-4 pt-3 pb-4">
+                        <div class="info-row"><i class="bi bi-calendar3"></i> {{ evento.fecha|date:"d/m/Y" }}</div>
+                        <div class="info-row"><i class="bi bi-tag"></i> {{ evento.get_tipo_display }}</div>
+                        <div class="info-row mb-3"><i class="bi bi-laptop"></i> {{ evento.get_modalidad_display }}</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'detalle_evento_club' evento.id %}" class="btn btn-ver btn-action-sm">
+                                <i class="bi bi-eye"></i> Ver Detalle
+                            </a>
+                            {% if es_propietario and evento.estado_evento in 'borrador,rechazado' %}
+                            <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn btn-enviar btn-action-sm">
+                                <i class="bi bi-send"></i> Enviar
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+            </div>
             {% endfor %}
         </div>
+
     {% else %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i>
-            No hay eventos registrados para este club.
-            {% if es_propietario %}
-                <a href="{% url 'crear_evento_club' club.id %}">Crear el primer evento</a>
-            {% endif %}
+        <!-- Estado vacío -->
+        <div class="modern-card">
+            <div class="empty-state">
+                <i class="bi bi-calendar-x"></i>
+                <h5 class="text-muted fw-bold">No hay eventos registrados</h5>
+                <p class="text-muted small mb-4">Este club aún no tiene eventos. ¡Crea el primero!</p>
+                {% if es_propietario %}
+                <a href="{% url 'crear_evento' %}?club_id={{ club.id }}"
+                   style="display:inline-flex; align-items:center; gap:0.4rem; background:var(--accent-cyan); color:var(--blue-main); border:none; border-radius:50px; padding:0.5rem 1.4rem; font-weight:700; font-size:0.85rem; text-decoration:none; transition:all 0.25s ease;"
+                   onmouseover="this.style.background='#00bcd4'" onmouseout="this.style.background='var(--accent-cyan)'">
+                    <i class="bi bi-plus-circle-fill"></i> Crear Primer Evento
+                </a>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
+
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+</style>
 {% endblock %}

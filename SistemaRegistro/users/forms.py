@@ -584,10 +584,6 @@ class InstitucionRegistrationForm(forms.ModelForm):
         instance.dependencia_rel = dependencia
         instance.dependencia = dependencia.nombre if dependencia else None
         
-        if not instance.codigo:
-            import uuid
-            instance.codigo = f"TEMP-{uuid.uuid4().hex[:8].upper()}"
-        
         if commit: 
             instance.save()
         return instance

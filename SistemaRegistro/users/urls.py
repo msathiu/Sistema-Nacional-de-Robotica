@@ -122,50 +122,69 @@ urlpatterns = [
         name="exportar_participantes_excel",
     ),
     path("sistema/logs/", views.ver_logs_sistema, name="ver_logs_sistema"),
-    # --- Gestión de Eventos---
+    # --- Gestión de Eventos (Módulo Eventos 2026) ---
     path("eventos/", views.eventos_disponibles, name="eventos_disponibles"),
     path(
-        "eventos/<int:evento_id>/inscribirse/",
-        views.inscripcion_evento_url,
-        name="inscribirse_evento",
-    ),
-    path("institucion/eventos/crear/", views.crear_evento, name="crear_evento"),
-    path(
-        "institucion/gestionar-eventos/",
-        views.gestionar_eventos_institucion,
-        name="gestionar_eventos_inst",
-    ),
-    path(
-        "institucion/seguimiento-eventos/",
+        "eventos/mis-eventos/",
         views.seguimiento_eventos_institucion,
-        name="seguimiento_eventos_inst",
+        name="mis_eventos",
     ),
     path(
-        "institucion/eventos/enviar-revision/<int:evento_id>/",
+        "eventos/administracion/",
+        views.gestionar_eventos_institucion,
+        name="admin_eventos",
+    ),
+    path("eventos/crear/", views.crear_evento, name="crear_evento"),
+    path(
+        "eventos/enviar-revision/<int:evento_id>/",
         views.enviar_evento_revision,
         name="enviar_evento_revision",
     ),
     path(
-        "institucion/eventos/<int:evento_id>/detalle/",
+        "eventos/<int:evento_id>/detalle/",
+        views.detalle_evento,
+        name="detalle_evento",
+    ),
+    path(
+        "eventos/<int:evento_id>/detalle-gestion/",
+        views.detalle_evento_gestion,
+        name="detalle_evento_gestion_admin",
+    ),
+    path(
+        "eventos/<int:evento_id>/detalle-institucion/",
         views.detalle_evento_institucion,
         name="detalle_evento_gestion",
     ),
     path(
-        "eventos/inscribir-proyecto/<int:evento_id>/",
+        "eventos/inscribir/<int:evento_id>/",
         views.inscribir_grupo_evento,
         name="inscribir_grupo_evento",
     ),
-    # --- NUEVAS URLs PARA ACCIONES DE EVENTOS ---
     path("eventos/editar/<int:evento_id>/", views.editar_evento, name="editar_evento"),
+    path(
+        "eventos/cambiar-estado/<int:evento_id>/",
+        views.cambiar_estado_evento,
+        name="cambiar_estado_evento",
+    ),
+    path(
+        "eventos/gestionar-estado/<int:evento_id>/",
+        views.gestionar_estado_evento,
+        name="gestionar_estado_evento",
+    ),
+    path(
+        "eventos/cancelar/<int:evento_id>/",
+        views.cancelar_evento,
+        name="cancelar_evento",
+    ),
     path(
         "eventos/eliminar/<int:evento_id>/",
         views.eliminar_evento,
         name="eliminar_evento",
     ),
     path(
-        "eventos/detalle/<int:evento_id>/",
-        views.detalle_evento_gestion,
-        name="detalle_evento_gestion_admin",
+        "eventos/<int:evento_id>/inscribirse/",
+        views.inscripcion_evento_url,
+        name="inscribirse_evento",
     ),
     # --- Grupos y Clubes ---
     path("grupos/agregar/", views.agregar_grupo, name="agregar_grupo"),
@@ -201,33 +220,6 @@ urlpatterns = [
     path("sedes/nueva/", views.registrar_sede, name="registrar_sede_fvrn"),
     path("sedes/gestionar/", views.gestionar_usuarios_sedes, name="gestionar_sedes"),
     path("sedes/eliminar/<int:user_id>/", views.eliminar_sede, name="eliminar_sede"),
-    # URLs para eventos
-    path("eventos/crear/", views.crear_evento, name="crear_evento"),
-    path("eventos/disponibles/", views.eventos_disponibles, name="eventos_disponibles"),
-    path(
-        "eventos/gestionar/",
-        views.gestionar_eventos_institucion,
-        name="gestionar_eventos_inst",
-    ),
-    path("eventos/editar/<int:evento_id>/", views.editar_evento, name="editar_evento"),
-    path(
-        "eventos/cambiar-estado/<int:evento_id>/",
-        views.cambiar_estado_evento,
-        name="cambiar_estado_evento",
-    ),
-    path(
-        "eventos/cancelar/<int:evento_id>/",
-        views.cancelar_evento,
-        name="cancelar_evento",
-    ),
-    path(
-        "eventos/eliminar/<int:evento_id>/",
-        views.eliminar_evento,
-        name="eliminar_evento",
-    ),
-    path(
-        "eventos/detalle/<int:evento_id>/", views.detalle_evento, name="detalle_evento"
-    ),
     # URLs AJAX
     path(
         "ajax/municipios-por-estado/",
@@ -240,14 +232,9 @@ urlpatterns = [
         name="ajax_parroquias_por_municipio",
     ),
     path(
-        "eventos/detalle/<int:evento_id>/",
+        "eventos/<int:evento_id>/detalle-inscripcion/",
         views.detalle_evento_inscripcion,
         name="detalle_evento_inscripcion",
-    ),
-    path(
-        "eventos/inscribir/<int:evento_id>/",
-        views.inscribir_grupo_evento,
-        name="inscribir_grupo_evento",
     ),
     # API endpoints
     path(

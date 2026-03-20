@@ -594,7 +594,7 @@
                 
                 <!-- Eventos y Actividades -->
                 <div class="nav-section">
-                    <a href="{% url 'admin_todos_eventos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'admin_todos_eventos' %}active{% endif %}">
+                    <a href="{% url 'admin_eventos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'admin_eventos' or request.resolver_match.url_name == 'admin_todos_eventos' %}active{% endif %}">
                         <i class="bi bi-calendar-event"></i> Eventos y Actividades
                     </a>
                 </div>
@@ -701,10 +701,10 @@
                         <i class="bi bi-chevron-down ms-auto" id="eventosInstChevron" style="transition: transform 0.3s;"></i>
                     </div>
                     <div id="eventosInstSubmenu" style="display: none;">
-                        <a href="{% url 'gestionar_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'gestionar_eventos_inst' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
-                            <i class="bi bi-calendar-plus"></i> Evento
+                        <a href="{% url 'eventos_disponibles' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'eventos_disponibles' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                            <i class="bi bi-calendar-event"></i> Eventos
                         </a>
-                        <a href="{% url 'seguimiento_eventos_inst' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'seguimiento_eventos_inst' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
+                        <a href="{% url 'mis_eventos' %}" class="nav-link-custom {% if request.resolver_match.url_name == 'mis_eventos' %}active{% endif %}" style="padding-left: 3.5rem; font-size: 0.9rem;">
                             <i class="bi bi-clipboard-check"></i> Mis Eventos
                         </a>
                     </div>

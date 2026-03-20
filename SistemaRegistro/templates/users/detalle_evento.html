@@ -1,0 +1,114 @@
+{% extends 'users/base_dashboard.html' %}
+
+{% block title %}Detalle del Evento - {{ evento.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-calendar-event fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Detalle del Evento</h2>
+                    <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
+                </div>
+            </div>
+            <a href="{% if es_fed_central %}{% url 'admin_eventos' %}{% else %}{% url 'eventos_disponibles' %}{% endif %}" class="btn shadow-sm px-4 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+        <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
+            <h5 class="fw-bold mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Información del Evento</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-8">
+                    <h3 class="fw-bold text-dark mb-3">{{ evento.nombre }}</h3>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning text-dark{% elif evento.estado_evento == 'en_proceso' %}bg-primary{% elif evento.estado_evento == 'finalizado' %}bg-secondary{% elif evento.estado_evento == 'cancelado' %}bg-danger{% else %}bg-light text-dark{% endif %}">
+                            {{ evento.get_estado_evento_display }}
+                        </span>
+                        <span class="badge bg-light text-dark border">{{ evento.get_audiencia_display }}</span>
+                        <span class="badge bg-light text-dark border">{{ evento.get_modalidad_display }}</span>
+                    </div>
+
+                    {% if evento.descripcion %}
+                    <p class="text-muted mb-4">{{ evento.descripcion }}</p>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Fecha</small>
+                                <span class="fw-bold">{{ evento.fecha|date:"d/m/Y" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Ubicación</small>
+                                <span class="fw-bold">{{ evento.ubicacion|default:"No especificada" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Organizador</small>
+                                <span class="fw-bold">
+                                    {% if evento.tipo_evento == 'club' and evento.club_organizador %}
+                                        {{ evento.club_organizador.nombre }}
+                                    {% elif evento.institucion %}
+                                        {{ evento.institucion.nombre }}
+                                    {% else %}
+                                        Federación
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Contacto</small>
+                                <span class="fw-bold">{{ evento.telefono_completo|default:"No registrado" }}</span>
+                                {% if evento.email_contacto %}
+                                <span class="d-block small text-muted mt-1">{{ evento.email_contacto }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
+                    <div class="alert mt-4 mb-0" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
+                        <strong><i class="bi bi-pause-circle me-2"></i>Evento en pausa:</strong><br>
+                        {{ evento.observacion_estado|linebreaks }}
+                    </div>
+                    {% endif %}
+
+                    {% if evento.estado_evento == 'cancelado' and evento.motivo_cancelacion %}
+                    <div class="alert mt-4 mb-0" style="background: #fef2f2; border-left: 4px solid #ef4444;">
+                        <strong><i class="bi bi-x-octagon me-2"></i>Evento cancelado:</strong><br>
+                        {{ evento.motivo_cancelacion|linebreaks }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-4 bg-light rounded-4 h-100">
+                        <h6 class="fw-bold text-dark mb-3">Acciones</h6>
+                        {% if puede_inscribirse %}
+                        <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn btn-primary w-100 fw-bold mb-2">
+                            <i class="bi bi-people-fill me-2"></i>Ver Inscripción
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'eventos_disponibles' %}" class="btn btn-light w-100 fw-bold border">
+                            Volver al catálogo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

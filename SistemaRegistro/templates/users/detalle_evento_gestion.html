@@ -17,7 +17,7 @@
                     <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
                 </div>
             </div>
-            <a href="{% if es_fed_central %}{% url 'admin_todos_eventos' %}{% else %}{% url 'gestionar_eventos_inst' %}{% endif %}" class="btn shadow-sm px-4 fw-bold" 
+            <a href="{% if es_fed_central %}{% url 'admin_eventos' %}{% else %}{% url 'mis_eventos' %}{% endif %}" class="btn shadow-sm px-4 fw-bold" 
                style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                 <i class="bi bi-arrow-left me-2"></i> Volver
             </a>
@@ -87,7 +87,7 @@
                         <div>
                             <small class="text-muted text-uppercase fw-bold d-block">Estatus</small>
                             <div>
-                                <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning{% elif evento.estado_evento == 'cerrado' %}bg-secondary{% elif evento.estado_evento == 'finalizado' %}bg-info{% else %}bg-light{% endif %}">
+                                <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning{% elif evento.estado_evento == 'cancelado' %}bg-secondary{% elif evento.estado_evento == 'finalizado' %}bg-info{% elif evento.estado_evento == 'en_proceso' %}bg-primary{% else %}bg-light{% endif %}">
                                     {{ evento.get_estado_evento_display }}
                                 </span>
                                 {% if evento.cancelado %}
@@ -199,7 +199,7 @@
                         <div>
                             <small class="text-muted text-uppercase fw-bold d-block">Estado</small>
                             <div>
-                                <span class="badge {% if evento.estado_evento == 'aprobado' %}bg-success{% elif evento.estado_evento == 'pendiente' %}bg-warning{% elif evento.estado_evento == 'borrador' %}bg-secondary{% elif evento.estado_evento == 'rechazado' %}bg-danger{% else %}bg-info{% endif %}">
+                                <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'revision' %}bg-warning{% elif evento.estado_evento == 'borrador' %}bg-secondary{% elif evento.estado_evento == 'rechazado' %}bg-danger{% elif evento.estado_evento == 'pausado' %}bg-warning{% elif evento.estado_evento == 'cancelado' %}bg-secondary{% else %}bg-info{% endif %}">
                                     {{ evento.get_estado_evento_display }}
                                 </span>
                                 {% if evento.cancelado %}
@@ -234,6 +234,48 @@
                             <small class="text-muted text-uppercase fw-bold">Requisitos</small>
                         </div>
                         <p class="mb-0">{{ evento.requisitos|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border-start border-4" style="background: #fff7ed; border-color: #f59e0b !important;">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-pause-circle text-warning me-2"></i>
+                            <small class="text-muted text-uppercase fw-bold">Observación de Pausa</small>
+                        </div>
+                        <p class="mb-0">{{ evento.observacion_estado|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if evento.estado_evento == 'cancelado' and evento.motivo_cancelacion %}
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border-start border-4" style="background: #fef2f2; border-color: #ef4444 !important;">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-x-octagon text-danger me-2"></i>
+                            <small class="text-muted text-uppercase fw-bold">Motivo de Cancelación</small>
+                        </div>
+                        <p class="mb-0">{{ evento.motivo_cancelacion|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if evento.estado_evento == 'rechazado' and evento.observacion_estado %}
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-3 rounded-3 border-start border-4" style="background: #fef2f2; border-color: #dc2626 !important;">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-exclamation-octagon text-danger me-2"></i>
+                            <small class="text-muted text-uppercase fw-bold">Motivo de Rechazo</small>
+                        </div>
+                        <p class="mb-0">{{ evento.observacion_estado|linebreaks }}</p>
                     </div>
                 </div>
             </div>

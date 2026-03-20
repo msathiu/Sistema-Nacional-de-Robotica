@@ -62,16 +62,14 @@ def _enviar_correo_si_corresponde(instance, estado_anterior, fue_activada, tiene
 def enviar_correo_activacion_institucion(sender, instance, created, **kwargs):
     """
     Envía correo de activación cuando una institución es activada.
-
-    Condiciones para enviar correo:
-    - La institución pasa de inactiva (activa=False) a activa (activa=True)
-    - El código es permanente (RNR), NO temporal (TEMP-)
-    - Tiene un usuario asociado
-
-    También sincroniza el estado del usuario (is_active) con la institución.
     """
     if created:
         logger.info(f"Institución {instance.nombre} creada. No se envía correo aún.")
+        return
+
+    # Si fue manejado por un servicio explícito, no duplicar lógica
+    if getattr(instance, "_identity_service_handled", False):
+        logger.info(f"Omitiendo señales para {instance.nombre} (Manejado por IdentityService)")
         return
 
     if not hasattr(instance, "_estado_anterior") or instance._estado_anterior is None:

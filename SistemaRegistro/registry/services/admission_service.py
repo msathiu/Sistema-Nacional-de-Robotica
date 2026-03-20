@@ -24,7 +24,9 @@ from ..notificaciones import (
     notificar_visto_bueno_fundadora,
     notificar_membresia_aprobada,
     notificar_membresia_rechazada,
+    notificar_institucion_activada,
 )
+from users.services.identity_service import IdentityService
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +37,58 @@ class AdmissionService:
     
     Garantiza la integridad de datos y separación de responsabilidades
     entre la Institución Fundadora y el Ente Rector.
-    
-    Usage:
-        >>> from registry.services import AdmissionService
-        >>> # Crear solicitud
-        >>> membresia = AdmissionService.crear_solicitud(club, institucion, datos)
-        >>> # Dar visto bueno (Fundadora)
-        >>> AdmissionService.dar_visto_bueno_fundadora(membresia, usuario)
-        >>> # Aprobación final (Ente Rector)
-        >>> AdmissionService.aprobar_ente_rector(membresia, usuario_rector)
     """
-    
+
+    @staticmethod
+    def approve_institution(institution: Institucion, approved_by: User) -> bool:
+        """
+        Aprueba y activa una institución. 
+        Mueve la lógica de Institucion.aprobar_y_generar_codigo() y sus signals asociados
+        a este método explícito.
+        """
+        # Validación de permisos
+        if not (approved_by.is_superuser or AdmissionService._es_ente_rector(approved_by)):
+            raise PermissionDenied("Solo el Ente Rector puede aprobar instituciones.")
+
+        if institution.estatus != 'pendiente':
+            logger.warning(f"La institución {institution.nombre} ya no está pendiente (Estado: {institution.estatus})")
+            return False
+
+        with transaction.atomic():
+            # 1. Generar código oficial (RNR) si es necesario
+            if not institution.codigo or not institution.codigo.startswith('RNR'):
+                institution.codigo = institution.generar_codigo_rnr()
+            
+            institution.estatus = 'aprobado'
+            institution.activa = True
+            
+            # Marcamos para silenciar signals redundantes
+            institution._identity_service_handled = True
+            institution.save(update_fields=['codigo', 'estatus', 'activa'])
+
+            # 2. Activar usuario y sincronizar username (vía IdentityService)
+            if institution.usuario:
+                user = institution.usuario
+                
+                # Sincronizamos el username con el nuevo código RNR
+                if user.username != institution.codigo:
+                    user.username = institution.codigo
+                    user.save(update_fields=['username'])
+                
+                # Activamos el usuario y sincronizamos permisos
+                IdentityService.toggle_user_status(user, is_active=True)
+                IdentityService.update_user_role(user, 'institucional')
+
+            # 3. Notificaciones
+            # Notificación interna
+            notificar_institucion_activada(institution)
+            
+            # Email (Este método en el modelo ya es explícito)
+            institution.enviar_correo_activacion()
+            
+            logger.info(f"Institución {institution.nombre} aprobada exitosamente por {approved_by.username}")
+            return True
+
     @staticmethod
     def crear_solicitud(
         club: Club, 

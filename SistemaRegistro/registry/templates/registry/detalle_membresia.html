@@ -197,17 +197,11 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header Moderno -->
+    <!-- Header unificado -->
     <div class="row mb-4">
-        <div class="col-12">
+        <div class="col-12 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-            <a href="{% if es_propietario_club %}{% url 'detalle_club' membresia.club.id %}{% elif es_institucion_miembro %}{% url 'mis_membresias' %}{% else %}{% url 'clubes_lista' %}{% endif %}" 
-                   class="btn btn-outline-secondary back-btn me-3 rounded-circle" 
-                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;"
-                   title="{% if es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}">
-                    <i class="bi bi-arrow-left"></i>
-                </a>
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border: 1px solid #a78bfa;">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
                     <i class="bi bi-person-badge fs-2 text-white"></i>
                 </div>
                 <div>
@@ -215,6 +209,12 @@
                     <p class="text-muted mb-0 small">Información completa de la membresía al club</p>
                 </div>
             </div>
+            <a href="{% if es_propietario_club %}{% url 'detalle_club' membresia.club.id %}{% elif es_institucion_miembro %}{% url 'mis_membresias' %}{% else %}{% url 'clubes_lista' %}{% endif %}"
+               class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;"
+               title="{% if es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}">
+                <i class="bi bi-arrow-left me-2"></i>
+                {% if es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}
+            </a>
         </div>
     </div>
     <hr class="mt-2 mb-4 opacity-10">
@@ -377,7 +377,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card modern-card overflow-hidden">
-                <div class="card-header card-header-modern letter-gradient text-white d-flex align-items-center">
+                <div class="card-header card-header-modern header-gradient text-white d-flex align-items-center">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-envelope"></i>
                     </div>
@@ -397,7 +397,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card modern-card overflow-hidden">
-                <div class="card-header card-header-modern proposal-gradient text-white d-flex align-items-center">
+                <div class="card-header card-header-modern header-gradient text-white d-flex align-items-center">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-file-earmark-text"></i>
                     </div>
@@ -418,7 +418,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card modern-card overflow-hidden">
-                <div class="card-header card-header-modern obs-gradient text-white d-flex align-items-center">
+                <div class="card-header card-header-modern header-gradient text-white d-flex align-items-center">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-chat-left-text"></i>
                     </div>
@@ -465,20 +465,5 @@
     {% endif %}
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // Animación suave para las cards
-    const cards = document.querySelectorAll('.modern-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'all 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-});
-</script>
 {% endblock %}
 

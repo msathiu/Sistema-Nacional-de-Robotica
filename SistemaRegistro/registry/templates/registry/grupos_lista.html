@@ -82,6 +82,9 @@
                             <tr class="text-uppercase x-small fw-bold text-muted">
                                 <th class="px-4 py-3">Equipo</th>
                                 <th class="py-3">Código</th>
+                                {% if mostrar_institucion %}
+                                <th class="py-3">Institución</th>
+                                {% endif %}
                                 <th class="py-3">Tutor Responsable</th>
                                 <th class="py-3">Criterio</th>
                                 <th class="py-3 text-center">Participantes</th>
@@ -99,6 +102,11 @@
                                 <td>
                                     <span class="badge bg-light text-dark border">{{ grupo.codigo }}</span>
                                 </td>
+                                {% if mostrar_institucion %}
+                                <td>
+                                    <div class="small fw-bold text-dark">{{ grupo.institucion_nombre }}</div>
+                                </td>
+                                {% endif %}
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-person-badge me-2 text-muted"></i>
@@ -141,7 +149,7 @@
                                            class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
                                             <i class="bi bi-eye me-1"></i> Ver
                                         </a>
-                                        {% if grupo.estado_grupo == 'editable' %}
+                                        {% if grupo.puede_editar %}
                                         <a href="{% url 'editar_grupo' grupo.id %}" 
                                            class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
                                             <i class="bi bi-pencil-square me-1"></i> Editar

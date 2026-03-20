@@ -56,7 +56,7 @@
         </div>
 
         <div class="col-md-3">
-            <a href="{% url 'gestionar_eventos_inst' %}" class="text-decoration-none">
+            <a href="{% url 'admin_eventos' %}" class="text-decoration-none">
                 <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                     <div class="card-body p-4 position-relative z-1">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Asignados</div>
@@ -113,29 +113,17 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card border-0 shadow-lg overflow-hidden" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 15px;">
-                <div class="card-body p-4 text-center text-white">
-                    <i class="bi bi-calendar-event-fill fs-1 mb-3"></i>
-                    <h6 class="fw-bold mb-3">Eventos de Club</h6>
-                    <p class="small mb-3 opacity-75">Crea eventos exclusivos para tus clubes aprobados</p>
-                    {% if mis_clubes_aprobados > 0 %}
-                        <a href="{% url 'clubes_lista' %}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px;">
-                            <i class="bi bi-plus-circle me-1"></i> Crear Evento de Club
-                        </a>
-                        <div class="mt-2">
-                            <small class="opacity-75">Selecciona tu club para continuar</small>
-                        </div>
-                    {% else %}
-                        <button class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px; opacity: 0.5;" disabled>
-                            <i class="bi bi-lock me-1"></i> Sin clubes aprobados
-                        </button>
-                        <div class="mt-2">
-                            <small class="opacity-75">Necesitas un club aprobado</small>
-                        </div>
-                    {% endif %}
+            <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-4 position-relative z-1">
+                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos de Club</div>
+                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
+                        <p class="text-white-50 small mb-0">Eventos exclusivos para clubes aprobados</p>
+                        <i class="bi bi-calendar-event position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    </div>
+                    <div style="height: 4px; background: var(--accent-cyan);"></div>
                 </div>
-                <div style="height: 4px; background: #a78bfa;"></div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -182,7 +170,7 @@
                         <i class="bi bi-calendar-week text-white me-3 fs-5"></i>
                         <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">PRÓXIMOS EVENTOS</h5>
                     </div>
-                    <a href="{% url 'gestionar_eventos_inst' %}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border-radius: 20px;">
+                    <a href="{% url 'admin_eventos' %}" class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border-radius: 20px;">
                         Ver todos
                     </a>
                 </div>

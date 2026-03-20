@@ -153,9 +153,7 @@ def inscribir_grupo_evento(request, evento_id):
     """Inscribir un grupo a un evento."""
     evento = get_object_or_404(Evento, id=evento_id)
     
-    # Los eventos deben estarapproved o abiertos para permitir inscripciones
-    # Esta es la lógica del modelo de eventos dondefed_central aprueba eventos
-    if evento.estado_evento not in ["abierto", "aprobado", "publicado"]:
+    if evento.estado_evento != "abierto":
         messages.error(request, "Este evento no está disponible para inscripciones.")
         return redirect("eventos_disponibles_institucion")
 

@@ -142,13 +142,18 @@
                                     </label>
                                     <select name="estado_evento" class="form-select custom-input">
                                         {% if es_federacion %}
-                                        <option value="publicado" {% if valores_previos.estado_evento == 'publicado' or not valores_previos %}selected{% endif %}>Publicado</option>
+                                        <option value="abierto" {% if valores_previos.estado_evento == 'abierto' or not valores_previos %}selected{% endif %}>Abierto</option>
                                         <option value="borrador" {% if valores_previos.estado_evento == 'borrador' %}selected{% endif %}>Borrador</option>
                                         {% else %}
                                         <option value="borrador" {% if valores_previos.estado_evento == 'borrador' or not valores_previos %}selected{% endif %}>Borrador</option>
-                                        <option value="abierto" {% if valores_previos.estado_evento == 'abierto' %}selected{% endif %}>Abierto</option>
+                                        <option value="rechazado" {% if valores_previos.estado_evento == 'rechazado' %}selected{% endif %}>Rechazado</option>
                                         {% endif %}
                                     </select>
+                                    {% if not es_federacion %}
+                                    <div class="form-text mt-2">
+                                        El estado se mantiene hasta que envíes nuevamente el evento a revisión.
+                                    </div>
+                                    {% endif %}
                                 </div>
 
                                 <!-- Audiencia del Evento -->
@@ -204,7 +209,7 @@
                                     </select>
                                     <div class="form-text mt-2">
                                         <i class="bi bi-info-circle me-1"></i>
-                                        Define quién podrá ver e inscribirse al evento una vez aprobado
+                                        Define quién podrá ver e inscribirse al evento una vez que quede abierto
                                     </div>
                                 </div>
                             </div>
@@ -374,8 +379,8 @@
                                 <div>
                                     <h6 class="fw-bold text-dark mb-1">✨ Publicación Directa Habilitada</h6>
                                     <p class="mb-0 small text-muted">
-                                        Este evento será <strong class="text-success">aprobado automáticamente</strong> y visible según la audiencia seleccionada. 
-                                        No requiere aprobación adicional.
+                                        Este evento se mantendrá <strong class="text-success">abierto</strong> y visible según la audiencia seleccionada.
+                                        No requiere revisión adicional.
                                     </p>
                                 </div>
                             </div>
@@ -387,8 +392,8 @@
                                 <div>
                                     <h6 class="fw-bold text-dark mb-1">📋 Información Importante</h6>
                                     <p class="mb-0 small text-muted">
-                                        El evento se creará en estado <strong>"Borrador"</strong>. 
-                                        Deberá enviarlo a revisión para que sea aprobado por la Federación Central y visible según la audiencia seleccionada.
+                                        Solo puedes editar eventos en <strong>borrador</strong> o <strong>rechazados</strong>.
+                                        Cuando termines los cambios, deberás enviarlo de nuevo a revisión para que la Federación Central lo abra.
                                     </p>
                                 </div>
                             </div>
@@ -397,7 +402,7 @@
 
                         <!-- Botones -->
                         <div class="d-flex flex-column flex-md-row gap-3 pt-4 mt-4 justify-content-md-end border-top">
-                            <a href="{% if es_federacion %}{% url 'dashboard' %}{% else %}{% url 'seguimiento_eventos_inst' %}{% endif %}" 
+                            <a href="{% if es_federacion %}{% url 'dashboard' %}{% else %}{% url 'mis_eventos' %}{% endif %}" 
                                class="btn btn-light btn-lg fw-bold px-4 shadow-sm" 
                                style="border-radius: 14px; border: 2px solid #e2e8f0; font-size: 0.95rem;">
                                 <i class="bi bi-x-circle me-2"></i> Cancelar
