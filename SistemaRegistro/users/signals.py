@@ -13,6 +13,10 @@ def create_user_profile(sender, instance, created, **kwargs):
     Respeta la bandera _skip_profile_creation enviada desde el Admin.
     """
     if created:
+        # Si fue manejado por un servicio explícito, no duplicar lógica
+        if getattr(instance, "_identity_service_handled", False):
+            return
+
         # Si el Admin nos dice que saltemos la creación (porque él lo manejará)
         if getattr(instance, '_skip_profile_creation', False):
             logger.info(f"Saltando creación de perfil para {instance.username} (manejado por Admin)")

@@ -21,6 +21,7 @@ class UserProfile(models.Model):
     user_type = models.CharField(max_length=25, choices=USER_TYPES, default='participante')
     institution = models.ForeignKey('registry.Institucion', on_delete=models.CASCADE, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
+    cedula = models.CharField(max_length=20, blank=True, null=True)
     
     # Ubicación para territorialidad (Crucial para Federación Regional)
     estado = models.ForeignKey('registry.Estado', on_delete=models.SET_NULL, null=True, blank=True)
@@ -80,6 +81,10 @@ def sync_user_permissions(sender, instance, **kwargs):
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     """Crea o actualiza el perfil automáticamente al tocar el usuario"""
     logger = logging.getLogger(__name__)
+    
+    # Si fue manejado por un servicio explícito, no duplicar lógica
+    if getattr(instance, "_identity_service_handled", False):
+        return
     
     try:
         if created:

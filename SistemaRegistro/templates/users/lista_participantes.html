@@ -147,9 +147,10 @@
                             parroquia: '{{ p.parroquia.nombre|default:"" }}',
                             direccion: '{{ p.direccion|escapejs }}',
                             nivel_educativo: '{{ p.get_grado_escolar_display|default:"" }}',
-                            nombre_plantel: '{{ p.nombre_escuela|default:"" }}',
                             nombre_representante: '{{ p.nombre_representante|default:"" }}',
-                            telefono_representante: '{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}'
+                            cedula_representante: '{{ p.cedula_representante|default:"" }}',
+                            email_representante: '{{ p.email_representante|default:"" }}',
+                            telefono_representante: '{% if p.numero_telefono_representante %}{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}{% endif %}'
                         })">
                             <td class="px-4">
                                 <div class="d-flex align-items-center">
@@ -184,6 +185,11 @@
                                 <div class="small text-dark">{{ p.estado.nombre|default:"N/A" }}</div>
                             </td>
                             <td>
+                                <div class="mb-1">
+                                    <span class="badge {% if p.vinculacion_tipo == 'institucional' %}bg-success{% elif p.vinculacion_tipo == 'regional' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} rounded-pill small">
+                                        {{ p.vinculacion_tipo|default:'central'|capfirst }}
+                                    </span>
+                                </div>
                                 {% if p.institucion.tipo_institucion == 'particular' %}
                                     <div class="small text-dark text-truncate" style="max-width: 180px;">
                                         <i class="bi bi-person-badge me-1 text-primary"></i>{{ p.institucion.nombre }}
@@ -194,6 +200,12 @@
                             </td>
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
+                                    <a href="#"
+                                       class="btn-action btn-view"
+                                       title="Ver detalle completo"
+                                       onclick="event.preventDefault(); event.stopPropagation(); verExpediente({nombres:'{{ p.nombres|escapejs }}', apellidos:'{{ p.apellidos|escapejs }}', cedula:'{{ p.cedula|default:'' }}', cedula_escolar:'{{ p.cedula_escolar|default:'' }}', edad:'{{ p.edad }}', sexo:'{{ p.get_sexo_display }}', email:'{{ p.email }}', condicion_tea: {{ p.condicion_tea|yesno:'true,false' }}, nacionalidad:'{{ p.get_nacionalidad_display }}', telefono:'{{ p.codigo_area }}-{{ p.numero_telefono }}', estado:'{{ p.estado.nombre|default:'' }}', municipio:'{{ p.municipio.nombre|default:'' }}', parroquia:'{{ p.parroquia.nombre|default:'' }}', direccion:'{{ p.direccion|escapejs }}', nivel_educativo:'{{ p.get_grado_escolar_display|default:'' }}', nombre_representante:'{{ p.nombre_representante|default:'' }}', cedula_representante:'{{ p.cedula_representante|default:'' }}', email_representante:'{{ p.email_representante|default:'' }}', telefono_representante:'{% if p.numero_telefono_representante %}{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}{% endif %}' });">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                     <a href="{% url 'editar_participante' p.id %}"
                                        class="btn-action btn-edit"
                                        title="Editar expediente completo">
@@ -311,7 +323,10 @@
                     <div class="col-md-2">
                         <div class="bg-white p-3 rounded-3 shadow-sm">
                             <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Edad</label>
-                            <span id="detEdad" class="fw-bold text-dark"></span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="detEdad" class="fw-bold text-dark"></span>
+                                <span id="badgeMayorEdad" class="badge bg-success d-none" style="font-size: 0.6rem;">Mayor de Edad</span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -384,27 +399,35 @@
                             <span id="detNivelEducativo" class="fw-bold text-dark"></span>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Plantel / Universidad</label>
-                            <span id="detPlantel" class="text-dark"></span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Representante Legal -->
-                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-check me-2"></i>Representante Legal</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Nombre Completo</label>
-                            <span id="detRepresentante" class="fw-bold text-dark"></span>
+                <div id="detRepresentanteContainer">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-check me-2"></i>Representante Legal</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="bg-white p-3 rounded-3 shadow-sm">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Nombre Completo</label>
+                                <span id="detRepresentante" class="fw-bold text-dark"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Teléfono</label>
-                            <span id="detTelefonoRep" class="fw-bold text-dark font-monospace"></span>
+                        <div class="col-md-6">
+                            <div class="bg-white p-3 rounded-3 shadow-sm">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Cédula del Representante</label>
+                                <span id="detCedulaRep" class="fw-bold text-dark font-monospace"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-white p-3 rounded-3 shadow-sm">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Teléfono</label>
+                                <span id="detTelefonoRep" class="fw-bold text-dark font-monospace"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-white p-3 rounded-3 shadow-sm">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Correo Electrónico</label>
+                                <span id="detEmailRep" class="text-dark"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -509,11 +532,26 @@
         
         // Educación
         document.getElementById('detNivelEducativo').innerText = data.nivel_educativo || 'N/A';
-        document.getElementById('detPlantel').innerText = data.nombre_plantel || 'N/A';
         
-        // Representante Legal
-        document.getElementById('detRepresentante').innerText = data.nombre_representante || 'N/A';
-        document.getElementById('detTelefonoRep').innerText = data.telefono_representante || 'N/A';
+        // Lógica de Mayoría de Edad y Representante
+        const repContainer = document.getElementById('detRepresentanteContainer');
+        const badgeMayor = document.getElementById('badgeMayorEdad');
+        const edadNum = parseInt(data.edad);
+        const esMayor = !isNaN(edadNum) && edadNum >= 18;
+
+        if (esMayor) {
+            repContainer.classList.add('d-none');
+            badgeMayor.classList.remove('d-none');
+        } else {
+            repContainer.classList.remove('d-none');
+            badgeMayor.classList.add('d-none');
+            
+            // Poblar datos del representante solo si es menor
+            document.getElementById('detRepresentante').innerText = data.nombre_representante || 'N/A';
+            document.getElementById('detCedulaRep').innerText = data.cedula_representante || 'N/A';
+            document.getElementById('detTelefonoRep').innerText = data.telefono_representante || 'N/A';
+            document.getElementById('detEmailRep').innerText = data.email_representante || 'N/A';
+        }
         
         modalDetalle.show();
     }

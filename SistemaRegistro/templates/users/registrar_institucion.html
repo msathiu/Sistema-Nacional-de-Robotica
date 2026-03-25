@@ -194,7 +194,7 @@
   }
   body { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
   .registration-container { max-width: 1000px; margin: 2rem auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 82, 180, 0.15); overflow: hidden; }
-  .form-header { background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%); color: white; padding: 2rem; text-align: center; }
+  .form-header { background: linear-gradient(145deg, #051636 0%, #0b2c6d 100%); border-bottom: 3px solid #00d4ff; color: white; padding: 1.25rem 2rem; text-align: center; }
   .logo { max-width: 160px; }
   .form-body { padding: 2rem; }
   .section-card { background: var(--light-bg); border: 2px solid var(--border-color); border-radius: 15px; padding: 1.5rem; margin-bottom: 1.5rem; }
@@ -296,6 +296,8 @@
     .actions-stack .btn-submit { width: 100%; border-radius: 14px; }
   }
   .hidden { display: none; }
+  /* Asegura que el campo codigo MPPE se oculte de forma consistente */
+  #campoCodigoMPPE.hidden { display: none !important; }
 </style>
 {% endif %}
 
@@ -303,8 +305,8 @@
   <div class="form-header">
     {% if es_fed_central %}
     <span class="fed-badge mb-2"><i class="bi bi-shield-check me-1"></i>Panel Administración Central</span>
-    {% endif %}
     <img src="{% static 'images/fvrc_logo.png' %}" alt="FVRC" class="logo mb-3">
+    {% endif %}
     <h2 class="mb-1">Registro Nacional de Robótica</h2>
     <p class="mb-0">Federación Venezolana de Robótica Creativa</p>
   </div>
@@ -452,7 +454,7 @@
             >
             {% if form.rif_numero.errors %}<div class="validation-text">{{ form.rif_numero.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4" id="campoCodigoMPPE">
             <label class="form-label" id="codigoMppeLabel">Codigo MPPE</label>
             <input type="text" class="form-control" name="codigo_mppe" id="codigoMPPE" value="{{ form.codigo_mppe.value|default:'' }}" placeholder="Ej: ME123456">
             {% if form.codigo_mppe.errors %}<div class="validation-text">{{ form.codigo_mppe.errors|striptags }}</div>{% endif %}
@@ -693,6 +695,9 @@
       document.getElementById('particularNacionalidad').setAttribute('required', 'required');
       document.getElementById('particularCedula').setAttribute('required', 'required');
       
+      // Establecer nacionalidad por defecto "V" para venezolanos
+      document.getElementById('particularNacionalidad').value = 'V';
+      
       // Quitar obligatoriedad de Razón Social y RIF
       razonSocial.removeAttribute('required');
       rifNumero.removeAttribute('required');
@@ -729,6 +734,8 @@
       rifNumero.setAttribute('required', 'required');
     }
 
+    const campoCodigoMPPE = document.getElementById('campoCodigoMPPE');
+
     if (tipo === 'educativa') {
       rifLetra.value = 'G';
       rifNumero.value = '20000009-0';
@@ -737,6 +744,7 @@
       rifNumero.setAttribute('readonly', 'readonly');
       codigoMppe.setAttribute('required', 'required');
       codigoMppeLabel.classList.add('required');
+      campoCodigoMPPE.classList.remove('hidden');
       depContainer.classList.remove('hidden');
     } else {
       rifLetra.style.pointerEvents = '';
@@ -744,11 +752,19 @@
       rifNumero.removeAttribute('readonly');
       codigoMppe.removeAttribute('required');
       codigoMppeLabel.classList.remove('required');
+      campoCodigoMPPE.classList.add('hidden');
 
-      if (tipo === 'particular') rifLetra.value = 'V';
-      else if (tipo === 'publica') rifLetra.value = 'G';
-      else if (tipo === 'privada') rifLetra.value = 'J';
-      
+      if (tipo === 'particular') {
+        rifLetra.value = 'V';
+      } else if (tipo === 'publica') {
+        rifLetra.value = 'G';
+      } else if (tipo === 'privada') {
+        rifLetra.value = 'J';
+      } else if (tipo === 'otra') {
+        if (naturaleza === 'publica') rifLetra.value = 'G';
+        else if (naturaleza === 'privada') rifLetra.value = 'J';
+      }
+
       if (rifNumero.value === '20000009-0') rifNumero.value = '';
     }
 

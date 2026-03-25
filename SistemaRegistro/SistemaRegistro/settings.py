@@ -69,6 +69,8 @@ MIDDLEWARE = [
     "users.middleware.SuperuserAdminOnlyMiddleware",
     # Middleware para control de acceso basado en roles
     "users.middleware.RoleBasedAccessMiddleware",
+    # Middleware para expiración de sesión por inactividad
+    "users.middleware.SessionTimeoutMiddleware",
 ]
 
 ROOT_URLCONF = "SistemaRegistro.urls"
@@ -113,7 +115,7 @@ DATABASES = {
 }
 
 # --- LOCALIZACIÓN ---
-LANGUAGE_CODE = "es-ve"
+LANGUAGE_CODE = "es"
 TIME_ZONE = "America/Caracas"
 USE_I18N = True
 USE_TZ = True
@@ -134,6 +136,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGIN_URL = "login"
 LOGOUT_REDIRECT_URL = "home"
+
+# Configuraciones de sesión para seguridad y expiración
+SESSION_COOKIE_AGE = 1800  # 30 minutos absolutos como respaldo
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Expira al cerrar navegador
 
 # --- VALIDADORES DE CONTRASEÑA ---
 AUTH_PASSWORD_VALIDATORS = [

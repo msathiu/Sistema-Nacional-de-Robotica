@@ -277,7 +277,7 @@ def notificar_institucion_activada(institucion):
     if hasattr(institucion, 'usuario') and institucion.usuario:
         mensaje = f'Tu institución "{institucion.nombre}" ha sido aprobada y activada exitosamente.'
         mensaje += f'\n\n✅ Tu código RNR oficial es: {institucion.codigo}'
-        mensaje += f'\n\n🔑 Ya puedes acceder al sistema con tus credenciales.'
+        mensaje += f'\n\n🔑 Bienvenido.'
         
         crear_notificacion(
             destinatario=institucion.usuario,

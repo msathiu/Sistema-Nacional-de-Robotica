@@ -1,6 +1,7 @@
 import uuid6
 from datetime import date
 from django.db import models
+from django.db.models import UniqueConstraint, Q
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 
@@ -76,12 +77,6 @@ class Participante(models.Model):
         max_length=7, validators=[NUMERO_VALIDATOR], verbose_name="Número (7 dígitos)"
     )
 
-    nombre_escuela = models.CharField(
-        max_length=200,
-        blank=True,
-        verbose_name="Nombre de la Escuela/Universidad",
-        help_text="Nombre del centro de estudio actual.",
-    )
     grado_escolar = models.CharField(
         max_length=4,
         choices=GRADO_CHOICES,
@@ -107,7 +102,12 @@ class Participante(models.Model):
         default="V",
         verbose_name="Nacionalidad Representante",
     )
-    cedula_representante = models.CharField(max_length=20, blank=True)
+    cedula_representante = models.CharField(
+        max_length=10, 
+        blank=True,
+        validators=[RegexValidator(r'^\d{7,10}$', "La cédula del representante debe tener entre 7 y 10 números.")],
+        verbose_name="Cédula Representante"
+    )
     codigo_area_representante = models.CharField(
         max_length=4,
         choices=CODIGO_AREA_CHOICES,
@@ -126,6 +126,9 @@ class Participante(models.Model):
         default=False,
         verbose_name="Condición TEA",
         help_text="Indica si el participante posee condición en el espectro autista",
+    )
+    creado_por_federacion = models.BooleanField(
+        default=False, verbose_name="Registrado por Federación"
     )
     fecha_registro = models.DateTimeField(auto_now_add=True)
     user = models.OneToOneField(
@@ -229,7 +232,7 @@ class Participante(models.Model):
 
     def save(self, *args, **kwargs):
         campos_titulo = [
-            "nombres", "apellidos", "direccion", "nombre_escuela",
+            "nombres", "apellidos", "direccion",
             "titulo_universitario", "campo1", "nombre_representante",
         ]
         for campo in campos_titulo:
@@ -248,6 +251,13 @@ class ParticipanteInstitucion(models.Model):
         ("suspendido", "Suspendido"),
         ("egresado", "Egresado"),
     ]
+
+    TIPO_VINCULACION_CHOICES = [
+        ("institucional", "Institucional (Sede Educativa/Club)"),
+        ("regional", "Sede Regional (Federación Estado)"),
+        ("central", "Sede Central (Federación Nacional)"),
+    ]
+
     id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
     participante = models.ForeignKey(
         Participante,
@@ -260,6 +270,22 @@ class ParticipanteInstitucion(models.Model):
         on_delete=models.CASCADE,
         related_name="participantes_vinculados",
         verbose_name="Institución",
+        null=True,
+        blank=True,
+    )
+    estado = models.ForeignKey(
+        Estado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Estado/Sede Regional",
+        help_text="Solo requerido para vinculaciones de sede regional.",
+    )
+    tipo_vinculacion = models.CharField(
+        max_length=20,
+        choices=TIPO_VINCULACION_CHOICES,
+        default="institucional",
+        verbose_name="Tipo de Vinculación",
     )
     grupo_actual = models.ForeignKey(
         "Grupo",
@@ -295,7 +321,6 @@ class ParticipanteInstitucion(models.Model):
     class Meta:
         verbose_name = "Vinculación Participante-Institución"
         verbose_name_plural = "Vinculaciones Participante-Institución"
-        unique_together = [["participante", "institucion"]]
         ordering = ["-fecha_vinculacion"]
         indexes = [
             models.Index(
@@ -307,19 +332,27 @@ class ParticipanteInstitucion(models.Model):
             ),
             models.Index(fields=["grupo_actual"], name="idx_partinst_grupo"),
         ]
-
-    def __str__(self):
-        return f"{self.participante.nombre_completo} @ {self.institucion.nombre} ({self.get_status_display()})"
-
-    def desvincular(self):
-        from django.utils import timezone
-        self.status = "inactivo"
-        self.fecha_desvinculacion = timezone.now()
-        self.save(update_fields=["status", "fecha_desvinculacion"])
+        constraints = [
+            models.UniqueConstraint(
+                fields=["participante", "institucion"],
+                condition=models.Q(tipo_vinculacion="institucional"),
+                name="unique_participante_institucion",
+            ),
+            models.UniqueConstraint(
+                fields=["participante", "estado"],
+                condition=models.Q(tipo_vinculacion="regional"),
+                name="unique_participante_regional",
+            ),
+            models.UniqueConstraint(
+                fields=["participante"],
+                condition=models.Q(tipo_vinculacion="central"),
+                name="unique_participante_central",
+            ),
+        ]
 
     def clean(self):
         super().clean()
-        if self.grupo_actual and self.grupo_actual.institucion != self.institucion:
+        if self.grupo_actual and self.institucion and self.grupo_actual.institucion != self.institucion:
             raise ValidationError(
                 {
                     "grupo_actual": f"El grupo debe pertenecer a la institución {self.institucion.nombre}"

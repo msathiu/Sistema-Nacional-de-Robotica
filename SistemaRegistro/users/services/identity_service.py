@@ -29,12 +29,17 @@ class IdentityService:
             user_obj._identity_service_handled = True
             user_obj.save()
             
-            profile = UserProfile.objects.create(
+            profile, created_profile = UserProfile.objects.update_or_create(
                 user=user_obj,
-                user_type=user_type,
-                institution=institution,
-                **profile_data
+                defaults={
+                    'user_type': user_type,
+                    'institution': institution,
+                    **profile_data
+                }
             )
+            
+            if not created_profile:
+                logger.warning(f"Perfil para {username} ya existía, fue actualizado.")
             
             # Aplicar permisos iniciales según el tipo
             IdentityService._apply_permissions_by_role(user_obj, user_type)
@@ -82,6 +87,28 @@ class IdentityService:
             logger.info(f"Estado de usuario {user.username} cambiado a: {is_active}")
 
     @staticmethod
+    def update_user_and_profile(user, user_data: dict, profile_data: dict):
+        """
+        Actualiza los datos del usuario y su perfil en una sola transacción.
+        """
+        with transaction.atomic():
+            # Actualizar User
+            for field, value in user_data.items():
+                if hasattr(user, field):
+                    setattr(user, field, value)
+            user.save()
+            
+            # Actualizar Profile
+            profile = user.userprofile
+            for field, value in profile_data.items():
+                if hasattr(profile, field):
+                    setattr(profile, field, value)
+            profile.save()
+            
+            logger.info(f"Perfil de usuario {user.username} actualizado.")
+            return user, profile
+
+    @staticmethod
     def _apply_permissions_by_role(user, user_type):
         """
         Lógica interna para mapear roles a flags de Django.
@@ -98,6 +125,6 @@ class IdentityService:
             user.is_staff = is_staff
             user.is_superuser = is_superuser
             updated = True
-        
+            
         if updated:
             user.save(update_fields=['is_staff', 'is_superuser'])

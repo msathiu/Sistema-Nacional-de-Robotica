@@ -12,7 +12,7 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ evento.nombre }}</h2>
-                    <p class="text-muted mb-0 small">Detalle e inscripción de grupos</p>
+                    <p class="text-muted mb-0 small">Detalle e inscripción de equipos</p>
                 </div>
             </div>
             <a href="{% url 'eventos_disponibles' %}" class="btn shadow-sm px-4 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
@@ -28,44 +28,104 @@
                     <h5 class="fw-bold mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Información del Evento</h5>
                 </div>
                 <div class="card-body p-4">
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning text-dark{% elif evento.estado_evento == 'en_proceso' %}bg-primary{% else %}bg-secondary{% endif %}">
-                            {{ evento.get_estado_evento_display }}
+                    <!-- Badges de estado -->
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success{% elif evento.estado_evento == 'pausado' %}bg-warning text-dark{% elif evento.estado_evento == 'en_proceso' %}bg-primary{% else %}bg-secondary{% endif %} rounded-pill px-3">
+                            <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;"></i>{{ evento.get_estado_evento_display }}
                         </span>
-                        <span class="badge bg-light text-dark border">{{ evento.get_audiencia_display }}</span>
+                        <span class="badge bg-light text-dark border rounded-pill px-3">{{ evento.get_audiencia_display }}</span>
+                        {% if evento.modalidad == 'presencial' %}
+                        <span class="badge rounded-pill px-3" style="background:#dcfce7;color:#166534;border:1px solid #86efac;"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
+                        {% elif evento.modalidad == 'virtual' %}
+                        <span class="badge rounded-pill px-3" style="background:#e0f2fe;color:#075985;border:1px solid #7dd3fc;"><i class="bi bi-display me-1"></i>Virtual</span>
+                        {% else %}
+                        <span class="badge rounded-pill px-3" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
+                        {% endif %}
                     </div>
 
-                    <div class="row g-3">
+                    <!-- Fecha y Categoría -->
+                    <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 h-100">
-                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Fecha</small>
-                                <span class="fw-bold">{{ evento.fecha|date:"d/m/Y" }}</span>
+                            <div class="info-item h-100">
+                                <span class="info-label"><i class="bi bi-calendar3 me-1"></i>Fecha</span>
+                                <span class="info-value">{{ evento.fecha|date:"d/m/Y" }}{% if evento.fecha_hasta %} — {{ evento.fecha_hasta|date:"d/m/Y" }}{% endif %}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="p-3 bg-light rounded-3 h-100">
-                                <small class="text-muted text-uppercase fw-bold d-block mb-1">Ubicación</small>
-                                <span class="fw-bold">{{ evento.ubicacion|default:"No especificada" }}</span>
+                            <div class="info-item h-100">
+                                <span class="info-label"><i class="bi bi-tag me-1"></i>Categoría</span>
+                                <span class="info-value">{{ evento.tipo }}{% if evento.categoria %} · {{ evento.categoria }}{% endif %}</span>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Ubicación -->
+                    <div class="info-item mb-3">
+                        <span class="info-label"><i class="bi bi-geo-alt-fill me-1 text-danger"></i>Ubicación</span>
+                        <div class="d-flex flex-wrap gap-2 mt-1">
+                            {% if evento.estado %}
+                            <span class="badge bg-light text-dark border"><i class="bi bi-map me-1"></i>{{ evento.estado.nombre }}</span>
+                            {% endif %}
+                            {% if evento.municipio %}
+                            <span class="badge bg-light text-dark border">{{ evento.municipio.nombre }}</span>
+                            {% endif %}
+                            {% if evento.parroquia %}
+                            <span class="badge bg-light text-dark border">{{ evento.parroquia.nombre }}</span>
+                            {% endif %}
+                        </div>
+                        {% if evento.direccion %}
+                        <div class="mt-2 small text-muted"><i class="bi bi-pin-map me-1"></i>{{ evento.direccion }}</div>
+                        {% endif %}
+                        {% if not evento.estado and not evento.direccion %}
+                        <span class="info-value text-muted">No especificada</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Contacto -->
+                    {% if evento.telefono_completo or evento.email_contacto %}
+                    <div class="row g-3 mb-3">
+                        {% if evento.telefono_completo %}
+                        <div class="col-md-6">
+                            <div class="info-item h-100">
+                                <span class="info-label"><i class="bi bi-telephone me-1"></i>Teléfono</span>
+                                <span class="info-value">{{ evento.telefono_completo }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if evento.email_contacto %}
+                        <div class="col-md-6">
+                            <div class="info-item h-100">
+                                <span class="info-label"><i class="bi bi-envelope me-1"></i>Correo</span>
+                                <span class="info-value small">{{ evento.email_contacto }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if evento.capacidad_maxima %}
+                    <div class="info-item mb-3">
+                        <span class="info-label"><i class="bi bi-people me-1"></i>Capacidad máxima</span>
+                        <span class="info-value">{{ evento.capacidad_maxima }} grupos</span>
+                    </div>
+                    {% endif %}
 
                     {% if evento.descripcion %}
-                    <div class="mt-4">
+                    <div class="mt-3 p-3 rounded-3" style="background:#f8fafc;border-left:3px solid var(--accent-cyan,#00d4ff);">
                         <small class="text-muted text-uppercase fw-bold d-block mb-2">Descripción</small>
-                        <p class="mb-0">{{ evento.descripcion }}</p>
+                        <p class="mb-0 small">{{ evento.descripcion }}</p>
                     </div>
                     {% endif %}
 
                     {% if evento.requisitos %}
-                    <div class="mt-4">
-                        <small class="text-muted text-uppercase fw-bold d-block mb-2">Requisitos</small>
-                        <p class="mb-0">{{ evento.requisitos|linebreaks }}</p>
+                    <div class="mt-3 p-3 rounded-3" style="background:#f8fafc;border-left:3px solid #f59e0b;">
+                        <small class="text-muted text-uppercase fw-bold d-block mb-2"><i class="bi bi-clipboard-check me-1"></i>Requisitos</small>
+                        <p class="mb-0 small">{{ evento.requisitos|linebreaks }}</p>
                     </div>
                     {% endif %}
 
                     {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
-                    <div class="alert mt-4 mb-0" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
+                    <div class="alert mt-3 mb-0" style="background:#fff7ed;border-left:4px solid #f59e0b;">
                         <strong><i class="bi bi-pause-circle me-2"></i>Evento en pausa:</strong><br>
                         {{ evento.observacion_estado|linebreaks }}
                     </div>
@@ -75,7 +135,7 @@
 
             <div class="card border-0 shadow-sm mt-4" style="border-radius: 20px; overflow: hidden;">
                 <div class="card-header border-0 py-3 px-4" style="background: #0f766e;">
-                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-list-check me-2"></i>Grupos Inscritos</h5>
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-list-check me-2"></i>Equipos Inscritos</h5>
                 </div>
                 <div class="card-body p-4">
                     {% if grupos_inscritos %}
@@ -86,6 +146,7 @@
                                     <th>Grupo</th>
                                     <th>Institución</th>
                                     <th>Fecha</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -94,13 +155,21 @@
                                     <td class="fw-bold">{{ inscripcion.grupo.nombre }}</td>
                                     <td>{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
                                     <td>{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes"
+                                                data-grupo-id="{{ inscripcion.grupo.id }}"
+                                                data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
+                                                title="Ver participantes del grupo">
+                                            <i class="bi bi-eye me-1"></i>Ver
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted mb-0">Aún no hay grupos inscritos en este evento.</p>
+                    <p class="text-muted mb-0">Aún no hay equipos inscritos en este evento.</p>
                     {% endif %}
                 </div>
             </div>
@@ -113,7 +182,15 @@
                 </div>
                 <div class="card-body p-4">
                     {% if evento.estado_evento == 'abierto' %}
-                        {% if grupos_disponibles %}
+                        {% if grupo_ya_inscrito %}
+                        <div class="alert mb-0" style="background: #eff6ff; border-left: 4px solid var(--blue-main);">
+                            <p class="fw-bold mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>Tu institución ya tiene un equipo inscrito</p>
+                            <p class="mb-0 small text-muted">
+                                <strong>{{ grupo_ya_inscrito.grupo.nombre }}</strong> fue inscrito el {{ grupo_ya_inscrito.fecha_inscripcion|date:"d/m/Y" }}.
+                                Solo se permite un equipo por institución en este evento.
+                            </p>
+                        </div>
+                        {% elif grupos_disponibles %}
                         <form method="post" action="{% url 'inscribir_grupo_evento' evento.id %}">
                             {% csrf_token %}
                             <div class="mb-3">
@@ -127,7 +204,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Rol de participación</label>
-                                <select name="rol" class="form-select">
+                                <select name="rol_participacion" class="form-select">
                                     <option value="participante">Participante</option>
                                     <option value="competidor">Competidor</option>
                                     <option value="expositor">Expositor</option>
@@ -138,7 +215,7 @@
                             </button>
                         </form>
                         {% else %}
-                        <p class="text-muted mb-0">No tienes grupos disponibles para inscribir en este evento.</p>
+                        <p class="text-muted mb-0">No tienes equipos disponibles para inscribir en este evento.</p>
                         {% endif %}
                     {% elif evento.estado_evento == 'pausado' %}
                     <p class="text-warning fw-bold mb-0">Las inscripciones están temporalmente suspendidas.</p>
@@ -150,4 +227,149 @@
         </div>
     </div>
 </div>
+
+<!-- Modal participantes del grupo -->
+<div class="modal fade" id="participantesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 py-4 px-4" style="background: linear-gradient(145deg, #051636, #0b2c6d);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.3);">
+                        <i class="bi bi-people-fill text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="participantesModalLabel">Participantes del Grupo</h5>
+                        <small class="text-white-50" id="participantesModalSubtitle">Cargando...</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div style="height: 3px; background: linear-gradient(90deg, #00d4ff, #0b2c6d);"></div>
+            <div class="modal-body p-0" id="participantesContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3 text-muted">Cargando participantes...</p>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3" style="background: #f8fafc;">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Reutilizar instancia del modal para evitar memory leaks
+    const modalEl = document.getElementById('participantesModal');
+    const modal = new bootstrap.Modal(modalEl);
+
+    // Limpiar backdrop residual al cerrar
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+
+    document.querySelectorAll('.btn-ver-participantes').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const grupoId = this.dataset.grupoId;
+            const grupoNombre = this.dataset.grupoNombre;
+
+            document.getElementById('participantesModalLabel').textContent = grupoNombre;
+            document.getElementById('participantesModalSubtitle').textContent = 'Cargando...';
+            document.getElementById('participantesContent').innerHTML =
+                '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3 text-muted">Cargando participantes...</p></div>';
+
+            modal.show();
+
+            fetch(`/api/grupos/${grupoId}/participantes/`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        document.getElementById('participantesModalSubtitle').textContent = 'Error';
+                        document.getElementById('participantesContent').innerHTML =
+                            `<div class="alert alert-warning m-4"><i class="bi bi-exclamation-triangle me-2"></i>${data.error || 'No se pudo cargar la información.'}</div>`;
+                        return;
+                    }
+                    document.getElementById('participantesModalSubtitle').textContent =
+                        `${data.total} participante(s) registrado(s)`;
+                    if (data.participantes.length === 0) {
+                        document.getElementById('participantesContent').innerHTML =
+                            '<div class="text-center py-5 text-muted"><i class="bi bi-inbox display-3 d-block mb-3"></i>No hay participantes registrados en este grupo.</div>';
+                        return;
+                    }
+                    const rows = data.participantes.map((p, i) => `
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white x-small"
+                                         style="width:32px;height:32px;min-width:32px;background:linear-gradient(145deg,#0b2c6d,#051636);">
+                                        ${i + 1}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark small">${p.apellido}, ${p.nombre}</div>
+                                        <div class="x-small text-muted">${p.telefono || ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3"><span class="badge bg-light text-dark border">${p.cedula || '-'}</span></td>
+                            <td class="py-3 text-center"><span class="badge rounded-pill" style="background:#dbeafe;color:#1e40af;">${p.edad || '-'} años</span></td>
+                            <td class="py-3"><span class="badge bg-light text-dark border">${p.sexo || '-'}</span></td>
+                            <td class="py-3"><span class="x-small text-muted">${p.grado || '-'}</span></td>
+                        </tr>`).join('');
+                    document.getElementById('participantesContent').innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead style="background:#f1f5f9;">
+                                    <tr class="text-uppercase x-small fw-bold text-muted">
+                                        <th class="px-4 py-3">Participante</th>
+                                        <th class="py-3">Cédula</th>
+                                        <th class="py-3 text-center">Edad</th>
+                                        <th class="py-3">Sexo</th>
+                                        <th class="py-3">Grado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>`;
+                })
+                .catch(() => {
+                    document.getElementById('participantesModalSubtitle').textContent = 'Error';
+                    document.getElementById('participantesContent').innerHTML =
+                        '<div class="alert alert-danger m-4"><i class="bi bi-exclamation-triangle me-2"></i>Error al cargar los participantes. Intente nuevamente.</div>';
+                });
+        });
+    });
+});
+</script>
+<style>
+    .x-small { font-size: 0.72rem; }
+    .info-item {
+        padding: 0.75rem 1rem;
+        border-left: 3px solid var(--accent-cyan, #00d4ff);
+        background: linear-gradient(135deg, #f8fafc, #ffffff);
+        border-radius: 0 8px 8px 0;
+    }
+    .info-label {
+        display: block;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    .info-value {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+</style>
+{% endblock %}
 {% endblock %}

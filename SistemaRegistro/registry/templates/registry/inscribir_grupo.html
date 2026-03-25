@@ -44,7 +44,7 @@
                             <div class="alert alert-warning mt-2">
                                 <i class="fas fa-exclamation-triangle"></i> 
                                 No tienes grupos en estado "Editable". 
-                                <a href="{% url 'mis_grupos' %}">Ir a Mis Grupos</a>
+                                <a href="{% url 'mis_grupos' %}">Ir a Mis Equipos</a>
                             </div>
                             {% endif %}
                         </div>
@@ -71,16 +71,16 @@
                         <div class="alert alert-warning">
                             <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Importante</h6>
                             <ul class="mb-0 small">
-                                <li>Solo puedes inscribir grupos en estado "Editable"</li>
-                                <li>Una vez inscrito, el grupo cambiará a estado "Inscrito"</li>
-                                <li>No podrás editar el grupo mientras esté inscrito</li>
-                                <li>Cuando el evento finalice, el grupo quedará "Bloqueado"</li>
+                                <li>Solo puedes inscribir equipos en estado "Editable"</li>
+                                <li>Una vez inscrito, el equipo cambiará a estado "Inscrito"</li>
+                                <li>No podrás editar el equipo mientras esté inscrito</li>
+                                <li>Cuando el evento finalice, el equipo quedará "Bloqueado"</li>
                             </ul>
                         </div>
 
                         <!-- Botones -->
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'eventos_disponibles_institucion' %}" class="btn btn-secondary">
+                            <a href="{% url 'eventos_disponibles' %}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary" {% if not grupos %}disabled{% endif %}>

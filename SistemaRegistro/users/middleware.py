@@ -352,3 +352,30 @@ class RoleBasedAccessMiddleware:
             return dashboard
         except:
             return 'dashboard'
+
+
+class SessionTimeoutMiddleware:
+    """
+    Middleware para expirar la sesión automáticamente después de 30 minutos de inactividad.
+    Si el usuario está activo (haciendo requests), la sesión se mantiene viva.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated:
+            last_activity = request.session.get('last_activity')
+            now = int(time.time())
+            timeout = 1800  # 30 minutos en segundos
+
+            if last_activity and (now - last_activity) > timeout:
+                from django.contrib.auth import logout
+                logout(request)
+                from django.shortcuts import redirect
+                from django.conf import settings
+                return redirect(settings.LOGOUT_REDIRECT_URL)
+
+            request.session['last_activity'] = now
+
+        response = self.get_response(request)
+        return response

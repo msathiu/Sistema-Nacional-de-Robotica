@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import Tutor, Grupo, Institucion, TutorInstitucion
+from ..models import Tutor, Grupo, Institucion, TutorInstitucion, Estado
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class TutorService:
             return None
     
     @staticmethod
-    def crear_tutor(datos_tutor: dict) -> Tutor:
+    def crear_tutor(datos_tutor: dict, creado_por_federacion: bool = False) -> Tutor:
         """Crea un nuevo tutor."""
         cedula_limpia = ''.join(filter(str.isdigit, datos_tutor['cedula']))
         
@@ -64,27 +64,48 @@ class TutorService:
             email=datos_tutor['email'],
             profesion=datos_tutor.get('profesion', ''),
             experiencia=datos_tutor.get('experiencia', ''),
+            creado_por_federacion=creado_por_federacion
         )
         
         logger.info(f"[Tutor] Nuevo tutor creado: {tutor.get_nombre_completo()} ({cedula_limpia})")
         return tutor
     
     @staticmethod
-    def vincular_tutor_institucion(
+    def vincular_tutor(
         tutor: Tutor,
-        institucion: Institucion,
+        tipo_vinculacion: str = 'institucional',
+        institucion: Optional[Institucion] = None,
+        estado: Optional[Estado] = None,
         rol: str = 'colaborador',
         usuario: Optional[User] = None
     ) -> tuple:
         """
-        Vincula un tutor a una institución.
+        Vincula un tutor a un ente (Institución, Sede Regional o Sede Central).
+        
+        Garantiza que no haya duplicados por tipo de vinculación.
         
         Returns:
             tuple: (TutorInstitucion, created)
         """
+        filtros = {
+            'tutor': tutor,
+            'tipo_vinculacion': tipo_vinculacion,
+        }
+        
+        if tipo_vinculacion == 'institucional':
+            if not institucion:
+                raise ValidationError("Se requiere una institución para vinculación institucional.")
+            filtros['institucion'] = institucion
+        elif tipo_vinculacion == 'regional':
+            if not estado:
+                raise ValidationError("Se requiere un estado para vinculación regional.")
+            filtros['estado'] = estado
+        elif tipo_vinculacion == 'central':
+            # Solo tutor y tipo 'central' son necesarios para el filtro
+            pass
+
         vinculacion, created = TutorInstitucion.objects.get_or_create(
-            tutor=tutor,
-            institucion=institucion,
+            **filtros,
             defaults={'rol': rol, 'status': 'activo'}
         )
         
@@ -93,37 +114,50 @@ class TutorService:
                 vinculacion.status = 'activo'
                 vinculacion.fecha_desvinculacion = None
                 vinculacion.save(update_fields=['status', 'fecha_desvinculacion'])
-                logger.info(f"[Tutor] Vinculación reactivada: {tutor} @ {institucion}")
-            else:
-                logger.info(f"[Tutor] Vinculación ya existe: {tutor} @ {institucion}")
+                logger.info(f"[Tutor] Vinculación reactivada: {tutor} @ {tipo_vinculacion}")
         else:
-            logger.info(f"[Tutor] Nueva vinculación: {tutor} @ {institucion}")
+            logger.info(f"[Tutor] Nueva vinculación: {tutor} @ {tipo_vinculacion}")
         
         return vinculacion, created
+    
+    @staticmethod
+    def vincular_tutor_institucion(
+        tutor: Tutor,
+        institucion: Institucion,
+        rol: str = 'colaborador',
+        usuario: Optional[User] = None
+    ) -> tuple:
+        """Legacy wrapper para vincular a institución."""
+        return TutorService.vincular_tutor(
+            tutor=tutor,
+            tipo_vinculacion='institucional',
+            institucion=institucion,
+            rol=rol,
+            usuario=usuario
+        )
     
     @staticmethod
     def registrar_tutor_con_institucion(
         institucion: Institucion,
         datos_tutor: dict,
         rol: str = 'colaborador',
-        usuario: Optional[User] = None
+        usuario: Optional[User] = None,
+        creado_por_federacion: bool = False
     ) -> tuple:
         """
         Flujo completo: buscar/crear tutor + vincular a institución.
-        
-        Returns:
-            tuple: (Tutor, TutorInstitucion, tutor_creado)
         """
         with transaction.atomic():
             tutor = TutorService.buscar_tutor_por_cedula(datos_tutor['cedula'])
             tutor_creado = False
             
             if not tutor:
-                tutor = TutorService.crear_tutor(datos_tutor)
+                tutor = TutorService.crear_tutor(datos_tutor, creado_por_federacion=creado_por_federacion)
                 tutor_creado = True
             
-            vinculacion, vinculacion_creada = TutorService.vincular_tutor_institucion(
+            vinculacion, vinculacion_creada = TutorService.vincular_tutor(
                 tutor=tutor,
+                tipo_vinculacion='institucional',
                 institucion=institucion,
                 rol=rol,
                 usuario=usuario
@@ -260,39 +294,42 @@ class TutorService:
     @staticmethod
     def cambiar_estado_tutor(
         tutor: Tutor,
-        institucion: Institucion,
-        nuevo_status: str,
-        usuario: Optional[User] = None
+        institucion: Optional[Institucion] = None,
+        nuevo_status: str = 'activo',
+        usuario: Optional[User] = None,
+        vinculacion: Optional[TutorInstitucion] = None,
+        estado: Optional[Estado] = None
     ) -> TutorInstitucion:
         """
-        Cambia el estado de un tutor en una institución específica.
-        
-        Returns:
-            TutorInstitucion: La vinculación actualizada.
+        Cambia el estado de una vinculación de tutor específica.
         """
         if nuevo_status not in ['activo', 'inactivo', 'suspendido']:
-            raise ValidationError(
-                f"Estado '{nuevo_status}' no válido. Use 'activo', 'inactivo' o 'suspendido'."
-            )
+            raise ValidationError(f"Estado '{nuevo_status}' no válido.")
         
-        try:
-            vinculacion = TutorInstitucion.objects.get(
-                tutor=tutor,
-                institucion=institucion
-            )
-        except TutorInstitucion.DoesNotExist:
-            raise ValidationError(
-                f"El tutor no está vinculado a la institución '{institucion.nombre}'."
-            )
+        if not vinculacion:
+            try:
+                filtros = {'tutor': tutor}
+                if institucion:
+                    filtros['institucion'] = institucion
+                elif estado:
+                    filtros['estado'] = estado
+                else:
+                    # Si no hay inst ni estado, buscamos la central
+                    filtros['tipo_vinculacion'] = 'central'
+                
+                vinculacion = TutorInstitucion.objects.get(**filtros)
+            except TutorInstitucion.DoesNotExist:
+                raise ValidationError("No se encontró la vinculación especificada.")
+            except TutorInstitucion.MultipleObjectsReturned:
+                raise ValidationError("Ambigüedad en la vinculación. Especifique el ID de vinculación.")
         
         with transaction.atomic():
             vinculacion.status = nuevo_status
             if nuevo_status == 'inactivo':
                 vinculacion.fecha_desvinculacion = timezone.now()
+            else:
+                vinculacion.fecha_desvinculacion = None
             vinculacion.save(update_fields=['status', 'fecha_desvinculacion'])
         
-        logger.info(
-            f"[Tutor] Estado de tutor {tutor.get_nombre_completo()} en {institucion.nombre} "
-            f"cambiado a {nuevo_status} por: {usuario.username if usuario else 'Sistema'}"
-        )
+        logger.info(f"[Tutor] Estado cambiado a {nuevo_status} para vinculación {vinculacion.id}")
         return vinculacion

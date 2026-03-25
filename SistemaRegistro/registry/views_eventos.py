@@ -281,6 +281,8 @@ def inscribir_grupo_evento_club(request, evento_id):
     if request.method == 'POST':
         grupo_id = request.POST.get('grupo_id')
         rol = request.POST.get('rol_participacion', 'participante')
+        if not rol:
+            rol = 'participante'
         
         grupo = get_object_or_404(Grupo, id=grupo_id, usuario_creador=request.user)
         

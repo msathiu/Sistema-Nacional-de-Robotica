@@ -43,16 +43,51 @@
                         {% endif %}
 
                         <div class="row g-3">
-                            <!-- Institución -->
-                            <div class="col-12">
+                            <!-- Tipo de Vinculación -->
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold">
-                                    <i class="bi bi-building me-1"></i> Institución
+                                    <i class="bi bi-diagram-3 me-1"></i> Tipo de Pertenencia
+                                </label>
+                                {{ form.tipo_vinculacion }}
+                                {% if form.tipo_vinculacion.errors %}
+                                    <span class="text-danger small">{{ form.tipo_vinculacion.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Rol -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-person-badge me-1"></i> Rol en el Ente
+                                </label>
+                                {{ form.rol }}
+                                {% if form.rol.errors %}
+                                    <span class="text-danger small">{{ form.rol.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Institución (Condicional) -->
+                            <div class="col-12" id="div_institucion">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-building me-1"></i> Institución Educativa / Club
                                 </label>
                                 {{ form.institucion }}
                                 {% if form.institucion.errors %}
                                     <span class="text-danger small">{{ form.institucion.errors.0 }}</span>
                                 {% endif %}
                             </div>
+
+                            <!-- Estado (Condicional) -->
+                            <div class="col-12" id="div_estado" style="display: none;">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-geo-alt me-1"></i> Sede Regional (Estado)
+                                </label>
+                                {{ form.estado }}
+                                {% if form.estado.errors %}
+                                    <span class="text-danger small">{{ form.estado.errors.0 }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12"><hr class="my-2 opacity-10"></div>
 
                             <!-- Nacionalidad y Cédula -->
                             <div class="col-md-3">
@@ -313,6 +348,30 @@ document.addEventListener('DOMContentLoaded', function() {
             timer: 2000,
             showConfirmButton: false
         });
+    }
+
+    // Lógica para mostrar/ocultar campos según tipo de vinculación
+    const tipoVinculacionSelect = document.getElementById('id_tipo_vinculacion');
+    const divInstitucion = document.getElementById('div_institucion');
+    const divEstado = document.getElementById('div_estado');
+
+    function toggleFields() {
+        const value = tipoVinculacionSelect.value;
+        if (value === 'institucional') {
+            divInstitucion.style.display = 'block';
+            divEstado.style.display = 'none';
+        } else if (value === 'regional') {
+            divInstitucion.style.display = 'none';
+            divEstado.style.display = 'block';
+        } else {
+            divInstitucion.style.display = 'none';
+            divEstado.style.display = 'none';
+        }
+    }
+
+    if (tipoVinculacionSelect) {
+        tipoVinculacionSelect.addEventListener('change', toggleFields);
+        toggleFields(); // Ejecutar al cargar para casos de edición o errores de validación
     }
 });
 </script>

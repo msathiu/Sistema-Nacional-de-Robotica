@@ -196,124 +196,134 @@
 
 
 <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
-                <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-text-fill me-2"></i>Detalles Instituciones o Particular</h5>
+                <h5 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>Detalles de Institución</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4 bg-light">
-                <!-- Sección Principal -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-8 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-info">
-                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Razón Social / Nombre Completo</label>
-                        <span id="detNombre" class="fw-bold text-dark fs-5"></span>
-                    </div>
-                    <div class="col-md-4 bg-white p-3 rounded-3 shadow-sm border-start border-4 border-primary">
-                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Código RNR</label>
-                        <span id="detUser" class="fw-bold text-primary fs-5 font-monospace"></span>
-                    </div>
-                </div>
-
-                <!-- Sección: Identificación -->
+                
+                <!-- BLOQUE 1: INFORMACIÓN DE IDENTIFICACIÓN -->
                 <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #0b2c6d 0%, #1e4a8a 100%);">
-                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-card-heading me-2"></i>Identificación</h6>
-                    </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="text-muted small fw-bold">RIF / Cédula</label>
-                                <p id="detRif" class="text-dark fw-bold mb-0"></p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small fw-bold">Tipo</label>
-                                <p id="detTipo" class="mb-0"></p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small fw-bold">Naturaleza</label>
-                                <p id="detNaturaleza" class="text-dark mb-0"></p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small fw-bold">Código MPPE</label>
-                                <p id="detCodigoMPPE" class="text-dark mb-0 font-monospace"></p>
-                            </div>
-                            <div class="col-12" id="detDependenciaContainer" style="display: none;">
-                                <label class="text-muted small fw-bold">Dependencia</label>
-                                <p id="detDependencia" class="text-dark fw-bold mb-0"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Contacto -->
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #059669 0%, #10b981 100%);">
-                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-telephone-fill me-2"></i>Información de Contacto</h6>
-                    </div>
-                    <div class="card-body">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-person-vcard me-2"></i>INFORMACIÓN DE IDENTIFICACIÓN</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="text-muted small fw-bold">Correo Electrónico</label>
-                                <p id="detEmail" class="text-primary fw-bold mb-0"><i class="bi bi-envelope me-1"></i><span></span></p>
+                                <label class="text-muted small d-block">Código RNR</label>
+                                <span id="detCodigo" class="fw-bold text-dark font-monospace"></span>
                             </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small fw-bold">Teléfono</label>
-                                <p id="detTel" class="text-dark fw-bold mb-0"><i class="bi bi-phone me-1"></i><span></span></p>
+                            <div class="col-md-12">
+                                <label class="text-muted small d-block">Nombre</label>
+                                <span id="detNombre" class="fw-bold text-dark"></span>
+                            </div>
+                            <div id="bloqueParticular" class="col-md-12" style="display: none;">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="text-muted small d-block">Nombres</label>
+                                        <span id="detParticularNombres" class="text-dark"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="text-muted small d-block">Apellidos</label>
+                                        <span id="detParticularApellidos" class="text-dark"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="bloqueSubtipo" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Tipo</label>
+                                <span id="detTipoInstitucion" class="badge bg-secondary rounded-pill px-3"></span>
+                            </div>
+                            <div id="bloqueFederado" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Federado</label>
+                                <span id="detFederado"></span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección: Ubicación -->
+                <!-- BLOQUE 2: DOCUMENTACIÓN Y CATEGORÍA -->
                 <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 100%);">
-                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-geo-alt-fill me-2"></i>Ubicación Geográfica</h6>
-                    </div>
                     <div class="card-body">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>DOCUMENTACIÓN Y CATEGORÍA</h6>
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Estado</label>
-                                <p id="detEstado" class="text-dark fw-bold mb-0"></p>
+                            <div id="bloqueRIF" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">RIF</label>
+                                <span id="detRif" class="text-dark font-monospace"></span>
                             </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Municipio</label>
-                                <p id="detMunicipio" class="text-dark mb-0"></p>
+                            <div id="bloqueIdentificacion" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Identificación</label>
+                                <span id="detIdentificacion" class="text-dark font-monospace"></span>
                             </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Parroquia</label>
-                                <p id="detParroquia" class="text-dark mb-0"></p>
+                            <div id="bloqueCodigoMPPE" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Código MPPE</label>
+                                <span id="detCodigoMPPE" class="text-dark font-monospace"></span>
                             </div>
-                            <div class="col-12">
-                                <label class="text-muted small fw-bold">Dirección Completa</label>
-                                <p id="detDir" class="text-dark mb-0"></p>
+                            <div id="bloqueNaturaleza" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Naturaleza</label>
+                                <span id="detNaturaleza"></span>
+                            </div>
+                            <div id="bloqueSubcategoria" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Subcategoría</label>
+                                <span id="detSubcategoria" class="text-dark"></span>
+                            </div>
+                            <div id="bloqueCategoria" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Categoría</label>
+                                <span id="detCategoria" class="text-dark"></span>
+                            </div>
+                            <div id="bloqueDependencia" class="col-md-12" style="display: none;">
+                                <label class="text-muted small d-block">Dependencia</label>
+                                <span id="detDependencia" class="text-dark"></span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección: Información Administrativa -->
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-gradient py-2" style="background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);">
-                        <h6 class="mb-0 text-white fw-bold"><i class="bi bi-shield-check me-2"></i>Información Administrativa</h6>
-                    </div>
+                <!-- BLOQUE 3: UBICACIÓN GEOGRÁFICA -->
+                <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>UBICACIÓN GEOGRÁFICA</h6>
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Estatus</label>
-                                <p id="detEstatus" class="mb-0"></p>
+                            <div id="bloqueEstado" class="col-md-4" style="display: none;">
+                                <label class="text-muted small d-block">Estado</label>
+                                <strong id="detEstado" class="text-dark"></strong>
                             </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Estado Cuenta</label>
-                                <p id="detActiva" class="mb-0"></p>
+                            <div id="bloqueMunicipio" class="col-md-4" style="display: none;">
+                                <label class="text-muted small d-block">Municipio</label>
+                                <span id="detMunicipio" class="text-dark"></span>
                             </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small fw-bold">Fecha Registro</label>
-                                <p id="detFechaRegistro" class="text-dark mb-0"></p>
+                            <div id="bloqueParroquia" class="col-md-4" style="display: none;">
+                                <label class="text-muted small d-block">Parroquia</label>
+                                <span id="detParroquia" class="text-dark"></span>
+                            </div>
+                            <div id="bloqueDireccion" class="col-12" style="display: none;">
+                                <label class="text-muted small d-block">Dirección</label>
+                                <span id="detDireccion" class="text-dark fst-italic"></span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- BLOQUE 4: CONTACTO -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-telephone me-2"></i>CONTACTO</h6>
+                        <div class="row g-3">
+                            <div id="bloqueTelefono" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Teléfono</label>
+                                <span id="detTelefono" class="text-dark"></span>
+                            </div>
+                            <div id="bloqueEmail" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Correo Electrónico</label>
+                                <a id="detEmail" href="#" class="text-decoration-none"></a>
+                            </div>
+                            <div id="bloqueFechaRegistro" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Fecha de Registro</label>
+                                <span id="detFechaRegistro" class="text-dark"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -449,64 +459,162 @@
                 throw new Error(data.error);
             }
             
-            // Sección Principal - Sanitización de datos
-            document.getElementById('detNombre').textContent = data.nombre || 'N/A';
-            document.getElementById('detUser').textContent = data.codigo || 'N/A';
-            
-            // Sección Identificación - CORREGIDO: Mostrar cédula para particulares
-            document.getElementById('detRif').textContent = data.rif || 'N/A';
-            
-            const tipoColors = {
-                'particular': '#8b5cf6',
-                'educativa': '#3b82f6',
-                'publica': '#10b981',
-                'privada': '#f59e0b',
-                'otra': '#6b7280'
-            };
-            const tipoKey = data.tipo_institucion_key || 'otra';
-            const tipoColor = tipoColors[tipoKey] || '#6b7280';
-            document.getElementById('detTipo').innerHTML = data.tipo_institucion ? 
-                `<span class="badge rounded-pill px-3 py-1" style="background: ${tipoColor}; color: white;">${data.tipo_institucion}</span>` : 
-                '<span class="text-muted">N/A</span>';
-            
-            document.getElementById('detNaturaleza').textContent = data.naturaleza || 'N/A';
-            document.getElementById('detCodigoMPPE').textContent = data.codigo_mppe || 'N/A';
-            
-            // Mostrar dependencia solo si el tipo es "otra"
-            const dependenciaContainer = document.getElementById('detDependenciaContainer');
-            if (data.tipo_institucion_key === 'otra') {
-                document.getElementById('detDependencia').textContent = data.dependencia || 'N/A';
-                dependenciaContainer.style.display = 'block';
-            } else {
-                dependenciaContainer.style.display = 'none';
+            // Función auxiliar para mostrar/ocultar bloques condicionalmente
+            function mostrarBloque(bloqueId, mostrar) {
+                const bloque = document.getElementById(bloqueId);
+                if (bloque) {
+                    bloque.style.display = mostrar ? 'block' : 'none';
+                }
             }
             
-            // Sección Contacto
-            document.getElementById('detEmail').querySelector('span').textContent = data.email || 'Sin correo';
-            document.getElementById('detTel').querySelector('span').textContent = data.telefono || 'Sin teléfono';
+            function mostrarBloqueCol(bloqueId, mostrar) {
+                const bloque = document.getElementById(bloqueId);
+                if (bloque) {
+                    bloque.style.display = mostrar ? 'flex' : 'none';
+                }
+            }
             
-            // Sección Ubicación
-            document.getElementById('detEstado').textContent = data.estado || 'N/A';
-            document.getElementById('detMunicipio').textContent = data.municipio || 'N/A';
-            document.getElementById('detParroquia').textContent = data.parroquia || 'N/A';
-            document.getElementById('detDir').textContent = data.direccion || 'Sin dirección';
+            const tipoInstitucion = data.tipo_institucion_key || data.tipo_institucion || '';
+            const esParticular = tipoInstitucion === 'particular';
             
-            // Sección Administrativa
-            const estatusColors = {
-                'aprobado': 'success',
-                'pendiente': 'warning',
-                'rechazado': 'danger'
-            };
-            const estatusColor = estatusColors[data.estatus] || 'secondary';
-            document.getElementById('detEstatus').innerHTML = data.estatus ? 
-                `<span class="badge bg-${estatusColor} px-3 py-2">${data.estatus.toUpperCase()}</span>` : 
-                '<span class="text-muted">N/A</span>';
+            // ===== BLOQUE 1: INFORMACIÓN DE IDENTIFICACIÓN =====
+            document.getElementById('detCodigo').textContent = data.codigo || 'N/A';
             
-            document.getElementById('detActiva').innerHTML = data.activa ? 
-                '<span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>ACTIVA</span>' : 
-                '<span class="badge bg-secondary px-3 py-2"><i class="bi bi-x-circle me-1"></i>INACTIVA</span>';
+            // Mostrar nombre según tipo
+            if (esParticular && data.particular_nombres && data.particular_apellidos) {
+                // Para persona natural, no duplicar con los campos de "Nombres/Apellidos" dentro de bloqueParticular
+                document.getElementById('detNombre').textContent = `${data.particular_nombres} ${data.particular_apellidos}`;
+                mostrarBloque('bloqueParticular', false);
+            } else {
+                document.getElementById('detNombre').textContent = data.nombre || 'N/A';
+                mostrarBloque('bloqueParticular', false);
+            }
             
-            document.getElementById('detFechaRegistro').textContent = data.fecha_registro || 'N/A';
+            // Mostrar subtipo si existe
+            const tipoTexto = data.tipo_institucion || '';
+            mostrarBloque('bloqueSubtipo', !!tipoTexto);
+            if (tipoTexto) {
+                document.getElementById('detTipoInstitucion').textContent = tipoTexto;
+            }
+            
+            // Mostrar federado si existe
+            const federado = data.federado;
+            mostrarBloque('bloqueFederado', federado !== null && federado !== undefined);
+            if (federado !== null && federado !== undefined) {
+                document.getElementById('detFederado').innerHTML = federado ? 
+                    '<span class="badge bg-success px-3"><i class="bi bi-check-circle me-1"></i>Sí</span>' : 
+                    '<span class="badge bg-secondary px-3"><i class="bi bi-x-circle me-1"></i>No</span>';
+            }
+            
+            // ===== BLOQUE 2: DOCUMENTACIÓN Y CATEGORÍA =====
+            // Mostrar RIF para instituciones, no para particulares
+            const rif = data.rif || '';
+            mostrarBloque('bloqueRIF', !esParticular && !!rif);
+            if (!esParticular && rif) {
+                document.getElementById('detRif').textContent = rif;
+            }
+            
+            // Mostrar Identificación (Nacionalidad + Cédula) para particulares
+            const nacional = data.particular_nacionalidad || '';
+            const cedula = data.particular_cedula || '';
+            const identificacion = nacional && cedula ? `${nacional}-${cedula}` : '';
+            mostrarBloque('bloqueIdentificacion', esParticular && !!identificacion);
+            if (esParticular && identificacion) {
+                document.getElementById('detIdentificacion').textContent = identificacion;
+            }
+            
+            // Mostrar Código MPPE solo si es educativa
+            const codigoMPPE = data.codigo_mppe || '';
+            const esEducativa = tipoInstitucion === 'educativa';
+            mostrarBloque('bloqueCodigoMPPE', esEducativa && !!codigoMPPE);
+            if (esEducativa && codigoMPPE) {
+                document.getElementById('detCodigoMPPE').textContent = codigoMPPE;
+            }
+            
+            // Mostrar Naturaleza si existe
+            const naturaleza = data.naturaleza || '';
+            mostrarBloque('bloqueNaturaleza', !esParticular && !!naturaleza);
+            if (naturaleza) {
+                document.getElementById('detNaturaleza').innerHTML = naturaleza === 'Pública' ? 
+                    '<span class="badge bg-primary px-3">Pública</span>' : 
+                    (naturaleza === 'Privada' ? '<span class="badge bg-warning text-dark px-3">Privada</span>' : '<span class="text-muted">N/A</span>');
+            }
+            
+            // Mostrar Subcategoría si existe
+            const subcategoria = data.subcategoria || '';
+            mostrarBloque('bloqueSubcategoria', !esParticular && !!subcategoria);
+            if (subcategoria) {
+                document.getElementById('detSubcategoria').textContent = subcategoria;
+            }
+            
+            // Mostrar Categoría si existe
+            const categoria = data.categoria || '';
+            mostrarBloque('bloqueCategoria', !esParticular && !!categoria);
+            if (categoria) {
+                document.getElementById('detCategoria').textContent = categoria;
+            }
+            
+            // Mostrar Dependencia si existe
+            const dependencia = data.dependencia || '';
+            mostrarBloque('bloqueDependencia', !esParticular && !!dependencia);
+            if (dependencia) {
+                document.getElementById('detDependencia').textContent = dependencia;
+            }
+            
+            // ===== BLOQUE 3: UBICACIÓN GEOGRÁFICA =====
+            const estado = data.estado || '';
+            const municipio = data.municipio || '';
+            const parroquia = data.parroquia || '';
+            const direccion = data.direccion || '';
+            
+            mostrarBloque('bloqueEstado', !!estado);
+            if (estado) document.getElementById('detEstado').textContent = estado;
+            
+            mostrarBloque('bloqueMunicipio', !!municipio);
+            if (municipio) document.getElementById('detMunicipio').textContent = municipio;
+            
+            mostrarBloque('bloqueParroquia', !!parroquia);
+            if (parroquia) document.getElementById('detParroquia').textContent = parroquia;
+            
+            mostrarBloque('bloqueDireccion', !!direccion);
+            if (direccion) document.getElementById('detDireccion').textContent = direccion;
+            
+            // ===== BLOQUE 4: CONTACTO =====
+            // Teléfono: Combinar telefono_codigo + telefono_numero
+            const telCodigo = data.telefono_codigo || '';
+            const telNumero = data.telefono_numero || '';
+            const telefonoCompleto = telCodigo && telNumero ? `${telCodigo}-${telNumero}` : (data.telefono || '');
+            
+            mostrarBloque('bloqueTelefono', !!telefonoCompleto);
+            if (telefonoCompleto) {
+                document.getElementById('detTelefono').textContent = telefonoCompleto;
+            }
+            
+            // Email como mailto:
+            const email = data.email || '';
+            mostrarBloque('bloqueEmail', !!email);
+            if (email) {
+                const emailLink = document.getElementById('detEmail');
+                emailLink.textContent = email;
+                emailLink.href = `mailto:${email}`;
+            }
+            
+            // Fecha de registro
+            const fechaRegistro = data.fecha_registro || '';
+            mostrarBloque('bloqueFechaRegistro', !!fechaRegistro);
+            if (fechaRegistro) {
+                const fecha = new Date(fechaRegistro);
+                if (!isNaN(fecha.getTime())) {
+                    const fechaFormato = fecha.toLocaleDateString('es-ES', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric'
+                    });
+                    document.getElementById('detFechaRegistro').textContent = fechaFormato;
+                } else {
+                    document.getElementById('detFechaRegistro').textContent = 'Fecha no disponible';
+                }
+            }
             
             detalleModal.show();
         })

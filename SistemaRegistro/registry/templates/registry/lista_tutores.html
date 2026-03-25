@@ -13,20 +13,34 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Gestión de Tutores</h2>
-                    <p class="text-muted mb-0 small">Registro y asignación de tutores a grupos</p>
+                    <p class="text-muted mb-0 small">Registro y asignación de tutores a equipos</p>
                 </div>
             </div>
             <div class="d-flex gap-2">
-                {% if perfil.user_type != 'fed_central' %}
                 <a href="{% url 'crear_tutor' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Tutor
                 </a>
-                {% endif %}
             </div>
         </div>
     </div>
     <hr class="mt-2 mb-4 opacity-10">
+
+    {% if puede_ver_todos %}
+    <!-- Pestañas de Navegación (Solo para Federación/Superuser) -->
+    <ul class="nav nav-pills mb-4 gap-2 p-2 bg-white shadow-sm rounded-4" id="tutorTabs" role="tablist" style="width: fit-content;">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if tab_activo == 'institucionales' %}active{% endif %} rounded-3 fw-bold px-4" id="institucionales-tab" data-bs-toggle="pill" data-bs-target="#institucionales" type="button" role="tab" aria-controls="institucionales" aria-selected="{% if tab_activo == 'institucionales' %}true{% else %}false{% endif %}">
+                <i class="bi bi-building me-2"></i>Tutores Institucionales
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if tab_activo == 'federacion' %}active{% endif %} rounded-3 fw-bold px-4" id="federacion-tab" data-bs-toggle="pill" data-bs-target="#federacion" type="button" role="tab" aria-controls="federacion" aria-selected="{% if tab_activo == 'federacion' %}true{% else %}false{% endif %}">
+                <i class="bi bi-shield-check me-2"></i>Tutores Federación
+            </button>
+        </li>
+    </ul>
+    {% endif %}
 
     <!-- Filtros -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
@@ -37,12 +51,14 @@
             </div>
         </div>
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3" id="tutor-filtros-form">
                 <div class="col-md-4">
                     <label class="form-label small fw-bold">Buscar</label>
                     <input type="text" name="q" class="form-control" 
                            placeholder="Nombre o cédula..." value="{{ filtros.q }}">
                 </div>
+                <input type="hidden" name="tab" value="{{ tab_activo }}">
+                {% if puede_ver_todos %}
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">Institución</label>
                     <select name="institucion" class="form-select">
@@ -54,6 +70,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% endif %}
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">STATUS</label>
                     <select name="status" class="form-select">
@@ -71,99 +88,220 @@
         </div>
     </div>
 
-    <!-- Lista de Tutores -->
-    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between card-header-tutores">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-people-fill text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">TUTORES REGISTRADOS</h5>
-            </div>
-            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ tutores.count }}</span>
-        </div>
-        <div class="card-body">
-            {% if tutores %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 table-tutores">
-                        <thead class="bg-light">
-                            <tr class="text-uppercase x-small fw-bold text-muted">
-                                <th class="px-4 py-3">Nombre Completo</th>
-                                <th class="py-3">Cédula</th>
-                                <th class="py-3">Institución</th>
-                                <th class="py-3">Email</th>
-                                <th class="py-3 text-center">Status</th>
-                                <th class="py-3 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for vinculacion in tutores %}
-                            <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
-                                <td class="px-4">
-                                    <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
-                                    {% if vinculacion.tutor.profesion %}
-                                        <div class="x-small text-muted">{{ vinculacion.tutor.profesion }}</div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
-                                </td>
-                                <td>
-                                    <span class="small">{{ vinculacion.institucion.nombre|truncatechars:30 }}</span>
-                                </td>
-                                <td>
-                                    <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
-                                        {{ vinculacion.tutor.email|truncatechars:25 }}
-                                    </a>
-                                </td>
-                                <td class="text-center status-cell align-middle">
-                                    <div class="form-check form-switch m-0 toggle-wrap">
-                                        <input 
-                                            type="checkbox" 
-                                            class="form-check-input toggle-tutor" 
-                                            role="switch"
-                                            data-tutor-id="{{ vinculacion.tutor.id }}"
-                                            data-tutor-nombre="{{ vinculacion.tutor.get_nombre_completo }}"
-                                            data-toggle-url="{% url 'cambiar_estado_tutor' vinculacion.tutor.id %}"
-                                            {% if vinculacion.status == 'activo' %}checked{% endif %}
-                                            id="toggle_{{ vinculacion.tutor.id }}"
-                                        >
-                                    </div>
-                                </td>
-                                <td class="text-center px-4">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
-                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                            <i class="bi bi-eye me-1"></i> Ver
-                                        </a>
-                                        <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
-                                           class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
-                                            <i class="bi bi-pencil-square me-1"></i> Editar
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- Contenido de Pestañas -->
+    <div class="tab-content" id="tutorTabsContent">
+        <!-- Pestaña 1: Tutores Institucionales -->
+        <div class="tab-pane fade {% if tab_activo == 'institucionales' %}show active{% endif %}" id="institucionales" role="tabpanel" aria-labelledby="institucionales-tab">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between card-header-tutores">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">TUTORES INSTITUCIONALES</h5>
+                    </div>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ tutores_institucionales|length }}</span>
                 </div>
-            {% else %}
-                <div class="alert alert-info text-center py-4">
-                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
-                    <strong>No se encontraron tutores</strong>
-                    {% if perfil.user_type != 'fed_central' %}
-                    <p class="mb-0 mt-2">
-                        <a href="{% url 'crear_tutor' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-1"></i> Registrar el primer tutor
-                        </a>
-                    </p>
+                <div class="card-body">
+                    {% if tutores_institucionales %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-tutores">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase x-small fw-bold text-muted">
+                                        <th class="px-4 py-3">Nombre Completo</th>
+                                        <th class="py-3">Cédula</th>
+                                        <th class="py-3">Institución</th>
+                                        <th class="py-3">Rol</th>
+                                        <th class="py-3">Email</th>
+                                        <th class="py-3 text-center">Status</th>
+                                        <th class="py-3 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vinculacion in tutores_institucionales %}
+                                    <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
+                                        <td class="px-4">
+                                            <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
+                                            {% if vinculacion.tutor.profesion %}
+                                                <div class="x-small text-muted">{{ vinculacion.tutor.profesion }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="small">{{ vinculacion.institucion.nombre|truncatechars:30 }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                                {{ vinculacion.get_rol_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
+                                                {{ vinculacion.tutor.email|truncatechars:25 }}
+                                            </a>
+                                        </td>
+                                        <td class="text-center status-cell align-middle">
+                                            <div class="form-check form-switch m-0 toggle-wrap">
+                                                <input 
+                                                    type="checkbox" 
+                                                    class="form-check-input toggle-tutor" 
+                                                    role="switch"
+                                                    data-tutor-id="{{ vinculacion.tutor.id }}"
+                                                    data-vinc-id="{{ vinculacion.id }}"
+                                                    data-tutor-nombre="{{ vinculacion.tutor.get_nombre_completo }}"
+                                                    data-toggle-url="{% url 'cambiar_estado_tutor' vinculacion.tutor.id %}"
+                                                    {% if vinculacion.status == 'activo' %}checked{% endif %}
+                                                    id="toggle_inst_{{ vinculacion.tutor.id }}"
+                                                >
+                                            </div>
+                                        </td>
+                                        <td class="text-center px-4">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
+                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                </a>
+                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
+                                                   class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     {% else %}
-                    <p class="mb-0 mt-2 text-muted">
-                        No hay tutores disponibles para visualizar
-                    </p>
+                        <div class="alert alert-info text-center py-4">
+                            <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                            <strong>No se encontraron tutores institucionales</strong>
+                        </div>
                     {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
+
+        {% if puede_ver_todos %}
+        <!-- Pestaña 2: Tutores Federación -->
+        <div class="tab-pane fade {% if tab_activo == 'federacion' %}show active{% endif %}" id="federacion" role="tabpanel" aria-labelledby="federacion-tab">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between card-header-tutores">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-check text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">TUTORES DE LA FEDERACIÓN</h5>
+                    </div>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ tutores_federacion|length }}</span>
+                </div>
+                <div class="card-body">
+                    {% if tutores_federacion %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-tutores">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase x-small fw-bold text-muted">
+                                        <th class="px-4 py-3">Nombre Completo</th>
+                                        <th class="py-3">Cédula</th>
+                                        <th class="py-3">Sede / Ente</th>
+                                        <th class="py-3">Rol</th>
+                                        <th class="py-3">Email</th>
+                                        <th class="py-3 text-center">Status</th>
+                                        <th class="py-3 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for vinculacion in tutores_federacion %}
+                                    <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
+                                        <td class="px-4">
+                                            <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
+                                            <div class="x-small">
+                                                {% if vinculacion.tipo_vinculacion == 'central' %}
+                                                    <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Sede Central</span>
+                                                {% else %}
+                                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Regional: {{ vinculacion.estado.nombre }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
+                                        </td>
+                                        <td>
+                                            {% if vinculacion.tipo_vinculacion == 'central' %}
+                                                <span class="small fw-medium">Federación Nacional</span>
+                                            {% else %}
+                                                <span class="small fw-medium">Delegación {{ vinculacion.estado.nombre }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                {{ vinculacion.get_rol_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
+                                                {{ vinculacion.tutor.email|truncatechars:25 }}
+                                            </a>
+                                        </td>
+                                        <td class="text-center status-cell align-middle">
+                                            <div class="form-check form-switch m-0 toggle-wrap">
+                                                <input 
+                                                    type="checkbox" 
+                                                    class="form-check-input toggle-tutor" 
+                                                    role="switch"
+                                                    data-tutor-id="{{ vinculacion.tutor.id }}"
+                                                    data-vinc-id="{{ vinculacion.id }}"
+                                                    data-tutor-nombre="{{ vinculacion.tutor.get_nombre_completo }}"
+                                                    data-toggle-url="{% url 'cambiar_estado_tutor' vinculacion.tutor.id %}"
+                                                    {% if vinculacion.status == 'activo' %}checked{% endif %}
+                                                    id="toggle_fed_{{ vinculacion.tutor.id }}"
+                                                >
+                                            </div>
+                                        </td>
+                                        <td class="text-center px-4">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
+                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                </a>
+                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
+                                                   class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center py-4">
+                            <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+                            <strong>No se han registrado tutores por la federación aún</strong>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
+</div>
+
+<style>
+    #tutorTabs .nav-link {
+        color: #64748b;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+    }
+    #tutorTabs .nav-link.active {
+        background-color: var(--blue-main) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(11, 44, 109, 0.2);
+    }
+    #tutorTabs .nav-link:hover:not(.active) {
+        background-color: #f1f5f9;
+        color: var(--blue-main);
+    }
+</style>
 </div>
 
 <!-- Modal de Confirmación -->
@@ -293,6 +431,21 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // UX: mantener la pestaña activa al enviar búsquedas (GET) a `lista_tutores`.
+    const filtrosForm = document.getElementById('tutor-filtros-form');
+    if (filtrosForm) {
+        const tabInput = filtrosForm.querySelector('input[name="tab"]');
+        const tutorTabs = document.getElementById('tutorTabs');
+        if (tabInput && tutorTabs) {
+            tutorTabs.querySelectorAll('button[data-bs-toggle="pill"]').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', function(event) {
+                    const target = event.target?.getAttribute('data-bs-target');
+                    tabInput.value = target ? target.replace('#', '') : 'institucionales';
+                });
+            });
+        }
+    }
+
     const modalElement = document.getElementById('confirmToggleModal');
     const confirmBtn = document.getElementById('confirmToggleBtn');
     const toastElement = document.getElementById('liveToast');
@@ -326,9 +479,13 @@ document.addEventListener('DOMContentLoaded', function() {
             currentToggleElement = this;
             previousCheckedState = !this.checked;
             toggleUrl = this.dataset.toggleUrl;
+            const vincId = this.dataset.vincId;
             const tutorNombre = this.dataset.tutorNombre;
             newStatus = this.checked ? 'activo' : 'inactivo';
             const action = newStatus === 'activo' ? 'activar' : 'desactivar';
+            
+            // Adjuntar vincId para usarlo en la confirmación
+            currentToggleElement.dataset.pendingVincId = vincId;
             
             // Actualizar estilo del modal según acción
             const modalHeader = document.getElementById('modalHeaderTutor');
@@ -360,19 +517,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     confirmBtn.addEventListener('click', function() {
         if (toggleUrl && newStatus && currentToggleElement) {
+            const vincId = currentToggleElement.dataset.pendingVincId;
             const originalBtnContent = confirmBtn.innerHTML;
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cambiando...';
 
-            cambiarEstadoTutor(toggleUrl, newStatus, currentToggleElement, originalBtnContent);
+            cambiarEstadoTutor(toggleUrl, newStatus, vincId, currentToggleElement, originalBtnContent);
             bootstrap.Modal.getInstance(modalElement).hide();
         }
     });
 
-    function cambiarEstadoTutor(url, nuevoStatus, toggleElement, originalContent) {
+    function cambiarEstadoTutor(url, nuevoStatus, vincId, toggleElement, originalContent) {
         const csrfToken = getCsrfToken();
         const formData = new FormData();
         formData.append('status', nuevoStatus);
+        if (vincId) {
+            formData.append('vinc_id', vincId);
+        }
 
         fetch(url, {
             method: 'POST',

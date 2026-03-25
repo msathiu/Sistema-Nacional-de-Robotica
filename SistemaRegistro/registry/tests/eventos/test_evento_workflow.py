@@ -65,6 +65,7 @@ class EventoWorkflowTestCase(TestCase):
             audiencia="publica",
             estado_evento=EstadoEvento.BORRADOR,
             fecha=timezone.now().date() + timedelta(days=10),
+            fecha_hasta=timezone.now().date() + timedelta(days=10),
             estado=self.estado,
             municipio=self.municipio,
             parroquia=self.parroquia,
@@ -122,6 +123,100 @@ class EventoWorkflowTestCase(TestCase):
         evento.refresh_from_db()
         self.assertEqual(evento.estado_evento, EstadoEvento.ABIERTO)
         self.assertEqual(evento.observacion_estado, "Fecha confirmada nuevamente")
+
+    def test_editar_evento_guarda_fecha_hasta_por_defecto(self):
+        evento = self._crear_evento_borrador()
+        evento.fecha_hasta = None
+        evento.save(update_fields=["fecha_hasta"])
+
+        self.client.login(username="inst_workflow", password="test123")
+        nueva_fecha = timezone.now().date() + timedelta(days=15)
+
+        response = self.client.post(
+            reverse("editar_evento", args=[evento.id]),
+            {
+                "nombre": evento.nombre,
+                "categoria": evento.tipo or "Competencia",
+                "fecha": nueva_fecha.isoformat(),
+                "fecha_hasta": "",
+                "descripcion": "Evento actualizado",
+                "modalidad": "presencial",
+                "estado": self.estado.id,
+                "municipio": self.municipio.id,
+                "parroquia": self.parroquia.id,
+                "direccion": "Sede principal",
+                "requisitos": "Registro",
+                "tipo_evento": "institucional",
+                "audiencia": "publica",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        evento.refresh_from_db()
+        self.assertEqual(evento.fecha, nueva_fecha)
+        self.assertEqual(evento.fecha_hasta, nueva_fecha)
+
+    def test_evento_multidia_permanece_en_proceso_hasta_fecha_hasta(self):
+        hoy = timezone.now().date()
+        evento = Evento.objects.create(
+            nombre="Evento Multidia",
+            tipo_evento="institucional",
+            institucion=self.institucion,
+            audiencia="publica",
+            estado_evento=EstadoEvento.ABIERTO,
+            fecha=hoy - timedelta(days=1),
+            fecha_hasta=hoy + timedelta(days=2),
+            estado=self.estado,
+            municipio=self.municipio,
+            parroquia=self.parroquia,
+            creado_por=self.user_institucional,
+        )
+
+        evento.actualizar_estado_por_fecha()
+        evento.refresh_from_db()
+        self.assertEqual(evento.estado_evento, EstadoEvento.EN_PROCESO)
+
+    def test_fed_central_puede_editar_evento_desde_panel_admin(self):
+        evento = self._crear_evento_borrador()
+        evento.estado_evento = EstadoEvento.REVISION
+        evento.save(update_fields=["estado_evento"])
+
+        self.client.login(username="fed_workflow", password="test123")
+
+        response_admin = self.client.get(reverse("admin_eventos"))
+        self.assertEqual(response_admin.status_code, 200)
+        self.assertContains(response_admin, reverse("editar_evento", args=[evento.id]))
+
+        response_form = self.client.get(reverse("editar_evento", args=[evento.id]))
+        self.assertEqual(response_form.status_code, 200)
+        self.assertContains(response_form, "Guardar Cambios")
+        self.assertContains(response_form, "Edición Rectora de Evento")
+
+        nueva_fecha = timezone.now().date() + timedelta(days=25)
+        response_post = self.client.post(
+            reverse("editar_evento", args=[evento.id]),
+            {
+                "nombre": "Evento Workflow Ajustado",
+                "categoria": "Competencia",
+                "fecha": nueva_fecha.isoformat(),
+                "fecha_hasta": nueva_fecha.isoformat(),
+                "descripcion": "Ajustado por rectoría",
+                "modalidad": "presencial",
+                "estado": self.estado.id,
+                "municipio": self.municipio.id,
+                "parroquia": self.parroquia.id,
+                "direccion": "Sede reprogramada",
+                "requisitos": "Registro actualizado",
+                "tipo_evento": "institucional",
+                "audiencia": "publica",
+            },
+        )
+
+        self.assertEqual(response_post.status_code, 302)
+        self.assertRedirects(response_post, reverse("admin_eventos"))
+        evento.refresh_from_db()
+        self.assertEqual(evento.nombre, "Evento Workflow Ajustado")
+        self.assertEqual(evento.fecha, nueva_fecha)
 
     def test_flujo_abierto_cancelado_por_institucion_propietaria(self):
         evento = self._crear_evento_borrador()

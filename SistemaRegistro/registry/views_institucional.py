@@ -133,80 +133,6 @@ def eliminar_grupo(request, grupo_id):
     return redirect("grupos_institucion")
 
 
-@login_required
-def eventos_disponibles_institucion(request):
-    """Lista de eventos disponibles para inscripción."""
-    if request.user.userprofile.user_type != "institucional":
-        return redirect("dashboard")
-
-    hoy = timezone.now().date()
-    eventos = Evento.objects.filter(activo=True, fecha__gte=hoy).order_by("fecha")
-
-    context = {
-        "eventos": eventos,
-    }
-    return render(request, "registry/eventos_disponibles.html", context)
-
-
-@login_required
-def inscribir_grupo_evento(request, evento_id):
-    """Inscribir un grupo a un evento."""
-    evento = get_object_or_404(Evento, id=evento_id)
-    
-    if evento.estado_evento != "abierto":
-        messages.error(request, "Este evento no está disponible para inscripciones.")
-        return redirect("eventos_disponibles_institucion")
-
-    if request.method == "POST":
-        grupo_id = request.POST.get("grupo_id")
-        rol = request.POST.get("rol_participacion")
-
-        grupo = get_object_or_404(Grupo, id=grupo_id, usuario_creador=request.user)
-
-        # Validar que el grupo esté editable
-        if grupo.estado_grupo != "editable":
-            messages.error(
-                request, "Solo se pueden inscribir grupos en estado editable."
-            )
-            return redirect("eventos_disponibles_institucion")
-
-        # Validar que no esté ya inscrito
-        if InscripcionGrupoEvento.objects.filter(evento=evento, grupo=grupo).exists():
-            messages.warning(request, "Este grupo ya está inscrito en el evento.")
-            return redirect("eventos_disponibles_institucion")
-
-        try:
-            with transaction.atomic():
-                # Crear inscripción
-                InscripcionGrupoEvento.objects.create(
-                    evento=evento, grupo=grupo, rol_participacion=rol
-                )
-
-                # Cambiar estado del grupo a 'inscrito'
-                grupo.estado_grupo = "inscrito"
-                grupo.evento = evento
-                grupo.save()
-
-                messages.success(
-                    request, f'Grupo "{grupo.nombre}" inscrito exitosamente.'
-                )
-        except Exception as e:
-            messages.error(request, f"Error al inscribir: {str(e)}")
-
-        return redirect("eventos_disponibles_institucion")
-
-    # GET - Mostrar modal
-    grupos_editables = Grupo.objects.filter(
-        usuario_creador=request.user, estado_grupo="editable"
-    )
-
-    context = {
-        "evento": evento,
-        "grupos": grupos_editables,
-        "roles": InscripcionGrupoEvento.ROL_CHOICES,
-    }
-    return render(request, "registry/inscribir_grupo.html", context)
-
 
 @login_required
 def clubes_lista(request):
@@ -935,7 +861,6 @@ def buscar_participante(request):
                 "estado_id": participante.estado_id,
                 "municipio_id": participante.municipio_id,
                 "parroquia_id": participante.parroquia_id if hasattr(participante, 'parroquia_id') else None,
-                "nombre_escuela": participante.nombre_escuela,
                 "grado_escolar": participante.grado_escolar,
                 "titulo_universitario": participante.titulo_universitario,
                 "condicion_tea": participante.condicion_tea,

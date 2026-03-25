@@ -34,17 +34,7 @@ urlpatterns = [
         views_grupos.api_buscar_participante_equipo,
         name="api_buscar_participante_equipo",
     ),
-    # Eventos
-    path(
-        "eventos/disponibles/",
-        views_institucional.eventos_disponibles_institucion,
-        name="eventos_disponibles_institucion",
-    ),
-    path(
-        "eventos/<int:evento_id>/inscribir/",
-        views_institucional.inscribir_grupo_evento,
-        name="inscribir_grupo_evento",
-    ),
+    # Eventos (rutas centralizadas en users/urls.py)
     # Clubes - Vistas para instituciones
     path("clubes/", views_institucional.clubes_lista, name="clubes_lista"),
     path("clubes/directorio/", views_institucional.directorio_clubes_aprobados, name="directorio_clubes_aprobados"),

@@ -1,243 +1,279 @@
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
-{% block title %}{{ tutor.get_nombre_completo }} - Detalle Tutor{% endblock %}
+{% block title %}{{ tutor.get_nombre_completo }} - Detalle del Tutor{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
-                    <i class="bi bi-person-badge fs-2 text-white"></i>
-                </div>
-                <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
-                        {{ tutor.get_nombre_completo }}
-                    </h2>
-                    <p class="text-muted mb-0 small">
-                        <i class="bi bi-card-text me-1"></i> {{ tutor.cedula }}
-                        {% if tutor.status == 'activo' %}
-                            <span class="badge bg-success ms-2">Activo</span>
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_tutores' %}" class="text-decoration-none">Tutores</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ tutor.get_nombre_completo }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark mb-0" style="font-family: 'Space Grotesk', sans-serif;">
+                {{ tutor.get_nombre_completo }}
+            </h2>
+            <div class="mt-2">
+                <span class="badge bg-light text-dark border">
+                    <i class="bi bi-person-vcard me-1"></i> {{ tutor.nacionalidad }}-{{ tutor.cedula }}
+                </span>
+                <!-- Estado global o más reciente -->
+                {% with ultima_vinculacion=vinculaciones.first %}
+                    {% if ultima_vinculacion %}
+                        {% if ultima_vinculacion.status == 'activo' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-2">
+                                <i class="bi bi-check-circle-fill me-1"></i> Activo
+                            </span>
                         {% else %}
-                            <span class="badge bg-secondary ms-2">Inactivo</span>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">
+                                <i class="bi bi-archive-fill me-1"></i> Inactivo
+                            </span>
                         {% endif %}
-                    </p>
-                </div>
+                    {% else %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-2">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i> Sin Vinculación
+                        </span>
+                    {% endif %}
+                {% endwith %}
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'editar_tutor' tutor.id %}" class="btn btn-outline-primary shadow-sm px-4 fw-bold">
-                    <i class="bi bi-pencil me-1"></i> Editar
-                </a>
-                <a href="{% url 'lista_tutores' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold">
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="d-flex gap-2 justify-content-md-end">
+                <a href="{% url 'lista_tutores' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Volver
                 </a>
-            </div>
-        </div>
-    </div>
-    <hr class="mt-2 mb-4 opacity-10">
-
-    <div class="row">
-        <!-- Información del Tutor -->
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4" 
-                     style="background: linear-gradient(145deg, #0b2c6d, #051636);">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-person-vcard text-white me-3 fs-5"></i>
-                        <h5 class="fw-bold mb-0 text-white">Información Personal</h5>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <table class="table table-borderless mb-0">
-                        <tr>
-                            <td class="text-muted fw-bold" style="width: 40%;">Nacionalidad:</td>
-                            <td>
-                                {% if tutor.nacionalidad == 'V' %}
-                                    <span class="badge bg-primary">🇻🇪 Venezolano</span>
-                                {% else %}
-                                    <span class="badge bg-info">🌎 Extranjero</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold" style="width: 40%;">Nombres:</td>
-                            <td>{{ tutor.nombres }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Apellidos:</td>
-                            <td>{{ tutor.apellidos }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Cédula:</td>
-                            <td>
-                                <span class="badge bg-light text-dark border">
-                                    {{ tutor.nacionalidad }}-{{ tutor.cedula }}
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Teléfono:</td>
-                            <td>
-                                {% if tutor.telefono_codigo and tutor.telefono %}
-                                    <a href="tel:{{ tutor.telefono_codigo }}{{ tutor.telefono }}">
-                                        {{ tutor.telefono_codigo }}-{{ tutor.telefono }}
-                                    </a>
-                                {% elif tutor.telefono %}
-                                    <a href="tel:{{ tutor.telefono }}">{{ tutor.telefono }}</a>
-                                {% else %}
-                                    <span class="text-muted">No especificado</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Email:</td>
-                            <td>
-                                <a href="mailto:{{ tutor.email }}">{{ tutor.email }}</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Profesión:</td>
-                            <td>{{ tutor.profesion|default:"No especificada" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Institución:</td>
-                            <td>{{ tutor.institucion.nombre }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted fw-bold">Fecha Registro:</td>
-                            <td>{{ tutor.created_at|date:"d/m/Y H:i" }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Experiencia -->
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4" 
-                     style="background: linear-gradient(145deg, #059669, #047857);">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-journal-text text-white me-3 fs-5"></i>
-                        <h5 class="fw-bold mb-0 text-white">Experiencia</h5>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    {% if tutor.experiencia %}
-                        <p class="mb-0">{{ tutor.experiencia|linebreaks }}</p>
-                    {% else %}
-                        <p class="text-muted mb-0 fst-italic">No se ha registrado experiencia.</p>
-                    {% endif %}
-                </div>
+                <a href="{% url 'editar_tutor' tutor.id %}" class="btn btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i> Editar Tutor
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Grupos Asignados -->
-    <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" 
-             style="background: linear-gradient(145deg, #0891b2, #0e7490);">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-people-fill text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">Grupos Asignados</h5>
+    <div class="row g-4">
+        <!-- Columna Izquierda: Información Personal y Contacto -->
+        <div class="col-lg-4">
+            <!-- Tarjeta de Perfil -->
+            <div class="card border-0 shadow-sm mb-4 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title fw-bold mb-0 text-primary">
+                        <i class="bi bi-person-lines-fill me-2"></i>Información Personal
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="avatar-circle mx-auto mb-3 bg-primary text-white d-flex align-items-center justify-content-center display-4 fw-bold rounded-circle" style="width: 80px; height: 80px;">
+                            {{ tutor.nombres|first }}{{ tutor.apellidos|first }}
+                        </div>
+                        <h5 class="fw-bold mb-1">{{ tutor.get_nombre_completo }}</h5>
+                        <p class="text-muted small mb-0">{{ tutor.profesion|default:"Profesión no especificada" }}</p>
+                    </div>
+
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-fingerprint me-2"></i>Cédula</span>
+                            <span class="fw-medium">{{ tutor.nacionalidad }}-{{ tutor.cedula }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-gender-ambiguous me-2"></i>Sexo</span>
+                            <span class="fw-medium">{{ tutor.get_sexo_display }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-globe-americas me-2"></i>Nacionalidad</span>
+                            <span class="fw-medium">{{ tutor.get_nacionalidad_display }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-calendar3 me-2"></i>Registrado</span>
+                            <span class="fw-medium">{{ tutor.created_at|date:"d/m/Y" }}</span>
+                        </li>
+                    </ul>
+
+                    <h6 class="fw-bold mt-4 mb-3 text-primary border-bottom pb-2">Datos de Contacto</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0">
+                            <div class="d-flex align-items-center text-muted mb-1">
+                                <i class="bi bi-envelope me-2"></i>Correo Electrónico
+                            </div>
+                            <a href="mailto:{{ tutor.email }}" class="d-block text-break fw-medium text-decoration-none">
+                                {{ tutor.email }}
+                            </a>
+                        </li>
+                        <li class="list-group-item px-0">
+                            <div class="d-flex align-items-center text-muted mb-1">
+                                <i class="bi bi-telephone me-2"></i>Teléfono
+                            </div>
+                            {% if tutor.telefono %}
+                                <a href="tel:{{ tutor.telefono_codigo }}{{ tutor.telefono }}" class="fw-medium text-decoration-none">
+                                    {{ tutor.telefono_codigo }}-{{ tutor.telefono }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted fst-italic">No registrado</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ grupos.count }}</span>
         </div>
-        <div class="card-body">
-            {% if grupos %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="text-uppercase x-small fw-bold text-muted">
-                                <th class="px-4 py-3">Nombre del Grupo</th>
-                                <th class="py-3">Código</th>
-                                <th class="py-3">Evento</th>
-                                <th class="py-3">Estado</th>
-                                <th class="py-3 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for grupo in grupos %}
-                            <tr>
-                                <td class="px-4">
-                                    <div class="fw-bold small text-dark">{{ grupo.nombre }}</div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">{{ grupo.codigo }}</span>
-                                </td>
-                                <td>
-                                    {% if grupo.evento %}
-                                        <span class="small">{{ grupo.evento.nombre|truncatechars:30 }}</span>
-                                    {% else %}
-                                        <span class="text-muted small">Sin evento</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if grupo.estado_grupo == 'editable' %}
-                                        <span class="badge bg-primary">Editable</span>
-                                    {% elif grupo.estado_grupo == 'inscrito' %}
-                                        <span class="badge bg-success">Inscrito</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Bloqueado</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <a href="{% url 'ver_grupo' grupo.id %}" 
-                                       class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold">
-                                        <i class="bi bi-eye me-1"></i> Ver
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+
+        <!-- Columna Derecha: Detalle Profesional, Vinculaciones y Equipos -->
+        <div class="col-lg-8">
+            
+            <!-- Experiencia y Profesión -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title fw-bold mb-0 text-primary">
+                        <i class="bi bi-briefcase me-2"></i>Perfil Profesional
+                    </h5>
                 </div>
-            {% else %}
-                <div class="alert alert-info text-center py-4 mb-0">
-                    <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
-                    <strong>Este tutor no tiene grupos asignados</strong>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Profesión / Ocupación</label>
+                            <p class="fs-5 fw-medium text-dark">{{ tutor.profesion|default:"No especificada" }}</p>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Experiencia en Robótica</label>
+                            {% if tutor.experiencia %}
+                                <div class="p-3 bg-light rounded-3 border">
+                                    {{ tutor.experiencia|linebreaks }}
+                                </div>
+                            {% else %}
+                                <p class="text-muted fst-italic">No se ha registrado información sobre experiencia.</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Historial de Vinculaciones (Sedes e Instituciones) -->
+            {% if puede_ver_todos or user_type == 'fed_regional' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0 text-primary">
+                        <i class="bi bi-diagram-3 me-2"></i>Historial de Pertenencia
+                    </h5>
+                    <span class="badge bg-primary rounded-pill">{{ vinculaciones.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Ente / Institución</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Fecha Vinculación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vinc in vinculaciones %}
+                                <tr>
+                                    <td class="ps-4">
+                                        {% if vinc.tipo_vinculacion == 'central' %}
+                                            <span class="fw-bold text-dark">Federación Nacional (Sede Central)</span>
+                                        {% elif vinc.tipo_vinculacion == 'regional' %}
+                                            <span class="fw-bold text-dark">Delegación {{ vinc.estado.nombre }}</span>
+                                        {% else %}
+                                            <span class="fw-bold text-dark">{{ vinc.institucion.nombre }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vinc.tipo_vinculacion == 'institucional' %}
+                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Institucional</span>
+                                        {% elif vinc.tipo_vinculacion == 'regional' %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Sede Regional</span>
+                                        {% else %}
+                                            <span class="badge bg-dark-subtle text-dark border border-dark-subtle">Sede Central</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if vinc.status == 'activo' %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ vinc.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ vinc.fecha_vinculacion|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        No hay vinculaciones registradas.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
             {% endif %}
-        </div>
-    </div>
 
-    <!-- Cambiar Estado -->
-    <div class="card border-0 shadow-sm mt-4" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4" 
-             style="background: linear-gradient(145deg, #dc2626, #b91c1c);">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-gear text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">Cambiar Estado</h5>
-            </div>
-        </div>
-        <div class="card-body p-4">
-            <form method="POST" action="{% url 'cambiar_estado_tutor' tutor.id %}">
-                {% csrf_token %}
-                <div class="d-flex align-items-center gap-3">
-                    <span>Estado actual:</span>
-                    {% if tutor.status == 'activo' %}
-                        <span class="badge bg-success fs-6">Activo</span>
-                    {% else %}
-                        <span class="badge bg-secondary fs-6">Inactivo</span>
-                    {% endif %}
-                    
-                    <select name="status" class="form-select w-auto">
-                        <option value="activo" {% if tutor.status == 'activo' %}selected{% endif %}>Activo</option>
-                        <option value="inactivo" {% if tutor.status == 'inactivo' %}selected{% endif %}>Inactivo</option>
-                    </select>
-                    
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-arrow-repeat me-1"></i> Cambiar
-                    </button>
+            <!-- Grupos Asignados -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0 text-primary">
+                        <i class="bi bi-people-fill me-2"></i>Equipos Asignados
+                    </h5>
+                    <span class="badge bg-primary rounded-pill">{{ grupos.count }}</span>
                 </div>
-            </form>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Nombre del Grupo</th>
+                                    <th>Código</th>
+                                    <th>Evento</th>
+                                    <th class="text-end pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grupo in grupos %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold">{{ grupo.nombre }}</div>
+                                        <small class="text-muted">{{ grupo.institucion.nombre }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="font-monospace bg-light border px-2 py-1 rounded small">
+                                            {{ grupo.codigo }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if grupo.evento %}
+                                            <a href="#" class="text-decoration-none">{{ grupo.evento.nombre }}</a>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary">Sin Evento</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'ver_grupo' grupo.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-people display-4 mb-3 d-block opacity-50"></i>
+                                            <p class="mb-0">Este tutor no tiene equipos asignados actualmente.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
-
-<style>
-    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
-    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
-</style>
 {% endblock %}

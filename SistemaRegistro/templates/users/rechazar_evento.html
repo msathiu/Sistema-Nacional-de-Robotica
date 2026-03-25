@@ -1,0 +1,15 @@
+<!-- SistemaRegistro/templates/users/rechazar_evento.html -->
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Rechazar Evento: {{ evento.nombre }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <p>¿Estás seguro de rechazar este evento?</p>
+        <textarea name="observacion" placeholder="Observación obligatoria" required></textarea>
+        <button type="submit" class="btn btn-danger">Rechazar</button>
+    </form>
+</div>
+{% endblock %}

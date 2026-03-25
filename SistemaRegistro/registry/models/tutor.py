@@ -63,6 +63,9 @@ class Tutor(models.Model):
     email = models.EmailField(verbose_name="Correo Electrónico")
     profesion = models.CharField(max_length=100, blank=True, verbose_name="Profesión")
     experiencia = models.TextField(blank=True, verbose_name="Experiencia en Robótica")
+    creado_por_federacion = models.BooleanField(
+        default=False, verbose_name="Registrado por Federación"
+    )
     created_at = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha de Creación"
     )
@@ -113,15 +116,25 @@ class Tutor(models.Model):
 
 class TutorInstitucion(models.Model):
     ROL_CHOICES = [
-        ("coordinador", "Coordinador"),
-        ("asistente", "Asistente"),
-        ("colaborador", "Colaborador"),
+    ("asistente", "Asistente"),
+    ("entrenador", "Entrenador"),
+    ("instructor", "Instructor/Monitor"),
+    ("coordinador", "Coordinador"),
+    ("delegado", "Delegado"),
+    ("representante", "Representante"),
+    ("colaborador", "Colaborador"),
     ]
 
     STATUS_CHOICES = [
         ("activo", "Activo"),
         ("inactivo", "Inactivo"),
         ("suspendido", "Suspendido"),
+    ]
+
+    TIPO_VINCULACION_CHOICES = [
+        ("institucional", "Institucional (Sede Educativa/Club)"),
+        ("regional", "Sede Regional (Federación Estado)"),
+        ("central", "Sede Central (Federación Nacional)"),
     ]
 
     id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
@@ -136,6 +149,22 @@ class TutorInstitucion(models.Model):
         on_delete=models.CASCADE,
         related_name="tutores_vinculados",
         verbose_name="Institución",
+        null=True,
+        blank=True,
+    )
+    estado = models.ForeignKey(
+        "Estado",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Estado/Sede Regional",
+        help_text="Solo requerido para vinculaciones de sede regional.",
+    )
+    tipo_vinculacion = models.CharField(
+        max_length=20,
+        choices=TIPO_VINCULACION_CHOICES,
+        default="institucional",
+        verbose_name="Tipo de Vinculación",
     )
     rol = models.CharField(
         max_length=20, choices=ROL_CHOICES, default="colaborador", verbose_name="Rol"
@@ -158,13 +187,32 @@ class TutorInstitucion(models.Model):
     class Meta:
         verbose_name = "Vinculación Tutor-Institución"
         verbose_name_plural = "Vinculaciones Tutor-Institución"
-        unique_together = [["tutor", "institucion"]]
         ordering = ["-fecha_vinculacion"]
         indexes = [
             models.Index(fields=["tutor", "status"], name="idx_tutinst_tutor_st"),
             models.Index(fields=["institucion", "status"], name="idx_tutinst_inst_st"),
             models.Index(
                 fields=["status", "-fecha_vinculacion"], name="idx_tutinst_st_fecha"
+            ),
+        ]
+        constraints = [
+            # 1. Unicidad para Instituciones (Tutor + Institución)
+            models.UniqueConstraint(
+                fields=["tutor", "institucion"],
+                condition=models.Q(tipo_vinculacion="institucional"),
+                name="unique_tutor_institucion",
+            ),
+            # 2. Unicidad para Sedes Regionales (Tutor + Estado)
+            models.UniqueConstraint(
+                fields=["tutor", "estado"],
+                condition=models.Q(tipo_vinculacion="regional"),
+                name="unique_tutor_regional",
+            ),
+            # 3. Unicidad para Sede Central (Un solo registro Central por Tutor)
+            models.UniqueConstraint(
+                fields=["tutor"],
+                condition=models.Q(tipo_vinculacion="central"),
+                name="unique_tutor_central",
             ),
         ]
 

@@ -146,7 +146,6 @@ class ParticipanteAdmin(admin.ModelAdmin):
             "Educación",
             {
                 "fields": (
-                    "nombre_escuela",
                     "grado_escolar",
                     "titulo_universitario",
                     "campo1",

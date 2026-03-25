@@ -182,6 +182,7 @@ class Evento(models.Model):
     )
     categoria = models.CharField(max_length=100, blank=True)
     fecha = models.DateField(db_index=True)
+    fecha_hasta = models.DateField(null=True, blank=True, db_index=True)
     descripcion = models.TextField(blank=True)
     modalidad = models.CharField(
         max_length=20, choices=MODALIDAD_CHOICES, default="presencial"
@@ -294,6 +295,9 @@ class Evento(models.Model):
         campos_titulo = ["nombre", "categoria", "ubicacion", "direccion"]
         update_fields = kwargs.get("update_fields")
 
+        if self.fecha and not self.fecha_hasta:
+            self.fecha_hasta = self.fecha
+
         if update_fields is None or any(f in update_fields for f in campos_titulo):
             for campo in campos_titulo:
                 valor = getattr(self, campo, None)
@@ -315,18 +319,21 @@ class Evento(models.Model):
     def actualizar_estado_por_fecha(self):
         """
         Actualiza el estado del evento basandose en la fecha.
-        Este metodo es para uso interno; se recomienda usar EventoService.actualizar_estados_por_fecha().
+        Cuando el evento pasa a FINALIZADO, bloquea todos los grupos inscritos.
         """
         hoy = date.today()
         nuevo_estado = None
+        fecha_fin = self.fecha_hasta or self.fecha
 
-        # No cambiar si ya esta en estado final
         if self.estado_evento in ESTADOS_FINALES:
             return
 
-        if self.fecha == hoy and self.estado_evento == EstadoEvento.ABIERTO:
+        if (
+            self.estado_evento == EstadoEvento.ABIERTO
+            and self.fecha <= hoy <= fecha_fin
+        ):
             nuevo_estado = EstadoEvento.EN_PROCESO
-        elif self.fecha < hoy and self.estado_evento in [
+        elif fecha_fin < hoy and self.estado_evento in [
             EstadoEvento.ABIERTO,
             EstadoEvento.EN_PROCESO,
         ]:
@@ -335,6 +342,12 @@ class Evento(models.Model):
         if nuevo_estado and self.estado_evento != nuevo_estado:
             self.estado_evento = nuevo_estado
             self.save(update_fields=["estado_evento"])
+            # Bloquear grupos inscritos cuando el evento finaliza
+            if nuevo_estado == EstadoEvento.FINALIZADO:
+                from django.db.models import Q as _Q
+                self.grupos_inscritos.filter(
+                    estado_grupo__in=["editable", "inscrito"]
+                ).update(estado_grupo="bloqueado")
 
     # =============================================================================
     # METODOS DE DOMINIO - PRODUCTION GRADE
@@ -493,6 +506,22 @@ class Evento(models.Model):
     def __str__(self):
         return f"{self.nombre} - {self.fecha}"
 
+    @property
+    def fecha_fin_efectiva(self):
+        return self.fecha_hasta or self.fecha
+
+    @property
+    def es_evento_un_dia(self):
+        return self.fecha_fin_efectiva == self.fecha
+
+    @property
+    def rango_fechas_display(self):
+        if not self.fecha:
+            return ""
+        if self.es_evento_un_dia:
+            return self.fecha.strftime("%d/%m/%Y")
+        return f"{self.fecha.strftime('%d/%m/%Y')} al {self.fecha_fin_efectiva.strftime('%d/%m/%Y')}"
+
     def usuario_puede_gestionar(self, perfil):
         if perfil.user_type in ["fed_central", "superuser", "tecnologico"]:
             return True
@@ -554,7 +583,7 @@ class Evento(models.Model):
 
     @property
     def esta_vigente(self):
-        return self.activo and not self.cancelado and self.fecha >= date.today()
+        return self.activo and not self.cancelado and self.fecha_fin_efectiva >= date.today()
 
     @property
     def telefono_completo(self):
@@ -576,10 +605,25 @@ class Evento(models.Model):
     def clean(self):
         from django.core.exceptions import ValidationError
 
-        if self.tipo_evento == "institucional" and not self.institucion:
+        if self.fecha and not self.fecha_hasta:
+            self.fecha_hasta = self.fecha
+
+        if self.fecha and self.fecha_hasta and self.fecha_hasta < self.fecha:
             raise ValidationError(
-                "Evento institucional debe tener institución organizadora"
+                {"fecha_hasta": "La fecha hasta no puede ser anterior a la fecha desde."}
             )
+
+        # Validar solo si el tipo_evento es explícitamente "institucional" Y hay una institución
+        # Los eventos del ente rector (fed_central) pueden tener tipo_evento institucional sin institución
+        # si así fueron creados originalmente
+        if self.tipo_evento == "institucional" and not self.institucion:
+            # Permitir si el evento ya existe y fue creado sin institución (caso de fed_central)
+            if self.pk and Evento.objects.filter(pk=self.pk, institucion__isnull=True).exists():
+                pass  # Permitir edición sin institución si ya existía así
+            else:
+                raise ValidationError(
+                    "Evento institucional debe tener institución organizadora"
+                )
         if self.tipo_evento == "club" and not self.club_organizador:
             raise ValidationError("Evento de club debe tener club organizador")
         if self.institucion and self.club_organizador:

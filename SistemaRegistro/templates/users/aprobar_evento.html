@@ -1,0 +1,15 @@
+<!-- SistemaRegistro/templates/users/aprobar_evento.html -->
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Aprobar Evento: {{ evento.nombre }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <p>¿Estás seguro de aprobar este evento?</p>
+        <textarea name="observaciones" placeholder="Observaciones opcionales"></textarea>
+        <button type="submit" class="btn btn-success">Aprobar</button>
+    </form>
+</div>
+{% endblock %}

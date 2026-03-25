@@ -5,6 +5,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -131,252 +132,244 @@ def _usuario_puede_crear_tutor_para_institucion(user, institucion) -> bool:
 @login_required
 def lista_tutores(request):
     """
-    Vista para listar todos los tutores.
-    
-    Permite filtrar por institución, estado y búsqueda por nombre/cédula.
-    
-    Permisos:
-    - Ente Rector puede ver todos los tutores.
-    - Usuarios institucionales solo pueden ver tutores de su institución.
+    Lista tutores con filtrado por jerarquía y territorialidad.
     """
-    # Filtrar según permisos del usuario
-    user_institution = None
-    puede_ver_todos = False
+    user_profile = request.user.userprofile
+    user_type = user_profile.user_type
+    puede_ver_todos = user_type in ['fed_central', 'superuser', 'tecnologico'] or request.user.is_superuser
+
+    # UX: recordar qué pestaña estaba activa al hacer búsquedas (query param `tab`).
+    # IDs de pestañas en el template: `institucionales` y `federacion`.
+    tab_activo = request.GET.get('tab', 'institucionales').strip()
+    if not puede_ver_todos or tab_activo not in ['institucionales', 'federacion']:
+        tab_activo = 'institucionales'
     
-    if hasattr(request.user, 'userprofile'):
-        user_type = request.user.userprofile.user_type
-        if user_type in ['fed_central', 'superuser'] or request.user.is_superuser:
-            puede_ver_todos = True
-            tutores = TutorInstitucion.objects.select_related('tutor', 'institucion').all()
-        else:
-            user_institution = request.user.userprofile.institution
-            if user_institution:
-                tutores = TutorInstitucion.objects.select_related('tutor', 'institucion').filter(
-                    institucion=user_institution
-                )
-            else:
-                tutores = TutorInstitucion.objects.none()
+    # Base de consulta: Vinculaciones
+    tutores_base = TutorInstitucion.objects.select_related('tutor', 'institucion', 'estado')
+
+    # 1. Filtrado por Rol (Territorialidad)
+    if puede_ver_todos:
+        # Ve todas las vinculaciones
+        pass
+    elif user_type == 'fed_regional':
+        # Ve vinculaciones de su estado (Institucionales del estado o Regionales del estado)
+        tutores_base = tutores_base.filter(
+            Q(institucion__estado=user_profile.estado) | 
+            Q(estado=user_profile.estado)
+        )
+    elif user_type == 'institucional':
+        # Solo vinculaciones de su institución
+        tutores_base = tutores_base.filter(institucion=user_profile.institution)
     else:
-        tutores = TutorInstitucion.objects.none()
-    
-    # Filtros
+        tutores_base = TutorInstitucion.objects.none()
+
+    # 2. Aplicar Filtros de Búsqueda
     institucion_id = request.GET.get('institucion')
     status = request.GET.get('status')
     busqueda = request.GET.get('q', '').strip()
-    
+
     if institucion_id and puede_ver_todos:
-        tutores = tutores.filter(institucion_id=institucion_id)
-    
+        tutores_base = tutores_base.filter(institucion_id=institucion_id)
     if status:
-        tutores = tutores.filter(status=status)
-    
+        tutores_base = tutores_base.filter(status=status)
     if busqueda:
-        tutores = tutores.filter(
+        tutores_base = tutores_base.filter(
             Q(tutor__nombres__icontains=busqueda) |
             Q(tutor__apellidos__icontains=busqueda) |
             Q(tutor__cedula__icontains=busqueda)
         )
+
+    tutores_base = tutores_base.order_by('-fecha_vinculacion')
+
+    # 3. Separación por tipo (Pestañas para Fed Central/Regional)
+    tutores_federacion = []
+    tutores_institucionales = []
     
-    # Ordenamiento
-    tutores = tutores.order_by('-fecha_vinculacion')
-    
-    # Instituciones para el filtro (solo si puede ver todos)
-    if puede_ver_todos:
-        instituciones = Institucion.objects.filter(
-            estatus='aprobado'
-        ).order_by('nombre')
+    if user_type in ['fed_central', 'fed_regional', 'superuser']:
+        tutores_federacion = tutores_base.filter(tipo_vinculacion__in=['central', 'regional'])
+        tutores_institucionales = tutores_base.filter(tipo_vinculacion='institucional')
     else:
-        instituciones = Institucion.objects.filter(
-            id=user_institution.id if user_institution else None
-        )
+        tutores_institucionales = tutores_base
+
+    # Instituciones para el filtro
+    if puede_ver_todos:
+        instituciones = Institucion.objects.filter(estatus='aprobado').order_by('nombre')
+    elif user_type == 'fed_regional':
+        instituciones = Institucion.objects.filter(estado=user_profile.estado, estatus='aprobado')
+    else:
+        instituciones = []
     
     context = {
-        'tutores': tutores,
+        'tutores': tutores_base,
+        'tutores_federacion': tutores_federacion,
+        'tutores_institucionales': tutores_institucionales,
         'instituciones': instituciones,
-        'filtros': {
-            'institucion': institucion_id,
-            'status': status,
-            'q': busqueda,
-        },
+        'filtros': {'institucion': institucion_id, 'status': status, 'q': busqueda},
         'puede_ver_todos': puede_ver_todos,
+        'user_type': user_type,
+        'tab_activo': tab_activo,
     }
-    
     return render(request, 'registry/lista_tutores.html', context)
 
 
 @login_required
-@fed_central_cannot_create('lista_tutores')
 def crear_tutor(request):
     """
-    Vista para crear un nuevo tutor.
-    
-    Usa TutorService para validar la cédula única.
-    
-    Permisos:
-    - Ente Rector (superuser) puede crear tutores para cualquier institución.
-    - Usuarios institucionales solo pueden crear tutores para su propia institución.
-    - fed_central NO puede crear tutores (bloqueado por decorador).
+    Crea un tutor y su vinculación jerárquica.
     """
-    # Determinar instituciones disponibles según permisos
-    puede_crear_cualquiera = False
-    user_institution = None
-    
-    if hasattr(request.user, 'userprofile'):
-        user_type = request.user.userprofile.user_type
-        
-        if user_type in ['superuser'] or request.user.is_superuser:
-            puede_crear_cualquiera = True
-        else:
-            user_institution = request.user.userprofile.institution
+    user_profile = request.user.userprofile
+    user_type = user_profile.user_type
     
     if request.method == 'POST':
         form = TutorForm(request.POST)
         if form.is_valid():
-            institucion_seleccionada = form.cleaned_data['institucion']
-            
-            # Validar permisos sobre la institución seleccionada
-            if not _usuario_puede_crear_tutor_para_institucion(request.user, institucion_seleccionada):
-                messages.error(
-                    request, 
-                    "No tienes permiso para crear tutores en esta institución."
-                )
-                return redirect('lista_tutores')
-            
             try:
-                # Usar el nuevo servicio
-                tutor, vinculacion, tutor_creado = TutorService.registrar_tutor_con_institucion(
-                    institucion=institucion_seleccionada,
-                    datos_tutor={
-                        'cedula': form.cleaned_data['cedula'],
-                        'nacionalidad': form.cleaned_data.get('nacionalidad', 'V'),
-                        'nombres': form.cleaned_data['nombres'],
-                        'apellidos': form.cleaned_data['apellidos'],
-                        'sexo': form.cleaned_data.get('sexo', 'M'),
-                        'telefono_codigo': form.cleaned_data.get('telefono_codigo', ''),
-                        'telefono': form.cleaned_data.get('telefono', ''),
-                        'email': form.cleaned_data['email'],
-                        'profesion': form.cleaned_data.get('profesion', ''),
-                        'experiencia': form.cleaned_data.get('experiencia', ''),
-                    },
-                    rol='colaborador',
-                    usuario=request.user
-                )
-                
-                if tutor_creado:
-                    messages.success(
-                        request,
-                        f'Tutor "{tutor.get_nombre_completo()}" registrado exitosamente.'
+                with transaction.atomic():
+                    # 1. Datos del Tutor
+                    datos_tutor = form.cleaned_data
+                    creado_por_fed = user_type in ['fed_central', 'fed_regional']
+                    
+                    # 2. Registrar/Obtener Tutor (No duplicidad)
+                    tutor, creado = TutorService.buscar_tutor_por_cedula(datos_tutor['cedula']), False
+                    if not tutor:
+                        tutor = TutorService.crear_tutor(datos_tutor, creado_por_federacion=creado_por_fed)
+                        creado = True
+                    
+                    # 3. Validar y Crear Vinculación según Rol
+                    tipo_vin = form.cleaned_data['tipo_vinculacion']
+                    institucion = form.cleaned_data.get('institucion')
+                    estado = form.cleaned_data.get('estado')
+                    
+                    # Seguridad: Forzar estado si es regional
+                    if user_type == 'fed_regional':
+                        estado = user_profile.estado
+                        if tipo_vin == 'central': tipo_vin = 'regional' # No puede crear central
+                    
+                    # Seguridad: Forzar institución si es institucional
+                    if user_type == 'institucional':
+                        tipo_vin = 'institucional'
+                        institucion = user_profile.institution
+
+                    TutorService.vincular_tutor(
+                        tutor=tutor,
+                        tipo_vinculacion=tipo_vin,
+                        institucion=institucion,
+                        estado=estado,
+                        rol=form.cleaned_data['rol'],
+                        usuario=request.user
                     )
-                else:
-                    messages.success(
-                        request,
-                        f'Tutor "{tutor.get_nombre_completo()}" vinculado a {institucion_seleccionada.nombre}.'
-                    )
-                return redirect('lista_tutores')
-                
+
+                    msg = f'Tutor {tutor.get_nombre_completo()} registrado y vinculado.'
+                    messages.success(request, msg if creado else f'Tutor existente vinculado correctamente.')
+                    return redirect('lista_tutores')
+
             except ValidationError as e:
-                messages.error(request, str(e))
+                form.add_error(None, e.message)
+            except Exception as e:
+                messages.error(request, f"Error inesperado: {str(e)}")
     else:
-        # Pre-seleccionar institución del usuario si tiene perfil
+        # Valores iniciales por Rol
         initial = {}
-        if user_institution and not puede_crear_cualquiera:
-            initial['institucion'] = user_institution
+        if user_type == 'institucional':
+            initial = {'tipo_vinculacion': 'institucional', 'institucion': user_profile.institution}
+        elif user_type == 'fed_regional':
+            initial = {'tipo_vinculacion': 'regional', 'estado': user_profile.estado}
         
         form = TutorForm(initial=initial)
         
-        # Si no puede crear para cualquier institución, limitar el queryset
-        if not puede_crear_cualquiera and user_institution:
-            form.fields['institucion'].queryset = Institucion.objects.filter(
-                id=user_institution.id
-            )
-    
-    context = {
-        'form': form,
-        'titulo': 'Registrar Tutor',
-        'boton_texto': 'Registrar',
-        'puede_seleccionar_institucion': puede_crear_cualquiera,
-    }
-    
+        # Limitar opciones del formulario por seguridad/UX
+        if user_type == 'institucional':
+            form.fields['tipo_vinculacion'].choices = [('institucional', 'Institucional')]
+            form.fields['institucion'].queryset = Institucion.objects.filter(id=user_profile.institution.id)
+        elif user_type == 'fed_regional':
+            form.fields['tipo_vinculacion'].choices = [('institucional', 'Institucional'), ('regional', 'Sede Regional')]
+            form.fields['estado'].queryset = Estado.objects.filter(id=user_profile.estado.id)
+            form.fields['institucion'].queryset = Institucion.objects.filter(estado=user_profile.estado, estatus='aprobado')
+
+    context = {'form': form, 'titulo': 'Registrar Tutor', 'boton_texto': 'Registrar'}
     return render(request, 'registry/form_tutor.html', context)
 
 
 @login_required
 def editar_tutor(request, tutor_id):
     """
-    Vista para editar un tutor existente.
-    
-    Permisos:
-    - Ente Rector puede editar cualquier tutor.
-    - Usuarios institucionales solo pueden editar tutores de su institución.
+    Vista para editar un tutor y su vinculación específica.
     """
     tutor = get_object_or_404(Tutor, id=tutor_id)
+    user_profile = request.user.userprofile
+    user_type = user_profile.user_type
     
+    # Intentar obtener la vinculación específica (por parámetro o por contexto de usuario)
+    vinc_id = request.GET.get('vinc_id')
+    vinculacion = None
+    
+    if vinc_id:
+        vinculacion = get_object_or_404(TutorInstitucion, id=vinc_id, tutor=tutor)
+    else:
+        # Lógica de fallback: buscar vinculación según el rol
+        if user_type == 'institucional':
+            vinculacion = TutorInstitucion.objects.filter(tutor=tutor, institucion=user_profile.institution).first()
+        elif user_type == 'fed_regional':
+            vinculacion = TutorInstitucion.objects.filter(tutor=tutor, estado=user_profile.estado).first()
+        
+        # Si no se encontró por contexto, tomar la más reciente (para superuser/central)
+        if not vinculacion:
+            vinculacion = TutorInstitucion.objects.filter(tutor=tutor).first()
+
     # Verificar permisos
-    if not _usuario_puede_gestionar_tutor(request.user, tutor):
-        messages.error(request, "No tienes permiso para editar este tutor.")
+    if not vinculacion or not _usuario_puede_gestionar_tutor(request.user, tutor, vinculacion.institucion):
+        messages.error(request, "No tiene permiso para editar este perfil de tutor en este contexto.")
         return redirect('lista_tutores')
-    
-    # Determinar institución del usuario
-    user_institution = None
-    puede_cambiar_institucion = False
-    if hasattr(request.user, 'userprofile'):
-        user_type = request.user.userprofile.user_type
-        user_institution = request.user.userprofile.institution
-        if user_type in ['fed_central', 'superuser'] or request.user.is_superuser:
-            puede_cambiar_institucion = True
-    
+
     if request.method == 'POST':
         form = TutorForm(request.POST, instance=tutor)
         if form.is_valid():
             try:
-                # Validar cédula única si cambió
-                cedula = form.cleaned_data['cedula'].strip()
-                if Tutor.objects.filter(cedula=cedula).exclude(pk=tutor.pk).exists():
-                    raise ValidationError(f'Ya existe un tutor con la cédula {cedula}.')
-                
-                # Guardar solo los datos del tutor (sin institución)
-                tutor.nacionalidad = form.cleaned_data.get('nacionalidad', 'V')
-                tutor.nombres = form.cleaned_data['nombres']
-                tutor.apellidos = form.cleaned_data['apellidos']
-                tutor.sexo = form.cleaned_data.get('sexo', 'M')
-                tutor.cedula = cedula
-                tutor.telefono_codigo = form.cleaned_data.get('telefono_codigo', '')
-                tutor.telefono = form.cleaned_data.get('telefono', '')
-                tutor.email = form.cleaned_data['email']
-                tutor.profesion = form.cleaned_data.get('profesion', '')
-                tutor.experiencia = form.cleaned_data.get('experiencia', '')
-                tutor.save()
-                
-                messages.success(
-                    request,
-                    f'Tutor "{tutor.get_nombre_completo()}" actualizado exitosamente.'
-                )
-                return redirect('lista_tutores')
-                
-            except ValidationError as e:
-                messages.error(request, str(e))
+                with transaction.atomic():
+                    # 1. Guardar cambios en el Tutor (Datos personales)
+                    form.save()
+                    
+                    # 2. Actualizar vinculación si es permitido (solo para central/regional en sus campos)
+                    if user_type in ['fed_central', 'superuser']:
+                        vinculacion.tipo_vinculacion = form.cleaned_data['tipo_vinculacion']
+                        vinculacion.institucion = form.cleaned_data.get('institucion')
+                        vinculacion.estado = form.cleaned_data.get('estado')
+                    
+                    vinculacion.rol = form.cleaned_data['rol']
+                    vinculacion.save()
+                    
+                    messages.success(request, f'Tutor {tutor.get_nombre_completo()} actualizado correctamente.')
+                    return redirect('lista_tutores')
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
     else:
-        # Pre-cargar institución del usuario para el formulario
-        initial = {}
-        if user_institution and not puede_cambiar_institucion:
-            initial['institucion'] = user_institution
-        
+        # Pre-poblar formulario con datos de la vinculación encontrada
+        initial = {
+            'tipo_vinculacion': vinculacion.tipo_vinculacion,
+            'institucion': vinculacion.institucion,
+            'estado': vinculacion.estado,
+            'rol': vinculacion.rol
+        }
         form = TutorForm(instance=tutor, initial=initial)
         
-        # Limitar queryset de instituciones según permisos
-        if not puede_cambiar_institucion and user_institution:
-            form.fields['institucion'].queryset = Institucion.objects.filter(
-                id=user_institution.id
-            )
-    
+        # --- RESTRICCIÓN DE UI POR ROL ---
+        if user_type == 'institucional':
+            # Bloquear campos de federación para usuarios de institución
+            form.fields['tipo_vinculacion'].choices = [('institucional', 'Institucional')]
+            form.fields['tipo_vinculacion'].widget.attrs['readonly'] = True
+            form.fields['institucion'].queryset = Institucion.objects.filter(id=user_profile.institution.id)
+            form.fields['estado'].widget.attrs['disabled'] = True
+        elif user_type == 'fed_regional':
+            # Solo permitir Institucional o Regional de su estado
+            form.fields['tipo_vinculacion'].choices = [('institucional', 'Institucional'), ('regional', 'Sede Regional')]
+            form.fields['estado'].queryset = Estado.objects.filter(id=user_profile.estado.id)
+
     context = {
         'form': form,
         'tutor': tutor,
         'titulo': 'Editar Tutor',
-        'boton_texto': 'Guardar Cambios',
-        'puede_seleccionar_institucion': puede_cambiar_institucion,
+        'boton_texto': 'Guardar Cambios'
     }
-    
     return render(request, 'registry/form_tutor.html', context)
 
 
@@ -601,76 +594,54 @@ def buscar_tutores_ajax(request):
 def cambiar_estado_tutor(request, tutor_id):
     """
     Vista para cambiar el estado de un tutor (activo/inactivo).
-    
-    Soporta tanto solicitudes tradicionales como AJAX.
-    Para AJAX retorna JSON, para tradicional redirige.
-    
-    Permisos:
-    - Ente Rector puede cambiar estado de cualquier tutor.
-    - Usuarios institucionales solo pueden cambiar estado de tutores de su institución.
     """
     tutor = get_object_or_404(Tutor, id=tutor_id)
+    vinc_id = request.POST.get('vinc_id')
+    vinculacion = None
+
+    if vinc_id:
+        vinculacion = get_object_or_404(TutorInstitucion, id=vinc_id, tutor=tutor)
     
     # Verificar permisos
-    user_institution = request.user.userprofile.institution if hasattr(request.user, 'userprofile') else None
+    user_profile = request.user.userprofile
+    user_type = user_profile.user_type
+    user_institution = user_profile.institution
+    
     if not _usuario_puede_gestionar_tutor(request.user, tutor, user_institution):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': False,
-                'error': 'No tienes permiso para cambiar el estado de este tutor.'
-            }, status=403)
-        messages.error(request, "No tienes permiso para cambiar el estado de este tutor.")
-        return redirect('detalle_tutor', tutor_id=tutor.id)
+        # Si es regional, verificar que la vinculación pertenezca a su estado
+        if user_type == 'fed_regional' and vinculacion and vinculacion.estado == user_profile.estado:
+            pass
+        elif user_type == 'fed_regional' and vinculacion and vinculacion.institucion and vinculacion.institucion.estado == user_profile.estado:
+            pass
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Sin permiso.'}, status=403)
+            messages.error(request, "No tienes permiso.")
+            return redirect('lista_tutores')
     
     if request.method == 'POST':
         nuevo_status = request.POST.get('status')
-        
-        # Validar estado
-        if nuevo_status not in ['activo', 'inactivo', 'suspendido']:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Estado inválido.'
-                }, status=400)
-            messages.error(request, "Estado inválido.")
-            return redirect('detalle_tutor', tutor_id=tutor.id)
-        
         try:
-            vinculacion = TutorService.cambiar_estado_tutor(
-                tutor, 
-                user_institution, 
-                nuevo_status, 
-                request.user
+            TutorService.cambiar_estado_tutor(
+                tutor=tutor,
+                institucion=user_institution,
+                nuevo_status=nuevo_status,
+                usuario=request.user,
+                vinculacion=vinculacion,
+                estado=user_profile.estado if user_type == 'fed_regional' else None
             )
             
-            # Responder según tipo de solicitud
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                accion = 'habilitado' if nuevo_status == 'activo' else 'deshabilitado'
                 return JsonResponse({
                     'success': True,
                     'nuevo_status': nuevo_status,
-                    'tutor_nombre': tutor.get_nombre_completo(),
-                    'message': f'El tutor "{tutor.get_nombre_completo()}" fue {accion}.'
+                    'message': f'Estado actualizado a {nuevo_status}.'
                 })
             
-            accion = 'habilitado' if nuevo_status == 'activo' else 'deshabilitado'
-            messages.success(
-                request,
-                f'El tutor "{tutor.get_nombre_completo()}" fue {accion}.'
-            )
+            messages.success(request, f'Estado actualizado.')
         except ValidationError as e:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': str(e)
-                }, status=400)
+                return JsonResponse({'success': False, 'error': str(e)}, status=400)
             messages.error(request, str(e))
-    
-    # Redirección por defecto para GET o fallos
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
-            'success': False,
-            'error': 'Método no permitido.'
-        }, status=405)
     
     return redirect('detalle_tutor', tutor_id=tutor.id)

@@ -107,7 +107,7 @@
                     <tbody>
                         {% for sede in sedes %}
                         <tr class="clickable-row" style="cursor: pointer;" 
-                            onclick="verDetalleSede('{{ sede.user.get_full_name|escapejs }}', '{{ sede.user.username }}', '{{ sede.estado.nombre }}', '{{ sede.user.email }}', '{{ sede.phone|default:'No registrado' }}', '{{ sede.user.date_joined|date:'d/m/Y' }}')">
+                            onclick="verDetalleSede('{{ sede.user.get_full_name|escapejs }}', '{{ sede.user.username }}', '{{ sede.estado.nombre }}', '{{ sede.user.email }}', '{{ sede.phone|default:'No registrado' }}')">
                             <td class="px-4">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle-sm me-3">
@@ -236,7 +236,7 @@
     }
 
     // MODAL EDITAR CON SELECT DE CÓDIGO
-    function abrirModalEditar(id, nombre, apellido, email, tel) {
+    function abrirModalEditar(id, nombre, apellido, email, tel, errorMsg = null) {
         const header = document.getElementById('modalHeader');
         header.style.background = "var(--blue-main)";
         document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR COMISIONADO';
@@ -245,7 +245,16 @@
         if(tel && tel.length >= 4) { codArea = tel.substring(0,4); numResto = tel.substring(4); } 
         else { numResto = tel || ""; }
 
+        let errorAlert = '';
+        if(errorMsg) {
+            errorAlert = `
+                <div id="modalErrorAlert" class="alert alert-danger py-2 small shadow-sm mb-3 border-0 border-start border-4 border-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <span>${errorMsg}</span>
+                </div>`;
+        }
+
         document.getElementById('modalBody').innerHTML = `
+            ${errorAlert}
             <div class="row g-3">
                 <div class="col-md-6"><label class="form-label small fw-bold">Nombres</label><input type="text" name="first_name" class="form-control" value="${nombre}" required></div>
                 <div class="col-md-6"><label class="form-label small fw-bold">Apellidos</label><input type="text" name="last_name" class="form-control" value="${apellido}" required></div>
@@ -261,10 +270,51 @@
                         <input type="text" name="phone_num" class="form-control" value="${numResto}" maxlength="7" onkeypress="return /[0-9]/.test(event.key)">
                     </div>
                 </div>
+                <div class="col-12 mt-3">
+                    <div class="p-3 rounded-3 bg-light border">
+                        <label class="form-label small fw-bold text-primary mb-2"><i class="bi bi-shield-lock me-1"></i> Seguridad (Opcional)</label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <input type="password" name="new_password" id="newPass" class="form-control form-control-sm" placeholder="Nueva Contraseña">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="password" name="confirm_password" id="confirmPass" class="form-control form-control-sm" placeholder="Confirmar">
+                            </div>
+                        </div>
+                        <div class="x-small text-muted mt-2">Dejar en blanco para mantener la contraseña actual.</div>
+                    </div>
+                </div>
             </div>`;
         
+        const form = document.getElementById('modalForm');
+        form.action = `/sedes/editar/${id}/`;
+
+        // Validación frontend de contraseñas
+        form.onsubmit = function(e) {
+            const pass = document.getElementById('newPass').value;
+            const conf = document.getElementById('confirmPass').value;
+            if(pass && pass !== conf) {
+                e.preventDefault();
+                
+                // Mostrar error en el área de alertas del modal
+                let errorDiv = document.getElementById('modalErrorAlert');
+                if(!errorDiv) {
+                    const alertHtml = `
+                        <div id="modalErrorAlert" class="alert alert-danger py-2 small shadow-sm mb-3 border-0 border-start border-4 border-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span></span>
+                        </div>`;
+                    document.getElementById('modalBody').insertAdjacentHTML('afterbegin', alertHtml);
+                    errorDiv = document.getElementById('modalErrorAlert');
+                }
+                errorDiv.querySelector('span').innerText = "Las contraseñas no coinciden.";
+                errorDiv.style.display = 'block';
+                return false;
+            }
+        };
+
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Actualizar Nodo";
+        submit.className = "btn rounded-pill px-4 fw-bold w-100 shadow-sm text-white";
         submit.style.background = "var(--blue-main)";
         submit.disabled = false;
         document.getElementById('modalForm').action = `/sedes/editar/${id}/`;
@@ -307,6 +357,22 @@
 
     // CONTADORES
     document.addEventListener("DOMContentLoaded", () => {
+        // Auto-abrir modal si hay errores de validación (Ref: Actualizar Credenciales)
+        {% if modal_error and edit_user_id %}
+            {% for sede in sedes %}
+                {% if sede.user.id == edit_user_id %}
+                    abrirModalEditar(
+                        '{{ edit_user_id }}', 
+                        '{{ edit_data.first_name|default:sede.user.first_name|escapejs }}', 
+                        '{{ edit_data.last_name|default:sede.user.last_name|escapejs }}', 
+                        '{{ edit_data.email|default:sede.user.email|escapejs }}', 
+                        '{{ edit_data.cod_area|default:sede.phone|slice:":4" }}{{ edit_data.phone_num|default:sede.phone|slice:"4:"|escapejs }}',
+                        '{{ modal_error|escapejs }}'
+                    );
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
         document.querySelectorAll('.counter').forEach(c => {
             const target = +c.getAttribute('data-target');
             const update = () => {

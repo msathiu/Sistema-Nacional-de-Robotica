@@ -95,7 +95,7 @@ class Institucion(models.Model):
     telefono_codigo = models.CharField(max_length=4, null=True, blank=True)
     telefono_numero = models.CharField(max_length=7, null=True, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     fecha_registro = models.DateTimeField(auto_now_add=True)
     estatus = models.CharField(
         max_length=20, choices=ESTATUS_CHOICES, default="pendiente"

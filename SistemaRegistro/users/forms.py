@@ -2,7 +2,10 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import UserProfile 
+from .mixins import LocationFormMixin, ParticipanteBaseFormMixin
+from .utils import StringUtils
 import uuid
+import re
 
 from django.core.exceptions import ValidationError
 from datetime import date
@@ -14,6 +17,8 @@ from registry.models import (
     Municipio,
     Parroquia,
     Participante,
+    ParticipanteInstitucion,
+    NACIONALIDAD_CHOICES,
 )
 
 # --- FORMULARIO DE SEDE REGIONAL (ADMINISTRACIÓN CENTRAL) ---
@@ -118,7 +123,7 @@ class ParticipanteModalEditForm(forms.ModelForm):
         model = Participante
         fields = ['nombres', 'apellidos', 'email', 'codigo_area', 'numero_telefono']
 
-class ParticipanteRegistrationForm(forms.ModelForm):
+class ParticipanteRegistrationForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.ModelForm):
     # Campos de cédula separados
     cedula_personal = forms.CharField(
         required=False,
@@ -155,34 +160,83 @@ class ParticipanteRegistrationForm(forms.ModelForm):
             attrs={"class": "form-control", "readonly": "readonly", "id": "id_edad_display"}
         ),
     )
-    
-    # Campo para el título/profesión (Dinámico en el HTML)
-    profesion = forms.CharField(
+
+    TIPO_VINCULACION_CHOICES = ParticipanteInstitucion.TIPO_VINCULACION_CHOICES
+
+    tipo_vinculacion = forms.ChoiceField(
+        choices=TIPO_VINCULACION_CHOICES,
+        initial='institucional',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo de Vinculación'
+    )
+
+    vinculacion_institucion = forms.ModelChoiceField(
+        queryset=Institucion.objects.filter(estatus='aprobado'),
         required=False,
-        widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Ej: Ingeniería, Licenciatura..."}
-        )
+        label='Institución de Vinculación',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    vinculacion_estado = forms.ModelChoiceField(
+        queryset=Estado.objects.all().order_by('nombre'),
+        required=False,
+        label='Estado de Vinculación (Regional)',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    nacionalidad = forms.ChoiceField(
+        choices=NACIONALIDAD_CHOICES,
+        initial="V",
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Nacionalidad"
+    )
+
+    condicion_tea = forms.TypedChoiceField(
+        choices=[("False", "No"), ("True", "Sí")],
+        coerce=lambda x: x == "True",
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Condición TEA",
     )
 
     class Meta:
         model = Participante
         fields = [
             "nombres", "apellidos", "fecha_nacimiento", "sexo",
-            "codigo_area", "numero_telefono", "direccion", "estado",
-            "municipio", "parroquia", "grado_escolar", "nombre_escuela",
-            "nombre_representante", "cedula_representante",
+            "nacionalidad", "condicion_tea", "codigo_area", "numero_telefono",
+            "direccion", "estado", "municipio", "parroquia", "grado_escolar",
+            "titulo_universitario", "campo1",
+            "nombre_representante", "nacionalidad_representante", "cedula_representante",
             "codigo_area_representante", "numero_telefono_representante",
-            "email_representante",
+            "email_representante", "email",
         ]
         widgets = {
             "fecha_nacimiento": forms.DateInput(
+                format='%Y-%m-%d',
                 attrs={"type": "date", "class": "form-control"}
             ),
             "direccion": forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
-            "cedula_representante": forms.TextInput(attrs={"placeholder": "Solo números"}),
+            "cedula_representante": forms.TextInput(attrs={
+                "placeholder": "Solo números", 
+                "class": "form-control",
+                "maxlength": "10",
+                "pattern": "[0-9]+"
+            }),
+            "titulo_universitario": forms.TextInput(attrs={
+                "class": "form-control border-primary shadow-sm",
+                "placeholder": "Ej: Ingeniería, Licenciatura, etc."
+            }),
+            "campo1": forms.TextInput(attrs={
+                "class": "form-control border-secondary shadow-sm",
+                "placeholder": "Especifique el nivel educativo"
+            }),
         }
 
     def __init__(self, *args, **kwargs):
+        # Extraer parámetros personalizados antes de llamar a super()
+        self.user_role = kwargs.pop('user_role', 'institucional')
+        self.user_institution = kwargs.pop('user_institution', None)
+        
         super().__init__(*args, **kwargs)
         
         # 1. Estilizar todos los campos (Bootstrap 5)
@@ -190,132 +244,131 @@ class ParticipanteRegistrationForm(forms.ModelForm):
             field.widget.attrs.update({"class": "form-control"})
         
         # Uso de form-select para desplegables (mejor estética en BS5)
-        for select_field in ['estado', 'municipio', 'parroquia', 'sexo', 'codigo_area', 'codigo_area_representante']:
+        for select_field in ['estado', 'municipio', 'parroquia', 'sexo', 'codigo_area', 'codigo_area_representante', 'nacionalidad', 'nacionalidad_representante', 'condicion_tea']:
             if select_field in self.fields:
                 self.fields[select_field].widget.attrs.update({"class": "form-select"})
 
-        # 2. Cargar el QuerySet inicial de Estados
-        if 'estado' in self.fields:
-            self.fields["estado"].queryset = Estado.objects.all().order_by("nombre")
+        # Hacer obligatorios los campos de ubicación georeferencial
+        for loc in ['estado', 'municipio', 'parroquia']:
+            if loc in self.fields:
+                self.fields[loc].required = True
 
-        # 3. Lógica de encadenamiento dinámico (Seguro contra KeyError)
-        
-        # PRIORIDAD A: Datos enviados en el POST
-        if 'municipio' in self.fields and self.data.get('estado'):
-            try:
-                estado_id = self.data.get('estado')
-                self.fields['municipio'].queryset = Municipio.objects.filter(estado_id=estado_id).order_by('nombre')
-            except (ValueError, TypeError):
-                self.fields['municipio'].queryset = Municipio.objects.none()
-                
-        # PRIORIDAD B: Datos de la instancia al EDITAR
-        elif self.instance.pk and hasattr(self.instance, 'estado') and self.instance.estado:
-            if 'municipio' in self.fields:
-                self.fields['municipio'].queryset = Municipio.objects.filter(
-                    estado=self.instance.estado
-                ).order_by('nombre')
-            
-            # Verificación de Parroquia (Solo si el campo existe en el Form y el Modelo)
-            if 'parroquia' in self.fields and hasattr(self.instance, 'municipio') and self.instance.municipio:
-                # Nota: Asegúrate de tener el modelo Parroquia importado
-                try:
-                    from .models import Parroquia
-                    self.fields['parroquia'].queryset = Parroquia.objects.filter(
-                        municipio=self.instance.municipio
-                    ).order_by('nombre')
-                except ImportError:
-                    pass
-        
-        # PRIORIDAD C: Carga inicial limpia (GET)
-        else:
-            if 'municipio' in self.fields:
-                self.fields["municipio"].queryset = Municipio.objects.none()
-            if 'parroquia' in self.fields:
-                self.fields["parroquia"].queryset = Municipio.objects.none()
+        # 1b. Marcar campos inválidos para feedback visual
+        self.error_css_class = 'is-invalid'
+        for field_name in self.errors:
+            if field_name in self.fields:
+                existing_class = self.fields[field_name].widget.attrs.get('class', '')
+                if 'is-invalid' not in existing_class:
+                    self.fields[field_name].widget.attrs['class'] = f"{existing_class} is-invalid".strip()
 
-    def clean_fecha_nacimiento(self):
-        fecha_nac = self.cleaned_data.get("fecha_nacimiento")
-        if fecha_nac:
-            today = date.today()
-            edad = today.year - fecha_nac.year - ((today.month, today.day) < (fecha_nac.month, fecha_nac.day))
+        # 2. Configurar querysets de ubicación usando el Mixin
+        self.setup_location_fields()
+
+        # 3. Precargar valores de cédula si existe instancia
+        if hasattr(self, 'instance') and self.instance and hasattr(self.instance, 'pk') and self.instance.pk:
+            self.fields['cedula_personal'].initial = self.instance.cedula
+            self.fields['cedula_escolar_input'].initial = self.instance.cedula_escolar
+
+        # 4. CONFIGURAR CAMPOS SEGÚN ROL DEL USUARIO
+        self._configure_fields_by_role()
+
+    def _configure_fields_by_role(self):
+        """Configura los campos del formulario según el rol del usuario."""
+        
+        if self.user_role == 'fed_central':
+            # Federación Central: TODOS los campos de vinculación visibles y funcionales
+            # No hacer cambios, todos los campos ya están configurados
+            pass
             
-            if edad < 3:
-                raise ValidationError("El participante debe tener al menos 3 años de edad.")
-        return fecha_nac
-    
+        elif self.user_role == 'institucional':
+            # Usuario Institucional: Solo puede vincular a su propia institución
+            # Ocultar selector de tipo de vinculación
+            self.fields['tipo_vinculacion'].widget = forms.HiddenInput()
+            self.fields['tipo_vinculacion'].initial = 'institucional'
+            self.fields['tipo_vinculacion'].required = False
+            
+            # Configurar institución: solo la suya, oculta
+            if self.user_institution:
+                self.fields['vinculacion_institucion'].widget = forms.HiddenInput()
+                self.fields['vinculacion_institucion'].queryset = Institucion.objects.filter(id=self.user_institution.id)
+                self.fields['vinculacion_institucion'].initial = self.user_institution.id
+                self.fields['vinculacion_institucion'].required = False
+            else:
+                # Si no tiene institución, ocultar campo
+                self.fields['vinculacion_institucion'].widget = forms.HiddenInput()
+                self.fields['vinculacion_institucion'].required = False
+            
+            # Ocultar campo de estado regional
+            self.fields['vinculacion_estado'].widget = forms.HiddenInput()
+            self.fields['vinculacion_estado'].required = False
+            
+        else:  # fed_regional u otros
+            # Federación Regional: campos de vinculación ocultos
+            self.fields['tipo_vinculacion'].widget = forms.HiddenInput()
+            self.fields['tipo_vinculacion'].required = False
+            self.fields['vinculacion_institucion'].widget = forms.HiddenInput()
+            self.fields['vinculacion_institucion'].required = False
+            self.fields['vinculacion_estado'].widget = forms.HiddenInput()
+            self.fields['vinculacion_estado'].required = False
+
     def clean_cedula_personal(self):
-        """Limpia la cédula personal dejando solo números."""
-        cedula = self.data.get('cedula_personal', '').strip()
-        if cedula:
-            # Remover todo excepto números
-            cedula_limpia = ''.join(filter(str.isdigit, cedula))
-            if cedula_limpia and len(cedula_limpia) > 10:
-                raise ValidationError("La cédula personal no puede tener más de 10 dígitos.")
-            return cedula_limpia
-        return ''
+        val = StringUtils.clean_numeric_id(self.cleaned_data.get('cedula_personal'))
+        return val if val else None
     
     def clean_cedula_escolar_input(self):
-        """Limpia la cédula escolar dejando solo números."""
-        cedula = self.data.get('cedula_escolar_input', '').strip()
-        if cedula:
-            # Remover todo excepto números
-            cedula_limpia = ''.join(filter(str.isdigit, cedula))
-            if cedula_limpia and len(cedula_limpia) > 20:
-                raise ValidationError("La cédula escolar no puede tener más de 20 dígitos.")
-            return cedula_limpia
-        return ''
+        val = StringUtils.clean_numeric_id(self.cleaned_data.get('cedula_escolar_input'))
+        return val if val else None
     
     def clean_cedula_representante(self):
-        """Limpia la cédula del representante dejando solo números."""
-        cedula = self.cleaned_data.get('cedula_representante', '').strip()
-        if cedula:
-            cedula_limpia = ''.join(filter(str.isdigit, cedula))
-            if cedula_limpia and len(cedula_limpia) > 10:
-                raise ValidationError("La cédula del representante no puede tener más de 10 dígitos.")
-            return cedula_limpia
+        cedula = StringUtils.clean_numeric_id(self.cleaned_data.get('cedula_representante'))
+        if cedula and len(cedula) > 10:
+            raise forms.ValidationError("La cédula del representante no puede exceder los 10 dígitos.")
+        if cedula and len(cedula) < 7:
+            raise forms.ValidationError("La cédula del representante debe tener al menos 7 dígitos.")
         return cedula
     
     def clean(self):
         cleaned_data = super().clean()
-        fecha_nac = cleaned_data.get("fecha_nacimiento")
-        
-        # Obtener cédulas directamente del POST
-        cedula_personal = self.data.get('cedula_personal', '').strip()
-        cedula_escolar = self.data.get('cedula_escolar_input', '').strip()
-        
-        # Limpiar cédulas (solo números)
-        if cedula_personal:
-            cedula_personal = ''.join(filter(str.isdigit, cedula_personal))
-        if cedula_escolar:
-            cedula_escolar = ''.join(filter(str.isdigit, cedula_escolar))
-        
-        # Validar que tenga al menos una cédula
-        if not cedula_personal and not cedula_escolar:
-            raise ValidationError("Debe proporcionar al menos una cédula (personal o escolar).")
-        
-        if fecha_nac:
-            today = date.today()
-            edad = today.year - fecha_nac.year - ((today.month, today.day) < (fecha_nac.month, fecha_nac.day))
+        # Usar validaciones centralizadas del Mixin
+        cleaned_data = self.clean_id_fields(cleaned_data)
+        cleaned_data = self.validate_age_and_representative(cleaned_data)
+        cleaned_data = self.clean_location_integrity(cleaned_data)
+
+        # Validación de vínculo institucional/regional/central SEGÚN ROL
+        if self.user_role == 'fed_central':
+            # Federación Central: validar normalmente
+            tipo_vinculacion = cleaned_data.get('tipo_vinculacion')
+            institucion = cleaned_data.get('vinculacion_institucion')
+            estado = cleaned_data.get('vinculacion_estado')
+
+            if tipo_vinculacion == 'institucional' and not institucion:
+                raise ValidationError('Debe seleccionar una institución para la vinculación institucional.')
+
+            if tipo_vinculacion == 'regional' and not estado:
+                raise ValidationError('Debe seleccionar un estado para la vinculación regional.')
+                
+        elif self.user_role == 'institucional':
+            # Usuario Institucional: forzar vinculación institucional con su institución
+            cleaned_data['tipo_vinculacion'] = 'institucional'
+            if self.user_institution:
+                cleaned_data['vinculacion_institucion'] = self.user_institution
+            cleaned_data['vinculacion_estado'] = None
             
-            # Para mayores de 10 años: cédula personal obligatoria
-            if edad > 10 and not cedula_personal:
-                raise ValidationError("La cédula personal es obligatoria para mayores de 10 años.")
-            
-            # Lógica para Menores de Edad (< 18 años)
-            if edad < 18:
-                campos_rep = [
-                    'nombre_representante', 'cedula_representante', 
-                    'codigo_area_representante', 'numero_telefono_representante', 
-                    'email_representante'
-                ]
-                for campo in campos_rep:
-                    if not cleaned_data.get(campo):
-                        self.add_error(campo, "Este campo es obligatorio para menores de edad.")
-        
+        else:  # fed_regional u otros
+            # No validar campos de vinculación, estarán ocultos
+            pass
+
+        return cleaned_data
+
+        # Central no requiere institucion/estado
+        if tipo_vinculacion == 'central':
+            cleaned_data['vinculacion_institucion'] = None
+            cleaned_data['vinculacion_estado'] = None
+
         return cleaned_data
 
 # --- FORMULARIO DE INSTITUCIONES ---
-class InstitucionRegistrationForm(forms.ModelForm):
+class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
     SUBCATEGORIAS_EDUCATIVA = [
         ("preescolar", "Preescolar"),
         ("primaria", "Primaria (1ra y 2da etapa)"),
@@ -332,6 +385,7 @@ class InstitucionRegistrationForm(forms.ModelForm):
     CODIGO_AREA_CHOICES = [
         ("", "Codigo"), ("0412", "0412"), ("0414", "0414"), ("0416", "0416"),
         ("0424", "0424"), ("0426", "0426"), ("0212", "0212"), ("0281", "0281"),
+        ("0241", "0241"),
     ]
 
     tipo_institucion = forms.ChoiceField(
@@ -360,15 +414,22 @@ class InstitucionRegistrationForm(forms.ModelForm):
         label="Nacionalidad"
     )
     particular_cedula = forms.CharField(
-        max_length=10, 
+        max_length=20,
         required=False,
         label="Cédula",
         widget=forms.TextInput(attrs={
             'placeholder': 'Solo números',
-            'pattern': '[0-9]+',
-            'maxlength': '10'
+            'pattern': r'[0-9.\-\s]+',
+            'maxlength': '20'
         })
     )
+
+    def clean_particular_cedula(self):
+        raw = self.cleaned_data.get("particular_cedula", "")
+        cleaned = StringUtils.clean_numeric_id(raw)
+        if cleaned and len(cleaned) > 10:
+            raise forms.ValidationError("La cédula no puede tener más de 10 dígitos.")
+        return cleaned
     codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES)
     numero_telefono = forms.CharField(max_length=7, min_length=7)
     password = forms.CharField(label="Contrasena", widget=forms.PasswordInput())
@@ -393,21 +454,165 @@ class InstitucionRegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["estado"].queryset = Estado.objects.order_by("nombre")
-        self.fields["municipio"].queryset = Municipio.objects.none()
-        self.fields["parroquia"].queryset = Parroquia.objects.none()
+        # Usar Mixin para ubicación
+        self.setup_location_fields()
+        
+        # Configurar campos dinámicos basados en tipo_institucion
+        tipo_institucion = self.initial.get('tipo_institucion') or self.data.get('tipo_institucion')
+        if tipo_institucion:
+            self._configure_fields_by_tipo_institucion(tipo_institucion)
+    
+    def _configure_fields_by_tipo_institucion(self, tipo_institucion):
+        """Configura campos dinámicos basados en el tipo de institución"""
+        if tipo_institucion == 'educativa':
+            # Código MPPE obligatorio para instituciones educativas
+            self.fields['codigo_mppe'].required = True
+        else:
+            # Código MPPE no obligatorio para otros tipos
+            self.fields['codigo_mppe'].required = False
+            
+        if tipo_institucion == 'particular':
+            # Nacionalidad por defecto "V" para personas naturales
+            self.fields['particular_nacionalidad'].initial = 'V'            # En persona natural, nombre puede derivarse de los datos de particular
+            self.fields['nombre'].required = False
+    def _handle_institucion_eliminada(self, institucion_eliminada, campo_validado, valor_campo):
+        """
+        Maneja el caso especial cuando una institución eliminada intenta registrarse.
+        Verifica que todos los datos únicos coincidan antes de reactivar.
+        """
+        cleaned_data = self.cleaned_data
+        
+        # Verificar que TODOS los identificadores únicos coincidan
+        if not self._validar_datos_coinciden(institucion_eliminada, cleaned_data):
+            # Si no coinciden todos los datos, tratar como registro normal
+            # (el error se manejará en otras validaciones)
+            return valor_campo
+        
+        # ⚡ REACTIVAR INSTITUCIÓN ELIMINADA
+        self._reactivar_institucion_eliminada(institucion_eliminada)
+        
+        # Retornar el valor sin error (no hay validación que falle)
+        return valor_campo
+    
+    def _validar_datos_coinciden(self, institucion_eliminada, cleaned_data):
+        """
+        Verifica que todos los datos únicos coincidan antes de reactivar.
+        """
+        tipo_institucion = cleaned_data.get("tipo_institucion")
+        
+        # Para instituciones (no particulares)
+        if tipo_institucion != "particular":
+            # Validar RIF
+            rif_letra = cleaned_data.get("rif_letra", "")
+            rif_numero = cleaned_data.get("rif_numero", "")
+            if rif_letra and rif_numero:
+                rif_form = f"{rif_letra}-{rif_numero}"
+                if institucion_eliminada.rif != rif_form:
+                    return False
+            
+            # Validar Código MPPE si es educativa
+            if tipo_institucion == "educativa":
+                codigo_mppe = cleaned_data.get("codigo_mppe", "").strip().upper()
+                if institucion_eliminada.codigo_mppe != codigo_mppe:
+                    return False
+        
+        # Para personas naturales
+        else:
+            # Validar cédula
+            cedula = StringUtils.clean_numeric_id(cleaned_data.get("particular_cedula", ""))
+            if institucion_eliminada.particular_cedula != cedula:
+                return False
+        
+        # Si llega aquí, todos los datos coinciden
+        return True
+    
+    def _reactivar_institucion_eliminada(self, institucion):
+        """
+        Reactiva una institución eliminada poniéndola en estado pendiente.
+        """
+        # 1. Reactivar institución
+        institucion.eliminado = False
+        institucion.activa = False  # Queda inhabilitada hasta aprobación
+        institucion.estatus = "pendiente"  # Requiere nueva aprobación
+        
+        # 2. Desactivar usuario hasta aprobación
+        if institucion.usuario:
+            institucion.usuario.is_active = False
+            institucion.usuario.save()
+        
+        # 3. Limpiar fecha de eliminación si existe
+        if hasattr(institucion, 'fecha_eliminacion'):
+            institucion.fecha_eliminacion = None
+        
+        institucion.save()
+        
+        # 4. Marcar que se reactivó una institución (para lógica en save())
+        self._institucion_reactivada = institucion
 
-        if "estado" in self.data:
-            try:
-                estado_id = int(self.data.get("estado"))
-                self.fields["municipio"].queryset = Municipio.objects.filter(estado_id=estado_id).order_by("nombre")
-            except (ValueError, TypeError): pass
+    def _buscar_institucion_eliminada_para_reactivar(self, cleaned_data):
+        """
+        Busca una institución eliminada que coincida exactamente con los datos proporcionados.
+        Retorna la institución si existe y está eliminada, None en caso contrario.
+        """
+        tipo_institucion = cleaned_data.get("tipo_institucion")
+        email = cleaned_data.get("email", "").strip().lower()
+        
+        if not email:
+            return None
+            
+        # Buscar institución eliminada con este email
+        institucion = Institucion.objects.filter(
+            email=email,
+            eliminado=True
+        ).first()
+        
+        if not institucion:
+            return None
+            
+        # Verificar que el tipo de institución coincida
+        if institucion.tipo_institucion != tipo_institucion:
+            return None
+            
+        # Para instituciones (no particulares)
+        if tipo_institucion != "particular":
+            # Verificar RIF
+            rif_letra = cleaned_data.get("rif_letra", "")
+            rif_numero = cleaned_data.get("rif_numero", "")
+            if rif_letra and rif_numero:
+                rif_form = f"{rif_letra}-{rif_numero}"
+                if institucion.rif != rif_form:
+                    return None
+            
+            # Verificar Código MPPE si es educativa
+            if tipo_institucion == "educativa":
+                codigo_mppe = cleaned_data.get("codigo_mppe", "").strip().upper()
+                if institucion.codigo_mppe != codigo_mppe:
+                    return None
+        
+        # Para personas naturales
+        else:
+            # Verificar cédula
+            cedula = StringUtils.clean_numeric_id(cleaned_data.get("particular_cedula", ""))
+            if institucion.particular_cedula != cedula:
+                return None
+        
+        # Si llega aquí, todos los datos coinciden
+        return institucion
 
-        if "municipio" in self.data:
-            try:
-                municipio_id = int(self.data.get("municipio"))
-                self.fields["parroquia"].queryset = Parroquia.objects.filter(municipio_id=municipio_id).order_by("nombre")
-            except (ValueError, TypeError): pass
+    def clean_email(self):
+        """
+        Validar email con unicidad solo para instituciones activas (no eliminadas).
+        """
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if not email:
+            raise forms.ValidationError("El email es obligatorio.")
+        
+        # Buscar institución activa (no eliminada) con este email
+        existing = Institucion.objects.filter(email=email, eliminado=False).first()
+        if existing:
+            raise forms.ValidationError("Ya existe una institución registrada con este correo.")
+        
+        return email
 
     def clean(self):
         cleaned_data = super().clean()
@@ -415,222 +620,200 @@ class InstitucionRegistrationForm(forms.ModelForm):
         password = cleaned_data.get("password") or ""
         confirm_password = cleaned_data.get("confirm_password") or ""
         
+        # Validar integridad de ubicación usando Mixin
+        cleaned_data = self.clean_location_integrity(cleaned_data)
+
+        # ⚡ DETECCIÓN TEMPRANA DE INSTITUCIÓN ELIMINADA PARA REACTIVACIÓN
+        # Buscar institución eliminada que coincida con los datos proporcionados
+        institucion_eliminada = self._buscar_institucion_eliminada_para_reactivar(cleaned_data)
+        if institucion_eliminada:
+            # Verificar que TODOS los datos únicos coincidan
+            if self._validar_datos_coinciden(institucion_eliminada, cleaned_data):
+                # ⚡ MARCAR PARA REACTIVACIÓN - Esto bypass todas las validaciones de unicidad
+                self._institucion_reactivada = institucion_eliminada
+                # Reactivar inmediatamente para evitar conflictos de unicidad
+                self._reactivar_institucion_eliminada(institucion_eliminada)
+                # Retornar temprano - no ejecutar otras validaciones
+                return cleaned_data
+
         # Validar campos según tipo de institución
         if tipo_institucion == "particular":
-            # Para particulares: validar campos de persona natural
             if not cleaned_data.get("particular_nombres"):
                 self.add_error("particular_nombres", "Los nombres son obligatorios para personas naturales.")
             if not cleaned_data.get("particular_apellidos"):
                 self.add_error("particular_apellidos", "Los apellidos son obligatorios para personas naturales.")
-            if not cleaned_data.get("particular_nacionalidad"):
-                self.add_error("particular_nacionalidad", "La nacionalidad es obligatoria para personas naturales.")
-            
-            cedula = cleaned_data.get("particular_cedula") or ""
-            cedula = cedula.strip() if cedula else ""
+
+            if not cleaned_data.get("nombre"):
+                # Si no se indicó nombre institucional, usamos datos de persona natural
+                nombres = cleaned_data.get("particular_nombres", "").strip()
+                apellidos = cleaned_data.get("particular_apellidos", "").strip()
+                if nombres or apellidos:
+                    cleaned_data["nombre"] = f"{nombres} {apellidos}".strip()
+
+            cedula = StringUtils.clean_numeric_id(cleaned_data.get("particular_cedula"))
             if not cedula:
-                self.add_error("particular_cedula", "La cédula es obligatoria para personas naturales.")
+                self.add_error("particular_cedula", "La cédula es obligatoria.")
             else:
-                # Limpiar cédula: solo números
-                cedula_limpia = ''.join(filter(str.isdigit, cedula))
-                if not cedula_limpia:
-                    self.add_error("particular_cedula", "La cédula debe contener números.")
-                elif len(cedula_limpia) > 10:
-                    self.add_error("particular_cedula", "La cédula no puede tener más de 10 dígitos.")
-                elif len(cedula_limpia) < 6:
-                    self.add_error("particular_cedula", "La cédula debe tener al menos 6 dígitos.")
-                else:
-                    # Validación atómica: verificar que no exista otra institución con la misma cédula
-                    from registry.models import Institucion
-                    if Institucion.objects.filter(particular_cedula=cedula_limpia, eliminado=False).exists():
-                        self.add_error(
-                            "particular_cedula",
-                            f"Ya existe un registro con la cédula {cedula_limpia}. No se puede registrar más de una vez."
-                        )
-                    cleaned_data["particular_cedula"] = cedula_limpia
+                # Buscar institución existente con esta cédula
+                existing = Institucion.objects.filter(particular_cedula=cedula).first()
+                if existing:
+                    if existing.eliminado:
+                        # ⚡ ESCENARIO ESPECIAL: Reactivar institución eliminada
+                        self._handle_institucion_eliminada(existing, "particular_cedula", cedula)
+                    else:
+                        # Validación normal: institución activa ya existe
+                        self.add_error("particular_cedula", f"Cédula {cedula} ya registrada.")
+                cleaned_data["particular_cedula"] = cedula
         else:
-            # Para otros tipos: validar RIF
             rif_numero = cleaned_data.get("rif_numero")
             if not rif_numero:
-                self.add_error("rif_numero", "El RIF es obligatorio para instituciones.")
-            else:
-                # Validar formato de RIF
-                rif_limpio = rif_numero.replace("-", "").strip()
-                if not rif_limpio.isdigit():
-                    self.add_error("rif_numero", "El RIF debe contener solo números.")
-                elif len(rif_limpio) != 9:
-                    self.add_error("rif_numero", "El RIF debe tener exactamente 9 dígitos (8 + dígito verificador).")
+                self.add_error("rif_numero", "El RIF es obligatorio.")
+            
+            # Validar código MPPE obligatorio para instituciones educativas
+            if tipo_institucion == "educativa":
+                codigo_mppe = cleaned_data.get("codigo_mppe")
+                if not codigo_mppe or not codigo_mppe.strip():
+                    self.add_error("codigo_mppe", "El código MPPE es obligatorio para instituciones educativas.")
+                else:
+                    # Normalizar el código MPPE (mayúsculas y espacios)
+                    codigo_mppe_normalizado = codigo_mppe.strip().upper()
+                    
+                    # Buscar institución existente con este código MPPE
+                    existing = Institucion.objects.filter(codigo_mppe=codigo_mppe_normalizado).first()
+                    if existing:
+                        if existing.eliminado:
+                            # ⚡ ESCENARIO ESPECIAL: Reactivar institución eliminada
+                            self._handle_institucion_eliminada(existing, "codigo_mppe", codigo_mppe_normalizado)
+                        else:
+                            # Validación normal: institución activa ya existe
+                            self.add_error(
+                                "codigo_mppe",
+                                f"El código MPPE '{codigo_mppe_normalizado}' ya está registrado. "
+                                "Si cree que esto es un error, por favor contacte con la administración."
+                            )
+                    
+                    cleaned_data["codigo_mppe"] = codigo_mppe_normalizado
         
-        # Validación de email único
-        email = cleaned_data.get("email")
-        if email:
-            from registry.models import Institucion
-            if Institucion.objects.filter(email__iexact=email, eliminado=False).exists():
-                self.add_error("email", "Ya existe una institución registrada con este correo electrónico.")
+        # Validación de contraseña con requisitos fuertes
+        if len(password) < 8:
+            self.add_error("password", "Mínimo 8 caracteres.")
+        else:
+            # Validar mayúscula
+            if not re.search(r'[A-Z]', password):
+                self.add_error("password", "Debe incluir al menos 1 letra mayúscula.")
+            # Validar número
+            if not re.search(r'[0-9]', password):
+                self.add_error("password", "Debe incluir al menos 1 número.")
+            # Validar carácter especial
+            if not re.search(r'[!@#$%^&*()_\-=\[\]{};:\'",.<>?/\\|`~]', password):
+                self.add_error("password", "Debe incluir un carácter especial (!@#$%^&*...).")
         
-        # Validación atómica de duplicados: tipo_institucion + nombre + rif + estado + municipio + parroquia
-        if not self.errors:  # Solo validar si no hay errores previos
-            nombre = cleaned_data.get("nombre")
-            estado = cleaned_data.get("estado")
-            municipio = cleaned_data.get("municipio")
-            parroquia = cleaned_data.get("parroquia")
-            
-            # Construir RIF completo para instituciones
-            rif_completo = None
-            if tipo_institucion != "particular":
-                rif_letra = cleaned_data.get("rif_letra")
-                rif_numero = cleaned_data.get("rif_numero") or ""
-                rif_numero_limpio = rif_numero.replace("-", "") if rif_numero else ""
-                if rif_letra and rif_numero_limpio:
-                    rif_completo = f"{rif_letra}-{rif_numero_limpio[:8]}-{rif_numero_limpio[8:]}"
-            
-            # Buscar duplicados atómicos
-            from registry.models import Institucion
-            from django.db.models import Q
-            
-            filtro_duplicado = Q(
-                tipo_institucion=tipo_institucion,
+        if password != confirm_password:
+            self.add_error("confirm_password", "Las contraseñas no coinciden.")
+        
+        # Validación de cascada de ubicación
+        estado = cleaned_data.get("estado")
+        municipio = cleaned_data.get("municipio")
+        parroquia = cleaned_data.get("parroquia")
+        
+        if municipio and estado:
+            if municipio.estado_id != estado.id:
+                self.add_error("municipio", 
+                    f"El municipio '{municipio.nombre}' no pertenece al estado '{estado.nombre}'.")
+        
+        if parroquia and municipio:
+            if parroquia.municipio_id != municipio.id:
+                self.add_error("parroquia", 
+                    f"La parroquia '{parroquia.nombre}' no pertenece al municipio '{municipio.nombre}'.")
+        
+        # 4. VALIDACIÓN ATÓMICA DE DUPLICIDAD (Nombre, RIF, Ubicación)
+        nombre = cleaned_data.get("nombre")
+        rif_letra = cleaned_data.get("rif_letra")
+        rif_num = StringUtils.clean_numeric_id(cleaned_data.get("rif_numero"))
+
+        if tipo_institucion != "particular" and nombre and rif_letra and rif_num and estado and municipio and parroquia:
+            # Formato consistente: J-12345678 (8 dígitos máximo)
+            # Si rif_num es 10 dígitos, usar primeros 8
+            rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
+            rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}"
+            if len(rif_num_limpio) > 8:
+                rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+
+            # Permitir considerar duplicado si el RIF coincide con el value base de 8 dígitos
+            rif_base = f"{rif_letra}-{rif_num_limpio[:8]}"
+            rif_posibles = [rif_completo]
+            if rif_completo != rif_base:
+                rif_posibles.append(rif_base)
+
+            # Buscar coincidencia de RIF (exacto o base) + nombre + ubicación
+            duplicado = Institucion.objects.filter(
                 nombre__iexact=nombre,
+                rif__in=rif_posibles,
                 estado=estado,
                 municipio=municipio,
                 parroquia=parroquia,
                 eliminado=False
-            )
-            
-            # Agregar filtro de RIF solo para instituciones (no particulares)
-            if tipo_institucion != "particular" and rif_completo:
-                filtro_duplicado &= Q(rif=rif_completo)
-            
-            institucion_duplicada = Institucion.objects.filter(filtro_duplicado).first()
-            
-            if institucion_duplicada:
+            ).exists()
+
+            if duplicado:
                 raise ValidationError(
-                    f"Ya existe una institución registrada con los mismos datos: "
-                    f"Tipo: {institucion_duplicada.get_tipo_institucion_display()}, "
-                    f"Razón Social: {institucion_duplicada.nombre}, "
-                    f"RIF: {institucion_duplicada.rif or 'N/A'}, "
-                    f"Ubicación: {estado.nombre if estado else 'N/A'} - {municipio.nombre if municipio else 'N/A'} - {parroquia.nombre if parroquia else 'N/A'}. "
-                    f"No se permite el registro duplicado."
+                    f"Ya existe una institución registrada con el nombre '{nombre}' y RIF '{rif_completo}' en esta ubicación (Estado {estado.nombre}, Municipio {municipio.nombre})."
                 )
-        
-        # Validaciones de seguridad de contraseña
-        if len(password) < 8:
-            self.add_error("password", "La contraseña debe tener al menos 8 caracteres.")
-        if not any(ch.isupper() for ch in password):
-            self.add_error("password", "Debe incluir al menos una letra mayúscula.")
-        if not any(ch.isdigit() for ch in password):
-            self.add_error("password", "Debe incluir al menos un número.")
-        if not any(ch in '!@#$%^&*(),.?":{}|<>' for ch in password):
-            self.add_error("password", "Debe incluir al menos un carácter especial (!@#$%^&*(),.?\":{}|<>).")
-        if password != confirm_password:
-            self.add_error("confirm_password", "Las contraseñas no coinciden.")
-        
-        # Validación contra contraseñas comunes
-        contraseñas_comunes = [
-            'password', '12345678', 'qwerty123', 'admin123', 'password123',
-            'Venezuela123', 'Robotica123'
-        ]
-        if password.lower() in [p.lower() for p in contraseñas_comunes]:
-            self.add_error("password", "Esta contraseña es demasiado común. Por favor elija una más segura.")
-        
+
         return cleaned_data
 
     def save(self, commit=True):
+        # Si se reactivó una institución eliminada, retornar la existente
+        if hasattr(self, '_institucion_reactivada'):
+            return self._institucion_reactivada
+        
+        # Lógica normal de creación de nueva institución
         instance = super().save(commit=False)
         tipo_institucion = self.cleaned_data.get("tipo_institucion")
         
-        # Procesar según tipo de institución
         if tipo_institucion == "particular":
-            # Para personas naturales
             instance.particular_nombres = self.cleaned_data.get("particular_nombres")
             instance.particular_apellidos = self.cleaned_data.get("particular_apellidos")
             instance.particular_nacionalidad = self.cleaned_data.get("particular_nacionalidad")
             instance.particular_cedula = self.cleaned_data.get("particular_cedula")
-            # RIF no es obligatorio para particulares
             instance.rif = None
-            # Código MPPE no aplica para particulares
-            instance.codigo_mppe = None
         else:
-            # Para instituciones
             rif_letra = self.cleaned_data.get("rif_letra")
-            rif_numero = self.cleaned_data.get("rif_numero") or ""
-            rif_numero = rif_numero.replace("-", "") if rif_numero else ""
-            if rif_letra and rif_numero:
-                instance.rif = f"{rif_letra}-{rif_numero[:8]}-{rif_numero[8]}"
-            
-            # Limpiar código MPPE: si está vacío o es solo espacios, guardarlo como None
-            codigo_mppe = self.cleaned_data.get("codigo_mppe") or ""
-            codigo_mppe = codigo_mppe.strip() if codigo_mppe else ""
-            instance.codigo_mppe = codigo_mppe if codigo_mppe else None
+            rif_num = StringUtils.clean_numeric_id(self.cleaned_data.get("rif_numero"))
+            if rif_letra and rif_num:
+                # Formato consistente: J-12345678 o J-12345678-90
+                rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
+                if len(rif_num_limpio) <= 8:
+                    instance.rif = f"{rif_letra}-{rif_num_limpio}"
+                else:
+                    instance.rif = f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
         
-        # Teléfono
-        codigo_area = self.cleaned_data.get("codigo_area")
-        numero_telefono = self.cleaned_data.get("numero_telefono")
-        instance.telefono_codigo = codigo_area
-        instance.telefono_numero = numero_telefono
-        instance.telefono = f"{codigo_area}{numero_telefono}"
-        instance.federado = False
-        
-        if not instance.pk:
-            instance.activa = False
-            instance.estatus = 'pendiente'
-        
-        # Dependencia
-        dependencia = self.cleaned_data.get("dependencia_existente")
-        nueva_dependencia = self.cleaned_data.get("nueva_dependencia") or ""
-        nueva_dependencia = nueva_dependencia.strip() if nueva_dependencia else ""
-        if nueva_dependencia:
-            from registry.models import Dependencia
-            dependencia, _ = Dependencia.objects.get_or_create(nombre=nueva_dependencia)
-        instance.dependencia_rel = dependencia
-        instance.dependencia = dependencia.nombre if dependencia else None
+        instance.telefono_codigo = self.cleaned_data.get("codigo_area")
+        instance.telefono_numero = self.cleaned_data.get("numero_telefono")
+        instance.telefono = f"{instance.telefono_codigo}{instance.telefono_numero}"
         
         if commit: 
             instance.save()
         return instance
 
-
 # --- FORMULARIO DE CLUBES ---
 class ClubRegistrationForm(forms.ModelForm):
     """
     Formulario para registrar clubes con líneas de investigación dinámicas.
-    Usa el modelo ClubLineaInvestigacion en lugar de campos deprecated.
     """
     from registry.models import LineaInvestigacion, ClubLineaInvestigacion
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Obtener queryset de líneas de investigación activas
-        lineas_qs = LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre')
-        
-        # Verificar si hay líneas disponibles
-        if not lineas_qs.exists():
-            # Si no hay líneas, hacer todos los campos opcionales para evitar errores
-            self.fields['linea_investigacion_1'].required = False
-            self.fields['linea_investigacion_1'].empty_label = "No hay líneas disponibles - Contacte al administrador"
-        else:
-            # Mensaje por defecto cuando hay líneas
-            self.fields['linea_investigacion_1'].empty_label = "Seleccione una línea"
-    
-    # Campos para líneas de investigación (hasta 3)
     linea_investigacion_1 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.none(),
+        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden'),
         required=True,
-        label="Línea de Investigación 1 (Principal)",
+        label="Línea Principal",
         empty_label="Seleccione una línea",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     linea_investigacion_2 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.none(),
+        queryset=LineaInvestigacion.objects.filter(activa=True).order_by('orden'),
         required=False,
-        label="Línea de Investigación 2 (Opcional)",
-        empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    linea_investigacion_3 = forms.ModelChoiceField(
-        queryset=LineaInvestigacion.objects.none(),
-        required=False,
-        label="Línea de Investigación 3 (Opcional)",
+        label="Línea 2 (Opcional)",
         empty_label="Seleccione una línea",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -639,68 +822,27 @@ class ClubRegistrationForm(forms.ModelForm):
         model = Club
         fields = ['nombre', 'descripcion', 'ubicacion']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robotica "Simon Rodriguez"'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        
-        # Obtener las líneas
-        linea_1 = cleaned_data.get('linea_investigacion_1')
-        linea_2 = cleaned_data.get('linea_investigacion_2')
-        linea_3 = cleaned_data.get('linea_investigacion_3')
-        
-        # Validar que la línea 1 sea obligatoria si hay líneas disponibles
-        lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
-        if lineas_disponibles and not linea_1:
-            raise forms.ValidationError({
-                'linea_investigacion_1': 'Debe seleccionar al menos una línea de investigación principal.'
-            })
-        
-        # Validar que no se repitan líneas
-        lineas = [l for l in [linea_1, linea_2, linea_3] if l]
-        if len(lineas) != len(set(lineas)):
-            raise forms.ValidationError("No puedes seleccionar la misma línea de investigación más de una vez.")
-        
+        l1 = cleaned_data.get('linea_investigacion_1')
+        l2 = cleaned_data.get('linea_investigacion_2')
+        if l1 and l2 and l1 == l2:
+            raise ValidationError("No puedes repetir la línea de investigación.")
         return cleaned_data
 
     def save(self, commit=True):
-        from registry.models import ClubLineaInvestigacion
-        
         club = super().save(commit=False)
-        
         if commit:
             club.save()
-            
-            # Obtener las líneas del formulario
-            linea_1 = self.cleaned_data.get('linea_investigacion_1')
-            linea_2 = self.cleaned_data.get('linea_investigacion_2')
-            linea_3 = self.cleaned_data.get('linea_investigacion_3')
-            
-            # Verificar si hay líneas disponibles en la base de datos
-            lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
-            
-            # Solo guardar líneas si hay líneas disponibles y seleccionadas
-            if lineas_disponibles and (linea_1 or linea_2 or linea_3):
-                # Eliminar líneas existentes si las hay
-                ClubLineaInvestigacion.objects.filter(club=club).delete()
-                
-                # Agregar nuevas líneas de investigación
-                lineas_data = [
-                    (linea_1, 'principal', 1),
-                    (linea_2, 'soporte', 2),
-                    (linea_3, 'afines', 3),
-                ]
-                
-                for linea, tipo, orden in lineas_data:
-                    if linea:
-                        ClubLineaInvestigacion.objects.create(
-                            club=club,
-                            linea=linea,
-                            tipo_linea=tipo,
-                            orden=orden
-                        )
-        
+            # Guardar líneas en el modelo intermedio
+            from registry.models import ClubLineaInvestigacion
+            ClubLineaInvestigacion.objects.filter(club=club).delete()
+            for i, l in enumerate([self.cleaned_data.get('linea_investigacion_1'), self.cleaned_data.get('linea_investigacion_2')]):
+                if l:
+                    ClubLineaInvestigacion.objects.create(club=club, linea=l, orden=i+1)
         return club

@@ -7,6 +7,7 @@ from django.db.models import Avg
 from .base import normalizar_texto_titulo
 from .institucion import Institucion
 from .investigacion import LineaInvestigacion
+from .tutor import Tutor
 
 class Club(models.Model):
     ESTADO_VINCULACION_CHOICES = [
@@ -433,3 +434,39 @@ class ClubLineaInvestigacion(models.Model):
 
     def __str__(self):
         return f"{self.club.nombre} - {self.linea.nombre} ({self.tipo_linea})"
+    
+class ClubTutor(models.Model):
+    ROL_CHOICES = [
+        ("responsable", "Responsable del Club"),
+        ("coordinador", "Coordinador"),
+        ("entrenador", "Entrenador"),
+        ("instructor", "Instructor"),
+        ("colaborador", "Colaborador"),
+        ("representante", "Representante"),
+        ("director", "Director Ejecutivo"),
+        ("delegado", "Delegado"),
+        ("asistente", "Asistente"),
+        ("logistico", "Logística"),
+    ]
+    STATUS_CHOICES = [
+        ("activo", "Activo"),
+        ("inactivo", "Inactivo"),
+    ]
+
+    club = models.ForeignKey(
+        Club, on_delete=models.CASCADE, related_name="tutores"
+    )
+    tutor = models.ForeignKey(
+        Tutor, on_delete=models.CASCADE, related_name="clubes"
+    )
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="activo"
+    )
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["club", "tutor"]
+    
+    def responsables(self):
+        return self.tutores.filter(rol="responsable", status="activo")

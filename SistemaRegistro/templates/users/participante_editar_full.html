@@ -5,12 +5,15 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center">
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
-                    <i class="bi bi-person-fill-gear fs-2 text-white"></i>
+                <div class="p-3 rounded-3 me-3 shadow-sm"
+                    style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-person-fill-gear-fill fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Editar Participante</h2>
-                    <p class="text-muted mb-0 small">{{ participante.nombres }} {{ participante.apellidos }} - ID: {{ participante.pk }}</p>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Editar
+                        Participante</h2>
+                    <p class="text-muted mb-0 small">{% if nombre_sede %}{{ participante.nombres }} {{
+                        participante.apellidos }} - ID: {{ participante.pk }}{% endif %}</p>
                 </div>
             </div>
             <hr class="mt-4 opacity-10">
@@ -28,12 +31,57 @@
                 <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
 
                 <div class="card-body p-4 p-md-5">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert border-0 shadow-sm alert-{{ message.tags }} alert-dismissible fade show rounded-4"
+                        role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if participante_form.non_field_errors %}
+                    <div class="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+                        <h6 class="fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i>Errores del Formulario:
+                        </h6>
+                        <ul class="mb-0 small">
+                            {% for error in participante_form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if participante_form.errors %}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const formErrors = JSON.parse('{{ participante_form.errors.as_json|escapejs }}');
+                            for (let fieldName in formErrors) {
+                                if (fieldName === '__all__') continue;
+
+                                let errors = formErrors[fieldName];
+                                let inputField = document.querySelector(`[name="${fieldName}"]`);
+
+                                if (inputField) {
+                                    inputField.classList.add('is-invalid');
+                                    let errorDiv = document.createElement('div');
+                                    errorDiv.className = 'invalid-feedback d-block fw-bold small text-danger mt-1';
+                                    errorDiv.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${errors[0].message}`;
+
+                                    if (inputField.parentElement.classList.contains('input-group')) {
+                                        inputField.parentElement.parentElement.appendChild(errorDiv);
+                                    } else {
+                                        inputField.parentElement.appendChild(errorDiv);
+                                    }
+                                }
+                            }
+                        });
+                    </script>
+                    {% endif %}
+
                     <form method="post" id="editarForm">
                         {% csrf_token %}
-                        
-                        <!-- Campos ocultos requeridos por el formulario -->
-                        <input type="hidden" name="cedula" value="{{ participante.cedula|default:'' }}">
-                        <input type="hidden" name="institucion" value="{{ participante.institucion_id|default:'' }}">
 
                         <div class="mb-5">
                             <h5 class="fw-bold text-dark mb-4">
@@ -41,69 +89,73 @@
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombres</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Nombres</label>
                                     {{ participante_form.nombres }}
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Apellidos</label>
                                     {{ participante_form.apellidos }}
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Fecha de Nacimiento</label>
-                                    <input type="date" name="fecha_nacimiento" id="id_fecha_nacimiento" class="form-control" value="{{ participante.fecha_nacimiento|date:'Y-m-d' }}" required>
-                                    <div id="edad-error" class="text-danger x-small mt-1 d-none">Mínimo 3 años de edad.</div>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Fecha
+                                        de Nacimiento</label>
+                                    {{ participante_form.fecha_nacimiento }}
+                                    <div id="edad-error" class="text-danger x-small mt-1 d-none">Mínimo 3 años de edad.
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label fw-bold text-muted small text-uppercase">Edad</label>
-                                    <input type="text" id="id_edad_display" class="form-control bg-light" readonly placeholder="0" value="{{ edad }}">
-                                    <input type="hidden" name="edad" id="id_edad" value="{{ edad }}">
+                                    <input type="text" id="id_edad_display" class="form-control bg-light" readonly
+                                        placeholder="0">
+                                    <input type="hidden" name="edad" id="id_edad">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Correo Electrónico</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Correo
+                                        Electrónico</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light border-0"><i class="bi bi-envelope text-primary"></i></span>
-                                        <input type="email" name="email" class="form-control" placeholder="ejemplo@correo.com" value="{{ participante.email|default:'' }}" required>
+                                        <span class="input-group-text bg-light border-0"><i
+                                                class="bi bi-envelope text-primary"></i></span>
+                                        {{ participante_form.email }}
                                     </div>
+                                    {{ participante_form.email.errors }}
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Nacionalidad</label>
-                                    <select name="nacionalidad" id="id_nacionalidad" class="form-select" required>
-                                        <option value="V" {% if participante.nacionalidad == 'V' or not participante.nacionalidad %}selected{% endif %}>V - Venezolano</option>
-                                        <option value="E" {% if participante.nacionalidad == 'E' %}selected{% endif %}>E - Extranjero</option>
-                                    </select>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Nacionalidad</label>
+                                    {{ participante_form.nacionalidad }}
                                 </div>
                                 <div class="col-md-3" id="cedula_personal_container">
-                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_personal">Cédula Personal</label>
-                                    <input type="text" name="cedula_personal" id="id_cedula_personal" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10" value="{{ cedula_personal }}">
+                                    <label class="form-label fw-bold text-muted small text-uppercase"
+                                        id="label_cedula_personal">Cédula Personal</label>
+                                    {{ participante_form.cedula_personal }}
                                     <small class="text-muted" id="help_cedula_personal"></small>
                                 </div>
                                 <div class="col-md-3" id="cedula_escolar_container" style="display: none;">
-                                    <label class="form-label fw-bold text-muted small text-uppercase" id="label_cedula_escolar">Cédula Escolar</label>
-                                    <input type="text" name="cedula_escolar_input" id="id_cedula_escolar" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="20" value="{{ cedula_escolar }}">
+                                    <label class="form-label fw-bold text-muted small text-uppercase"
+                                        id="label_cedula_escolar">Cédula Escolar</label>
+                                    {{ participante_form.cedula_escolar_input }}
                                     <small class="text-muted" id="help_cedula_escolar"></small>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Sexo</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Sexo</label>
                                     {{ participante_form.sexo }}
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Condición TEA</label>
-                                    <select name="condicion_tea" class="form-select">
-                                        <option value="False" {% if not participante.condicion_tea %}selected{% endif %}>No</option>
-                                        <option value="True" {% if participante.condicion_tea %}selected{% endif %}>Sí</option>
-                                    </select>
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Condición
+                                        TEA</label>
+                                    {{ participante_form.condicion_tea }}
                                     <small class="text-muted">Trastorno del Espectro Autista</small>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Teléfono</label>
                                     <div class="input-group">
-                                        <select name="codigo_area" class="form-select" style="max-width: 90px; background-color: #fff !important;">
-                                            <option value="0412" {% if participante.codigo_area == '0412' %}selected{% endif %}>0412</option>
-                                            <option value="0414" {% if participante.codigo_area == '0414' %}selected{% endif %}>0414</option>
-                                            <option value="0424" {% if participante.codigo_area == '0424' %}selected{% endif %}>0424</option>
-                                            <option value="0416" {% if participante.codigo_area == '0416' %}selected{% endif %}>0416</option>
-                                            <option value="0426" {% if participante.codigo_area == '0426' %}selected{% endif %}>0426</option>
-                                        </select>
+                                        {{ participante_form.codigo_area }}
                                         {{ participante_form.numero_telefono }}
                                     </div>
                                 </div>
@@ -117,39 +169,33 @@
                             <div class="row g-4">
                                 <div class="col-md-4">
                                     {% if es_admin_central %}
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Estado</label>
-                                    <select name="estado" id="id_estado" class="form-select" required>
-                                        <option value="">Seleccione...</option>
-                                        {% for est in todos_estados %}
-                                            <option value="{{ est.id }}" {% if estado_id == est.id %}selected{% endif %}>{{ est.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Estado</label>
+                                    {{ participante_form.estado }}
                                     {% else %}
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Estado (Asignado)</label>
-                                    <input type="text" class="form-control fw-bold" style="background: #e0f7fa; color: #006064;" value="{{ estado.nombre|default:'' }}" readonly>
-                                    <input type="hidden" name="estado" value="{{ estado_id|default:'' }}">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Estado
+                                        (Asignado)</label>
+                                    <input type="text" class="form-control fw-bold"
+                                        style="background: #e0f7fa; color: #006064;"
+                                        value="{{ estado.nombre|default:"" }}" readonly>
+                                    <input type="hidden" name="estado"
+                                        value="{% if estado %}{{ estado.id }}{% else %}{{ estado_id|default:"" }}{% endif %}">
                                     {% endif %}
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
-                                    <select name="municipio" id="id_municipio" class="form-select" required>
-                                        <option value="">Seleccione...</option>
-                                        {% for muni in municipios %}
-                                            <option value="{{ muni.id }}" {% if municipio_id == muni.id %}selected{% endif %}>{{ muni.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Municipio</label>
+                                    {{ participante_form.municipio }}
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Parroquia</label>
-                                    <select name="parroquia" id="id_parroquia" class="form-select" required>
-                                        <option value="">Seleccione...</option>
-                                        {% for parr in parroquias %}
-                                            <option value="{{ parr.id }}" {% if participante.parroquia_id == parr.id %}selected{% endif %}>{{ parr.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Parroquia</label>
+                                    {{ participante_form.parroquia }}
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Dirección de Vivienda</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Dirección
+                                        de Vivienda</label>
                                     {{ participante_form.direccion }}
                                 </div>
                             </div>
@@ -161,20 +207,21 @@
                             </h5>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Grado / Nivel</label>
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Grado
+                                        / Nivel</label>
                                     {{ participante_form.grado_escolar }}
                                 </div>
                                 <div class="col-md-6" id="profesion_container" style="display: none;">
-                                    <label class="form-label fw-bold text-muted small text-uppercase required-field">Especifique Título / Estudios</label>
-                                    <input type="text" name="titulo_universitario" id="id_titulo_universitario" class="form-control border-primary shadow-sm" placeholder="Ej: Ingeniería, Licenciatura, etc." value="{{ participante.titulo_universitario|default:'' }}">
+                                    <label
+                                        class="form-label fw-bold text-muted small text-uppercase required-field">Especifique
+                                        Título / Estudios</label>
+                                    {{ participante_form.titulo_universitario }}
                                 </div>
                                 <div class="col-md-6" id="otro_container" style="display: none;">
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Especifique Otro</label>
-                                    <input type="text" name="campo1" id="id_campo1" class="form-control border-secondary shadow-sm" placeholder="Especifique el nivel educativo" value="{{ participante.campo1|default:'' }}">
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small text-uppercase">Nombre del Plantel / Universidad</label>
-                                    {{ participante_form.nombre_escuela }}
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Especifique
+                                        Otro</label>
+                                    {{ participante_form.campo1 }}
                                 </div>
                             </div>
                         </div>
@@ -182,7 +229,8 @@
                         <div id="representanteSection" class="representante-section mb-5">
                             <div class="p-4 rounded-4" style="background: #fff9f0; border: 2px dashed #ffc107;">
                                 <h5 class="fw-bold text-warning-emphasis mb-4 d-flex align-items-center">
-                                    <i class="bi bi-shield-fill-check me-2"></i> Datos del Representante Legal (Menor de Edad)
+                                    <i class="bi bi-shield-fill-check me-2"></i> Datos del Representante Legal (Menor de
+                                    Edad)
                                 </h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -192,23 +240,19 @@
                                     <div class="col-md-6">
                                         <label class="small fw-bold text-muted text-uppercase">Cédula</label>
                                         <div class="input-group">
-                                            <select name="nacionalidad_representante" id="id_rep_nacionalidad" class="form-select border-end-0" style="max-width: 75px; background-color: #fff !important;">
-                                                <option value="V" {% if participante.nacionalidad_representante == 'V' or not participante.nacionalidad_representante %}selected{% endif %}>V</option>
-                                                <option value="E" {% if participante.nacionalidad_representante == 'E' %}selected{% endif %}>E</option>
-                                            </select>
-                                            <input type="text" name="cedula_representante" id="id_cedula_representante" class="form-control" placeholder="Solo números" pattern="[0-9]+" maxlength="10" value="{{ participante.cedula_representante|default:'' }}">
+                                            <div style="max-width: 80px;">
+                                                {{ participante_form.nacionalidad_representante }}
+                                            </div>
+                                            {{ participante_form.cedula_representante }}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="small fw-bold text-muted text-uppercase">Teléfono de Contacto</label>
+                                        <label class="small fw-bold text-muted text-uppercase">Teléfono de
+                                            Contacto</label>
                                         <div class="input-group">
-                                            <select name="codigo_area_representante" class="form-select" style="max-width: 90px; background-color: #fff !important;">
-                                                <option value="0412" {% if participante.codigo_area_representante == '0412' %}selected{% endif %}>0412</option>
-                                                <option value="0414" {% if participante.codigo_area_representante == '0414' %}selected{% endif %}>0414</option>
-                                                <option value="0424" {% if participante.codigo_area_representante == '0424' %}selected{% endif %}>0424</option>
-                                                <option value="0416" {% if participante.codigo_area_representante == '0416' %}selected{% endif %}>0416</option>
-                                                <option value="0426" {% if participante.codigo_area_representante == '0426' %}selected{% endif %}>0426</option>
-                                            </select>
+                                            <div style="max-width: 100px;">
+                                                {{ participante_form.codigo_area_representante }}
+                                            </div>
                                             {{ participante_form.numero_telefono_representante }}
                                         </div>
                                     </div>
@@ -220,12 +264,14 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between gap-2 pt-4">
-                            <a href="{% url 'lista_participantes' %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
-                                <i class="bi bi-arrow-left me-1"></i> Volver
-                            </a>
-                            <button type="submit" id="btnGuardar" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background: var(--blue-main);">
-                                <i class="bi bi-save me-1"></i> Guardar Cambios
+                        <div class="d-flex justify-content-end gap-2 pt-4">
+                            <button type="reset" class="btn btn-outline-secondary rounded-pill px-3 fw-bold">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
+                            </button>
+                            <button type="submit" id="btnFinalizar"
+                                class="btn text-white rounded-pill px-4 fw-bold shadow-sm"
+                                style="background: var(--blue-main);">
+                                <i class="bi bi-check-circle me-1"></i> Actualizar Participante
                             </button>
                         </div>
                     </form>
@@ -236,18 +282,50 @@
 </div>
 
 <style>
-    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
-    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
-    input, select, textarea { border-radius: 10px !important; background-color: #f8fafc !important; border: 0 !important; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important; }
-    .required-field::after { content: " *"; color: #ef4444; }
-    .representante-section { display: none; animation: fadeIn 0.5s; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    :root {
+        --blue-main: #0b2c6d;
+        --accent-cyan: #00d4ff;
+    }
+
+    .x-small {
+        font-size: 0.72rem;
+        letter-spacing: 0.3px;
+    }
+
+    input,
+    select,
+    textarea {
+        border-radius: 10px !important;
+        background-color: #f8fafc !important;
+        border: 0 !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #ef4444;
+    }
+
+    .representante-section {
+        display: none;
+        animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    const editarForm = document.getElementById('editarForm');
+    const registroForm = document.getElementById('editarForm');
     const fechaNac = document.getElementById('id_fecha_nacimiento');
     const edadDisp = document.getElementById('id_edad_display');
     const edadHid = document.getElementById('id_edad');
@@ -258,91 +336,60 @@
     const cedulaPersonalCont = document.getElementById('cedula_personal_container');
     const cedulaEscolarCont = document.getElementById('cedula_escolar_container');
     const cedulaPersonalInput = document.getElementById('id_cedula_personal');
-    const cedulaEscolarInput = document.getElementById('id_cedula_escolar');
+    const cedulaEscolarInput = document.getElementById('id_cedula_escolar_input') || document.getElementById('id_cedula_escolar');
+    const cedulaRepInput = document.getElementById('id_cedula_representante');
+    let participanteDuplicadoId = null;
 
-    // Inicializar estado al cargar
-    window.addEventListener('DOMContentLoaded', () => {
-        const edadActual = parseInt(edadHid.value) || 0;
-        
-        // Inicializar campo oculto de cédula
-        const cedulaPersonal = cedulaPersonalInput.value.trim();
-        const cedulaEscolar = cedulaEscolarInput.value.trim();
-        if (cedulaPersonal) {
-            document.querySelector('input[name="cedula"]').value = cedulaPersonal;
-        } else if (cedulaEscolar) {
-            document.querySelector('input[name="cedula"]').value = cedulaEscolar;
-        }
-        
-        // Mostrar/ocultar sección de representante
-        if (edadActual >= 3 && edadActual < 18) {
-            repSec.style.display = 'block';
-            document.querySelectorAll('#representanteSection input, #representanteSection select').forEach(i => i.required = true);
-        }
-        
-        // Mostrar/ocultar campos de cédula según edad
-        actualizarCamposCedula(edadActual);
-        
-        // Mostrar campos adicionales según grado escolar
-        const gradoVal = gradoSel.value;
-        const gradoText = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
-        if (gradoVal === 'U' || gradoText.includes('universitario')) {
-            profesionCont.style.display = 'block';
-        } else if (gradoVal === 'OTRO' || gradoText.includes('otro')) {
-            otroCont.style.display = 'block';
-        }
-    });
-
-    // Función para actualizar campos de cédula según edad
-    function actualizarCamposCedula(edad) {
-        const labelPersonal = document.getElementById('label_cedula_personal');
-        const labelEscolar = document.getElementById('label_cedula_escolar');
-        const helpPersonal = document.getElementById('help_cedula_personal');
-        const helpEscolar = document.getElementById('help_cedula_escolar');
-        
-        if (edad <= 10 && edad >= 3) {
-            cedulaEscolarCont.style.display = 'block';
-            cedulaPersonalCont.style.display = 'block';
-            
-            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
-            labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
-            helpPersonal.textContent = 'Opcional si tiene cédula escolar';
-            helpEscolar.textContent = 'Opcional si tiene cédula personal';
-            
-            cedulaPersonalInput.required = false;
-            cedulaEscolarInput.required = false;
-        } else {
-            cedulaEscolarCont.style.display = 'none';
-            cedulaPersonalCont.style.display = 'block';
-            
-            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
-            helpPersonal.textContent = '';
-            
-            cedulaEscolarInput.required = false;
-            cedulaPersonalInput.required = true;
-        }
-    }
-
-    // Lógica de Edad y Representante
+    // 1. Lógica de Edad, Representante y Cédulas
     fechaNac.addEventListener('change', () => {
         const born = new Date(fechaNac.value);
         const now = new Date();
         let edad = now.getFullYear() - born.getFullYear();
         if (now.getMonth() < born.getMonth() || (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) edad--;
-        
+
         edadDisp.value = edad;
         edadHid.value = edad;
 
-        // Validación de edad mínima
+        // Validación de edad mínima (3 años)
         if (edad < 3) {
             document.getElementById('edad-error').classList.remove('d-none');
-            document.getElementById('btnGuardar').disabled = true;
+            document.getElementById('btnFinalizar').disabled = true;
         } else {
             document.getElementById('edad-error').classList.add('d-none');
-            document.getElementById('btnGuardar').disabled = false;
+            document.getElementById('btnFinalizar').disabled = false;
         }
 
-        // Actualizar campos de cédula
-        actualizarCamposCedula(edad);
+        // Lógica de cédulas según edad
+        const labelPersonal = document.getElementById('label_cedula_personal');
+        const labelEscolar = document.getElementById('label_cedula_escolar');
+        const helpPersonal = document.getElementById('help_cedula_personal');
+        const helpEscolar = document.getElementById('help_cedula_escolar');
+
+        if (edad <= 10 && edad >= 3) {
+            // Menor o igual a 10 años: mostrar ambos campos, al menos uno requerido
+            cedulaEscolarCont.style.display = 'block';
+            cedulaPersonalCont.style.display = 'block';
+
+            // Actualizar labels y textos de ayuda
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
+            labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
+            helpPersonal.textContent = 'Opcional si tiene cédula escolar';
+            helpEscolar.textContent = 'Opcional si tiene cédula personal';
+
+            // Ninguno es obligatorio por defecto, se valida en submit
+            cedulaPersonalInput.required = false;
+            cedulaEscolarInput.required = false;
+        } else {
+            // Mayor de 10 años: solo cédula personal
+            cedulaEscolarCont.style.display = 'none';
+            cedulaPersonalCont.style.display = 'block';
+
+            labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
+            helpPersonal.textContent = '';
+
+            cedulaEscolarInput.required = false;
+            cedulaPersonalInput.required = true;
+        }
 
         // Mostrar sección de representante si es menor de 18
         if (edad >= 3 && edad < 18) {
@@ -354,16 +401,16 @@
         }
     });
 
-    // Validación y limpieza de cédulas
-    cedulaPersonalInput.addEventListener('input', function(e) {
+    // 2. Validación y limpieza de cédulas en tiempo real
+    cedulaPersonalInput.addEventListener('input', function (e) {
+        // Remover todo excepto números
         let valor = e.target.value.replace(/\D/g, '');
-        if (valor.length > 10) valor = valor.substring(0, 10);
+        // Limitar a 10 dígitos
+        if (valor.length > 10) {
+            valor = valor.substring(0, 10);
+        }
         e.target.value = valor;
-        
-        // Actualizar campo oculto de cédula con nacionalidad
-        const nacionalidad = document.getElementById('id_nacionalidad').value;
-        document.querySelector('input[name="cedula"]').value = valor ? valor : '';
-        
+
         const edad = parseInt(edadHid.value) || 0;
         if (edad <= 10 && edad >= 3) {
             const helpEscolar = document.getElementById('help_cedula_escolar');
@@ -377,18 +424,16 @@
             }
         }
     });
-    
-    cedulaEscolarInput.addEventListener('input', function(e) {
+
+    cedulaEscolarInput.addEventListener('input', function (e) {
+        // Remover todo excepto números
         let valor = e.target.value.replace(/\D/g, '');
-        if (valor.length > 20) valor = valor.substring(0, 20);
-        e.target.value = valor;
-        
-        // Actualizar campo oculto de cédula si no hay cédula personal
-        const cedulaPersonal = cedulaPersonalInput.value.trim();
-        if (!cedulaPersonal && valor) {
-            document.querySelector('input[name="cedula"]').value = valor;
+        // Limitar a 20 dígitos
+        if (valor.length > 20) {
+            valor = valor.substring(0, 20);
         }
-        
+        e.target.value = valor;
+
         const edad = parseInt(edadHid.value) || 0;
         if (edad <= 10 && edad >= 3) {
             const helpPersonal = document.getElementById('help_cedula_personal');
@@ -403,25 +448,57 @@
         }
     });
 
-    // Lógica de Nivel Educativo
+    // Validación Cédula Representante (Max 10)
+    if (cedulaRepInput) {
+        cedulaRepInput.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, '');
+            if (valor.length > 10) valor = valor.substring(0, 10);
+            e.target.value = valor;
+        });
+    }
+
+    // 2b. Validación dinámica de cédulas (para menores de 10 años)
+    function validarCedulas() {
+        const edad = parseInt(edadHid.value) || 0;
+        const cedulaPersonal = cedulaPersonalInput.value.trim();
+        const cedulaEscolar = cedulaEscolarInput.value.trim();
+
+        if (edad <= 10 && edad >= 3) {
+            // Para menores de 10 años: al menos una cédula requerida
+            if (!cedulaPersonal && !cedulaEscolar) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 3. Lógica de Nivel Educativo
     gradoSel.addEventListener('change', () => {
         const val = gradoSel.value;
         const text = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
-        
+
+        // Ocultar ambos por defecto
         profesionCont.style.display = 'none';
         otroCont.style.display = 'none';
-        
+
+        // Mostrar campo de título universitario si es nivel universitario
         if (val === 'U' || text.includes('universitario')) {
             profesionCont.style.display = 'block';
-        } else if (val === 'OTRO' || text.includes('otro')) {
+        }
+        // Mostrar campo "Otro" si selecciona OTRO
+        else if (val === 'OTRO' || text.includes('otro')) {
             otroCont.style.display = 'block';
         }
     });
 
-    // AJAX Municipios y Parroquias
-    document.getElementById('id_municipio').addEventListener('change', function() {
+    // 4. Lógica AJAX Municipios y Parroquias
+    document.getElementById('id_municipio').addEventListener('change', function () {
         const muniId = this.value;
         const parroquiaSelect = document.getElementById('id_parroquia');
+        if (!muniId) {
+            parroquiaSelect.innerHTML = '<option value="">Esperando municipio...</option>';
+            return;
+        }
         parroquiaSelect.innerHTML = '<option value="">Cargando...</option>';
         fetch(`/ajax/parroquias/?municipio_id=${muniId}`)
             .then(response => response.json())
@@ -433,14 +510,14 @@
             });
     });
 
-    // Para Admin Central: cambiar municipios cuando cambia el estado
+    // 5. Lógica para Admin Central: cambiar municipios cuando cambia el estado
     const estadoSelect = document.getElementById('id_estado');
     if (estadoSelect) {
-        estadoSelect.addEventListener('change', function() {
+        estadoSelect.addEventListener('change', function () {
             const estadoId = this.value;
             const municipioSelect = document.getElementById('id_municipio');
             const parroquiaSelect = document.getElementById('id_parroquia');
-            
+
             if (estadoId) {
                 municipioSelect.innerHTML = '<option value="">Cargando...</option>';
                 fetch(`/ajax/municipios/?estado_id=${estadoId}`)
@@ -451,37 +528,52 @@
                             municipioSelect.innerHTML += `<option value="${item.id}">${item.nombre}</option>`;
                         });
                     });
+                // Limpiar parroquias
                 parroquiaSelect.innerHTML = '<option value="">Seleccione primero un municipio</option>';
             }
         });
     }
 
-    // Validación antes de enviar
-    editarForm.addEventListener('submit', (e) => {
-        const edad = parseInt(edadHid.value) || 0;
-        const cedulaPersonal = cedulaPersonalInput.value.trim();
-        const cedulaEscolar = cedulaEscolarInput.value.trim();
-        
-        // Validar que tenga al menos una cédula si es menor de 10 años
-        if (edad <= 10 && edad >= 3) {
-            if (!cedulaPersonal && !cedulaEscolar) {
-                e.preventDefault();
-                alert('Debe ingresar al menos una cédula (personal o escolar)');
-                return false;
-            }
-        }
-        
-        // Actualizar campo oculto de cédula antes de enviar
-        // Si tiene cédula personal, usar esa; si no, usar cédula escolar; si no, dejar vacío
-        const nacionalidad = document.getElementById('id_nacionalidad').value;
-        if (cedulaPersonal) {
-            document.querySelector('input[name="cedula"]').value = cedulaPersonal;
-        } else if (cedulaEscolar) {
-            // Si solo tiene cédula escolar, usar esa como cédula principal
-            document.querySelector('input[name="cedula"]').value = cedulaEscolar;
-        } else {
-            document.querySelector('input[name="cedula"]').value = '';
+    // 6. Validación de Cédulas Básica antes de Enviar
+    registroForm.addEventListener('submit', (e) => {
+        if (!validarCedulas()) {
+            e.preventDefault();
+            alert('Debe ingresar al menos una cédula (personal o escolar)');
+            return false;
         }
     });
+
+    // 11. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
+    registroForm.addEventListener('reset', () => {
+        setTimeout(() => {
+            edadDisp.value = "0";
+            edadHid.value = "0";
+            repSec.style.display = 'none';
+            profesionCont.style.display = 'none';
+            otroCont.style.display = 'none';
+            cedulaEscolarCont.style.display = 'none';
+            document.getElementById('id_parroquia').innerHTML = '<option value="">Esperando municipio...</option>';
+            document.getElementById('edad-error').classList.add('d-none');
+            document.getElementById('btnFinalizar').disabled = false;
+        }, 10);
+    });
+
+    // 12. INICIALIZACIÓN: Re-calcular visibilidad en base a valores precargados
+    // (Útil cuando Django re-renderiza el formulario por errores de validación)
+    document.addEventListener('DOMContentLoaded', () => {
+        if (fechaNac && fechaNac.value) {
+            fechaNac.dispatchEvent(new Event('change'));
+        }
+        if (gradoSel && gradoSel.value) {
+            gradoSel.dispatchEvent(new Event('change'));
+        }
+        if (cedulaPersonalInput && cedulaPersonalInput.value) {
+            cedulaPersonalInput.dispatchEvent(new Event('input'));
+        }
+        if (cedulaEscolarInput && cedulaEscolarInput.value) {
+            cedulaEscolarInput.dispatchEvent(new Event('input'));
+        }
+    });
+
 </script>
 {% endblock %}

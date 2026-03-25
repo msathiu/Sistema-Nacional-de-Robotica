@@ -172,6 +172,16 @@ urlpatterns = [
         name="gestionar_estado_evento",
     ),
     path(
+        "eventos/<int:evento_id>/aprobar/",
+        views.aprobar_evento,
+        name="aprobar_evento",
+    ),
+    path(
+        "eventos/<int:evento_id>/rechazar/",
+        views.rechazar_evento,
+        name="rechazar_evento",
+    ),
+    path(
         "eventos/cancelar/<int:evento_id>/",
         views.cancelar_evento,
         name="cancelar_evento",
@@ -208,7 +218,7 @@ urlpatterns = [
     # AJAX y Datos Dinámicos
     path("ajax/municipios/", views.ajax_municipios, name="ajax_municipios"),
     path("ajax/dependencias/", views.ajax_dependencias, name="ajax_dependencias"),
-    path("ajax/parroquias/", views.load_parroquias, name="ajax_load_parroquias"),
+    path("ajax/parroquias/", views.ajax_parroquias, name="ajax_parroquias"),
     path("buscar-usuarios/", views.buscar_usuarios, name="buscar_usuarios"),
     path(
         "create-institutional-user/",
@@ -219,18 +229,8 @@ urlpatterns = [
     path("sedes/registrar/", views.registrar_sede, name="registrar_sede"),
     path("sedes/nueva/", views.registrar_sede, name="registrar_sede_fvrn"),
     path("sedes/gestionar/", views.gestionar_usuarios_sedes, name="gestionar_sedes"),
+    path("sedes/editar/<int:user_id>/", views.editar_sede_regional, name="editar_sede_regional"),
     path("sedes/eliminar/<int:user_id>/", views.eliminar_sede, name="eliminar_sede"),
-    # URLs AJAX
-    path(
-        "ajax/municipios-por-estado/",
-        views.ajax_municipios_por_estado,
-        name="ajax_municipios_por_estado",
-    ),
-    path(
-        "ajax/parroquias-por-municipio/",
-        views.ajax_parroquias_por_municipio,
-        name="ajax_parroquias_por_municipio",
-    ),
     path(
         "eventos/<int:evento_id>/detalle-inscripcion/",
         views.detalle_evento_inscripcion,

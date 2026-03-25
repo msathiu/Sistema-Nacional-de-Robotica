@@ -218,26 +218,11 @@
         color: #059669;
     }
     
-    /* Animations */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* Smooth transitions for elements */
+    .main-card,
+    .sidebar-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
-    .animate-fade-in {
-        animation: fadeInUp 0.5s ease forwards;
-    }
-    
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
 </style>
 {% endblock %}
 
@@ -265,7 +250,7 @@
     <div class="row">
         <div class="col-lg-8">
             <!-- Card Principal -->
-            <div class="card main-card animate-fade-in delay-1">
+            <div class="card main-card">
                 <div class="card-header text-white">
                     <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Nuevo Club de Robótica</h5>
                 </div>
@@ -447,7 +432,7 @@
 
         <div class="col-lg-4">
             <!-- Tarjeta de Consejos -->
-            <div class="card sidebar-card mb-4 animate-fade-in delay-2">
+            <div class="card sidebar-card mb-4">
                 <div class="card-header tips-gradient text-white d-flex align-items-center">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-lightbulb"></i>
@@ -491,7 +476,7 @@
             </div>
 
             <!-- Estado del Club -->
-            <div class="card sidebar-card animate-fade-in delay-3">
+            <div class="card sidebar-card">
                 <div class="card-header status-gradient text-white d-flex align-items-center">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-clock-history"></i>

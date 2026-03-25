@@ -95,25 +95,21 @@ class ParticipanteService:
             return None
     
     @staticmethod
-    def crear_participante(datos_participante: dict) -> Participante:
+    def crear_participante(datos_participante: dict, creado_por_federacion: bool = False) -> Participante:
         """
         Crea un nuevo participante.
-        
-        Args:
-            datos_participante: Diccionario con datos del participante
-            
-        Returns:
-            Participante creado
         """
         # Limpiar cédulas
         if 'cedula' in datos_participante and datos_participante['cedula']:
             datos_participante['cedula'] = ''.join(filter(str.isdigit, datos_participante['cedula']))
-        
+
         if 'cedula_escolar' in datos_participante and datos_participante['cedula_escolar']:
             datos_participante['cedula_escolar'] = ''.join(filter(str.isdigit, datos_participante['cedula_escolar']))
-        
+
+        datos_participante['creado_por_federacion'] = creado_por_federacion
+
         participante = Participante.objects.create(**datos_participante)
-        
+
         logger.info(f"[Participante] Nuevo participante creado: {participante.nombre_completo} ({participante.cedula})")
         return participante
     
