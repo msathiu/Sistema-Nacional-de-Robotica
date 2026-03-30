@@ -34,7 +34,7 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
       - ./logs:/app/logs
-    expose:
+    ports:
       - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-SistemaRegistro.settings}
@@ -49,11 +49,7 @@ services:
     networks:
       - backend_network
 
-networks:
-  backend_network:
-    driver: bridge
-
-nginx:
+  nginx:
     image: nginx:alpine
     restart: always
     ports:
@@ -64,8 +60,14 @@ nginx:
       - media_volume:/app/media:ro
     depends_on:
       - web
+    networks:
+      - backend_network
+
+networks:
+  backend_network:
+    driver: bridge
 
 volumes:
-  postgres_data:  
+  postgres_data:
   static_volume:
   media_volume:
