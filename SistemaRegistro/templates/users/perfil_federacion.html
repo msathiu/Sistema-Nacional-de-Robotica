@@ -1,4 +1,4 @@
-﻿{% extends 'users/base_dashboard.html' %}
+{% extends 'users/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Perfil Federación - RNR{% endblock %}
@@ -27,35 +27,35 @@
     <hr class="mt-2 mb-4 opacity-10">
 
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
+        <div class="col-sm-6 col-md-4">
             <div class="card border-0 shadow-lg text-white tech-kpi-card"
                  style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
-                <div class="card-body p-4 position-relative">
+                <div class="card-body p-4 position-relative overflow-hidden">
                     <div class="small text-white-50 fw-bold text-uppercase mb-2">Rango de Acceso</div>
-                    <h4 class="fw-bold mb-0">{{ perfil.get_user_type_display|default:"Administrador" }}</h4>
-                    <i class="bi bi-person-badge position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                    <h5 class="fw-bold mb-0 text-truncate pe-5">{{ perfil.get_user_type_display|default:"Administrador"|cut:" (Ente Rector)" }}</h5>
+                    <i class="bi bi-person-badge position-absolute" style="font-size:3.5rem; right:12px; bottom:4px; pointer-events:none;"></i>
                 </div>
                 <div style="height:4px;background:#00d4ff"></div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-sm-6 col-md-4">
             <div class="card border-0 shadow-lg text-white tech-kpi-card"
                  style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
-                <div class="card-body p-4 position-relative">
+                <div class="card-body p-4 position-relative overflow-hidden">
                     <div class="small text-white-50 fw-bold text-uppercase mb-2">Jurisdicción</div>
-                    <h4 class="fw-bold mb-0">{{ perfil.estado.nombre|default:"Nacional" }}</h4>
-                    <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                    <h5 class="fw-bold mb-0 text-truncate pe-5">{{ perfil.estado.nombre|default:"Nacional" }}</h5>
+                    <i class="bi bi-geo-alt position-absolute" style="font-size:3.5rem; right:12px; bottom:4px; pointer-events:none;"></i>
                 </div>
                 <div style="height:4px;background:#10b981"></div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-sm-12 col-md-4">
             <div class="card border-0 shadow-lg text-white tech-kpi-card"
                  style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius:15px;">
-                <div class="card-body p-4 position-relative">
+                <div class="card-body p-4 position-relative overflow-hidden">
                     <div class="small text-white-50 fw-bold text-uppercase mb-2">Última Conexión</div>
-                    <h4 class="fw-bold mb-0">{{ user.last_login|date:"d/m/Y H:i" }}</h4>
-                    <i class="bi bi-clock-history position-absolute opacity-10" style="font-size:3.5rem; right:15px; bottom:5px;"></i>
+                    <h5 class="fw-bold mb-0 text-truncate pe-5">{{ user.last_login|date:"d/m/Y H:i" }}</h5>
+                    <i class="bi bi-clock-history position-absolute" style="font-size:3.5rem; right:12px; bottom:4px; pointer-events:none;"></i>
                 </div>
                 <div style="height:4px;background:#ef4444"></div>
             </div>
@@ -127,30 +127,30 @@
             </div>
 
             <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" 
+                <div class="col-12 col-md-6">
+                    <div class="card border-0 shadow-sm p-3 p-md-4 h-100 tech-action-card" 
                          style="border-left:5px solid #8b5cf6; border-radius:15px;"
                          data-bs-toggle="modal" data-bs-target="#changePasswordModal"
                          role="button" tabindex="0" aria-controls="changePasswordModal">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-purple-subtle p-2 rounded-2 me-3" style="background:#f3e8ff">
-                                <i class="bi bi-shield-lock-fill" style="color:#8b5cf6"></i>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="flex-shrink-0 rounded-2 p-2" style="background:#f3e8ff">
+                                <i class="bi bi-shield-lock-fill fs-5" style="color:#8b5cf6"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <h6 class="fw-bold mb-0">Seguridad de Cuenta</h6>
-                                <span class="small text-decoration-none fw-bold" style="color:#8b5cf6">Cambiar Contraseña →</span>
+                                <span class="small fw-bold" style="color:#8b5cf6">Cambiar Contraseña →</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm p-4 h-100 tech-action-card" style="border-left:5px solid #00d4ff; border-radius:15px;">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-info-subtle p-2 rounded-2 me-3" style="background:#e0f7fa">
-                                <i class="bi bi-patch-check-fill text-info"></i>
+                <div class="col-12 col-md-6">
+                    <div class="card border-0 shadow-sm p-3 p-md-4 h-100 tech-action-card" style="border-left:5px solid #00d4ff; border-radius:15px;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="flex-shrink-0 rounded-2 p-2" style="background:#e0f7fa">
+                                <i class="bi bi-patch-check-fill fs-5 text-info"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <h6 class="fw-bold mb-0">Estatus de Auditor</h6>
                                 <span class="small fw-bold text-info">Ver mis permisos →</span>
                             </div>
@@ -243,7 +243,11 @@
     .tech-kpi-card:hover { transform: translateY(-5px); }
     
     .tech-action-card { transition: all 0.3s ease; cursor: pointer; background: #fff; border: 1px solid #f1f5f9; }
-    .tech-action-card:hover { transform: translateX(5px); background: #f8fafc; border-color: #e2e8f0; }
+    .tech-action-card:hover { transform: translateX(4px); background: #f8fafc; border-color: #e2e8f0; }
+    @media (max-width: 575.98px) {
+        .tech-action-card:hover { transform: none; }
+    }
+    .min-w-0 { min-width: 0; }
     
     .tech-field label {
         font-size: 0.65rem;
