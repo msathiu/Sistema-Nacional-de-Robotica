@@ -110,6 +110,8 @@
         color: #0891b2;
         border: 1px solid rgba(8, 145, 178, 0.2);
     }
+    
+    .x-small { font-size: 0.72rem; }
 </style>
 {% endblock %}
 
@@ -142,7 +144,7 @@
                         <div class="row align-items-center">
                             <div class="col-md-7">
                                 <h5 class="mb-1 text-dark fw-bold"><i class="bi bi-robot me-2 text-info"></i>{{ club.nombre }}</h5>
-                                <p class="mb-0 small text-muted">Institución Creadora: <strong>{{ club.institucion_creadora.nombre_publico }}</strong></p>
+                                <p class="mb-0 small text-muted">Institución Creadora: <strong>{% if club.tipo_creador == 'fed_central' %}Federación Venezolana de Robótica Creativa{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre_publico }}{% endif %}</strong></p>
                             </div>
                             <div class="col-md-5 text-md-end mt-3 mt-md-0">
                                 <p class="mb-1 small"><strong>Cupos Disponibles:</strong> <span class="badge bg-success rounded-pill">{{ club.cupos_disponibles }} / {{ club.cupo_maximo }}</span></p>
@@ -169,12 +171,47 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="representante_legal" class="form-label fw-bold">Representante Legal *</label>
+                            <label class="form-label fw-bold">Representante Legal *</label>
+                            
+                            <!-- Buscador por cédula -->
+                            <div class="input-group mb-2">
+                                <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0; border-right: none; background: #f8fafc;"><i class="bi bi-search"></i></span>
+                                <input type="text" id="buscarCedulaRep" class="form-control" placeholder="Buscar por cédula del tutor (opcional)" maxlength="12" style="border-left: none;">
+                                <button type="button" id="btnBuscarRep" class="btn fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 0 12px 12px 0;">
+                                    Buscar
+                                </button>
+                            </div>
+                            
+                            <!-- Resultado de búsqueda -->
+                            <div id="resultadoRep" class="d-none mb-2">
+                                <div class="alert alert-light border d-flex align-items-center justify-content-between mb-0" style="border-radius: 12px; padding: 0.5rem 1rem;">
+                                    <div>
+                                        <div class="fw-bold small text-dark" id="repNombre"></div>
+                                        <div class="x-small text-muted"><span id="repCedula"></span> · <span id="repEmail"></span></div>
+                                    </div>
+                                    <button type="button" id="btnUsarRep" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                        <i class="bi bi-check-circle me-1"></i> Usar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="errorRep" class="alert alert-warning d-none mb-2" style="border-radius: 12px; padding: 0.5rem 1rem;">
+                                <i class="bi bi-exclamation-triangle me-1"></i><span id="errorRepMsg"></span>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" id="permitirManual">
+                                    <label class="form-check-label small" for="permitirManual">No está registrado, escribir nombre manualmente</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Campo nombre (autocompletado o manual) -->
                             <div class="input-group">
                                 <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0; border-right: none; background: #f8fafc;"><i class="bi bi-person"></i></span>
                                 <input type="text" class="form-control" id="representante_legal" name="representante_legal" 
-                                       placeholder="Nombre completo del representante legal" required style="border-radius: 0 12px 12px 0;">
+                                       placeholder="Nombre completo del representante legal" required 
+                                       style="border-radius: 0 12px 12px 0;" readonly>
                             </div>
+                            <input type="hidden" id="representante_tutor_id" name="representante_tutor_id" value="">
+                            <small class="text-muted d-block mt-1">Busque por cédula o marque la casilla para escribir manualmente.</small>
                         </div>
 
                         <div class="mb-4">
@@ -300,5 +337,83 @@
             }, false);
         });
     })();
+
+    // Búsqueda de representante legal por cédula
+    const campoNombre = document.getElementById('representante_legal');
+    const btnBuscar = document.getElementById('btnBuscarRep');
+    const btnUsar = document.getElementById('btnUsarRep');
+    const chkManual = document.getElementById('permitirManual');
+    let repEncontrado = null;
+
+    function buscarRepresentante() {
+        const cedula = document.getElementById('buscarCedulaRep').value.trim();
+        if (!cedula) return;
+
+        document.getElementById('resultadoRep').classList.add('d-none');
+        document.getElementById('errorRep').classList.add('d-none');
+        btnBuscar.disabled = true;
+        btnBuscar.textContent = 'Buscando...';
+
+        const institucionId = '{{ institucion_id }}';
+        let url = `/registry/api/clubes/buscar-tutor/?cedula=${encodeURIComponent(cedula)}`;
+        if (institucionId) url += `&institucion_id=${institucionId}`;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.found) {
+                    repEncontrado = data;
+                    document.getElementById('repNombre').textContent = data.nombre_completo;
+                    document.getElementById('repCedula').textContent = data.nacionalidad + '-' + data.cedula;
+                    document.getElementById('repEmail').textContent = data.email;
+                    document.getElementById('resultadoRep').classList.remove('d-none');
+                } else {
+                    document.getElementById('errorRepMsg').textContent = data.error || 'Tutor no encontrado con esa cédula.';
+                    document.getElementById('errorRep').classList.remove('d-none');
+                    repEncontrado = null;
+                }
+            })
+            .catch(() => {
+                document.getElementById('errorRepMsg').textContent = 'Error de conexión.';
+                document.getElementById('errorRep').classList.remove('d-none');
+            })
+            .finally(() => {
+                btnBuscar.disabled = false;
+                btnBuscar.textContent = 'Buscar';
+            });
+    }
+
+    function usarRepresentante() {
+        if (!repEncontrado) return;
+        campoNombre.value = repEncontrado.nombre_completo;
+        campoNombre.readOnly = true;
+        campoNombre.style.background = '#f0f9ff';
+        document.getElementById('representante_tutor_id').value = repEncontrado.id;
+        document.getElementById('resultadoRep').classList.add('d-none');
+    }
+
+    function toggleManual() {
+        if (chkManual.checked) {
+            campoNombre.readOnly = false;
+            campoNombre.value = '';
+            document.getElementById('representante_tutor_id').value = '';
+            campoNombre.placeholder = 'Escriba el nombre completo';
+            campoNombre.style.background = 'white';
+            campoNombre.focus();
+            document.getElementById('errorRep').classList.add('d-none');
+        } else {
+            campoNombre.readOnly = true;
+            campoNombre.value = '';
+            campoNombre.placeholder = 'Nombre completo del representante legal';
+            campoNombre.style.background = '#f8fafc';
+        }
+    }
+
+    btnBuscar.addEventListener('click', buscarRepresentante);
+    btnUsar.addEventListener('click', usarRepresentante);
+    chkManual.addEventListener('change', toggleManual);
+    document.getElementById('buscarCedulaRep').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); buscarRepresentante(); }
+    });
 </script>
 {% endblock %}

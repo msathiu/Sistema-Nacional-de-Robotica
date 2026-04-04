@@ -1,5 +1,6 @@
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
+{% load evento_actions %}
 
 {% block title %}Gestión de Eventos - RNR{% endblock %}
 
@@ -91,6 +92,7 @@
                         {% for code, label in estados_evento %}
                         <option value="{{ code }}" {% if request.GET.estado_evento == code %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
+                        <option value="cancelado" {% if request.GET.estado_evento == 'cancelado' %}selected{% endif %}>Cancelado</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -102,27 +104,28 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select name="federacion_institucion" class="form-select border-0 bg-light">
-                        <option value="">Federación o Institución</option>
-                        <option value="federacion" {% if request.GET.federacion_institucion == 'federacion' %}selected{% endif %}>Federación Central</option>
-                        <option value="todas_instituciones" {% if request.GET.federacion_institucion == 'todas_instituciones' %}selected{% endif %}>Todas las Instituciones</option>
-                        {% for institucion in instituciones %}
-                        <option value="inst_{{ institucion.id }}" {% if request.GET.federacion_institucion == 'inst_'|add:institucion.id|stringformat:"s" %}selected{% endif %}>{{ institucion.nombre }}</option>
-                        {% endfor %}
+                    <select name="tipo_evento" class="form-select border-0 bg-light">
+                        <option value="">Institucional / Club</option>
+                        <option value="institucional" {% if request.GET.tipo_evento == "institucional" %}selected{% endif %}>Institucional</option>
+                        <option value="club" {% if request.GET.tipo_evento == "club" %}selected{% endif %}>Club</option>
+                        <option value="federacion" {% if request.GET.tipo_evento == "federacion" %}selected{% endif %}>Federación Central</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <select name="estado_nacional" class="form-select border-0 bg-light">
-                        <option value="">Cualquier Estado (Ubicación)</option>
+                        <option value="">Estado</option>
                         {% for estado in estados %}
                         <option value="{{ estado.id }}" {% if request.GET.estado_nacional == estado.id|stringformat:"s" %}selected{% endif %}>{{ estado.nombre }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-<button type="submit" class="btn w-100 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;">
-    <i class="bi bi-search me-1"></i> Buscar
-</button>
+                <div class="col-md-1 d-flex gap-1">
+                    <button type="submit" class="btn fw-bold flex-grow-1" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;" data-bs-toggle="tooltip" title="Buscar eventos">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="{% url 'admin_eventos' %}" class="btn btn-outline-secondary" style="border-radius: 10px;" data-bs-toggle="tooltip" title="Limpiar filtros">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
                 </div>
             </form>
         </div>
@@ -140,94 +143,119 @@
         <div class="card-body p-0">
             {% if eventos %}
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="eventosTable">
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
-                            <th class="px-4 py-3">Evento / Institución</th>
-                            <th class="py-3">Fecha y Sede</th>
-                            <th class="py-3 text-center">Tipo / Audiencia</th>
-                            <th class="py-3 text-center">Inscritos</th>
-                            <th class="py-3">Estatus</th>
+                            <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Evento / Descripción <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Tipo Evento <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Modalidad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Inscritos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Fecha y Sede <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="6" style="cursor:pointer; user-select:none;">Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="7" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="8" style="cursor:pointer; user-select:none;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for evento in eventos %}
-                        <tr class="evento-row" data-id="{{ evento.id }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark">{{ evento.nombre }}</div>
-                                <div class="x-small text-muted">
-                                    {% if evento.institucion %}
-                                        <i class="bi bi-bank me-1"></i> {{ evento.institucion.nombre }}
-                                    {% else %}
-                                        <i class="bi bi-shield-lock me-1"></i> Federación Central
-                                    {% endif %}
-                                </div>
+                        <tr class="evento-row" data-id="{{ evento.id }}" data-estado="{{ evento.estado_evento }}" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
+                            {# Columna 1: Nombre / Descripción #}
+                            <td class="px-4" data-sort-value="{{ evento.nombre }}">
+                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
+                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
                             </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.fecha|date:"d M, Y" }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt me-1"></i> {{ evento.estado.nombre }}</div>
+
+                            {# Columna 2: Tipo Evento (Club/Institucional) #}
+                            <td class="text-center" data-sort-value="{{ evento.tipo_evento }}">
+                                {% with tipo=evento.tipo_evento_ui %}
+                                <span class="{{ tipo.class }}"><i class="bi {{ tipo.icon }} me-1"></i>{{ tipo.label }}</span>
+                                {% endwith %}
                             </td>
-                            <td class="text-center">
-                                <div class="small mb-1">{{ evento.get_tipo_display }}</div>
-                                <span class="badge bg-light text-dark border x-small">{{ evento.get_audiencia_display }}</span>
+
+                            {# Columna 3: Tipo (Competencia, etc) #}
+                            <td data-sort-value="{{ evento.get_tipo_display }}">
+                                <span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span>
                             </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.inscripciones_grupo.count }}</div>
+
+                            {# Columna 4: Modalidad #}
+                            <td class="text-center" data-sort-value="{{ evento.modalidad }}">
+                                {% with mod=evento.modalidad_ui %}
+                                <span class="{{ mod.class }}"><i class="bi {{ mod.icon }} me-1"></i>{{ mod.label }}</span>
+                                {% endwith %}
+                            </td>
+
+                            {# Columna 5: Inscritos #}
+                            <td class="text-center" data-sort-value="{{ evento.total_inscritos }}">
+                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
                                 <div class="x-small text-muted text-uppercase">Equipos</div>
                             </td>
-                            <td>
-                                {% if evento.cancelado %}
-                                    <span class="status-pill-mini bg-danger">Cancelado</span>
-                                {% elif evento.estado_evento == 'borrador' %}
-                                    <span class="status-pill-mini bg-secondary">Borrador</span>
-                                {% elif evento.estado_evento == 'revision' %}
-                                    <span class="status-pill-mini bg-warning pulsate">En revisión</span>
-                                {% elif evento.estado_evento == 'abierto' %}
-                                    <span class="status-pill-mini bg-success">Abierto</span>
-                                {% elif evento.estado_evento == 'en_proceso' %}
-                                    <span class="status-pill-mini bg-primary">En Proceso</span>
-                                {% elif evento.estado_evento == 'finalizado' %}
-                                    <span class="status-pill-mini bg-info">Finalizado</span>
-                                {% elif evento.estado_evento == 'rechazado' %}
-                                    <span class="status-pill-mini bg-danger">Rechazado</span>
-                                {% elif evento.estado_evento == 'pausado' %}
-                                    <span class="status-pill-mini bg-warning">Pausado</span>
+
+                            {# Columna 6: Fecha y Sede #}
+                            <td data-sort-value="{{ evento.fecha|date:'Ymd' }}">
+                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
+                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
+                            </td>
+
+                            {# Columna 7: Teléfono #}
+                            <td data-sort-value="{{ evento.telefono_completo }}">
+                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
+                            </td>
+
+                            {# Columna 8: Institución / Club organizador #}
+                            <td data-sort-value="{% if evento.tipo_evento == 'club' and evento.club_organizador %}{{ evento.club_organizador.nombre }}{% elif evento.institucion %}{{ evento.institucion.nombre }}{% else %}Federación Venezolana de Róbotica Creativa{% endif %}">
+                                {% if evento.tipo_evento == 'club' and evento.club_organizador %}
+                                    <div class="small fw-bold"><i class="bi bi-people-fill me-1 text-primary" style="font-size:0.7rem;"></i>{{ evento.club_organizador.nombre }}</div>
+                                    <div class="x-small text-muted">{{ evento.club_organizador.institucion_creadora.estado.nombre|default:"" }}</div>
+                                {% elif evento.institucion %}
+                                    <div class="small fw-bold">{{ evento.institucion.nombre }}</div>
+                                    <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
+                                {% else %}
+                                    <div class="small fw-bold"><i class="bi bi-shield-fill-check me-1 text-warning" style="font-size:0.7rem;"></i>Federación Venezolana de Róbotica Creativa</div>
+                                    <div class="x-small text-muted">Ente Rector Nacional</div>
                                 {% endif %}
                             </td>
+
+                            {# Columna 9: Estatus #}
+                            <td data-sort-value="{% if evento.cancelado %}cancelado{% else %}{{ evento.estado_evento }}{% endif %}">
+                                {% with est=evento.estado_ui %}
+                                <span class="badge {{ est.badge_class }}">{{ est.label }}</span>
+                                {% endwith %}
+                            </td>
                             <td class="text-center px-4">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <!-- Ver detalle -->
+                                <div class="d-flex justify-content-center gap-1">
                                     <a href="{% url 'detalle_evento_gestion_admin' evento.id %}" 
-                                       class="btn-action btn-view"
-                                       title="Ver Detalles del Evento">
+                                       class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
                                     {% if es_fed_central %}
                                     <a href="{% url 'editar_evento' evento.id %}" 
-                                       class="btn-action btn-edit"
-                                       title="Editar Evento">
+                                       class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     {% endif %}
                                     
-                                    {% if es_fed_central and evento.institucion and evento.estado_evento == 'revision' %}
-                                    <button class="btn-action btn-approve" 
+                                    {% if es_fed_central and evento.estado_evento == 'revision' %}
+                                    <button class="btn btn-outline-success btn-sm rounded-circle p-2 btn-approve"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar"
                                             data-id="{{ evento.id }}"
-                                            data-nombre="{{ evento.nombre|escapejs }}"
-                                            title="Aprobar Evento">
+                                            data-nombre="{{ evento.nombre|escapejs }}">
                                         <i class="bi bi-check-circle"></i>
                                     </button>
-                                    <button class="btn-action btn-reject" 
+                                    <button class="btn btn-outline-danger btn-sm rounded-circle p-2 btn-reject"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar"
                                             data-id="{{ evento.id }}"
-                                            data-nombre="{{ evento.nombre|escapejs }}"
-                                            title="Rechazar Evento">
+                                            data-nombre="{{ evento.nombre|escapejs }}">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                     {% endif %} 
                                     {% if es_fed_central %}
-                                    <button class="btn-action btn-manage" 
+                                    <button class="btn btn-outline-warning btn-sm rounded-circle p-2 btn-manage"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Gestionar Estado"
                                             data-id="{{ evento.id }}"
                                             data-nombre="{{ evento.nombre|escapejs }}"
                                             data-fecha="{{ evento.fecha|date:'Y-m-d' }}"
@@ -236,8 +264,7 @@
                                             data-observacion="{{ evento.observacion_estado|default:''|escapejs }}"
                                             data-es-federacion="1"
                                             data-puede-pausar="1"
-                                            data-puede-cancelar="1"
-                                            title="Gestionar Estado">
+                                            data-puede-cancelar="1">
                                         <i class="bi bi-gear-fill"></i>
                                     </button>
                                     {% endif %}
@@ -260,6 +287,71 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+
+
+    // Ordenamiento de columnas
+    (function initSortableTable() {
+        const table = document.getElementById('eventosTable');
+        if (!table) return;
+        const headers = table.querySelectorAll('th.sortable-th');
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
+
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                headers.forEach(h => {
+                    if (h !== this) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        const icon = h.querySelector('.sort-icon');
+                        if (icon) icon.className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    this.classList.remove('sort-asc');
+                    this.classList.add('sort-desc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    this.classList.remove('sort-desc');
+                    this.classList.add('sort-asc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.querySelectorAll('td')[colIndex];
+                    const cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    })();
+
     // Aprobar evento
     document.querySelectorAll('.btn-approve').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -275,6 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('btnConfirmar').className = 'btn rounded-pill px-5 fw-bold shadow';
             document.getElementById('btnConfirmar').style.background = 'var(--accent-cyan)';
             document.getElementById('btnConfirmar').style.color = 'var(--blue-main)';
+            
+            // Restaurar color del header a azul para aprobación
+            document.querySelector('#modalAprobarRechazar .modal-header').style.background = 'var(--blue-main)';
             
             document.getElementById('formAprobarRechazar').action = `/eventos/${eventoId}/aprobar/`;
             
@@ -297,6 +392,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('btnConfirmar').className = 'btn rounded-pill px-5 fw-bold shadow';
             document.getElementById('btnConfirmar').style.background = '#dc3545';
             document.getElementById('btnConfirmar').style.color = 'white';
+            
+            // Cambiar color del header a rojo para rechazo
+            document.querySelector('#modalAprobarRechazar .modal-header').style.background = '#dc3545';
             
             document.getElementById('formAprobarRechazar').action = `/eventos/${eventoId}/rechazar/`;
             
@@ -437,8 +535,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal fade" id="modalGestionEstadoEvento" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4" style="background: #92400e; color: white; border-radius: 20px 20px 0 0;">
-                <h5 class="fw-bold mb-0" id="gestionEstadoTitulo"><i class="bi bi-pause-circle me-2"></i> GESTIONAR ESTADO</h5>
+            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0" id="gestionEstadoTitulo"><i class="bi bi-gear-fill me-2"></i> GESTIONAR ESTADO</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
@@ -475,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 <div class="modal-footer border-0 pb-4 px-4">
                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
-                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" style="background: #92400e; color: white;">
+                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" style="background: var(--accent-cyan); color: var(--blue-main);">
                         <i class="bi bi-save2 me-2"></i> GUARDAR
                     </button>
                 </div>
@@ -714,49 +812,47 @@ document.addEventListener('DOMContentLoaded', function() {
         border: 1px solid rgba(11, 44, 109, 0.1);
     }
 
-    .status-pill-mini {
-        padding: 0.15rem 0.5rem;
-        border-radius: 6px;
-        font-size: 0.6rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        line-height: 1.2;
-        color: #111827 !important;
-        background-color: rgba(255,255,255,0.85);
-        border: 1px solid rgba(148,163,184,0.5);
-    }
-
-    .status-pill-mini.bg-success { background: #10b981; color: #ffffff !important; }
-    .status-pill-mini.bg-warning { background: #f59e0b; color: #ffffff !important; }
-    .status-pill-mini.bg-secondary { background: #64748b; color: #ffffff !important; }
-    .status-pill-mini.bg-danger { background: #dc2626; color: #ffffff !important; }
-    .status-pill-mini.bg-info { background: #0ea5e9; color: #ffffff !important; }
-    .status-pill-mini.bg-primary { background: #2563eb; color: #ffffff !important; }
-
-    .bg-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
-    .bg-warning { background: #fed7aa; color: #92400e; border: 1px solid #fcd34d; }
-    .bg-secondary { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
-    .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-    .bg-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-    .bg-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-    .bg-primary { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    /* badge-tipo: colores suaves solo para tipo de evento y modalidad */
+    .badge-tipo.bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-tipo.bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
 
     .btn-action { 
         width: 34px; height: 34px; 
-        display: flex; align-items: center; justify-content: center; 
-        border-radius: 10px; border: 1px solid #e2e8f0; 
+        display: inline-flex; align-items: center; justify-content: center; 
+        border-radius: 50%; border: 1px solid #e2e8f0; 
         background: white; transition: 0.2s; color: #64748b;
         text-decoration: none;
         cursor: pointer;
-        border: none;
     }
-    .btn-view:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-2px); }
-    .btn-edit:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-2px); }
-    .btn-delete:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; transform: translateY(-2px); }
+    .btn-view:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; }
+    .btn-edit:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; }
+    .btn-delete:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
     
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }
+    .badge-tipo-generic {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+    .badge-tipo {
+        padding: 0.35rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
     
     .modal-content { border: none; }
     .form-control, .form-select { border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }

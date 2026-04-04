@@ -209,11 +209,11 @@
                     <p class="text-muted mb-0 small">Información completa de la membresía al club</p>
                 </div>
             </div>
-            <a href="{% if es_propietario_club %}{% url 'detalle_club' membresia.club.id %}{% elif es_institucion_miembro %}{% url 'mis_membresias' %}{% else %}{% url 'clubes_lista' %}{% endif %}"
+            <a href="{% if request.GET.back == 'mis_membresias' %}{% url 'mis_membresias' %}{% elif es_propietario_club %}{% url 'detalle_club' membresia.club.id %}{% elif es_institucion_miembro %}{% url 'mis_membresias' %}{% else %}{% url 'clubes_lista' %}{% endif %}"
                class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;"
-               title="{% if es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}">
+               title="Volver">
                 <i class="bi bi-arrow-left me-2"></i>
-                {% if es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}
+                {% if request.GET.back == 'mis_membresias' %}Volver{% elif es_propietario_club %}Volver al Club{% else %}Volver a Mis Membresías{% endif %}
             </a>
         </div>
     </div>

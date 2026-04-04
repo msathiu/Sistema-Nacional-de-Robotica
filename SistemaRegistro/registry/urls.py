@@ -41,6 +41,11 @@ urlpatterns = [
     path("clubes/<int:club_id>/detalle/", views_institucional.detalle_club, name="detalle_club"),
     path("clubes/crear/", views_institucional.crear_club, name="crear_club"),
     path(
+        "api/clubes/buscar-tutor/",
+        views_institucional.api_club_buscar_tutor,
+        name="api_club_buscar_tutor",
+    ),
+    path(
         "clubes/<int:club_id>/editar/",
         views_institucional.editar_club,
         name="editar_club",
@@ -196,6 +201,11 @@ urlpatterns = [
         views_reportes.exportar_clubes_json,
         name="exportar_clubes_json",
     ),
+    # Exportaciones de reportes
+    path("reportes/equipos/excel/",        views_reportes.exportar_equipos_excel,       name="exportar_equipos_excel"),
+    path("reportes/tutores/excel/",        views_reportes.exportar_tutores_excel,        name="exportar_tutores_excel"),
+    path("reportes/instituciones/excel/",  views_reportes.exportar_instituciones_excel,  name="exportar_instituciones_excel"),
+    path("reportes/inscripciones/excel/",  views_reportes.exportar_inscripciones_excel,  name="exportar_inscripciones_excel"),
     # Fase 4: Calificaciones
     path(
         "clubes/<int:club_id>/calificar/",
@@ -250,11 +260,6 @@ urlpatterns = [
         "eventos-club/<int:evento_id>/enviar-revision/",
         views_eventos.enviar_evento_revision,
         name="enviar_evento_revision",
-    ),
-    path(
-        "eventos-club/<int:evento_id>/inscribir-grupo/",
-        views_eventos.inscribir_grupo_evento_club,
-        name="inscribir_grupo_evento_club",
     ),
     # Eventos - Admin/Federación (Vista Unificada)
     path(

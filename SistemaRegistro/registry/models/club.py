@@ -24,6 +24,12 @@ class Club(models.Model):
         ("rechazado", "Rechazado"),
     ]
 
+    TIPO_CREADOR_CHOICES = [
+        ("institucion", "Institución"),
+        ("fed_central", "Federación Central"),
+        ("fed_regional", "Sede Regional"),
+    ]
+
     nombre = models.CharField(
         max_length=200, verbose_name="Nombre del Club", db_index=True
     )
@@ -39,6 +45,14 @@ class Club(models.Model):
         related_name="clubes_creados",
         null=True,
         blank=True,
+    )
+
+    tipo_creador = models.CharField(
+        max_length=20,
+        choices=TIPO_CREADOR_CHOICES,
+        default="institucion",
+        verbose_name="Tipo de Creador",
+        help_text="Indica si el club fue creado por una institución, federación central o sede regional",
     )
 
     coordinador = models.ForeignKey(
@@ -166,12 +180,20 @@ class Club(models.Model):
         return True
 
     def puede_editar(self, user):
+        if not hasattr(user, "userprofile"):
+            return False
+        user_type = user.userprofile.user_type
+        if user_type in ["fed_central", "superuser"]:
+            return True
         if self.coordinador == user:
             return True
-        if self.institucion_creadora and hasattr(user, "userprofile"):
+        if self.institucion_creadora and user_type == "institucional":
             if user.userprofile.institution == self.institucion_creadora:
                 return True
         return False
+
+    def responsables(self):
+        return self.tutores.filter(rol="responsable", status="activo")
 
     def contar_reenvios(self):
         return self.historial.filter(
@@ -223,6 +245,14 @@ class MembresiaClu(models.Model):
     carta_intencion = models.TextField()
     propuesta_tecnica = models.TextField()
     representante_legal = models.CharField(max_length=200)
+    representante_tutor = models.ForeignKey(
+        "registry.Tutor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="membresias_representadas",
+        verbose_name="Representante Legal (Tutor)",
+    )
 
     tipo_linea = models.CharField(
         max_length=20,
@@ -467,6 +497,3 @@ class ClubTutor(models.Model):
 
     class Meta:
         unique_together = ["club", "tutor"]
-    
-    def responsables(self):
-        return self.tutores.filter(rol="responsable", status="activo")

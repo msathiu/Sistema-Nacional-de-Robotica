@@ -50,7 +50,7 @@
                         </div>
                     </div>
 
-                    <!-- CASO 1: Eliminación directa (borrador o rechazado) -->
+                    <!-- CASO 1: Eliminación directa (borrador/rechazado o fed_central) -->
                     {% if puede_eliminar_directo %}
                         <div class="alert alert-warning border-warning">
                             <div class="d-flex align-items-start">
@@ -58,7 +58,11 @@
                                 <div>
                                     <strong>Eliminación Directa</strong>
                                     <p class="mb-0 small text-muted">
-                                        Este club está en estado <strong>{{ club.get_status_display }}</strong> y puede ser eliminado directamente sin necesidad de aprobación de la federación.
+                                        {% if es_fed_central %}
+                                            Como Federación Central puedes eliminar este club directamente.
+                                        {% else %}
+                                            Este club está en estado <strong>{{ club.get_status_display }}</strong> y puede ser eliminado directamente.
+                                        {% endif %}
                                     </p>
                                 </div>
                             </div>
@@ -66,6 +70,15 @@
                         
                         <form method="post" action="{% url 'eliminar_club' club.id %}">
                             {% csrf_token %}
+                            {% if es_fed_central %}
+                            <div class="mb-3">
+                                <label for="motivo" class="form-label fw-bold">
+                                    <i class="bi bi-chat-text me-2"></i>Motivo (opcional)
+                                </label>
+                                <textarea class="form-control" id="motivo" name="motivo" rows="3"
+                                    placeholder="Motivo de la eliminación..."></textarea>
+                            </div>
+                            {% endif %}
                             <div class="d-flex gap-3 mt-4">
                                 <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary flex-grow-1 rounded-pill py-2">
                                     <i class="bi bi-arrow-left me-2"></i> Cancelar

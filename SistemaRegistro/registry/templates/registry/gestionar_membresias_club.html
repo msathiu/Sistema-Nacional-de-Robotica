@@ -33,8 +33,9 @@
     /* Gradientes de sección — Semánticos */
     .header-gradient       { background: linear-gradient(145deg, var(--blue-main), var(--blue-dark)); }
     .pending-gradient      { background: linear-gradient(145deg, var(--blue-main), var(--blue-dark)); }
-    .active-gradient       { background: linear-gradient(145deg, #059669, #047857); }
+    .active-gradient       { background: linear-gradient(145deg, var(--blue-main), var(--blue-dark)); }
     .rejected-gradient     { background: linear-gradient(145deg, var(--blue-main), var(--blue-dark)); }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 
     .section-icon {
         width: 48px;
@@ -55,16 +56,6 @@
     .badge-modern { padding:0.5rem 1rem; border-radius:50px; font-weight:600; font-size:0.85rem; }
 
     /* Botones */
-    .btn-modern        { border-radius:50px; padding:0.6rem 1.5rem; font-weight:600; transition:all 0.3s ease; display:inline-flex; align-items:center; gap:0.5rem; }
-    .btn-modern:hover  { transform:translateY(-2px); box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-    .btn-primary-modern{ background:var(--blue-main); border:none; color:white; }
-    .btn-primary-modern:hover { background:var(--accent-cyan); color:var(--blue-main); }
-    .btn-success-modern{ background:#059669; border:none; color:white; }
-    .btn-success-modern:hover { background:#10b981; color:white; }
-    .btn-danger-modern { background:#dc2626; border:none; color:white; }
-    .btn-danger-modern:hover  { background:#ef4444; color:white; }
-    .btn-outline-modern{ background:transparent; border:2px solid var(--blue-main); color:var(--blue-main); }
-    .btn-outline-modern:hover { background:var(--blue-main); color:white; }
     
     /* KPI stat cards — patrón unificado */
     .stat-card { border-radius: 15px; overflow: hidden; border: none; }
@@ -191,15 +182,21 @@
                                             <span class="small text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm btn-outline-modern btn-modern">
-                                                    <i class="bi bi-eye"></i> Ver
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <a href="{% url 'detalle_membresia' membresia.id %}"
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{% url 'aprobar_membresia_club' membresia.id %}" class="btn btn-sm btn-success-modern btn-modern">
-                                                    <i class="bi bi-check-circle"></i> Aprobar
+                                                <a href="{% url 'aprobar_membresia_club' membresia.id %}"
+                                                   class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar Membresía">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </a>
-                                                <a href="{% url 'rechazar_membresia_club' membresia.id %}" class="btn btn-sm btn-danger-modern btn-modern">
-                                                    <i class="bi bi-x-circle"></i> Rechazar
+                                                <a href="{% url 'rechazar_membresia_club' membresia.id %}"
+                                                   class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar Membresía">
+                                                    <i class="bi bi-x-circle"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -238,8 +235,10 @@
                                             <span class="small text-muted">{{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm btn-outline-modern btn-modern">
-                                                <i class="bi bi-eye"></i> Ver Detalles
+                                            <a href="{% url 'detalle_membresia' membresia.id %}"
+                                               class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                <i class="bi bi-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
@@ -280,10 +279,10 @@
                         <div class="row g-3">
                             {% for membresia in membresias_activas %}
                             <div class="col-md-6">
-                                <div class="p-3 rounded member-item" style="background: #f8fafc; border: 1px solid #e5e7eb;">
+                                <div class="p-3 rounded member-item" style="background: #f8fafc; border: 1px solid var(--accent-cyan);">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle p-2 me-3" style="background: rgba(5,150,105,0.1);">
-                                            <i class="bi bi-building" style="color: #059669;"></i>
+                                        <div class="rounded-circle p-2 me-3" style="background: rgba(0, 212, 255, 0.1);">
+                                            <i class="bi bi-building" style="color: var(--blue-main);"></i>
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="mb-0 fw-bold small">{{ membresia.institucion.nombre }}</h6>
@@ -292,8 +291,10 @@
                                                 <i class="bi bi-calendar-check me-1"></i>Desde: {{ membresia.fecha_respuesta|date:"d/m/Y" }}
                                             </small>
                                         </div>
-                                        <a href="{% url 'detalle_membresia' membresia.id %}" class="btn btn-sm btn-outline-modern btn-modern">
-                                            <i class="bi bi-eye"></i> Ver
+                                        <a href="{% url 'detalle_membresia' membresia.id %}" 
+                                           class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalle">
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                     </div>
                                 </div>
@@ -353,7 +354,7 @@
                                         <span class="small text-muted">{{ membresia.fecha_respuesta|date:"d/m/Y" }}</span>
                                     </td>
                                     <td>
-                                        <span class="small text-muted">{{ membresia.observaciones|truncatewords:10 }}</span>
+                                        <span class="small text-muted">{{ membresia.observaciones_fundadora|default:membresia.observaciones_rector|default:membresia.observaciones|default:"Sin observaciones" |truncatewords:10 }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -367,4 +368,11 @@
     {% endif %}
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
 {% endblock %}

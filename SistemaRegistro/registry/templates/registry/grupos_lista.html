@@ -23,6 +23,9 @@
                     <i class="bi bi-plus-circle-fill me-2"></i> Crear Equipo
                 </a>
                 {% endif %}
+                <a href="{% url 'exportar_equipos_excel' %}" class="btn btn-outline-secondary shadow-sm px-3 fw-bold" style="border-radius:12px;" title="Exportar equipos a Excel">
+                    <i class="bi bi-file-earmark-spreadsheet text-success me-1"></i> Excel
+                </a>
             </div>
         </div>
     </div>
@@ -77,43 +80,43 @@
         <div class="card-body">
             {% if grupos %}
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 table-equipos">
+                    <table class="table table-hover align-middle mb-0 table-equipos" id="equiposTable">
                         <thead class="bg-light">
                             <tr class="text-uppercase x-small fw-bold text-muted">
-                                <th class="px-4 py-3">Equipo</th>
-                                <th class="py-3">Código</th>
+                                <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Equipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Código <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 {% if mostrar_institucion %}
-                                <th class="py-3">Institución</th>
+                                <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 {% endif %}
-                                <th class="py-3">Tutor Responsable</th>
-                                <th class="py-3">Criterio</th>
-                                <th class="py-3 text-center">Participantes</th>
-                                <th class="py-3 text-center">Estatus</th>
+                                <th class="py-3 sortable-th" data-sort="{% if mostrar_institucion %}3{% else %}2{% endif %}" style="cursor:pointer; user-select:none;">Tutor Responsable <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 sortable-th" data-sort="{% if mostrar_institucion %}4{% else %}3{% endif %}" style="cursor:pointer; user-select:none;">Criterio <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 text-center sortable-th" data-sort="{% if mostrar_institucion %}5{% else %}4{% endif %}" style="cursor:pointer; user-select:none;">Participantes <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 text-center sortable-th" data-sort="{% if mostrar_institucion %}6{% else %}5{% endif %}" style="cursor:pointer; user-select:none;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 <th class="py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for grupo in grupos %}
                             <tr class="equipo-row" data-estado="{{ grupo.estado_grupo }}" data-criterio="{{ grupo.criterio }}">
-                                <td class="px-4">
+                                <td class="px-4" data-sort-value="{{ grupo.nombre }}">
                                     <div class="fw-bold small text-dark">{{ grupo.nombre }}</div>
                                     <div class="x-small text-muted">{{ grupo.fecha_registro|date:"d/m/Y" }}</div>
                                 </td>
-                                <td>
+                                <td data-sort-value="{{ grupo.codigo }}">
                                     <span class="badge bg-light text-dark border">{{ grupo.codigo }}</span>
                                 </td>
                                 {% if mostrar_institucion %}
-                                <td>
+                                <td data-sort-value="{{ grupo.institucion_nombre }}">
                                     <div class="small fw-bold text-dark">{{ grupo.institucion_nombre }}</div>
                                 </td>
                                 {% endif %}
-                                <td>
+                                <td data-sort-value="{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-person-badge me-2 text-muted"></i>
                                         <span class="small">{{ grupo.tutor_nombre }} {{ grupo.tutor_apellidos }}</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-sort-value="{{ grupo.criterio_display }}">
                                     <div class="mb-1">
                                         <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
                                             {{ grupo.criterio_display }}
@@ -123,12 +126,12 @@
                                         <i class="bi bi-arrow-return-right me-1"></i>{{ grupo.criterio_detalle }}
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-sort-value="{{ grupo.num_participantes }}">
                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
                                         <i class="bi bi-people-fill me-1"></i>{{ grupo.num_participantes }}
                                     </span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-sort-value="{{ grupo.estado_grupo }}">
                                     {% if grupo.estado_grupo == 'editable' %}
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                             <i class="bi bi-pencil-square me-1"></i>Editable
@@ -144,20 +147,23 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center px-4">
-                                    <div class="d-flex justify-content-center gap-2">
+                                    <div class="d-flex justify-content-center gap-1">
                                         <a href="{% url 'ver_grupo' grupo.id %}" 
-                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                            <i class="bi bi-eye me-1"></i> Ver
+                                           class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                         {% if grupo.puede_editar %}
                                         <a href="{% url 'editar_grupo' grupo.id %}" 
-                                           class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
-                                            <i class="bi bi-pencil-square me-1"></i> Editar
+                                           class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                           data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
                                         {% if grupo.puede_eliminar %}
-                                        <button class="btn btn-outline-danger btn-sm px-3 rounded-pill fw-bold"
+                                        <button class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
                                                 onclick="confirmarEliminar({{ grupo.id }}, '{{ grupo.nombre|escapejs }}')">
-                                            <i class="bi bi-trash3 me-1"></i> Eliminar
+                                            <i class="bi bi-trash3"></i>
                                         </button>
                                         {% endif %}
                                         {% endif %}
@@ -234,6 +240,13 @@
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; --success-color: #10b981; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
 
     .card-header-equipos {
         background: var(--blue-main);
@@ -282,6 +295,74 @@
 </style>
 
 <script>
+// Ordenamiento de columnas
+function initSortableTable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const headers = table.querySelectorAll('th.sortable-th');
+    let currentSortCol = null;
+    let currentSortDir = 'asc';
+
+    headers.forEach(th => {
+        th.addEventListener('click', function() {
+            const colIndex = parseInt(this.getAttribute('data-sort'));
+
+            headers.forEach(h => {
+                if (h !== this) {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                    h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                }
+            });
+
+            if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                currentSortDir = 'desc';
+                this.classList.remove('sort-asc');
+                this.classList.add('sort-desc');
+                this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+            } else {
+                currentSortDir = 'asc';
+                currentSortCol = colIndex;
+                this.classList.remove('sort-desc');
+                this.classList.add('sort-asc');
+                this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+            }
+
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.sort((a, b) => {
+                const cellA = a.querySelectorAll('td')[colIndex];
+                const cellB = b.querySelectorAll('td')[colIndex];
+                if (!cellA || !cellB) return 0;
+
+                let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                }
+
+                const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                return currentSortDir === 'asc' ? comparison : -comparison;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+
+    // Inicializar ordenamiento
+    initSortableTable('equiposTable');
+});
+
 function confirmarEliminar(grupoId, nombreGrupo) {
     document.getElementById('nombreGrupo').textContent = nombreGrupo;
     document.getElementById('formEliminar').action = `/registry/grupos/${grupoId}/eliminar/`;

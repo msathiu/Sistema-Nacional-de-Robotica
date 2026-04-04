@@ -190,7 +190,10 @@ def detalle_evento_club(request, evento_id):
         Evento.objects.select_related(
             'club_organizador', 
             'creado_por',
-            'creado_por__userprofile__institution'
+            'creado_por__userprofile__institution',
+            'estado',
+            'municipio',
+            'parroquia',
         ),
         id=evento_id,
         tipo_evento='club'
@@ -247,86 +250,3 @@ def detalle_evento_club(request, evento_id):
         'es_propietario': evento.club_organizador.institucion_creadora == institucion,
     }
     return render(request, 'registry/evento_club_detalle.html', context)
-
-
-@login_required
-def inscribir_grupo_evento_club(request, evento_id):
-    """Inscribir grupo a evento de club."""
-    evento = get_object_or_404(Evento, id=evento_id, tipo_evento='club')
-    
-    # Validar que el evento acepta inscripciones
-    if not evento.puede_inscribirse:
-        messages.error(request, "Este evento no acepta inscripciones en este momento.")
-        return redirect('detalle_evento_club', evento_id=evento.id)
-    
-    # Validar que el usuario es miembro del club
-    if not hasattr(request.user, 'userprofile'):
-        messages.error(request, "No tienes acceso a esta sección.")
-        return redirect('dashboard')
-    
-    institucion = request.user.userprofile.institution
-    es_miembro = evento.club_organizador.membresias.filter(
-            institucion=institucion,
-            estado='miembro_activo'
-        ).exists()
-    
-    if not es_miembro:
-        messages.error(
-            request,
-            f"Solo instituciones miembros del club '{evento.club_organizador.nombre}' "
-            "pueden inscribir grupos a este evento."
-        )
-        return redirect('detalle_evento_club', evento_id=evento.id)
-    
-    if request.method == 'POST':
-        grupo_id = request.POST.get('grupo_id')
-        rol = request.POST.get('rol_participacion', 'participante')
-        if not rol:
-            rol = 'participante'
-        
-        grupo = get_object_or_404(Grupo, id=grupo_id, usuario_creador=request.user)
-        
-        # Validar que el grupo esté editable
-        if grupo.estado_grupo != 'editable':
-            messages.error(request, "Solo se pueden inscribir grupos en estado editable.")
-            return redirect('detalle_evento_club', evento_id=evento.id)
-        
-        # Validar que no esté ya inscrito
-        if InscripcionGrupoEvento.objects.filter(evento=evento, grupo=grupo).exists():
-            messages.warning(request, "Este grupo ya está inscrito en el evento.")
-            return redirect('detalle_evento_club', evento_id=evento.id)
-        
-        try:
-            with transaction.atomic():
-                InscripcionGrupoEvento.objects.create(
-                    evento=evento,
-                    grupo=grupo,
-                    rol_participacion=rol
-                )
-                
-                # Cambiar estado del grupo a inscrito
-                grupo.estado_grupo = 'inscrito'
-                grupo.evento = evento
-                grupo.save(update_fields=['estado_grupo', 'evento'])
-                
-                messages.success(
-                    request,
-                    f'Grupo "{grupo.nombre}" inscrito exitosamente al evento.'
-                )
-        except Exception as e:
-            messages.error(request, f"Error al inscribir grupo: {str(e)}")
-        
-        return redirect('detalle_evento_club', evento_id=evento.id)
-    
-    # GET - Mostrar formulario
-    grupos_editables = Grupo.objects.filter(
-        usuario_creador=request.user,
-        estado_grupo='editable'
-    )
-    
-    context = {
-        'evento': evento,
-        'grupos': grupos_editables,
-        'roles': InscripcionGrupoEvento.ROL_CHOICES,
-    }
-    return render(request, 'registry/inscribir_grupo_evento_club.html', context)

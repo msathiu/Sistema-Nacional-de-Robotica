@@ -95,6 +95,10 @@ class Command(BaseCommand):
                 with transaction.atomic():
                     evento.estado_evento = nuevo_estado
                     evento.save(update_fields=["estado_evento"])
+                    # Al iniciar el evento, generar registros de asistencia pendientes
+                    if nuevo_estado == EstadoEvento.EN_PROCESO:
+                        from users.services.evento_service import EventoService
+                        EventoService.generar_asistencias_pendientes(evento)
             except Exception as e:
                 errores += 1
                 self.stdout.write(

@@ -70,11 +70,28 @@ class EventoSelector:
         institution = getattr(perfil, "institution", None)
 
         if user_type == "institucional" and institution:
-            return Club.objects.filter(
+            # Clubes donde la institución es creadora
+            clubes_creados = Club.objects.filter(
                 institucion_creadora=institution,
                 status="aprobado",
                 activo=True,
-            ).select_related("institucion_creadora")
+            )
+            # Clubes donde la institución es miembro activo
+            clubes_miembro = Club.objects.filter(
+                membresias__institucion=institution,
+                membresias__estado="miembro_activo",
+                status="aprobado",
+                activo=True,
+            )
+            # Unir ambos querysets sin duplicados
+            return (clubes_creados | clubes_miembro).distinct().select_related("institucion_creadora")
+
+        if user_type == "fed_central":
+            # fed_central puede crear eventos para cualquier club aprobado (ente rector)
+            return Club.objects.filter(
+                status="aprobado",
+                eliminado=False,
+            ).select_related("institucion_creadora").order_by("nombre")
 
         if JurisdictionSelector.es_federacion(perfil):
             return Club.objects.filter(
@@ -150,11 +167,12 @@ class EventoSelector:
                 | Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
             )
 
-            # El catálogo institucional no debe incluir eventos propios, tanto
-            # institucionales como de clubes creados por la misma institución.
+            # El catálogo institucional no debe incluir eventos propios:
+            # - eventos institucionales de esta institución
+            # - eventos de club creados por un usuario de esta institución
             eventos_visibles = eventos_visibles.exclude(
                 Q(institucion=institucion)
-                | Q(club_organizador__institucion_creadora=institucion)
+                | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institucion)
             )
 
             return eventos_visibles.distinct()
@@ -182,20 +200,38 @@ class EventoActionSelector:
     def es_evento_propio(evento, perfil):
         """
         Determina si el evento pertenece a la institución del usuario.
+        Soporta: evento institucional directo, club creado por la institución,
+        o club donde la institución es miembro activo.
         """
         if not perfil:
             return False
         user_type = getattr(perfil, "user_type", None)
         institution = getattr(perfil, "institution", None)
-        
-        if not institution:
+
+        if not institution or user_type != "institucional":
             return False
-        
-        if user_type == "institucional":
-            return (
-                evento.institucion == institution or
-                (evento.club_organizador and evento.club_organizador.institucion_creadora == institution)
-            )
+
+        # Evento institucional directo
+        if evento.institucion == institution:
+            return True
+
+        # Evento de club
+        if evento.club_organizador:
+            # Creador del club
+            if evento.club_organizador.institucion_creadora == institution:
+                return True
+            # Miembro activo — usar caché del perfil si está disponible (evita N+1)
+            clubes_ids = getattr(perfil, "_clubes_miembro_ids", None)
+            if clubes_ids is not None:
+                return evento.club_organizador_id in clubes_ids
+            # Fallback: query directa (cuando se llama fuera del contexto de la view)
+            from registry.models import MembresiaClu
+            return MembresiaClu.objects.filter(
+                club=evento.club_organizador,
+                institucion=institution,
+                estado="miembro_activo",
+            ).exists()
+
         return False
 
     @staticmethod
@@ -250,6 +286,10 @@ class EventoActionSelector:
                 elif estado in [EstadoEvento.ABIERTO, EstadoEvento.PAUSADO, EstadoEvento.EN_PROCESO] and es_propio:
                     acciones["ver"] = True
                     acciones["cancelar"] = True
+                    if estado == EstadoEvento.ABIERTO:
+                        acciones["inscribir"] = True
+                elif estado == EstadoEvento.ABIERTO and not es_propio:
+                    acciones["inscribir"] = True
                 elif estado in [EstadoEvento.FINALIZADO, EstadoEvento.CANCELADO]:
                     acciones["ver"] = True
             elif vista == "eventos":

@@ -64,6 +64,9 @@
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Tasa Aprobación</div>
                     <h2 class="display-5 fw-bold mb-0"><span class="counter" data-target="{{ tasa_aprobacion|default:0 }}">0</span>%</h2>
+                    <p class="text-white-50 mb-0 mt-1" style="font-size:0.75rem;">
+                        {{ clubes_aprobados }} aprobados de {{ total_procesados }} evaluados
+                    </p>
                     <i class="bi bi-graph-up position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #22d3ee;"></div>
@@ -178,12 +181,17 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.counter').forEach(c => {
-        const target = +c.getAttribute('data-target');
+        const target = parseFloat(c.getAttribute('data-target')) || 0;
+        const isDecimal = target % 1 !== 0;
+        const steps = 30;
+        let step = 0;
         const update = () => {
-            const now = +c.innerText;
-            const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
-            else c.innerText = target;
+            step++;
+            const value = target * (step / steps);
+            c.innerText = step < steps
+                ? (isDecimal ? value.toFixed(1) : Math.ceil(value))
+                : (isDecimal ? target.toFixed(1) : target);
+            if (step < steps) setTimeout(update, 30);
         };
         update();
     });

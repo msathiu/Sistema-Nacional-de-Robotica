@@ -109,13 +109,15 @@
                 <table class="table table-hover align-middle mb-0" id="institucionesTable">
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
-                            <th class="px-4 py-3">RNR</th>
-                            <th class="py-3">Razón Social / Cédula</th>
-                            <th class="py-3">Tipo</th>
-                            <th class="py-3">Correo / Teléfono</th>
-                            <th class="py-3">Ubicación</th>
+                            <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">RNR <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Razón Social / Cédula <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Ubicación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             {% if es_central %}
-                            <th class="py-3 text-center">Estatus</th>
+                            <th class="py-3 text-center sortable-th" data-sort="5" style="cursor:pointer; user-select:none; min-width: 100px;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            {% else %}
+                            <th class="d-none" data-sort="5"><i class="bi bi-arrow-down-up sort-icon d-none"></i></th>
                             {% endif %}
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
@@ -124,7 +126,7 @@
                         {% for item in instituciones_con_usuarios %}
                         <tr class="clickable-row" data-institucion-id="{{ item.institucion.id }}">
                             <td class="px-4 font-monospace small fw-bold text-primary">{{ item.institucion.codigo }}</td>
-                            <td>
+                            <td data-sort-value="{% if item.institucion.tipo_institucion == 'particular' %}{{ item.institucion.particular_apellidos }} {{ item.institucion.particular_nombres }}{% else %}{{ item.institucion.nombre }}{% endif %}">
                                 {% if item.institucion.tipo_institucion == 'particular' %}
                                     <div class="fw-bold small text-dark">{{ item.institucion.particular_nombres }} {{ item.institucion.particular_apellidos }}</div>
                                     <div class="x-small text-muted">Cédula: <span class="rif-completo-texto">{{ item.institucion.particular_nacionalidad }}-{{ item.institucion.particular_cedula }}</span></div>
@@ -133,24 +135,24 @@
                                     <div class="x-small text-muted">RIF: <span class="rif-completo-texto">{{ item.institucion.rif }}</span></div>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td data-sort-value="{{ item.institucion.tipo_institucion }}">
                                 <span class="badge rounded-pill px-3 py-2 small fw-bold" 
                                       style="background: {% if item.institucion.tipo_institucion == 'particular' %}#8b5cf6{% elif item.institucion.tipo_institucion == 'educativa' %}#3b82f6{% elif item.institucion.tipo_institucion == 'publica' %}#10b981{% elif item.institucion.tipo_institucion == 'privada' %}#f59e0b{% else %}#6b7280{% endif %}; color: white;">
                                     {{ item.institucion.get_tipo_institucion_display }}
                                 </span>
                                 <span class="d-none tipo-hidden">{{ item.institucion.tipo_institucion }}</span>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ item.institucion.email }}">
                                 <div class="small text-primary text-decoration-underline email-lista">{{ item.institucion.email }}</div>
                                 <div class="x-small text-muted">{{ item.institucion.telefono }}</div>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ item.institucion.estado.nombre }}">
                                 <div class="small fw-bold text-estado-val">{{ item.institucion.estado.nombre }}</div>
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
                             
                             {% if es_central %}
-                            <td class="text-center" onclick="event.stopPropagation();">
+                            <td class="text-center" onclick="event.stopPropagation();" data-sort-value="{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}">
                                 <div class="mt-2">
                                     <div class="form-check form-switch d-inline-block">
                                         <input class="form-check-input switch-status" type="checkbox" role="switch" 
@@ -161,24 +163,29 @@
                                 <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
                             </td>
                             {% else %}
-                                <span class="d-none status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                                <td class="d-none" data-sort-value="{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}">
+                                    <span class="status-hidden">{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}</span>
+                                </td>
                             {% endif %}
 
                             <td class="text-center px-4" onclick="event.stopPropagation();">
-                                <div class="d-flex justify-content-center gap-2">
+                                <div class="d-flex justify-content-center gap-1">
                                     {% if es_central %}
-                                    <button class="btn btn-outline-info btn-sm px-3 rounded-pill fw-bold" 
+                                    <button class="btn btn-outline-info btn-sm rounded-circle p-2" 
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles"
                                             onclick="verDetallesCompletos('{{ item.institucion.id }}')">
-                                        <i class="bi bi-eye me-1"></i> Ver Detalles
+                                        <i class="bi bi-eye"></i>
                                     </button>
                                     {% endif %}
-                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
+                                    <button class="btn btn-outline-primary btn-sm rounded-circle p-2" 
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"
                                             onclick="abrirModalEditar('{{ item.institucion.id }}')">
-                                        <i class="bi bi-pencil-square me-1"></i> Editar
+                                        <i class="bi bi-pencil-square"></i>
                                     </button>
                                     
                                     {% if es_central %}
-                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
+                                    <button class="btn btn-outline-danger btn-sm rounded-circle p-2" 
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
                                             onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -214,7 +221,7 @@
                                 <span id="detCodigo" class="fw-bold text-dark font-monospace"></span>
                             </div>
                             <div class="col-md-12">
-                                <label class="text-muted small d-block">Nombre</label>
+                                <label class="text-muted small d-block">Razón Social/Nombres y Apellidos</label>
                                 <span id="detNombre" class="fw-bold text-dark"></span>
                             </div>
                             <div id="bloqueParticular" class="col-md-12" style="display: none;">
@@ -356,6 +363,13 @@
     .clickable-row { cursor: pointer; transition: background-color 0.2s ease; }
     .clickable-row:hover { background-color: rgba(0, 212, 255, 0.04) !important; }
     .switch-status { width: 3.5rem !important; height: 1.7rem !important; cursor: pointer; background-color: #cbd5e1; border: none; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
     .switch-status:checked { background-color: #10b981 !important; border-color: #10b981 !important; }
 </style>
 {% endblock %}
@@ -376,6 +390,71 @@
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
     }
+
+    // Ordenamiento de columnas
+    (function initSortableTable() {
+        const table = document.getElementById('institucionesTable');
+        if (!table) return;
+        const headers = table.querySelectorAll('th.sortable-th');
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
+
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                // Resetear íconos de otras columnas
+                headers.forEach(h => {
+                    if (h !== this) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                // Alternar dirección
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    this.classList.remove('sort-asc');
+                    this.classList.add('sort-desc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    this.classList.remove('sort-desc');
+                    this.classList.add('sort-asc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                // Obtener filas y ordenar
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.querySelectorAll('td')[colIndex];
+                    const cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    // Usar data-sort-value si existe, sino textContent
+                    let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    // Intentar comparación numérica (para RNR códigos)
+                    const numA = parseFloat(valA.replace(/[^0-9.-]/g, ''));
+                    const numB = parseFloat(valB.replace(/[^0-9.-]/g, ''));
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    // Comparación alfabética
+                    const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                // Reordenar DOM
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    })();
 
     function aplicarFiltros() {
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
@@ -870,6 +949,11 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+        // Inicializar tooltips de Bootstrap 5
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
         // Contadores animados
         document.querySelectorAll('.counter').forEach(c => {
             const target = +c.getAttribute('data-target');

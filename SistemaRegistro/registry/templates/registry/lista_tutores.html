@@ -21,6 +21,9 @@
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Tutor
                 </a>
+                <a href="{% url 'exportar_tutores_excel' %}" class="btn btn-outline-secondary shadow-sm px-3 fw-bold" style="border-radius:12px;" title="Exportar tutores a Excel">
+                    <i class="bi bi-file-earmark-spreadsheet text-success me-1"></i> Excel
+                </a>
             </div>
         </div>
     </div>
@@ -103,44 +106,44 @@
                 <div class="card-body">
                     {% if tutores_institucionales %}
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 table-tutores">
+                            <table class="table table-hover align-middle mb-0 table-tutores" id="tutoresInstTable">
                                 <thead class="bg-light">
                                     <tr class="text-uppercase x-small fw-bold text-muted">
-                                        <th class="px-4 py-3">Nombre Completo</th>
-                                        <th class="py-3">Cédula</th>
-                                        <th class="py-3">Institución</th>
-                                        <th class="py-3">Rol</th>
-                                        <th class="py-3">Email</th>
-                                        <th class="py-3 text-center">Status</th>
+                                        <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Nombre Completo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Cédula <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Rol <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Email <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 text-center sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Status <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                         <th class="py-3 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for vinculacion in tutores_institucionales %}
                                     <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
-                                        <td class="px-4">
+                                        <td class="px-4" data-sort-value="{{ vinculacion.tutor.get_nombre_completo }}">
                                             <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
                                             {% if vinculacion.tutor.profesion %}
                                                 <div class="x-small text-muted">{{ vinculacion.tutor.profesion }}</div>
                                             {% endif %}
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.tutor.cedula }}">
                                             <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.institucion.nombre }}">
                                             <span class="small">{{ vinculacion.institucion.nombre|truncatechars:30 }}</span>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.get_rol_display }}">
                                             <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
                                                 {{ vinculacion.get_rol_display }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.tutor.email }}">
                                             <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
                                                 {{ vinculacion.tutor.email|truncatechars:25 }}
                                             </a>
                                         </td>
-                                        <td class="text-center status-cell align-middle">
+                                        <td class="text-center status-cell align-middle" data-sort-value="{{ vinculacion.status }}">
                                             <div class="form-check form-switch m-0 toggle-wrap">
                                                 <input 
                                                     type="checkbox" 
@@ -156,14 +159,16 @@
                                             </div>
                                         </td>
                                         <td class="text-center px-4">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center gap-1">
                                                 <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
-                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                                 <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
-                                                   class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
-                                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                                   class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                                    <i class="bi bi-pencil-square"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -196,22 +201,22 @@
                 <div class="card-body">
                     {% if tutores_federacion %}
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 table-tutores">
+                            <table class="table table-hover align-middle mb-0 table-tutores" id="tutoresFedTable">
                                 <thead class="bg-light">
                                     <tr class="text-uppercase x-small fw-bold text-muted">
-                                        <th class="px-4 py-3">Nombre Completo</th>
-                                        <th class="py-3">Cédula</th>
-                                        <th class="py-3">Sede / Ente</th>
-                                        <th class="py-3">Rol</th>
-                                        <th class="py-3">Email</th>
-                                        <th class="py-3 text-center">Status</th>
+                                        <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Nombre Completo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Cédula <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Sede / Ente <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Rol <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Email <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                        <th class="py-3 text-center sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Status <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                         <th class="py-3 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for vinculacion in tutores_federacion %}
                                     <tr class="tutor-row {% if vinculacion.status != 'activo' %}table-secondary{% endif %}">
-                                        <td class="px-4">
+                                        <td class="px-4" data-sort-value="{{ vinculacion.tutor.get_nombre_completo }}">
                                             <div class="fw-bold small text-dark">{{ vinculacion.tutor.get_nombre_completo }}</div>
                                             <div class="x-small">
                                                 {% if vinculacion.tipo_vinculacion == 'central' %}
@@ -221,27 +226,27 @@
                                                 {% endif %}
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.tutor.cedula }}">
                                             <span class="badge bg-light text-dark border">{{ vinculacion.tutor.nacionalidad }}-{{ vinculacion.tutor.cedula }}</span>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{% if vinculacion.tipo_vinculacion == 'central' %}Federación Nacional{% else %}{{ vinculacion.estado.nombre }}{% endif %}">
                                             {% if vinculacion.tipo_vinculacion == 'central' %}
                                                 <span class="small fw-medium">Federación Nacional</span>
                                             {% else %}
                                                 <span class="small fw-medium">Delegación {{ vinculacion.estado.nombre }}</span>
                                             {% endif %}
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.get_rol_display }}">
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
                                                 {{ vinculacion.get_rol_display }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-sort-value="{{ vinculacion.tutor.email }}">
                                             <a href="mailto:{{ vinculacion.tutor.email }}" class="small text-decoration-none">
                                                 {{ vinculacion.tutor.email|truncatechars:25 }}
                                             </a>
                                         </td>
-                                        <td class="text-center status-cell align-middle">
+                                        <td class="text-center status-cell align-middle" data-sort-value="{{ vinculacion.status }}">
                                             <div class="form-check form-switch m-0 toggle-wrap">
                                                 <input 
                                                     type="checkbox" 
@@ -257,14 +262,16 @@
                                             </div>
                                         </td>
                                         <td class="text-center px-4">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center gap-1">
                                                 <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
-                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                                    <i class="bi bi-eye me-1"></i> Ver
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                                 <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
-                                                   class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold">
-                                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                                   class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                                    <i class="bi bi-pencil-square"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -343,6 +350,13 @@
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; --success-color: #10b981; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
 
     .card-header-tutores {
         background: var(--blue-main);
@@ -431,6 +445,72 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips de Bootstrap 5
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+
+    // Ordenamiento de columnas (reutilizable para múltiples tablas)
+    function initSortableTable(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const headers = table.querySelectorAll('th.sortable-th');
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
+
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                headers.forEach(h => {
+                    if (h !== this) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    this.classList.remove('sort-asc');
+                    this.classList.add('sort-desc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    this.classList.remove('sort-desc');
+                    this.classList.add('sort-asc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.querySelectorAll('td')[colIndex];
+                    const cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    }
+
+    initSortableTable('tutoresInstTable');
+    initSortableTable('tutoresFedTable');
+
     // UX: mantener la pestaña activa al enviar búsquedas (GET) a `lista_tutores`.
     const filtrosForm = document.getElementById('tutor-filtros-form');
     if (filtrosForm) {

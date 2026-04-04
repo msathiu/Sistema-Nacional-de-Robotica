@@ -3,117 +3,93 @@
 
 {% block title %}Restaurar Club{% endblock %}
 
-{% block extra_css %}
-<style>
-    :root {
-        --blue-main: #0b2c6d;
-        --blue-dark: #051636;
-        --accent-cyan: #00d4ff;
-    }
-    
-    .modern-card {
-        border-radius: 20px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-    }
-
-    .card-header-success-modern {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        border-radius: 20px 20px 0 0 !important;
-        padding: 1.25rem 1.5rem;
-        border: none;
-    }
-
-    .btn-modern {
-        border-radius: 50px;
-        padding: 0.6rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .btn-success-modern {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        border: none;
-        color: white;
-    }
-
-    .btn-success-modern:hover {
-        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
-    }
-    
-    .btn-outline-modern {
-        border: 2px solid #e2e8f0;
-        color: #64748b;
-        background: transparent;
-    }
-    
-    .btn-outline-modern:hover {
-        background: #f1f5f9;
-        color: #334155;
-        border-color: #cbd5e1;
-        transform: translateY(-2px);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-7">
-            <div class="card modern-card mt-4">
-                <div class="card-header card-header-success-modern text-white">
-                    <h4 class="mb-0 fw-bold" style="font-family: 'Space Grotesk', sans-serif;">
-                        <i class="bi bi-arrow-counterclockwise me-2"></i> Restaurar Club
-                    </h4>
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'clubes_eliminados' %}" class="text-decoration-none">Papelera</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Restaurar Club</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-arrow-counterclockwise fs-2 text-white"></i>
                 </div>
-                <div class="card-body p-4">
-                    <div class="mb-4">
-                        <h5 class="fw-bold mb-1 text-dark">{{ club.nombre }}</h5>
-                        <p class="text-muted small mb-0"><i class="bi bi-building me-1"></i>Institución Creadora: {{ club.institucion_creadora.nombre|default:"N/A" }}</p>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Restaurar Club</h2>
+                    <p class="text-muted mb-0 small">Confirma la restauración del club eliminado</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'clubes_eliminados' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-collection-play text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">{{ club.nombre }}</h5>
                     </div>
-                    
-                    <div class="alert alert-warning rounded-3" style="background: rgba(245, 158, 11, 0.1); border:none; border-left: 4px solid #f59e0b;">
-                        <i class="bi bi-exclamation-triangle-fill me-2" style="color: #d97706;"></i> 
-                        <span class="text-dark"><strong>Confirmación requerida:</strong> Está a punto de restaurar un club eliminado.</span>
+                </div>
+                <div style="height: 3px; background: var(--accent-cyan);"></div>
+
+                <div class="card-body p-4">
+                    <!-- Info institución -->
+                    <p class="text-muted small mb-4"><i class="bi bi-building me-1"></i>Institución Creadora: <strong class="text-dark">{{ club.institucion_creadora.nombre|default:"N/A" }}</strong></p>
+
+                    <!-- Datos de eliminación -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="bg-light p-3 rounded-3 border-start border-3" style="border-color: var(--blue-main) !important;">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-calendar-x me-1"></i>Fecha de Eliminación</label>
+                                <span class="fw-medium text-dark">{{ club.fecha_eliminacion|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        </div>
+                        {% if club.motivo_eliminacion %}
+                        <div class="col-12">
+                            <div class="bg-light p-3 rounded-3">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-chat-left-text me-1"></i>Motivo de Eliminación</label>
+                                <p class="mb-0 text-dark" style="line-height: 1.6;">{{ club.motivo_eliminacion }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <div class="p-4 bg-light rounded-3 border mb-4">
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <p class="mb-1 small text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Fecha de Eliminación</p>
-                                <p class="mb-0 small"><i class="bi bi-calendar-x me-1 text-danger"></i>{{ club.fecha_eliminacion|date:"d/m/Y H:i" }}</p>
-                            </div>
-                            {% if club.motivo_eliminacion %}
-                            <div class="col-12">
-                                <p class="mb-1 small text-muted text-uppercase fw-bold" style="font-size: 0.75rem;">Motivo de Eliminación</p>
-                                <p class="mb-0 small bg-white p-2 rounded border">{{ club.motivo_eliminacion }}</p>
-                            </div>
-                            {% endif %}
+                    <!-- Alerta warning -->
+                    <div class="p-3 rounded-3 mb-3" style="background: #fff7ed; border-left: 4px solid #f59e0b;">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-exclamation-triangle-fill mt-1 text-warning"></i>
+                            <p class="mb-0 small text-dark"><strong>Confirmación requerida:</strong> Está a punto de restaurar un club eliminado.</p>
                         </div>
                     </div>
 
-                    <div class="alert alert-info rounded-3" style="background: rgba(8, 145, 178, 0.1); border:none; border-left: 4px solid #0891b2;">
-                        <i class="bi bi-info-circle-fill me-2 text-info"></i>
-                        <span class="text-dark small">Al restaurar, el club volverá a su estado anterior y estará activo nuevamente.</span>
+                    <!-- Alerta info -->
+                    <div class="p-3 rounded-3 mb-4" style="background: #eff6ff; border-left: 4px solid var(--blue-main);">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-info-circle-fill mt-1" style="color: var(--blue-main);"></i>
+                            <p class="mb-0 small text-dark">Al restaurar, el club volverá a su estado anterior y estará activo nuevamente.</p>
+                        </div>
                     </div>
-
-                    <hr class="my-4">
 
                     <form method="post">
                         {% csrf_token %}
-                        <div class="d-flex justify-content-end gap-3">
-                            <a href="{% url 'clubes_eliminados' %}" class="btn btn-modern btn-outline-modern">
-                                <i class="bi bi-x-lg"></i> Cancelar
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'clubes_eliminados' %}" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;">
+                                <i class="bi bi-x-lg me-1"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-modern btn-success-modern">
-                                <i class="bi bi-check-lg"></i> Confirmar Restauración
+                            <button type="submit" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                                <i class="bi bi-check-lg me-1"></i>Confirmar Restauración
                             </button>
                         </div>
                     </form>
@@ -122,4 +98,9 @@
         </div>
     </div>
 </div>
+
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
 {% endblock %}

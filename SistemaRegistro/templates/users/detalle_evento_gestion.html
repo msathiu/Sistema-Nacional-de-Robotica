@@ -17,10 +17,17 @@
                     <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
                 </div>
             </div>
-            <a href="{% if es_fed_central %}{% url 'admin_eventos' %}{% else %}{% url 'mis_eventos' %}{% endif %}" class="btn shadow-sm px-4 fw-bold" 
-               style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
-                <i class="bi bi-arrow-left me-2"></i> Volver
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                {% if evento.estado_evento in 'en_proceso,finalizado' and not es_fed_central %}
+                <a href="{% url 'registro_asistencia' evento.id %}" class="btn fw-bold px-4 shadow-sm"
+                   style="background: var(--accent-cyan); color: var(--blue-main); border-radius:12px;">
+                    <i class="bi bi-clipboard2-check me-2"></i>Asistencia
+                </a>
+                {% endif %}
+                <a href="{% if es_fed_central %}{% url 'admin_eventos' %}{% else %}{% url 'mis_eventos' %}{% endif %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                    <i class="bi bi-arrow-left me-2"></i> {% if es_fed_central %}Volver a Administración{% else %}Volver a Mis Eventos{% endif %}
+                </a>
+            </div>
         </div>
     </div>
     <hr class="mt-2 mb-4 opacity-10">
@@ -51,148 +58,163 @@
 
     <!-- Información del Evento -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4" style="background: var(--blue-main);">
-            <h5 class="fw-bold mb-0 text-white small tracking-wider uppercase">INFORMACIÓN DEL EVENTO</h5>
+        <!-- Header con nombre + estado -->
+        <div class="card-header border-0 px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, var(--blue-main), #0d3b8e);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-3 d-flex align-items-center justify-content-center" style="width:42px;height:42px;background:rgba(255,255,255,0.12);">
+                    <i class="bi bi-calendar-event text-white fs-5"></i>
+                </div>
+                <div>
+                    <p class="text-white-50 mb-0" style="font-size:0.68rem;letter-spacing:1px;text-transform:uppercase;font-weight:600;">Información del Evento</p>
+                    <h5 class="fw-bold mb-0 text-white">{{ evento.nombre }}</h5>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge rounded-pill px-3 py-2 fw-semibold
+                    {% if evento.estado_evento == 'abierto' %}bg-success
+                    {% elif evento.estado_evento == 'en_proceso' %}bg-primary
+                    {% elif evento.estado_evento == 'finalizado' %}bg-info
+                    {% elif evento.estado_evento == 'pausado' %}bg-warning text-dark
+                    {% elif evento.estado_evento == 'cancelado' or evento.estado_evento == 'rechazado' %}bg-danger
+                    {% elif evento.estado_evento == 'revision' %}bg-warning text-dark
+                    {% else %}bg-secondary{% endif %}" style="font-size:0.78rem;">
+                    <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;vertical-align:middle;"></i>
+                    {{ evento.get_estado_evento_display }}
+                </span>
+                {% if evento.cancelado and evento.estado_evento != 'cancelado' %}
+                <span class="badge rounded-pill bg-danger px-3 py-2 fw-semibold" style="font-size:0.78rem;">Cancelado</span>
+                {% endif %}
+            </div>
         </div>
+
         <div class="card-body p-4">
-            <!-- Información Principal -->
+            <!-- Sección 1: Clasificación -->
+            <p class="ev-section-label"><i class="bi bi-tag me-2"></i>Clasificación</p>
             <div class="row g-3 mb-4">
-                <div class="col-12">
-                    <h4 class="fw-bold text-dark mb-1">{{ evento.nombre }}</h4>
-                    <span class="badge {% if evento.estado_evento == 'abierto' %}bg-success text-white{% elif evento.estado_evento == 'pausado' %}bg-warning text-dark{% elif evento.estado_evento == 'cancelado' %}bg-danger text-white{% elif evento.estado_evento == 'finalizado' %}bg-info text-white{% elif evento.estado_evento == 'en_proceso' %}bg-primary text-white{% elif evento.estado_evento == 'borrador' %}bg-secondary text-white{% elif evento.estado_evento == 'revision' %}bg-warning text-dark{% elif evento.estado_evento == 'rechazado' %}bg-danger text-white{% else %}bg-dark text-white{% endif %}">
-                        {{ evento.get_estado_evento_display }}
-                    </span>
-                    {% if evento.cancelado and evento.estado_evento != 'cancelado' %}
-                    <span class="badge bg-danger text-white ms-1">Cancelado</span>
-                    {% endif %}
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-layers me-1"></i>Modalidad</span>
+                        <span class="ev-value">{{ evento.get_modalidad_display }}</span>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-bookmark me-1"></i>Tipo de Evento</span>
+                        <span class="ev-value">{{ evento.get_tipo_display }}</span>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-eye me-1"></i>Audiencia</span>
+                        <span class="ev-value">{{ evento.get_audiencia_display }}</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Grid de información en formato minimalista -->
-            <div class="row g-3">
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Modalidad</span>
-                        <span class="info-value">{{ evento.get_modalidad_display }}</span>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Tipo de Evento</span>
-                        <span class="info-value">{{ evento.get_tipo_display }}</span>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Audiencia</span>
-                        <span class="info-value">{{ evento.get_audiencia_display }}</span>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Ubicación</span>
-                        <span class="info-value">
-                            {{ evento.estado.nombre }}
-                            {% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}
+            <!-- Sección 2: Lugar y Capacidad -->
+            <p class="ev-section-label"><i class="bi bi-geo-alt me-2"></i>Lugar y Capacidad</p>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-map me-1"></i>Ubicación</span>
+                        <span class="ev-value">
+                            {{ evento.estado.nombre }}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}
                         </span>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Institución</span>
-                        <span class="info-value">{{ evento.institucion.nombre }}</span>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Capacidad</span>
-                        <span class="info-value">{% if evento.capacidad_maxima %}{{ evento.capacidad_maxima }} participantes{% else %}Sin límite{% endif %}</span>
-                    </div>
-                </div>
                 {% if evento.direccion %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Dirección</span>
-                        <span class="info-value small">{{ evento.direccion }}</span>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-pin-map me-1"></i>Dirección</span>
+                        <span class="ev-value" style="font-size:0.88rem;">{{ evento.direccion }}</span>
                     </div>
                 </div>
                 {% endif %}
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-people me-1"></i>Capacidad</span>
+                        <span class="ev-value">
+                            {% if evento.capacidad_maxima %}{{ evento.capacidad_maxima }} equipos
+                            {% else %}<span class="text-muted fst-italic">Sin límite</span>{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Organizador y Contacto -->
+            <p class="ev-section-label"><i class="bi bi-building me-2"></i>Organizador y Contacto</p>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-bank me-1"></i>Institución</span>
+                        <span class="ev-value" style="font-size:0.88rem;">
+                            {% if evento.institucion %}
+                                {{ evento.institucion.nombre }}
+                            {% elif evento.club_organizador %}
+                                {{ evento.club_organizador.institucion_creadora.nombre }}
+                                <small class="text-muted d-block" style="font-size:0.75rem;font-weight:400;">vía club: {{ evento.club_organizador.nombre }}</small>
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
                 {% if evento.telefono_codigo and evento.telefono_numero %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Teléfono</span>
-                        <span class="info-value">({{ evento.telefono_codigo }}) {{ evento.telefono_numero }}</span>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-telephone me-1"></i>Teléfono</span>
+                        <span class="ev-value">({{ evento.telefono_codigo }}) {{ evento.telefono_numero }}</span>
                     </div>
                 </div>
                 {% endif %}
                 {% if evento.email_contacto %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="info-item">
-                        <span class="info-label">Email</span>
-                        <span class="info-value small">{{ evento.email_contacto }}</span>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="ev-info-item">
+                        <span class="ev-label"><i class="bi bi-envelope me-1"></i>Email</span>
+                        <span class="ev-value" style="font-size:0.88rem;">{{ evento.email_contacto }}</span>
                     </div>
                 </div>
                 {% endif %}
             </div>
 
+            <!-- Descripción y Requisitos -->
             {% if evento.descripcion %}
-            <div class="mt-4">
-                <div class="info-section">
-                    <span class="info-section-title">Descripción</span>
-                    <p class="mb-0 text-dark">{{ evento.descripcion|linebreaks }}</p>
-                </div>
+            <div class="ev-text-block mb-3">
+                <p class="ev-text-title"><i class="bi bi-text-paragraph me-2"></i>Descripción</p>
+                <p class="mb-0 text-dark" style="font-size:0.93rem;line-height:1.6;">{{ evento.descripcion|linebreaks }}</p>
             </div>
             {% endif %}
 
             {% if evento.requisitos %}
-            <div class="mt-3">
-                <div class="info-section">
-                    <span class="info-section-title">Requisitos</span>
-                    <p class="mb-0 text-dark">{{ evento.requisitos|linebreaks }}</p>
-                </div>
+            <div class="ev-text-block mb-3">
+                <p class="ev-text-title"><i class="bi bi-list-check me-2"></i>Requisitos</p>
+                <p class="mb-0 text-dark" style="font-size:0.93rem;line-height:1.6;">{{ evento.requisitos|linebreaks }}</p>
             </div>
             {% endif %}
 
+            <!-- Alertas de estado -->
             {% if evento.estado_evento == 'pausado' and evento.observacion_estado %}
-            <div class="mt-3">
-                <div class="info-section" style="background: #fff7ed; border-left-color: #f59e0b;">
-                    <span class="info-section-title" style="color: #b45309;">Observación de Pausa</span>
-                    <p class="mb-0 text-dark">{{ evento.observacion_estado|linebreaks }}</p>
-                </div>
+            <div class="ev-alert ev-alert-warning mb-3">
+                <i class="bi bi-pause-circle me-2"></i><strong>Observación de Pausa:</strong> {{ evento.observacion_estado }}
             </div>
             {% endif %}
-
             {% if evento.estado_evento == 'cancelado' and evento.motivo_cancelacion %}
-            <div class="mt-3">
-                <div class="info-section" style="background: #fef2f2; border-left-color: #ef4444;">
-                    <span class="info-section-title" style="color: #dc2626;">Motivo de Cancelación</span>
-                    <p class="mb-0 text-dark">{{ evento.motivo_cancelacion|linebreaks }}</p>
-                </div>
+            <div class="ev-alert ev-alert-danger mb-3">
+                <i class="bi bi-x-circle me-2"></i><strong>Motivo de Cancelación:</strong> {{ evento.motivo_cancelacion }}
             </div>
             {% endif %}
-
             {% if evento.estado_evento == 'rechazado' and evento.observacion_estado %}
-            <div class="mt-3">
-                <div class="info-section" style="background: #fef2f2; border-left-color: #dc2626;">
-                    <span class="info-section-title" style="color: #dc2626;">Motivo de Rechazo</span>
-                    <p class="mb-0 text-dark">{{ evento.observacion_estado|linebreaks }}</p>
-                </div>
+            <div class="ev-alert ev-alert-danger mb-3">
+                <i class="bi bi-slash-circle me-2"></i><strong>Motivo de Rechazo:</strong> {{ evento.observacion_estado }}
             </div>
             {% endif %}
 
-            <div class="row g-3 mt-4">
-                <div class="col-md-6">
-                    <div class="info-item" style="background: transparent; border-left-color: #9ca3af;">
-                        <span class="info-label">Fecha de Creación</span>
-                        <span class="info-value">{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="info-item" style="background: transparent; border-left-color: #9ca3af;">
-                        <span class="info-label">Última Actualización</span>
-                        <span class="info-value">{{ evento.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
-                    </div>
-                </div>
+            <!-- Fechas de auditoría -->
+            <div class="d-flex flex-wrap gap-3 pt-3" style="border-top: 1px dashed #e5e7eb;">
+                <span class="text-muted" style="font-size:0.78rem;">
+                    <i class="bi bi-clock-history me-1"></i>Creado: <strong class="text-dark">{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                </span>
+                <span class="text-muted" style="font-size:0.78rem;">
+                    <i class="bi bi-pencil-square me-1"></i>Actualizado: <strong class="text-dark">{{ evento.fecha_actualizacion|date:"d/m/Y H:i" }}</strong>
+                </span>
             </div>
         </div>
     </div>
@@ -334,51 +356,75 @@
         background-color: #f8fafc !important;
     }
     
-    /* Estilos minimalistas para información del evento */
-    .info-item {
-        padding: 0.75rem 1rem;
-        border-left: 3px solid var(--accent-cyan);
-        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-        border-radius: 0 8px 8px 0;
-    }
-    
-    .info-label {
-        display: block;
+    /* Estilos para información del evento */
+    .ev-section-label {
         font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        color: var(--blue-main);
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ev-info-item {
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        height: 100%;
+    }
+
+    .ev-label {
+        display: block;
+        font-size: 0.68rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: #6b7280;
         font-weight: 600;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.3rem;
     }
-    
-    .info-value {
+
+    .ev-value {
         display: block;
-        font-size: 0.95rem;
+        font-size: 0.93rem;
         font-weight: 600;
         color: #1f2937;
     }
-    
-    .info-value.small {
-        font-size: 0.85rem;
-        font-weight: 400;
-    }
-    
-    .info-section {
-        padding: 1rem;
-        border-radius: 8px;
+
+    .ev-text-block {
+        padding: 1rem 1.25rem;
         background: #f8fafc;
-        border-left: 3px solid var(--accent-cyan);
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
     }
-    
-    .info-section-title {
-        display: block;
+
+    .ev-text-title {
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: #6b7280;
-        font-weight: 600;
+        font-weight: 700;
         margin-bottom: 0.5rem;
+    }
+
+    .ev-alert {
+        padding: 0.85rem 1.1rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .ev-alert-warning {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #92400e;
+    }
+
+    .ev-alert-danger {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
     }
 </style>
 

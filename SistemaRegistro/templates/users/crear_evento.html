@@ -197,7 +197,7 @@
                                             Evento Institucional Abierto - Cualquier institución puede participar
                                         </option>
                                         <option value="club" {% if valores_previos.tipo_evento == 'club' %}selected{% endif %}>
-                                            Evento de Club - Solo para miembros del club
+                                            Evento de Club - {% if es_federacion %}Asignado a un club aprobado{% else %}Solo para miembros del club{% endif %}
                                         </option>
                                     </select>
                                     <div class="form-text mt-2">
@@ -215,13 +215,20 @@
                                         <option value="">Seleccione un club...</option>
                                         {% for club in clubes_disponibles %}
                                         <option value="{{ club.id }}" {% if valores_previos.club_organizador|stringformat:"s" == club.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ club.nombre }} - {{ club.institucion_creadora.nombre }}
+                                            {{ club.nombre }}{% if club.institucion_creadora %} - {{ club.institucion_creadora.nombre }}{% endif %}
                                         </option>
+                                        {% empty %}
+                                        <option value="" disabled>No hay clubes aprobados disponibles</option>
                                         {% endfor %}
                                     </select>
                                     <div class="form-text mt-2">
+                                        {% if clubes_disponibles %}
                                         <i class="bi bi-shield-lock me-1"></i>
                                         Solo los miembros activos de este club podrán ver e inscribirse
+                                        {% else %}
+                                        <i class="bi bi-exclamation-triangle me-1 text-warning"></i>
+                                        <span class="text-warning">No hay clubes aprobados. Los clubes deben ser aprobados por la Federación antes de poder crear eventos.</span>
+                                        {% endif %}
                                     </div>
                                 </div>
 

@@ -11,6 +11,7 @@ from registry.models import (
     Grupo,
     ClubLineaInvestigacion,
     TutorInstitucion,
+    InscripcionGrupoEvento,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,10 @@ class ReportService:
         except Exception:
             membresias_pendientes = 0
 
-        total_eventos = Evento.objects.count()
+        total_eventos = Evento.objects.exclude(
+            Q(estado_evento="borrador") &
+            (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
+        ).count()
 
         # 4. Equipos y Tutores (Optimizado)
         filtros_equipo = Q()
@@ -138,6 +142,84 @@ class ReportService:
         conteo_db = Institucion.objects.filter(filtros_inst).values("estado__nombre").annotate(total=Count("id"))
         mapa_data = {registro["estado__nombre"]: registro["total"] for registro in conteo_db if registro["estado__nombre"]}
 
+        # 9. Instituciones activas y aprobadas por estado
+        inst_por_estado_qs = (
+            Institucion.objects.filter(filtros_inst)
+            .values("estado__nombre")
+            .annotate(
+                total=Count("id"),
+                aprobadas=Count("id", filter=Q(estatus="aprobado", activa=True)),
+            )
+            .exclude(estado__nombre__isnull=True)
+            .order_by("-aprobadas")[:10]
+        )
+        inst_estados_labels    = [r["estado__nombre"] for r in inst_por_estado_qs]
+        inst_estados_total     = [r["total"] for r in inst_por_estado_qs]
+        inst_estados_aprobadas = [r["aprobadas"] for r in inst_por_estado_qs]
+
+        # 10. Eventos por estado_evento y tipo_evento
+        ESTADOS_EVENTO = ["borrador", "revision", "abierto", "en_proceso", "finalizado", "rechazado", "cancelado"]
+        eventos_qs = Evento.objects.filter(activo=True)
+        if user_type == "fed_regional" and user_estado:
+            eventos_qs = eventos_qs.filter(estado=user_estado)
+        eventos_tipo_estado = (
+            eventos_qs
+            .values("tipo_evento", "estado_evento")
+            .annotate(total=Count("id"))
+        )
+        # Construir matrices separadas para institucional y club
+        _ev_map = {(r["tipo_evento"], r["estado_evento"]): r["total"] for r in eventos_tipo_estado}
+        eventos_estados_labels       = ESTADOS_EVENTO
+        eventos_institucional_data   = [_ev_map.get(("institucional", s), 0) for s in ESTADOS_EVENTO]
+        eventos_club_data            = [_ev_map.get(("club", s), 0) for s in ESTADOS_EVENTO]
+
+        # 11. Instituciones por tipo
+        inst_tipo_qs = (
+            Institucion.objects.filter(filtros_inst)
+            .values("tipo_institucion")
+            .annotate(total=Count("id"))
+            .order_by("-total")
+        )
+        inst_tipo_labels = [r["tipo_institucion"] or "Otro" for r in inst_tipo_qs]
+        inst_tipo_data   = [r["total"] for r in inst_tipo_qs]
+
+        # 12. Participantes por grado escolar
+        grado_qs = (
+            Participante.objects.filter(filtros_part)
+            .exclude(grado_escolar__isnull=True)
+            .exclude(grado_escolar="")
+            .values("grado_escolar")
+            .annotate(total=Count("id"))
+            .order_by("grado_escolar")
+        )
+        grado_labels = [r["grado_escolar"] for r in grado_qs]
+        grado_data   = [r["total"] for r in grado_qs]
+
+        # 13. Equipos por estado_grupo y criterio
+        equipos_qs = Grupo.objects.filter(filtros_equipo)
+        equipos_estado_qs = (
+            equipos_qs
+            .values("criterio", "estado_grupo")
+            .annotate(total=Count("id"))
+        )
+        CRITERIOS = ["edad", "nivel_educativo", "mixto"]
+        ESTADOS_GRUPO = ["editable", "inscrito", "finalizado"]
+        _eq_map = {(r["criterio"], r["estado_grupo"]): r["total"] for r in equipos_estado_qs}
+        equipos_criterio_labels = ESTADOS_GRUPO
+        equipos_edad_data       = [_eq_map.get(("edad", s), 0) for s in ESTADOS_GRUPO]
+        equipos_nivel_data      = [_eq_map.get(("nivel_educativo", s), 0) for s in ESTADOS_GRUPO]
+        equipos_mixto_data      = [_eq_map.get(("mixto", s), 0) for s in ESTADOS_GRUPO]
+
+        # 14. Top 10 eventos con más inscripciones
+        inscripciones_qs = (
+            InscripcionGrupoEvento.objects.filter(activo=True)
+            .values("evento__nombre")
+            .annotate(total=Count("id"))
+            .order_by("-total")[:10]
+        )
+        inscripciones_labels = [r["evento__nombre"] for r in inscripciones_qs]
+        inscripciones_data   = [r["total"] for r in inscripciones_qs]
+
         return {
             "total_participantes": total_participantes,
             "total_instituciones": inst_agg['total'],
@@ -158,6 +240,27 @@ class ReportService:
             "tutores_labels": tutores_labels,
             "tutores_data": tutores_data,
             "mapa_data": mapa_data,
+            "inst_estados_labels": inst_estados_labels,
+            "inst_estados_total": inst_estados_total,
+            "inst_estados_aprobadas": inst_estados_aprobadas,
+            # Gráfico 10: Eventos por tipo y estado
+            "eventos_estados_labels": eventos_estados_labels,
+            "eventos_institucional_data": eventos_institucional_data,
+            "eventos_club_data": eventos_club_data,
+            # Gráfico 11: Instituciones por tipo
+            "inst_tipo_labels": inst_tipo_labels,
+            "inst_tipo_data": inst_tipo_data,
+            # Gráfico 12: Participantes por grado escolar
+            "grado_labels": grado_labels,
+            "grado_data": grado_data,
+            # Gráfico 13: Equipos por criterio y estado
+            "equipos_criterio_labels": equipos_criterio_labels,
+            "equipos_edad_data": equipos_edad_data,
+            "equipos_nivel_data": equipos_nivel_data,
+            "equipos_mixto_data": equipos_mixto_data,
+            # Gráfico 14: Top eventos por inscripciones
+            "inscripciones_labels": inscripciones_labels,
+            "inscripciones_data": inscripciones_data,
         }
 
     @staticmethod
@@ -180,8 +283,29 @@ class ReportService:
         )
 
         # Eventos y Clubes
+        # IDs de clubes donde la institución es miembro activo
+        clubes_miembro_ids = MembresiaClu.objects.filter(
+            institucion=institution, estado="miembro_activo"
+        ).values_list("club_id", flat=True)
+
+        # Eventos disponibles: solo los accesibles para esta institución
+        eventos_accesibles_q = (
+            # Eventos institucionales públicos
+            Q(tipo_evento="institucional", audiencia="publica") |
+            # Eventos institucionales privados propios
+            Q(tipo_evento="institucional", audiencia="institucional_privado", institucion=institution) |
+            # Eventos de club públicos
+            Q(tipo_evento="club", audiencia="publica") |
+            # Eventos de club exclusivos donde la institución es miembro
+            Q(tipo_evento="club", audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
+        )
+
         eventos_agg = Evento.objects.filter(activo=True).aggregate(
-            disponibles=Count('id', filter=Q(fecha__gte=hoy, estado_evento="abierto")),
+            disponibles=Count(
+                "id",
+                filter=Q(fecha__gte=hoy, estado_evento="abierto") & eventos_accesibles_q,
+                distinct=True
+            ),
             asignados=Count('id', filter=Q(grupos_inscritos__usuario_creador=user))
         )
 
@@ -190,6 +314,16 @@ class ReportService:
             aprobados=Count('id', filter=Q(status="aprobado", activo=True))
         )
 
+        # Eventos de club accesibles (reutiliza clubes_miembro_ids ya calculado)
+        eventos_club_disponibles = Evento.objects.filter(
+            tipo_evento="club",
+            estado_evento="abierto",
+            activo=True,
+        ).filter(
+            Q(audiencia="publica") |
+            Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
+        ).distinct().count()
+
         return {
             "total_mis_grupos": mis_grupos.count(),
             "total_mis_participantes": total_mis_participantes,
@@ -197,4 +331,5 @@ class ReportService:
             "eventos_asignados": eventos_agg['asignados'],
             "total_mis_clubes": mis_clubes_agg['total'],
             "mis_clubes_aprobados": mis_clubes_agg['aprobados'],
+            "eventos_club_disponibles": eventos_club_disponibles,
         }

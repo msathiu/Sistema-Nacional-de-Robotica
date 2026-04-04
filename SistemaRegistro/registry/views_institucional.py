@@ -2,6 +2,7 @@
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from users.decorators import fed_central_required
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import models, transaction
@@ -12,6 +13,7 @@ from django.utils import timezone
 
 from .models import (
     Club,
+    ClubLineaInvestigacion,
     Evento,
     Grupo,
     InscripcionGrupoEvento,
@@ -153,24 +155,15 @@ def clubes_lista(request):
     
     # fed_central puede crear clubes, mostrar su vista especial
     if user_type == "fed_central":
-        # Clubes creados por fed_central (sin institución creadora)
+        # Clubes creados por fed_central (usando tipo_creador)
         mis_clubes_creados = Club.objects.filter(
-            institucion_creadora__isnull=True,
+            tipo_creador="fed_central",
             eliminado=False
         ).order_by("-fecha_creacion")
         
-        # Todos los clubes aprobados para visualización
-        clubes_aprobados = Club.objects.filter(
-            status="aprobado",
-            activo=True,
-            eliminado=False
-        ).order_by("-fecha_aprobacion")
-        
         context = {
             "mis_clubes_creados": mis_clubes_creados,
-            "clubes_aprobados": clubes_aprobados,
             "total_creados": mis_clubes_creados.count(),
-            "total_aprobados": clubes_aprobados.count(),
             "es_fed_central": True,
         }
         return render(request, "registry/clubes_lista.html", context)
@@ -183,13 +176,7 @@ def clubes_lista(request):
         eliminado=False  # ✅ FASE 1: Filtrar clubes eliminados
     ).order_by("-fecha_creacion")
 
-    # 2. MIS CLUBES APROBADOS (solo los aprobados de mi institución)
-    mis_clubes_aprobados = mis_clubes_creados.filter(
-        status="aprobado",
-        activo=True
-    )
-
-    # 3. CLUBES DISPONIBLES (aprobados de OTRAS instituciones para postular)
+    # 2. CLUBES DISPONIBLES (aprobados de OTRAS instituciones para postular)
     from django.db.models import Subquery, OuterRef
     
     clubes_disponibles = (
@@ -217,10 +204,8 @@ def clubes_lista(request):
 
     context = {
         "mis_clubes_creados": mis_clubes_creados,
-        "mis_clubes_aprobados": mis_clubes_aprobados,
         "clubes_disponibles": clubes_disponibles,
         "total_creados": mis_clubes_creados.count(),
-        "total_aprobados": mis_clubes_aprobados.count(),
         "total_disponibles": len(clubes_disponibles),
     }
     return render(request, "registry/clubes_lista.html", context)
@@ -235,8 +220,8 @@ def crear_club(request):
     
     user_type = request.user.userprofile.user_type
     
-    # Permitir a institucionales y fed_central
-    if user_type not in ["institucional", "fed_central"]:
+    # Permitir a institucionales, fed_central y fed_regional
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -251,13 +236,20 @@ def crear_club(request):
                 # Si es fed_central, el club es público y aprobado automáticamente
                 if user_type == "fed_central":
                     club.institucion_creadora = None  # Club de federación
+                    club.tipo_creador = "fed_central"
                     club.coordinador = request.user
                     club.status = "aprobado"  # Aprobado automáticamente
                     club.fecha_aprobacion = timezone.now()
+                elif user_type == "fed_regional":
+                    club.institucion_creadora = None
+                    club.tipo_creador = "fed_regional"
+                    club.coordinador = request.user
+                    club.status = "borrador"
                 else:
                     # Institucional: flujo normal
                     institucion = request.user.userprofile.institution
                     club.institucion_creadora = institucion
+                    club.tipo_creador = "institucion"
                     club.coordinador = request.user
                     club.status = "borrador"
                 
@@ -265,7 +257,7 @@ def crear_club(request):
                 
                 # Ahora guardar las líneas manualmente
                 club.club_lineas.all().delete()
-                from registry.models import ClubLineaInvestigacion
+                from registry.models import ClubLineaInvestigacion, ClubTutor, Tutor
                 
                 lineas = [
                     (form.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
@@ -281,6 +273,23 @@ def crear_club(request):
                             tipo_linea=tipo,
                             orden=orden
                         )
+                
+                # Guardar responsables del club
+                responsables_count = int(request.POST.get("responsables_count", 0))
+                for i in range(responsables_count):
+                    tutor_id = request.POST.get(f"responsable_{i}_tutor_id")
+                    rol = request.POST.get(f"responsable_{i}_rol", "responsable")
+                    if tutor_id:
+                        try:
+                            tutor = Tutor.objects.get(id=tutor_id)
+                            ClubTutor.objects.create(
+                                club=club,
+                                tutor=tutor,
+                                rol=rol,
+                                status="activo",
+                            )
+                        except Tutor.DoesNotExist:
+                            pass
                 
                 # Mensaje según tipo de usuario
                 if user_type == "fed_central":
@@ -310,6 +319,8 @@ def crear_club(request):
         "form": form,
         "estados_vinculacion": Club.ESTADO_VINCULACION_CHOICES,
         "es_fed_central": user_type == "fed_central",
+        "es_fed_regional": user_type == "fed_regional",
+        "es_federacion": user_type in ["fed_central", "fed_regional"],
     }
     return render(request, "registry/club_crear.html", context)
 
@@ -317,20 +328,35 @@ def crear_club(request):
 @login_required
 def enviar_club_revision(request, club_id):
     """Envía un club de borrador/rechazado a pendiente de revisión con límite de intentos."""
-    if (
-        not hasattr(request.user, "userprofile")
-        or request.user.userprofile.user_type != "institucional"
-    ):
+    if not hasattr(request.user, "userprofile"):
+        messages.error(request, "No tienes acceso a esta sección.")
+        return redirect("dashboard")
+
+    user_type = request.user.userprofile.user_type
+    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
     club = get_object_or_404(Club, id=club_id)
-    institucion = request.user.userprofile.institution
 
-    # Verificar que el club pertenece a la institución
-    if club.institucion_creadora != institucion:
-        messages.error(request, "No tienes permiso para modificar este club.")
-        return redirect("clubes_lista")
+    # Verificar que el club pertenece al usuario
+    if user_type == "institucional":
+        institucion = request.user.userprofile.institution
+        if club.institucion_creadora != institucion:
+            messages.error(request, "No tienes permiso para modificar este club.")
+            return redirect("clubes_lista")
+    elif user_type == "fed_regional":
+        if club.coordinador != request.user and club.tipo_creador != "fed_regional":
+            messages.error(request, "No tienes permiso para modificar este club.")
+            return redirect("clubes_lista")
+    elif user_type in ["fed_central", "superuser"]:
+        # fed_central puede aprobar directamente sus propios clubes
+        if club.tipo_creador == "fed_central" and club.status == "borrador":
+            club.status = "aprobado"
+            club.fecha_aprobacion = timezone.now()
+            club.save(update_fields=["status", "fecha_aprobacion"])
+            messages.success(request, f'Club "{club.nombre}" aprobado automáticamente.')
+            return redirect("clubes_lista")
     
     # ✅ FASE 2: Validar que el club no esté eliminado
     if club.eliminado:
@@ -419,35 +445,41 @@ def enviar_club_revision(request, club_id):
 
 @login_required
 def editar_club(request, club_id):
-    """Editar un club existente (solo si está en borrador o rechazado)."""
-    if (
-        not hasattr(request.user, "userprofile")
-        or request.user.userprofile.user_type != "institucional"
-    ):
+    """Editar un club existente."""
+    from registry.models import ClubTutor, Tutor, ClubLineaInvestigacion
+
+    if not hasattr(request.user, "userprofile"):
+        messages.error(request, "No tienes acceso a esta sección.")
+        return redirect("dashboard")
+
+    user_type = request.user.userprofile.user_type
+    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
     club = get_object_or_404(Club, id=club_id)
-    institucion = request.user.userprofile.institution
 
-    # Verificar permisos
-    if club.institucion_creadora != institucion:
-        messages.error(request, "No tienes permiso para modificar este club.")
-        return redirect("clubes_lista")
-    
-    # ✅ FASE 2: Validar que el club no esté eliminado
+    # Verificar permisos según tipo de usuario
+    if user_type == "institucional":
+        institucion = request.user.userprofile.institution
+        if club.institucion_creadora != institucion:
+            messages.error(request, "No tienes permiso para modificar este club.")
+            return redirect("clubes_lista")
+        # Institucional solo puede editar borrador o rechazado
+        if club.status not in ["borrador", "rechazado"]:
+            messages.warning(request, "No puedes editar un club que está en revisión o aprobado.")
+            return redirect("clubes_lista")
+    elif user_type == "fed_regional":
+        if club.coordinador != request.user and club.tipo_creador != "fed_regional":
+            messages.error(request, "No tienes permiso para modificar este club.")
+            return redirect("clubes_lista")
+        if club.status not in ["borrador", "rechazado"]:
+            messages.warning(request, "No puedes editar un club que está en revisión o aprobado.")
+            return redirect("clubes_lista")
+    # fed_central y superuser pueden editar cualquier club en cualquier estado
+
     if club.eliminado:
-        messages.error(
-            request,
-            "No puedes editar un club eliminado. Contacta a la federación si necesitas asistencia."
-        )
-        return redirect("clubes_lista")
-
-    # Solo editar si está en borrador o rechazado
-    if club.status not in ["borrador", "rechazado"]:
-        messages.warning(
-            request, "No puedes editar un club que está en revisión o aprobado."
-        )
+        messages.error(request, "No puedes editar un club eliminado.")
         return redirect("clubes_lista")
 
     if request.method == "POST":
@@ -457,6 +489,35 @@ def editar_club(request, club_id):
         if form.is_valid():
             try:
                 club = form.save()
+                
+                # Actualizar líneas de investigación
+                club.club_lineas.all().delete()
+                lineas = [
+                    (form.cleaned_data.get('linea_investigacion_1'), 'principal', 1),
+                    (form.cleaned_data.get('linea_investigacion_2'), 'soporte', 2),
+                    (form.cleaned_data.get('linea_investigacion_3'), 'afines', 3),
+                ]
+                for linea, tipo, orden in lineas:
+                    if linea:
+                        ClubLineaInvestigacion.objects.create(
+                            club=club, linea=linea, tipo_linea=tipo, orden=orden
+                        )
+                
+                # Actualizar responsables del club
+                ClubTutor.objects.filter(club=club).delete()
+                responsables_count = int(request.POST.get("responsables_count", 0))
+                for i in range(responsables_count):
+                    tutor_id = request.POST.get(f"responsable_{i}_tutor_id")
+                    rol = request.POST.get(f"responsable_{i}_rol", "responsable")
+                    if tutor_id:
+                        try:
+                            tutor = Tutor.objects.get(id=tutor_id)
+                            ClubTutor.objects.create(
+                                club=club, tutor=tutor, rol=rol, status="activo",
+                            )
+                        except Tutor.DoesNotExist:
+                            pass
+                
                 messages.success(request, f'Club "{club.nombre}" actualizado exitosamente.')
                 return redirect("clubes_lista")
             except Exception as e:
@@ -473,6 +534,9 @@ def editar_club(request, club_id):
         "club": club,
         "form": form,
         "estados_vinculacion": Club.ESTADO_VINCULACION_CHOICES,
+        "es_fed_central": user_type in ["fed_central", "superuser"],
+        "tutores_club": club.tutores.filter(status="activo").select_related("tutor"),
+        "rol_choices": ClubTutor.ROL_CHOICES,
     }
     return render(request, "registry/club_editar.html", context)
 
@@ -496,13 +560,26 @@ def postular_club(request, club_id):
         return redirect("clubes_lista")
 
     if request.method == "POST":
+        from registry.models import Tutor
         try:
+            representante_nombre = request.POST.get("representante_legal", "").strip()
+            tutor_id = request.POST.get("representante_tutor_id", "").strip()
+            
+            representante_tutor = None
+            if tutor_id:
+                try:
+                    representante_tutor = Tutor.objects.get(id=tutor_id)
+                    representante_nombre = representante_tutor.get_nombre_completo()
+                except Tutor.DoesNotExist:
+                    pass
+            
             MembresiaClu.objects.create(
                 club=club,
                 institucion=institucion,
                 carta_intencion=request.POST.get("carta_intencion"),
                 propuesta_tecnica=request.POST.get("propuesta_tecnica"),
-                representante_legal=request.POST.get("representante_legal"),
+                representante_legal=representante_nombre,
+                representante_tutor=representante_tutor,
                 tipo_linea=request.POST.get("tipo_linea", "soporte"),
             )
             messages.success(request, "Solicitud enviada exitosamente.")
@@ -513,6 +590,7 @@ def postular_club(request, club_id):
     context = {
         "club": club,
         "tipos_linea": MembresiaClu.TIPO_LINEA_CHOICES,
+        "institucion_id": institucion.id if institucion else "",
     }
     return render(request, "registry/club_postular.html", context)
 
@@ -577,29 +655,33 @@ def aprobar_club(request, club_id):
                 )
                 
                 # ✅ NUEVO: Crear membresía automática para la institución creadora
-                membresia, created = MembresiaClu.objects.get_or_create(
-                    club=club,
-                    institucion=club.institucion_creadora,
-                    defaults={
-                        'estado': 'miembro_activo',
-                        'fecha_solicitud': timezone.now(),
-                        'fecha_respuesta': timezone.now(),
-                        'tipo_linea': 'principal',
-                        'carta_intencion': 'Membresía automática como institución creadora del club',
-                        'propuesta_tecnica': 'Institución fundadora y coordinadora del club',
-                        'representante_legal': club.coordinador.get_full_name() or club.coordinador.username,
-                        'observaciones': 'Membresía automática otorgada al aprobar el club',
-                        'visto_bueno_fundadora': True,
-                        'aprobacion_ente_rector': True,
-                    }
-                )
-                
-                if created:
-                    messages.success(
-                        request, 
-                        f'Club "{club.nombre}" ha sido APROBADO. '
-                        f'La institución creadora ha sido agregada automáticamente como miembro coordinador.'
+                # Solo si el club fue creado por una institución (no federación)
+                if club.institucion_creadora:
+                    membresia, created = MembresiaClu.objects.get_or_create(
+                        club=club,
+                        institucion=club.institucion_creadora,
+                        defaults={
+                            'estado': 'miembro_activo',
+                            'fecha_solicitud': timezone.now(),
+                            'fecha_respuesta': timezone.now(),
+                            'tipo_linea': 'principal',
+                            'carta_intencion': 'Membresía automática como institución creadora del club',
+                            'propuesta_tecnica': 'Institución fundadora y coordinadora del club',
+                            'representante_legal': club.coordinador.get_full_name() or club.coordinador.username,
+                            'observaciones': 'Membresía automática otorgada al aprobar el club',
+                            'visto_bueno_fundadora': True,
+                            'aprobacion_ente_rector': True,
+                        }
                     )
+                    
+                    if created:
+                        messages.success(
+                            request, 
+                            f'Club "{club.nombre}" ha sido APROBADO. '
+                            f'La institución creadora ha sido agregada automáticamente como miembro coordinador.'
+                        )
+                    else:
+                        messages.success(request, f'Club "{club.nombre}" ha sido APROBADO.')
                 else:
                     messages.success(request, f'Club "{club.nombre}" ha sido APROBADO.')
         except Exception as e:
@@ -688,51 +770,61 @@ def tomar_en_revision_club(request, club_id):
 @staff_member_required
 def revisar_membresias(request):
     """
-    Vista para que el Ente Rector revise membresías con visto bueno de la Fundadora.
+    Vista para que el Ente Rector revise membresías.
     
-    Muestra todas las membresías en diferentes estados:
-    - Pendientes de filtro (esperando visto bueno de fundadora)
-    - Con visto bueno de fundadora (esperando aprobación del Ente Rector)
-    - Miembros activos
-    - Rechazadas
+    Flujo normal (club con institución fundadora):
+      pendiente_filtro → visto_bueno_fundadora → [aquí se aprueba] → miembro_activo
+    
+    Flujo para club de federación (sin institución fundadora):
+      pendiente_filtro → [aquí se aprueba directamente] → miembro_activo
     """
-    # Membresías pendientes del filtro inicial (Fundadora aún no ha dado visto bueno)
+    from django.db.models import Q
+    
+    # Membresías pendientes de filtro
+    # Para clubs de federación: están listas para aprobación directa
+    # Para clubs de institución: esperando visto bueno de la fundadora
     membresias_pendientes_filtro = (
-        MembresiaClu.objects.filter(estado="pendiente_filtro")
-        .select_related("club", "institucion")
+        MembresiaClu.objects.filter(estado="pendiente_filtro", club__eliminado=False)
+        .select_related("club", "institucion", "club__institucion_creadora")
         .order_by("-fecha_solicitud")
     )
 
-    # Membresías con visto bueno de la Fundadora (esperando aprobación del Ente Rector)
-    membresias_con_visto_bueno = (
-        MembresiaClu.objects.filter(estado="visto_bueno_fundadora")
-        .select_related("club", "institucion")
+    # Membresías listas para aprobación del Ente Rector:
+    # - Con visto bueno de fundadora (clubs de institución)
+    # - Pendientes de filtro en clubs de federación (sin fundadora)
+    membresias_listas_aprobar = (
+        MembresiaClu.objects.filter(
+            Q(estado="visto_bueno_fundadora") |
+            Q(estado="pendiente_filtro", club__institucion_creadora__isnull=True),
+            club__eliminado=False
+        )
+        .select_related("club", "institucion", "club__institucion_creadora")
         .order_by("-fecha_solicitud")
     )
     
     # Membresías activas (ya aprobadas)
     membresias_activas = (
-        MembresiaClu.objects.filter(estado="miembro_activo")
+        MembresiaClu.objects.filter(estado="miembro_activo", club__eliminado=False)
         .select_related("club", "institucion")
         .order_by("-fecha_respuesta")
     )
     
     # Membresías rechazadas
     membresias_rechazadas = (
-        MembresiaClu.objects.filter(estado="rechazada")
+        MembresiaClu.objects.filter(estado="rechazada", club__eliminado=False)
         .select_related("club", "institucion")
         .order_by("-fecha_respuesta")
     )
 
     # Estadísticas
     total_pendientes = membresias_pendientes_filtro.count()
-    total_en_revision = membresias_con_visto_bueno.count()
+    total_en_revision = membresias_listas_aprobar.count()
     total_activas = membresias_activas.count()
     total_rechazadas = membresias_rechazadas.count()
 
     context = {
         "membresias_pendientes_filtro": membresias_pendientes_filtro,
-        "membresias_con_visto_bueno": membresias_con_visto_bueno,
+        "membresias_con_visto_bueno": membresias_listas_aprobar,
         "membresias_activas": membresias_activas,
         "membresias_rechazadas": membresias_rechazadas,
         # Estadísticas
@@ -750,17 +842,34 @@ def aprobar_membresia(request, membresia_id):
     """
     Aprobación final de membresía por el Ente Rector (Federación Central).
     
-    Solo se pueden aprobar membresías que tengan el visto bueno de la Fundadora.
+    Flujo normal (club con institución fundadora):
+      pendiente_filtro → visto_bueno_fundadora → miembro_activo
+    
+    Flujo para club de federación (sin institución fundadora):
+      pendiente_filtro → miembro_activo (directo)
     """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
-
-    # Solo se pueden aprobar membresías con visto bueno de la fundadora
-    if membresia.estado != "visto_bueno_fundadora":
-        messages.error(
-            request, 
-            "Esta membresía no puede ser aprobada. Debe tener el visto bueno de la Institución Fundadora."
-        )
-        return redirect("revisar_membresias")
+    club = membresia.club
+    
+    # Verificar si el club tiene institución fundadora
+    tiene_fundadora = club.institucion_creadora is not None
+    
+    if tiene_fundadora:
+        # Flujo normal: requiere visto bueno de la fundadora
+        if membresia.estado != "visto_bueno_fundadora":
+            messages.error(
+                request, 
+                "Esta membresía no puede ser aprobada. Debe tener el visto bueno de la Institución Fundadora."
+            )
+            return redirect("revisar_membresias")
+    else:
+        # Club de federación: puede aprobarse directamente desde pendiente_filtro
+        if membresia.estado not in ["pendiente_filtro", "visto_bueno_fundadora"]:
+            messages.error(
+                request,
+                f"Esta membresía no puede ser aprobada. Estado actual: {membresia.get_estado_display()}"
+            )
+            return redirect("revisar_membresias")
 
     if request.method == "POST":
         observaciones = request.POST.get("observaciones", "").strip()
@@ -914,7 +1023,13 @@ def directorio_clubes_aprobados(request):
             status="aprobado",
             activo=True
         )
-        .select_related("institucion_creadora")
+        .select_related("institucion_creadora", "institucion_creadora__estado")
+        .prefetch_related(
+            models.Prefetch(
+                "club_lineas",
+                queryset=ClubLineaInvestigacion.objects.select_related("linea").filter(linea__activa=True).order_by("orden"),
+            )
+        )
         .annotate(
             num_membresias=Count("membresias", filter=Q(membresias__estado="miembro_activo"))
         )
@@ -934,6 +1049,7 @@ def directorio_clubes_aprobados(request):
     context = {
         "clubes_aprobados": clubes_aprobados,
         "total_clubes": clubes_aprobados.count(),
+        "clubes_abiertos": clubes_aprobados.filter(estado_vinculacion="abierto").count(),
         "total_instituciones_participantes": total_instituciones_participantes,
     }
     return render(request, "registry/directorio_clubes_aprobados.html", context)
@@ -953,13 +1069,15 @@ def detalle_club(request, club_id):
         # Federación puede ver cualquier club
         club = get_object_or_404(Club.objects.select_related("institucion_creadora"), id=club_id)
     elif user_type == "institucional":
-        # Institucionales solo ven clubes aprobados
+        institucion = request.user.userprofile.institution
+        # Puede ver sus propios clubes (cualquier estado) o clubes aprobados de otros
         club = get_object_or_404(
             Club.objects.select_related("institucion_creadora"),
-            id=club_id,
-            status="aprobado",
-            activo=True
+            id=club_id
         )
+        if club.institucion_creadora != institucion and club.status != "aprobado":
+            messages.error(request, "No tienes acceso a este club.")
+            return redirect("clubes_lista")
     else:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
@@ -1003,6 +1121,7 @@ def detalle_club(request, club_id):
     context = {
         "club": club,
         "membresias_activas": membresias_activas,
+        "tutores_club": club.tutores.filter(status="activo").select_related("tutor"),
         "ya_postulo": ya_postulo,
         "puede_postular": club.puede_postularse and not ya_postulo,
         "es_propietario": es_propietario,
@@ -1022,56 +1141,82 @@ def detalle_club(request, club_id):
 @login_required
 def eliminar_club(request, club_id):
     """Elimina un club según su estado."""
-    if not hasattr(request.user, "userprofile") or request.user.userprofile.user_type != "institucional":
+    if not hasattr(request.user, "userprofile"):
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
-    
+
+    user_type = request.user.userprofile.user_type
+    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+        messages.error(request, "No tienes acceso a esta sección.")
+        return redirect("dashboard")
+
     club = get_object_or_404(Club, id=club_id)
-    institucion = request.user.userprofile.institution
-    
-    if club.institucion_creadora != institucion:
-        messages.error(request, "No tienes permiso para eliminar este club.")
-        return redirect("clubes_lista")
-    
+
+    # Verificar permisos según tipo de usuario
+    if user_type == "institucional":
+        institucion = request.user.userprofile.institution
+        if club.institucion_creadora != institucion:
+            messages.error(request, "No tienes permiso para eliminar este club.")
+            return redirect("clubes_lista")
+    elif user_type == "fed_regional":
+        if club.coordinador != request.user and club.tipo_creador != "fed_regional":
+            messages.error(request, "No tienes permiso para eliminar este club.")
+            return redirect("clubes_lista")
+    # fed_central y superuser pueden eliminar cualquier club
+
     if club.eliminado:
         messages.warning(request, "Este club ya está eliminado.")
         return redirect("clubes_lista")
-    
+
     if request.method == "POST":
+        # fed_central/superuser eliminan directamente (soft delete)
+        if user_type in ["fed_central", "superuser"]:
+            nombre = club.nombre
+            club.eliminado = True
+            club.fecha_eliminacion = timezone.now()
+            club.eliminado_por = request.user
+            club.motivo_eliminacion = request.POST.get("motivo", "Eliminado por federación")
+            club.activo = False
+            club.save()
+            messages.success(request, f'Club "{nombre}" eliminado correctamente.')
+            return redirect("clubes_lista")
+
         if club.status in ["borrador", "rechazado"]:
             nombre = club.nombre
             club.delete()
             messages.success(request, f'Club "{nombre}" eliminado permanentemente.')
             return redirect("clubes_lista")
-        
+
         elif club.status in ["aprobado", "pendiente", "en_revision"]:
             motivo = request.POST.get("motivo", "").strip()
             if not motivo:
                 messages.error(request, "Debes proporcionar un motivo para la eliminación.")
-                return render(request, "registry/club_eliminar.html", {"club": club})
-            
+                return redirect("clubes_lista")
+
             if SolicitudEliminacionClub.objects.filter(club=club, estado="pendiente").exists():
                 messages.warning(request, "Ya existe una solicitud de eliminación pendiente para este club.")
                 return redirect("clubes_lista")
-            
+
+            # Obtener institución solicitante (solo aplica para institucional)
+            institucion_solicitante = getattr(request.user.userprofile, 'institution', None)
+            if not institucion_solicitante:
+                messages.error(request, "No se pudo determinar la institución solicitante.")
+                return redirect("clubes_lista")
+
             solicitud = SolicitudEliminacionClub.objects.create(
                 club=club,
-                institucion_solicitante=institucion,
+                institucion_solicitante=institucion_solicitante,
                 motivo=motivo
             )
             notificar_solicitud_eliminacion(solicitud)
             messages.success(request, f'Solicitud de eliminación enviada a la federación para el club "{club.nombre}".')
             return redirect("clubes_lista")
-    
-    context = {
-        "club": club,
-        "puede_eliminar_directo": club.status in ["borrador", "rechazado"],
-        "requiere_aprobacion": club.status in ["aprobado", "pendiente", "en_revision"],
-    }
-    return render(request, "registry/club_eliminar.html", context)
+
+    # GET: el modal maneja la confirmación, no hay página independiente
+    return redirect("clubes_lista")
 
 
-@staff_member_required
+@fed_central_required
 def revisar_solicitudes_eliminacion(request):
     """Vista para que federación revise solicitudes de eliminación."""
     solicitudes_pendientes = (
@@ -1084,7 +1229,7 @@ def revisar_solicitudes_eliminacion(request):
     return render(request, "registry/revisar_solicitudes_eliminacion.html", context)
 
 
-@staff_member_required
+@fed_central_required
 def aprobar_eliminacion_club(request, solicitud_id):
     """
     Aprueba una solicitud de eliminación.
@@ -1167,7 +1312,7 @@ def aprobar_eliminacion_club(request, solicitud_id):
     return render(request, "registry/aprobar_eliminacion_club.html", context)
 
 
-@staff_member_required
+@fed_central_required
 def rechazar_eliminacion_club(request, solicitud_id):
     """Rechaza una solicitud de eliminación."""
     solicitud = get_object_or_404(SolicitudEliminacionClub, id=solicitud_id)
@@ -1365,9 +1510,9 @@ def mis_membresias(request):
     institucion = request.user.userprofile.institution
     
     # Obtener membresías por estado federado
-    membresias_activas = MembresiaClu.objects.filter(institucion=institucion, estado="miembro_activo").select_related("club")
-    membresias_pendientes = MembresiaClu.objects.filter(institucion=institucion, estado__in=["pendiente_filtro", "visto_bueno_fundadora"]).select_related("club")
-    membresias_rechazadas = MembresiaClu.objects.filter(institucion=institucion, estado="rechazada").select_related("club")
+    membresias_activas = MembresiaClu.objects.filter(institucion=institucion, estado="miembro_activo", club__eliminado=False).select_related("club")
+    membresias_pendientes = MembresiaClu.objects.filter(institucion=institucion, estado__in=["pendiente_filtro", "visto_bueno_fundadora"], club__eliminado=False).select_related("club")
+    membresias_rechazadas = MembresiaClu.objects.filter(institucion=institucion, estado="rechazada", club__eliminado=False).select_related("club")
     
     context = {
         "membresias_aprobadas": membresias_activas,
@@ -1528,3 +1673,53 @@ def salir_club(request, membresia_id):
     
     context = {"membresia": membresia}
     return render(request, "registry/salir_club.html", context)
+
+
+@login_required
+def api_club_buscar_tutor(request):
+    """API para buscar tutor por cédula. Si se pasa institucion_id, filtra solo tutores de esa institución."""
+    from registry.models import Tutor, TutorInstitucion
+
+    cedula = request.GET.get("cedula", "").strip()
+    if not cedula:
+        return JsonResponse({"found": False, "error": "Cédula requerida"})
+
+    cedula_limpia = "".join(filter(str.isdigit, cedula))
+    if not cedula_limpia:
+        return JsonResponse({"found": False, "error": "Cédula inválida"})
+
+    try:
+        tutor = Tutor.objects.get(cedula=cedula_limpia)
+        
+        # Si se pasa institucion_id, verificar que el tutor esté vinculado a esa institución
+        institucion_id = request.GET.get("institucion_id", "").strip()
+        if institucion_id:
+            vinculado = TutorInstitucion.objects.filter(
+                tutor=tutor,
+                institucion_id=institucion_id,
+                status="activo",
+            ).exists()
+            if not vinculado:
+                return JsonResponse({
+                    "found": False,
+                    "error": "Este tutor no está vinculado a su institución. Solo puede seleccionar tutores registrados en su institución."
+                })
+        
+        return JsonResponse(
+            {
+                "found": True,
+                "id": str(tutor.id),
+                "nombre_completo": tutor.get_nombre_completo(),
+                "nacionalidad": tutor.get_nacionalidad_display(),
+                "cedula": tutor.cedula,
+                "email": tutor.email,
+                "telefono": f"{tutor.telefono_codigo}-{tutor.telefono}"
+                if tutor.telefono_codigo and tutor.telefono
+                else "",
+                "profesion": tutor.profesion or "",
+            }
+        )
+    except Tutor.DoesNotExist:
+        return JsonResponse({"found": False, "error": "Tutor no encontrado con esa cédula"})
+    except Exception as e:
+        return JsonResponse({"found": False, "error": str(e)})

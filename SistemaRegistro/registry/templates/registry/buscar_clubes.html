@@ -1,6 +1,12 @@
 {% extends "users/base_dashboard.html" %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -62,7 +68,7 @@
         </div>
     </div>
     <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
             <h5 class="mb-0 text-white fw-bold"><i class="bi bi-list-check me-2"></i>Resultados</h5>
             <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_resultados }}</span>
         </div>
@@ -72,32 +78,35 @@
                 <div class="row g-4">
                     {% for club in clubes %}
                     <div class="col-md-4">
-                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; border-left: 3px solid var(--accent-cyan) !important; background: #f8fafc; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 24px rgba(0,212,255,0.15)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow=''">
                             <div class="card-body p-4">
+                                <!-- Header club -->
                                 <div class="d-flex align-items-start mb-3">
-                                    <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
-                                        <i class="bi bi-robot fs-4" style="color: #059669;"></i>
+                                    <div class="rounded-3 p-2 me-3 flex-shrink-0" style="background: rgba(11,44,109,0.08); border: 1px solid rgba(0,212,255,0.3);">
+                                        <i class="bi bi-robot fs-4" style="color: var(--blue-main);"></i>
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <h5 class="card-title fw-bold mb-1">{{ club.nombre }}</h5>
-                                        <p class="text-muted small mb-0">
-                                            <i class="bi bi-building me-1"></i>{{ club.institucion_creadora.nombre_publico|truncatewords:4 }}
+                                    <div class="flex-grow-1 min-width-0">
+                                        <h6 class="fw-bold mb-1 text-dark" style="font-family: 'Space Grotesk', sans-serif; line-height: 1.3;">{{ club.nombre }}</h6>
+                                        <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                            <i class="bi bi-building me-1"></i>{% if club.tipo_creador == 'fed_central' %}Federación Venezolana{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre_publico }}{% endif %}
                                         </p>
-                                        <p class="text-muted small mb-0">
-                                            <i class="bi bi-geo-alt me-1"></i>{{ club.institucion_creadora.estado.nombre }}
+                                        <p class="text-muted mb-0" style="font-size: 0.75rem;">
+                                            <i class="bi bi-geo-alt me-1"></i>{% if club.institucion_creadora %}{{ club.institucion_creadora.estado.nombre }}{% else %}{{ club.ubicacion|default:"Sin ubicación" }}{% endif %}
                                         </p>
                                     </div>
                                 </div>
-                                <div class="mb-3">
+                                <!-- Líneas de investigación -->
+                                <div class="mb-3 d-flex flex-wrap gap-1">
                                     {% for linea in club.lineas_investigacion %}
-                                        <span class="badge rounded-pill me-1 mb-1" style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main); font-size: 0.7rem;">{{ linea|truncatewords:2 }}</span>
+                                        <span class="badge rounded-pill" title="{{ linea }}" style="background: rgba(11,44,109,0.08); color: var(--blue-main); border: 1px solid rgba(0,212,255,0.5); font-size: 0.68rem; font-weight: 500; padding: 0.3rem 0.6rem;">{{ linea }}</span>
                                     {% endfor %}
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-success rounded-pill px-3">
-                                        <i class="bi bi-people me-1"></i>{{ club.cupos_disponibles }} cupos
+                                <!-- Footer -->
+                                <div class="d-flex justify-content-between align-items-center pt-2" style="border-top: 1px solid rgba(0,212,255,0.2);">
+                                    <span class="badge rounded-pill px-3" style="background: rgba(11,44,109,0.1); color: var(--blue-main); border: 1px solid rgba(11,44,109,0.2); font-size: 0.72rem;">
+                                        <i class="bi bi-people me-1"></i>{{ club.cupos_disponibles }}/{{ club.cupo_maximo }} cupos
                                     </span>
-                                    <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                    <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm fw-bold rounded-pill px-3" style="background: var(--blue-main); color: white; font-size: 0.78rem;">
                                         <i class="bi bi-eye me-1"></i>Ver
                                     </a>
                                 </div>
@@ -116,8 +125,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
-</style>
 {% endblock %}

@@ -4,74 +4,176 @@
 
 {% block extra_css %}
 <style>
-    .modern-card {
-        border-radius: 20px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    .section-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #f8fafc;
         overflow: hidden;
     }
     
-    .card-header-modern {
-        border-radius: 20px 20px 0 0 !important;
-        padding: 1.25rem 1.5rem;
+    .section-card .card-header {
         border: none;
+        padding: 1rem 1.25rem;
     }
     
-    .primary-gradient {
-        background: linear-gradient(145deg, #0b2c6d, #051636);
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+    
+    .info-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .info-item:last-child { border-bottom: none; }
+    .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ evento.nombre }}</h2>
-            <p class="text-muted mb-0">{{ evento.club_organizador.nombre }}</p>
+    <!-- Header unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-calendar-event fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">{{ evento.nombre }}</h2>
+                    <p class="text-muted mb-0 small">{{ evento.club_organizador.nombre }}</p>
+                </div>
+            </div>
+            <a href="{% url 'eventos_club' evento.club_organizador.id %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i>Volver a Eventos
+            </a>
         </div>
-        <a href="{% url 'eventos_club' evento.club_organizador.id %}" class="btn btn-outline">
-            <i class="bi bi-arrow-left me-2"></i>Volver
-        </a>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     <div class="row">
-        <div class="col-md-8">
-            <div class="modern-card mb-4">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="fw-bold" style="color: var(--blue-main);">Información del Evento</h5>
-                        <span class="badge 
-                            {% if evento.estado_evento == 'borrador' %}bg-secondary
-                            {% elif evento.estado_evento == 'revision' %}bg-warning
-                            {% elif evento.estado_evento == 'abierto' %}bg-success
-                            {% elif evento.estado_evento == 'pausado' %}bg-warning
-                            {% elif evento.estado_evento == 'en_proceso' %}bg-primary
-                            {% elif evento.estado_evento == 'finalizado' %}bg-info
-                            {% elif evento.estado_evento == 'cancelado' %}bg-dark
-                            {% elif evento.estado_evento == 'rechazado' %}bg-danger
-                            {% endif %} fs-6">
-                            {{ evento.get_estado_evento_display }}
-                        </span>
+        <div class="col-lg-8">
+            <!-- Información del Evento -->
+            <div class="section-card mb-4 animate-fade-in">
+                <div class="card-header text-white d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="d-flex align-items-center">
+                        <div class="section-icon bg-white bg-opacity-25 me-3">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <h5 class="mb-0 fw-bold">Información del Evento</h5>
                     </div>
-
+                    <span class="badge rounded-pill px-3 py-2 fw-bold"
+                        style="font-size: 0.7rem;
+                        {% if evento.estado_evento == 'borrador' %}background: #f1f5f9; color: #64748b;
+                        {% elif evento.estado_evento == 'revision' %}background: #fef3c7; color: #d97706;
+                        {% elif evento.estado_evento == 'abierto' %}background: #d1fae5; color: #059669;
+                        {% elif evento.estado_evento == 'pausado' %}background: #fef3c7; color: #d97706;
+                        {% elif evento.estado_evento == 'en_proceso' %}background: #dbeafe; color: #2563eb;
+                        {% elif evento.estado_evento == 'finalizado' %}background: #cffafe; color: #0891b2;
+                        {% elif evento.estado_evento == 'cancelado' %}background: #fee2e2; color: #dc2626;
+                        {% elif evento.estado_evento == 'rechazado' %}background: #fee2e2; color: #dc2626;
+                        {% endif %}">
+                        {{ evento.get_estado_evento_display }}
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Detalles principales -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <p class="mb-2"><strong><i class="bi bi-tag me-2"></i>Tipo:</strong> {{ evento.get_tipo_display }}</p>
-                            <p class="mb-2"><strong><i class="bi bi-display me-2"></i>Modalidad:</strong> {{ evento.get_modalidad_display }}</p>
-                            <p class="mb-0"><strong><i class="bi bi-calendar me-2"></i>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}</p>
+                            <div class="info-item">
+                                <small class="text-muted d-block">Tipo</small>
+                                <strong>{{ evento.get_tipo_display }}</strong>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <p class="mb-2"><strong><i class="bi bi-geo-alt me-2"></i>Ubicación:</strong> {{ evento.ubicacion|default:"No especificada" }}</p>
-                            <p class="mb-2"><strong><i class="bi bi-people me-2"></i>Capacidad:</strong> {{ evento.capacidad_maxima|default:"Sin límite" }}</p>
-                            <p class="mb-0"><strong><i class="bi bi-person-check me-2"></i>Cupos disponibles:</strong> {{ evento.cupos_disponibles }}</p>
+                            <div class="info-item">
+                                <small class="text-muted d-block">Modalidad</small>
+                                <strong>{{ evento.get_modalidad_display }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Fecha</small>
+                                <strong>{{ evento.fecha|date:"d/m/Y" }}{% if evento.fecha_hasta %} al {{ evento.fecha_hasta|date:"d/m/Y" }}{% endif %}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Contacto</small>
+                                <strong>{% if evento.telefono_codigo and evento.telefono_numero %}{{ evento.telefono_codigo }}-{{ evento.telefono_numero }}{% else %}No especificado{% endif %}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Capacidad máxima</small>
+                                <strong>{{ evento.capacidad_maxima|default:"Sin límite" }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Cupos disponibles</small>
+                                <strong>{{ evento.cupos_disponibles }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ubicación -->
+                    <hr>
+                    <h6 class="fw-bold mb-3" style="color: var(--blue-main);"><i class="bi bi-geo-alt me-2"></i>Ubicación</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Estado</small>
+                                <strong>{{ evento.estado.nombre|default:"No especificado" }}</strong>
+                            </div>
+                            <div class="info-item">
+                                <small class="text-muted d-block">Municipio</small>
+                                <strong>{{ evento.municipio.nombre|default:"No especificado" }}</strong>
+                            </div>
+                            <div class="info-item">
+                                <small class="text-muted d-block">Parroquia</small>
+                                <strong>{{ evento.parroquia.nombre|default:"No especificado" }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Dirección</small>
+                                <strong>{{ evento.direccion|default:"No especificada" }}</strong>
+                            </div>
+                            {% if evento.email_contacto %}
+                            <div class="info-item">
+                                <small class="text-muted d-block">Correo de contacto</small>
+                                <strong><a href="mailto:{{ evento.email_contacto }}" class="text-decoration-none">{{ evento.email_contacto }}</a></strong>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
                     {% if evento.descripcion %}
                         <hr>
-                        <h6 class="fw-bold" style="color: var(--blue-main);">Descripción</h6>
-                        <p>{{ evento.descripcion }}</p>
+                        <h6 class="fw-bold mb-2" style="color: var(--blue-main);"><i class="bi bi-card-text me-2"></i>Descripción</h6>
+                        <p class="mb-0">{{ evento.descripcion }}</p>
+                    {% endif %}
+
+                    {% if evento.requisitos %}
+                        <hr>
+                        <h6 class="fw-bold mb-2" style="color: var(--blue-main);"><i class="bi bi-list-check me-2"></i>Requisitos</h6>
+                        <p class="mb-0">{{ evento.requisitos }}</p>
                     {% endif %}
 
                     {% if evento.observaciones_aprobacion %}
@@ -101,29 +203,31 @@
             </div>
 
             {% if inscripciones %}
-                <div class="modern-card">
-                    <div class="card-header card-header-modern primary-gradient text-white d-flex align-items-center">
-                        <i class="bi bi-people me-2"></i>
+                <div class="section-card animate-fade-in delay-1">
+                    <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                        <div class="section-icon bg-white bg-opacity-25 me-3">
+                            <i class="bi bi-people"></i>
+                        </div>
                         <h5 class="mb-0 fw-bold">Equipos Inscritos ({{ inscripciones.count }})</h5>
                     </div>
                     <div class="card-body p-4">
                         <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Grupo</th>
-                                        <th>Institución</th>
-                                        <th>Rol</th>
-                                        <th>Fecha</th>
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase x-small fw-bold text-muted">
+                                        <th class="px-3 py-2">Grupo</th>
+                                        <th class="py-2">Institución</th>
+                                        <th class="py-2">Rol</th>
+                                        <th class="py-2">Fecha</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for inscripcion in inscripciones %}
                                         <tr>
-                                            <td>{{ inscripcion.grupo.nombre }}</td>
-                                            <td>{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
-                                            <td><span class="badge" style="background: var(--blue-main); color: white;">{{ inscripcion.get_rol_participacion_display }}</span></td>
-                                            <td>{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
+                                            <td class="px-3"><strong class="small">{{ inscripcion.grupo.nombre }}</strong></td>
+                                            <td class="small">{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
+                                            <td><span class="badge rounded-pill px-2 py-1" style="font-size: 0.65rem; background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main);">{{ inscripcion.get_rol_participacion_display }}</span></td>
+                                            <td class="small text-muted">{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -134,40 +238,60 @@
             {% endif %}
         </div>
 
-        <div class="col-md-4">
-            <div class="modern-card mb-3">
-                <div class="card-header card-header-modern primary-gradient text-white d-flex align-items-center">
-                    <i class="bi bi-gear me-2"></i>
-                    <h6 class="mb-0 fw-bold">Acciones</h6>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Acciones -->
+            {% if es_propietario and evento.estado_evento in 'borrador,rechazado' or puede_inscribir %}
+            <div class="section-card mb-4 animate-fade-in delay-2">
+                <div class="card-header text-white d-flex align-items-center" style="background: var(--blue-main);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-lightning"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Acciones</h5>
                 </div>
                 <div class="card-body p-4">
                     {% if es_propietario and evento.estado_evento in 'borrador,rechazado' %}
-                        <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn btn-warning w-100 mb-2">
+                        <a href="{% url 'enviar_evento_revision' evento.id %}" class="btn fw-bold rounded-pill px-4 w-100 mb-2" style="background: #f59e0b; color: white;">
                             <i class="bi bi-send me-2"></i>Enviar a Revisión
                         </a>
                     {% endif %}
-                    
                     {% if puede_inscribir %}
-                        <a href="{% url 'inscribir_grupo_evento_club' evento.id %}" class="btn btn-success w-100">
-                            <i class="bi bi-plus-circle me-2"></i>Asociar Grupo Creado
+                        <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn fw-bold rounded-pill px-4 w-100" style="background: var(--blue-main); color: white;">
+                            <i class="bi bi-plus-circle me-2"></i>Asociar Equipo Creado
                         </a>
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
 
-            <div class="modern-card">
+            <!-- Información del registro -->
+            <div class="section-card animate-fade-in delay-3">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Información</h5>
+                </div>
                 <div class="card-body p-4">
-                    <p class="small mb-2"><strong><i class="bi bi-person me-2"></i>Creado por:</strong><br>
-                        {% if evento.creado_por.userprofile.institution %}
-                            {{ evento.creado_por.userprofile.institution.nombre }}
-                        {% else %}
-                            {{ evento.creado_por.get_full_name|default:evento.creado_por.username }}
-                        {% endif %}
-                    </p>
-                    <p class="small mb-0"><strong><i class="bi bi-clock me-2"></i>Fecha de creación:</strong><br>{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    <div class="info-item">
+                        <small class="text-muted d-block">Creado por</small>
+                        <strong>
+                            {% if evento.creado_por.userprofile.institution %}
+                                {{ evento.creado_por.userprofile.institution.nombre }}
+                            {% else %}
+                                {{ evento.creado_por.get_full_name|default:evento.creado_por.username }}
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="info-item">
+                        <small class="text-muted d-block">Fecha de creación</small>
+                        <strong>{{ evento.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                    </div>
                     {% if evento.fecha_aprobacion %}
-                        <hr>
-                        <p class="small mb-0"><strong><i class="bi bi-check-circle me-2"></i>Abierto desde:</strong><br>{{ evento.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                    <div class="info-item">
+                        <small class="text-muted d-block">Abierto desde</small>
+                        <strong>{{ evento.fecha_aprobacion|date:"d/m/Y H:i" }}</strong>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -175,4 +299,3 @@
     </div>
 </div>
 {% endblock %}
-

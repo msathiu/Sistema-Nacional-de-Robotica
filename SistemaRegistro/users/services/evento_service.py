@@ -2,7 +2,7 @@ import logging
 from datetime import date, datetime
 from django.db import transaction
 from django.db.models import Q
-from registry.models import Evento, Club, EstadoEvento
+from registry.models import Evento, Club, EstadoEvento, AsistenciaEvento
 from ..utils import LocationUtils
 
 logger = logging.getLogger(__name__)
@@ -89,14 +89,23 @@ class EventoService:
             if not club_organizador_id:
                 raise ValueError("Debe seleccionar un club para eventos de club.")
             
-            filtros_club = Q(id=club_organizador_id, status="aprobado")
-            if user_type == "institucional":
-                filtros_club &= Q(institucion_creadora=institution)
-            
             try:
-                club_obj = Club.objects.get(filtros_club)
+                if user_type == "fed_central":
+                    # fed_central puede crear eventos para cualquier club aprobado (ente rector)
+                    club_obj = Club.objects.get(id=club_organizador_id, status="aprobado", eliminado=False)
+                else:
+                    club_obj = Club.objects.get(id=club_organizador_id, status="aprobado")
             except Club.DoesNotExist:
-                raise ValueError("El club seleccionado no existe, no está aprobado o no tienes permisos.")
+                raise ValueError("El club seleccionado no existe o no está aprobado.")
+            
+            if user_type == "institucional":
+                es_creador = club_obj.institucion_creadora == institution
+                es_miembro = club_obj.membresias.filter(
+                    institucion=institution,
+                    estado="miembro_activo"
+                ).exists()
+                if not es_creador and not es_miembro:
+                    raise ValueError("No tienes permisos para crear eventos en este club.")
             
             audiencia = "club_exclusivo"
         
@@ -281,3 +290,32 @@ class EventoService:
         evento.delete()
         logger.info(f"Evento '{nombre}' eliminado por {user.username}.")
         return True
+
+    @staticmethod
+    def generar_asistencias_pendientes(evento):
+        """
+        Crea registros AsistenciaEvento en estado 'pendiente' para todos los
+        participantes de equipos inscritos en el evento.
+        Usa bulk_create con ignore_conflicts para ser idempotente.
+        """
+        from registry.models import InscripcionGrupoEvento
+        inscripciones = InscripcionGrupoEvento.objects.filter(
+            evento=evento, activo=True
+        ).prefetch_related("grupo__participantes")
+
+        registros = []
+        for inscripcion in inscripciones:
+            for participante in inscripcion.grupo.participantes.all():
+                registros.append(AsistenciaEvento(
+                    evento=evento,
+                    participante=participante,
+                    grupo=inscripcion.grupo,
+                    asistencia="pendiente",
+                ))
+
+        if registros:
+            AsistenciaEvento.objects.bulk_create(registros, ignore_conflicts=True)
+            logger.info(
+                f"Generados {len(registros)} registros de asistencia para evento '{evento.nombre}'."
+            )
+        return len(registros)

@@ -3,6 +3,19 @@
 
 {% block title %}Clubes de Robótica{% endblock %}
 
+{% block extra_css %}
+<style>
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -41,26 +54,26 @@
         <div class="card-body">
             {% if mis_clubes_creados %}
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="clubesTable">
                         <thead class="bg-light">
                             <tr class="text-uppercase x-small fw-bold text-muted">
-                                <th class="px-4 py-3">Nombre</th>
-                                <th class="py-3">Estado</th>
-                                <th class="py-3">Fecha Creación</th>
-                                <th class="py-3 text-center">Cupos</th>
+                                <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Nombre <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Estado <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Fecha Creación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                                <th class="py-3 text-center sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Cupos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 <th class="py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for club in mis_clubes_creados %}
                             <tr>
-                                <td class="px-4">
+                                <td class="px-4" data-sort-value="{{ club.nombre }}">
                                     <div class="fw-bold small text-dark">{{ club.nombre }}</div>
                                     {% if club.siglas %}
                                         <div class="x-small text-muted">{{ club.siglas }}</div>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-sort-value="{{ club.status }}">
                                     {% if club.status == 'borrador' %}
                                         <span class="badge bg-secondary">Borrador</span>
                                     {% elif club.status == 'pendiente' %}
@@ -73,72 +86,117 @@
                                         <span class="badge bg-danger">Rechazado</span>
                                     {% endif %}
                                 </td>
-                                <td><span class="small">{{ club.fecha_creacion|date:"d/m/Y" }}</span></td>
-                                <td class="text-center">
+                                <td data-sort-value="{{ club.fecha_creacion|date:'Ymd' }}"><span class="small">{{ club.fecha_creacion|date:"d/m/Y" }}</span></td>
+                                <td class="text-center" data-sort-value="{{ club.cupos_disponibles }}">
                                     <span class="badge" style="background: var(--accent-cyan); color: var(--blue-main);">
                                         {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
                                     </span>
                                 </td>
                                 <td class="text-center px-4">
-                                    {% if club.status == 'borrador' %}
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="{% url 'editar_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-pencil me-1"></i> Editar
+                                    {% if es_fed_central %}
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'detalle_club' club.id %}"
+                                               class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{% url 'enviar_club_revision' club.id %}" 
-                                               class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-send me-1"></i> Enviar
+                                            <a href="{% url 'editar_club' club.id %}"
+                                               class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                                <i class="bi bi-pencil-square"></i>
                                             </a>
-                                            <a href="{% url 'eliminar_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-danger rounded-circle"
-                                               title="Eliminar club">
+                                            {% if club.status == 'aprobado' %}
+                                                <a href="{% url 'gestionar_membresias_club' club.id %}"
+                                                   class="btn btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Membresías"
+                                                   style="background: rgba(124, 58, 237, 0.1); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.3);">
+                                                    <i class="bi bi-people"></i>
+                                                </a>
+                                                <a href="{% url 'eventos_club' club.id %}?back=lista"
+                                                   class="btn btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Eventos"
+                                                   style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid rgba(11, 44, 109, 0.3);">
+                                                    <i class="bi bi-calendar-event"></i>
+                                                </a>
+                                            {% endif %}
+                                            <button type="button"
+                                               class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+                                               onclick="confirmarEliminarClub({{ club.id }}, '{{ club.nombre|escapejs }}', '{{ club.status }}', true)">
                                                 <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    {% elif club.status == 'borrador' %}
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'editar_club' club.id %}"
+                                               class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                                                <i class="bi bi-pencil-square"></i>
                                             </a>
+                                            <a href="{% url 'enviar_club_revision' club.id %}"
+                                               class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Enviar a Revisión">
+                                                <i class="bi bi-send"></i>
+                                            </a>
+                                            <button type="button"
+                                               class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+                                               onclick="confirmarEliminarClub({{ club.id }}, '{{ club.nombre|escapejs }}', 'borrador', false)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     {% elif club.status == 'rechazado' %}
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="{% url 'ver_historial_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-clock-history me-1"></i> Motivo
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'ver_historial_club' club.id %}"
+                                               class="btn btn-outline-warning btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Motivo">
+                                                <i class="bi bi-clock-history"></i>
                                             </a>
-                                            <a href="{% url 'editar_club' club.id %}" 
-                                               class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-arrow-repeat me-1"></i> Corregir
+                                            <a href="{% url 'editar_club' club.id %}"
+                                               class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Corregir">
+                                                <i class="bi bi-arrow-repeat"></i>
                                             </a>
-                                            <a href="{% url 'eliminar_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-danger rounded-circle"
-                                               title="Eliminar club">
+                                            <button type="button"
+                                               class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+                                               onclick="confirmarEliminarClub({{ club.id }}, '{{ club.nombre|escapejs }}', 'rechazado', false)">
                                                 <i class="bi bi-trash"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     {% elif club.status == 'pendiente' or club.status == 'en_revision' %}
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="{% url 'ver_historial_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-info rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-clock-history me-1"></i> Ver Estado
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'ver_historial_club' club.id %}"
+                                               class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Estado">
+                                                <i class="bi bi-clock-history"></i>
                                             </a>
-                                            <span class="text-muted small">En proceso...</span>
                                         </div>
                                     {% elif club.status == 'aprobado' %}
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="{% url 'gestionar_membresias_club' club.id %}" 
-                                               class="btn btn-sm rounded-pill px-3 fw-bold" style="background: #7c3aed; color: white;">
-                                                <i class="bi bi-people me-1"></i> Membresías
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'gestionar_membresias_club' club.id %}"
+                                               class="btn btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Membresías"
+                                               style="background: rgba(124, 58, 237, 0.1); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.3);">
+                                                <i class="bi bi-people"></i>
                                             </a>
-                                            <a href="{% url 'eventos_club' club.id %}" 
-                                               class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
-                                                <i class="bi bi-calendar-event me-1"></i> Eventos
+                                            <a href="{% url 'eventos_club' club.id %}?back=lista"
+                                               class="btn btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Eventos"
+                                               style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid rgba(11, 44, 109, 0.3);">
+                                                <i class="bi bi-calendar-event"></i>
                                             </a>
-                                            <a href="{% url 'ver_historial_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
-                                                <i class="bi bi-clock-history me-1"></i> Historial
+                                            <a href="{% url 'ver_historial_club' club.id %}"
+                                               class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Historial">
+                                                <i class="bi bi-clock-history"></i>
                                             </a>
-                                            <a href="{% url 'eliminar_club' club.id %}" 
-                                               class="btn btn-sm btn-outline-danger rounded-circle"
-                                               title="Solicitar eliminación">
+                                            <button type="button"
+                                               class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Solicitar Eliminación"
+                                               onclick="confirmarEliminarClub({{ club.id }}, '{{ club.nombre|escapejs }}', '{{ club.status }}', false)">
                                                 <i class="bi bi-trash"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                     {% endif %}
                                 </td>
@@ -161,126 +219,77 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 2: MIS CLUBES APROBADOS -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">Mis Clubes Aprobados</h5>
-            </div>
-            <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_aprobados }}</span>
-        </div>
-        <div class="card-body">
-            {% if mis_clubes_aprobados %}
-                <div class="row">
-                    {% for club in mis_clubes_aprobados %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card border-success">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ club.nombre }}</h5>
-                                <p class="card-text text-muted">{{ club.descripcion|truncatewords:20 }}</p>
-                                <div class="mb-2">
-                                    <strong>Líneas:</strong>
-                                    {% for linea in club.lineas_investigacion %}
-                                        <span class="badge bg-primary me-1">{{ linea }}</span>
-                                    {% endfor %}
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-people"></i> 
-                                        {{ club.cupos_disponibles }} cupos disponibles
-                                    </span>
-                                    <span class="text-muted small">
-                                        {{ club.fecha_aprobacion|date:"d/m/Y" }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    Aún no tienes clubes aprobados. Los clubes deben ser revisados por la federación.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
     {% if not es_fed_central %}
     <!-- SECCIÓN 3: CLUBES DISPONIBLES PARA POSTULAR -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
+        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
             <div class="d-flex align-items-center">
                 <i class="bi bi-globe text-white me-3 fs-5"></i>
                 <h5 class="fw-bold mb-0 text-white">Clubes Disponibles para Postular</h5>
             </div>
             <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-bold">{{ total_disponibles }}</span>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             {% if clubes_disponibles %}
-                <div class="row">
+                <div class="row g-4">
                     {% for club in clubes_disponibles %}
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 {% if club.mi_estado_membresia %}border-warning{% endif %}">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">{{ club.nombre }}</h5>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; border: 2px solid var(--accent-cyan) !important; transition: transform 0.2s, box-shadow 0.2s;">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="card-title fw-bold mb-1">{{ club.nombre }}</h6>
+                                        <p class="text-muted x-small mb-0">
+                                            <i class="bi bi-building me-1"></i>{% if club.tipo_creador == 'fed_central' %}Federación{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre_publico }}{% endif %}
+                                        </p>
+                                    </div>
                                     {% if club.mi_estado_membresia %}
-                                        {% if club.mi_estado_membresia == 'pendiente' %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-clock"></i> Pendiente
+                                        {% if club.mi_estado_membresia == 'pendiente_filtro' or club.mi_estado_membresia == 'visto_bueno_fundadora' %}
+                                            <span class="badge rounded-pill px-2 py-1" style="font-size: 0.65rem; background: #fef3c7; color: #d97706;">
+                                                <i class="bi bi-clock me-1"></i>Pendiente
                                             </span>
-                                        {% elif club.mi_estado_membresia == 'aprobada' %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle"></i> Miembro
+                                        {% elif club.mi_estado_membresia == 'miembro_activo' %}
+                                            <span class="badge rounded-pill px-2 py-1" style="font-size: 0.65rem; background: #d1fae5; color: #059669;">
+                                                <i class="bi bi-check-circle me-1"></i>Miembro
                                             </span>
                                         {% elif club.mi_estado_membresia == 'rechazada' %}
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-x-circle"></i> Rechazada
+                                            <span class="badge rounded-pill px-2 py-1" style="font-size: 0.65rem; background: #fee2e2; color: #dc2626;">
+                                                <i class="bi bi-x-circle me-1"></i>Rechazada
                                             </span>
                                         {% endif %}
                                     {% endif %}
                                 </div>
-                                <p class="text-muted small">
-                                    <i class="bi bi-building"></i> 
-                                    {{ club.institucion_creadora.nombre_publico }}
-                                </p>
-                                <p class="card-text">{{ club.descripcion|truncatewords:15 }}</p>
-                                <div class="mb-2">
-                                    <strong>Líneas de Investigación:</strong>
-                                    <ul class="list-unstyled">
-                                        {% for linea in club.lineas_investigacion %}
-                                            <li><i class="bi bi-check"></i> {{ linea }}</li>
-                                        {% endfor %}
-                                    </ul>
+                                <p class="card-text small text-muted mb-3">{{ club.descripcion|truncatewords:15 }}</p>
+                                <div class="mb-3">
+                                    {% for linea in club.lineas_investigacion %}
+                                        <span class="badge rounded-pill me-1 mb-1" style="background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main); font-size: 0.65rem;">{{ linea|truncatewords:2 }}</span>
+                                    {% endfor %}
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-info">
-                                        {{ club.cupos_disponibles }} cupos
+                                    <span class="badge rounded-pill px-3 py-2" style="background: rgba(0, 212, 255, 0.1); color: var(--blue-main); border: 1px solid var(--accent-cyan); font-size: 0.75rem;">
+                                        <i class="bi bi-people-fill me-1"></i>{{ club.cupos_disponibles }} cupos
                                     </span>
                                     {% if club.mi_estado_membresia %}
-                                        {% if club.mi_estado_membresia == 'pendiente' %}
-                                            <button class="btn btn-sm btn-secondary" disabled>
-                                                <i class="bi bi-clock"></i> Ya Postulaste
+                                        {% if club.mi_estado_membresia == 'pendiente_filtro' or club.mi_estado_membresia == 'visto_bueno_fundadora' %}
+                                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" disabled>
+                                                <i class="bi bi-clock me-1"></i>En Revisión
                                             </button>
-                                        {% elif club.mi_estado_membresia == 'aprobada' %}
-                                            <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm btn-success">
-                                                <i class="bi bi-eye"></i> Ver Club
+                                        {% elif club.mi_estado_membresia == 'miembro_activo' %}
+                                            <a href="{% url 'detalle_club' club.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-eye me-1"></i>Ver Club
                                             </a>
                                         {% elif club.mi_estado_membresia == 'rechazada' %}
-                                            <a href="{% url 'postular_club' club.id %}" class="btn btn-sm btn-warning">
-                                                <i class="bi bi-arrow-repeat"></i> Re-postular
+                                            <a href="{% url 'postular_club' club.id %}" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Re-postular
                                             </a>
                                         {% endif %}
                                     {% elif club.puede_postularse %}
                                         <a href="{% url 'postular_club' club.id %}" 
-                                           class="btn btn-sm btn-primary">
-                                            <i class="bi bi-send"></i> Postular
+                                           class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
+                                            <i class="bi bi-send me-1"></i>Postular
                                         </a>
                                     {% else %}
-                                        <span class="badge bg-secondary">No disponible</span>
+                                        <span class="badge bg-secondary rounded-pill">No disponible</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -303,5 +312,174 @@
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
 </style>
+
+<!-- Modal Eliminar Club -->
+<div class="modal fade" id="modalEliminarClub" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header border-0 py-3 px-4" style="background: linear-gradient(145deg, #dc3545, #c82333);">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white rounded-circle p-1 me-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold text-white mb-0">Eliminar Club</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="mb-1">¿Confirmas la eliminación de <strong id="modalClubNombre" class="text-danger"></strong>?</p>
+                <div id="modalMotivoWrapper" class="mt-3 d-none">
+                    <label class="form-label fw-semibold small">Motivo <span id="motivoRequerido" class="text-danger">*</span></label>
+                    <textarea id="modalMotivo" name="motivo" class="form-control" rows="3"
+                        placeholder="Explica el motivo de la eliminación..."></textarea>
+                    <div id="motivoError" class="text-danger small mt-1 d-none">El motivo es obligatorio.</div>
+                </div>
+                <div id="modalAlertaDirecta" class="alert alert-warning border-0 mt-3 mb-0 small d-none">
+                    <i class="bi bi-info-circle me-1"></i> Esta acción no se puede deshacer.
+                </div>
+                <div id="modalAlertaSolicitud" class="alert alert-info border-0 mt-3 mb-0 small d-none">
+                    <i class="bi bi-shield-check me-1"></i> Se enviará una solicitud de eliminación a la federación.
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <form id="formEliminarClub" method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" id="formMotivoHidden" name="motivo" value="">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        <i class="bi bi-trash me-1"></i> <span id="modalBtnLabel">Eliminar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips de Bootstrap 5
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el);
+    });
+
+    // Ordenamiento de columnas
+    function initSortableTable(tableId) {
+        var table = document.getElementById(tableId);
+        if (!table) return;
+        var headers = table.querySelectorAll('th.sortable-th');
+        var currentSortCol = null;
+        var currentSortDir = 'asc';
+
+        headers.forEach(function(th) {
+            th.addEventListener('click', function() {
+                var colIndex = parseInt(this.getAttribute('data-sort'));
+
+                headers.forEach(function(h) {
+                    if (h !== th) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        var icon = h.querySelector('.sort-icon');
+                        if (icon) icon.className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    th.classList.remove('sort-asc');
+                    th.classList.add('sort-desc');
+                    th.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    th.classList.remove('sort-desc');
+                    th.classList.add('sort-asc');
+                    th.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort(function(a, b) {
+                    var cellA = a.querySelectorAll('td')[colIndex];
+                    var cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    var valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    var valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    var numA = parseFloat(valA);
+                    var numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    var comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            });
+        });
+    }
+
+    initSortableTable('clubesTable');
+});
+
+function confirmarEliminarClub(clubId, nombre, status, esFedCentral) {
+    const directos = ['borrador', 'rechazado'];
+    const esDirecto = esFedCentral || directos.includes(status);
+
+    document.getElementById('modalClubNombre').textContent = nombre;
+    document.getElementById('formEliminarClub').action = `/registry/clubes/${clubId}/eliminar/`;
+    document.getElementById('formMotivoHidden').value = '';
+    document.getElementById('modalMotivo').value = '';
+    document.getElementById('motivoError').classList.add('d-none');
+
+    const motivoWrapper = document.getElementById('modalMotivoWrapper');
+    const motivoReq = document.getElementById('motivoRequerido');
+    const alertaDirecta = document.getElementById('modalAlertaDirecta');
+    const alertaSolicitud = document.getElementById('modalAlertaSolicitud');
+    const btnLabel = document.getElementById('modalBtnLabel');
+
+    if (esFedCentral) {
+        // fed_central: motivo opcional
+        motivoWrapper.classList.remove('d-none');
+        motivoReq.classList.add('d-none');
+        alertaDirecta.classList.remove('d-none');
+        alertaSolicitud.classList.add('d-none');
+        btnLabel.textContent = 'Eliminar';
+    } else if (esDirecto) {
+        // borrador/rechazado: sin motivo
+        motivoWrapper.classList.add('d-none');
+        alertaDirecta.classList.remove('d-none');
+        alertaSolicitud.classList.add('d-none');
+        btnLabel.textContent = 'Eliminar';
+    } else {
+        // aprobado/pendiente/en_revision: motivo obligatorio (solicitud)
+        motivoWrapper.classList.remove('d-none');
+        motivoReq.classList.remove('d-none');
+        alertaDirecta.classList.add('d-none');
+        alertaSolicitud.classList.remove('d-none');
+        btnLabel.textContent = 'Enviar Solicitud';
+    }
+
+    new bootstrap.Modal(document.getElementById('modalEliminarClub')).show();
+}
+
+document.getElementById('formEliminarClub').addEventListener('submit', function(e) {
+    const motivoWrapper = document.getElementById('modalMotivoWrapper');
+    const motivoReq = document.getElementById('motivoRequerido');
+    if (!motivoWrapper.classList.contains('d-none') && !motivoReq.classList.contains('d-none')) {
+        const val = document.getElementById('modalMotivo').value.trim();
+        if (!val) {
+            e.preventDefault();
+            document.getElementById('motivoError').classList.remove('d-none');
+            return;
+        }
+    }
+    document.getElementById('formMotivoHidden').value = document.getElementById('modalMotivo').value.trim();
+});
+</script>
 
 {% endblock %}

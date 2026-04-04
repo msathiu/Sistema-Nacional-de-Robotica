@@ -117,15 +117,15 @@
         
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="participantesTable">
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
-                            <th class="px-4 py-3">Participante / ID</th>
-                            <th class="py-3">Edad</th>
-                            <th class="py-3">Sexo</th>
-                            <th class="py-3">Correo / Teléfono</th>
-                            <th class="py-3">Estado (Región)</th>
-                            <th class="py-3">Institución</th>
+                            <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Participante / ID <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Edad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Sexo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Estado (Región) <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -152,7 +152,7 @@
                             email_representante: '{{ p.email_representante|default:"" }}',
                             telefono_representante: '{% if p.numero_telefono_representante %}{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}{% endif %}'
                         })">
-                            <td class="px-4">
+                            <td class="px-4" data-sort-value="{{ p.apellidos }} {{ p.nombres }}">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle me-3 shadow-sm">
                                         {{ p.nombres|slice:":1" }}{{ p.apellidos|slice:":1" }}
@@ -171,20 +171,20 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ p.edad }}">
                                 <div class="small fw-bold text-dark">{{ p.edad }} años</div>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ p.sexo }}">
                                 <span class="status-pill-mini {% if p.sexo == 'M' %}bg-blue{% else %}bg-pink{% endif %}">{{ p.sexo }}</span>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ p.email|default:"" }}">
                                 <div class="small text-primary text-decoration-underline">{{ p.email|default:"Sin correo" }}</div>
                                 <div class="x-small text-muted">{{ p.codigo_area }}-{{ p.numero_telefono }}</div>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ p.estado.nombre|default:"" }}">
                                 <div class="small text-dark">{{ p.estado.nombre|default:"N/A" }}</div>
                             </td>
-                            <td>
+                            <td data-sort-value="{{ p.institucion.nombre }}">
                                 <div class="mb-1">
                                     <span class="badge {% if p.vinculacion_tipo == 'institucional' %}bg-success{% elif p.vinculacion_tipo == 'regional' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} rounded-pill small">
                                         {{ p.vinculacion_tipo|default:'central'|capfirst }}
@@ -199,21 +199,21 @@
                                 {% endif %}
                             </td>
                             <td class="text-center px-4" onclick="event.stopPropagation();">
-                                <div class="d-flex justify-content-center gap-2">
+                                <div class="d-flex justify-content-center gap-1">
                                     <a href="#"
-                                       class="btn-action btn-view"
-                                       title="Ver detalle completo"
+                                       class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles"
                                        onclick="event.preventDefault(); event.stopPropagation(); verExpediente({nombres:'{{ p.nombres|escapejs }}', apellidos:'{{ p.apellidos|escapejs }}', cedula:'{{ p.cedula|default:'' }}', cedula_escolar:'{{ p.cedula_escolar|default:'' }}', edad:'{{ p.edad }}', sexo:'{{ p.get_sexo_display }}', email:'{{ p.email }}', condicion_tea: {{ p.condicion_tea|yesno:'true,false' }}, nacionalidad:'{{ p.get_nacionalidad_display }}', telefono:'{{ p.codigo_area }}-{{ p.numero_telefono }}', estado:'{{ p.estado.nombre|default:'' }}', municipio:'{{ p.municipio.nombre|default:'' }}', parroquia:'{{ p.parroquia.nombre|default:'' }}', direccion:'{{ p.direccion|escapejs }}', nivel_educativo:'{{ p.get_grado_escolar_display|default:'' }}', nombre_representante:'{{ p.nombre_representante|default:'' }}', cedula_representante:'{{ p.cedula_representante|default:'' }}', email_representante:'{{ p.email_representante|default:'' }}', telefono_representante:'{% if p.numero_telefono_representante %}{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}{% endif %}' });">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <a href="{% url 'editar_participante' p.id %}"
-                                       class="btn-action btn-edit"
-                                       title="Editar expediente completo">
+                                       class="btn btn-outline-primary btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <button type="button" class="btn-action btn-delete" 
-                                            onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')" 
-                                            title="Eliminar">
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+                                            onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')">
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
                                 </div>
@@ -462,9 +462,13 @@
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
     .avatar-circle { width: 38px; height: 38px; background: linear-gradient(45deg, var(--blue-main), #1e40af); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.75rem; }
-    .btn-action { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #e2e8f0; background: white; transition: 0.2s; color: #64748b; }
-    .btn-edit:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-2px); }
-    .btn-delete:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; transform: translateY(-2px); }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .sortable-th { transition: color 0.2s ease; }
+    .sortable-th:hover { color: var(--blue-main) !important; }
+    .sortable-th .sort-icon { opacity: 0.3; transition: opacity 0.2s ease; }
+    .sortable-th:hover .sort-icon { opacity: 0.7; }
+    .sortable-th.sort-asc .sort-icon,
+    .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
     .status-pill-mini { padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
     .bg-blue { background: #dbeafe; color: #1e40af; }
     .bg-pink { background: #fce7f3; color: #9d174d; }
@@ -477,6 +481,64 @@
     const modalEditar = new bootstrap.Modal(document.getElementById('modalEditar'));
     const modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
     const modalEliminar = new bootstrap.Modal(document.getElementById('modalUniversal'));
+
+    // Ordenamiento de columnas
+    (function initSortableTable() {
+        const table = document.getElementById('participantesTable');
+        if (!table) return;
+        const headers = table.querySelectorAll('th.sortable-th');
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
+
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                headers.forEach(h => {
+                    if (h !== this) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    this.classList.remove('sort-asc');
+                    this.classList.add('sort-desc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    this.classList.remove('sort-desc');
+                    this.classList.add('sort-asc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.querySelectorAll('td')[colIndex];
+                    const cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    })();
 
     function abrirModalEditar(id, nombres, apellidos, email, codArea, telefono) {
         const form = document.getElementById('formEditar');
@@ -567,6 +629,10 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
         document.querySelectorAll('.counter').forEach(c => {
             const target = +c.getAttribute('data-target');
             const update = () => {

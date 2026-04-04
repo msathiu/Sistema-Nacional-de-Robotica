@@ -1,5 +1,12 @@
 {% extends 'users/base_dashboard.html' %}
 
+{% block extra_css %}
+<style>
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .x-small { font-size: 0.72rem; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header consistente con dashboard -->
@@ -66,7 +73,7 @@
     <ul class="nav nav-tabs mb-4" id="membresiasTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="pendientes-tab" data-bs-toggle="tab" data-bs-target="#pendientes" type="button" role="tab">
-                <i class="bi bi-hourglass-split me-2"></i>Pendientes
+                <i class="bi bi-hourglass-split me-2"></i>Pendientes de Filtro
                 {% if total_pendientes > 0 %}
                 <span class="badge bg-warning text-dark ms-2">{{ total_pendientes }}</span>
                 {% endif %}
@@ -74,7 +81,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="revision-tab" data-bs-toggle="tab" data-bs-target="#revision" type="button" role="tab">
-                <i class="bi bi-arrow-repeat me-2"></i>En Revisión
+                <i class="bi bi-check2-square me-2"></i>Listas para Aprobar
                 {% if total_en_revision > 0 %}
                 <span class="badge bg-purple text-white ms-2" style="background: #7c3aed;">{{ total_en_revision }}</span>
                 {% endif %}
@@ -156,15 +163,23 @@
                                                 <small class="text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y" }}</small>
                                             </td>
                                             <td class="py-3 text-end px-4">
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleMembresia{{ membresia.id }}">
-                                                        <i class="bi bi-eye"></i> Ver
+                                                <div class="d-flex justify-content-end gap-1">
+                                                    <button type="button"
+                                                            class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                            data-bs-toggle="modal" data-bs-target="#detalleMembresia{{ membresia.id }}"
+                                                            title="Ver Detalles">
+                                                        <i class="bi bi-eye"></i>
                                                     </button>
-                                                    <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
-                                                        <i class="bi bi-check-circle"></i> Aprobar
+                                                    <a href="{% url 'aprobar_membresia_club' membresia.id %}"
+                                                       class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Dar Visto Bueno">
+                                                        <i class="bi bi-check-circle"></i>
                                                     </a>
-                                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rechazarMembresia{{ membresia.id }}">
-                                                        <i class="bi bi-x-circle"></i> Rechazar
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                            data-bs-toggle="modal" data-bs-target="#rechazarMembresia{{ membresia.id }}"
+                                                            title="Rechazar">
+                                                        <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 </div>
                                             </td>
@@ -176,8 +191,8 @@
                             {% else %}
                             <div class="text-center py-5">
                                 <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
-                                <h5 class="text-muted">No hay membresías pendientes</h5>
-                                <p class="text-muted small">Todas las solicitudes han sido procesadas.</p>
+                                <h5 class="text-muted">No hay membresías pendientes de filtro</h5>
+                                <p class="text-muted small">Todas las solicitudes han pasado por el filtro inicial de la Fundadora.</p>
                             </div>
                             {% endif %}
                         </div>
@@ -194,9 +209,9 @@
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
-                                    <i class="bi bi-arrow-repeat text-purple me-2"></i>Membresías Con Visto Bueno de Fundadora
+                                    <i class="bi bi-check2-square text-purple me-2" style="color: #7c3aed;"></i>Membresías Listas para Aprobación Final
                                 </h5>
-                                <span class="badge bg-purple text-white fs-6" style="background: #7c3aed;">{{ membresias_con_visto_bueno|length }} en revisión</span>
+                                <span class="badge bg-purple text-white fs-6" style="background: #7c3aed;">{{ membresias_con_visto_bueno|length }} lista(s)</span>
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -241,15 +256,23 @@
                                                 <small class="text-muted">{{ membresia.fecha_solicitud|date:"d/m/Y" }}</small>
                                             </td>
                                             <td class="py-3 text-end px-4">
-                                                <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleVistoBueno{{ membresia.id }}">
-                                                        <i class="bi bi-eye"></i> Ver
+                                                <div class="d-flex justify-content-end gap-1">
+                                                    <button type="button"
+                                                            class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                            data-bs-toggle="modal" data-bs-target="#detalleVistoBueno{{ membresia.id }}"
+                                                            title="Ver Detalles">
+                                                        <i class="bi bi-eye"></i>
                                                     </button>
-                                                    <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-sm btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
-                                                        <i class="bi bi-check-circle"></i> Aprobar
+                                                    <a href="{% url 'aprobar_membresia' membresia.id %}"
+                                                       class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar Membresía">
+                                                        <i class="bi bi-check-circle"></i>
                                                     </a>
-                                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rechazarVistoBueno{{ membresia.id }}">
-                                                        <i class="bi bi-x-circle"></i> Rechazar
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                            data-bs-toggle="modal" data-bs-target="#rechazarVistoBueno{{ membresia.id }}"
+                                                            title="Rechazar">
+                                                        <i class="bi bi-x-circle"></i>
                                                     </button>
                                                 </div>
                                             </td>
@@ -261,8 +284,8 @@
                             {% else %}
                             <div class="text-center py-5">
                                 <i class="bi bi-inbox text-muted fs-1 mb-3"></i>
-                                <h5 class="text-muted">No hay membresías en revisión</h5>
-                                <p class="text-muted small">No hay solicitudes esperando aprobación del Ente Rector.</p>
+                                <h5 class="text-muted">No hay membresías listas para aprobar</h5>
+                                <p class="text-muted small">Las membresías aparecerán aquí cuando la Fundadora les dé el visto bueno, o directamente para clubs de la federación.</p>
                             </div>
                             {% endif %}
                         </div>
@@ -279,9 +302,9 @@
                         <div class="card-header bg-white border-0 p-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="fw-bold text-dark mb-0">
-                                    <i class="bi bi-check-circle text-success me-2"></i>Miembros Activos
+                                    <i class="bi bi-check-circle text-primary me-2"></i>Miembros Activos
                                 </h5>
-                                <span class="badge bg-success fs-6">{{ membresias_activas|length }} activo(s)</span>
+                                <span class="badge text-white fs-6" style="background: var(--blue-main);">{{ membresias_activas|length }} activo(s)</span>
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -302,8 +325,8 @@
                                         <tr>
                                             <td class="px-4 py-3">
                                                 <div class="d-flex align-items-center">
-                                                    <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
-                                                        <i class="bi bi-building text-success fs-5"></i>
+                                                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                                        <i class="bi bi-building text-primary fs-5"></i>
                                                     </div>
                                                     <div>
                                                         <h6 class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</h6>
@@ -326,8 +349,8 @@
                                                 <small class="text-muted">{{ membresia.fecha_respuesta|date:"d/m/Y" }}</small>
                                             </td>
                                             <td class="py-3 text-end px-4">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleActiva{{ membresia.id }}">
-                                                    <i class="bi bi-eye"></i> Ver Detalle
+                                                <button type="button" class="btn btn-outline-info btn-sm rounded-circle p-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalle" data-bs-modal="detalleActiva{{ membresia.id }}">
+                                                    <i class="bi bi-eye"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -403,8 +426,11 @@
                                                 <small class="text-muted">{{ membresia.fecha_respuesta|date:"d/m/Y" }}</small>
                                             </td>
                                             <td class="py-3 text-end px-4">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detalleRechazada{{ membresia.id }}">
-                                                    <i class="bi bi-eye"></i> Ver Detalle
+                                                <button type="button"
+                                                        class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                        data-bs-toggle="modal" data-bs-target="#detalleRechazada{{ membresia.id }}"
+                                                        title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -431,55 +457,70 @@
 {% for membresia in membresias_pendientes_filtro %}
 <div class="modal fade" id="detalleMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title text-white fw-bold">
-                    <i class="bi bi-people me-2"></i>Detalle de Membresía - Pendiente de Filtro
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);"><i class="bi bi-people-fill fs-5"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Detalle de Membresía</h5>
+                        <p class="mb-0 x-small text-white-50">Pendiente de Filtro</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
-                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
-                        {% if membresia.institucion.estado %}
-                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
-                        {% endif %}
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-building me-1"></i>Institución Solicitante</small>
+                            <strong class="text-dark">{{ membresia.institucion.nombre }}</strong>
+                            {% if membresia.institucion.estado %}<div class="x-small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">CLUB</label>
-                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
-                        {% if membresia.club.siglas %}
-                        <small class="text-muted">{{ membresia.club.siglas }}</small>
-                        {% endif %}
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-collection-play me-1"></i>Club</small>
+                            <strong class="text-dark">{{ membresia.club.nombre }}</strong>
+                            {% if membresia.club.siglas %}<div class="x-small text-muted mt-1">{{ membresia.club.siglas }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
-                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-tag me-1"></i>Tipo de Línea</small>
+                            <span class="badge rounded-pill px-3" style="background: var(--blue-main); color: white; font-size: 0.75rem;">{{ membresia.get_tipo_linea_display }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">FECHA DE SOLICITUD</label>
-                        <p class="mb-0">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-calendar3 me-1"></i>Fecha de Solicitud</small>
+                            <strong class="text-dark">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</strong>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
-                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-envelope me-1"></i>Carta de Intención</small>
+                            <p class="mb-0 small text-dark">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
-                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-file-text me-1"></i>Propuesta Técnica</small>
+                            <p class="mb-0 small text-dark">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">REPRESENTANTE LEGAL</label>
-                        <p class="mb-0">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-person me-1"></i>Representante Legal</small>
+                            <p class="mb-0 small text-dark">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
-                    <i class="bi bi-check-circle me-2"></i>Aprobar
+            <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cerrar</button>
+                <a href="{% url 'aprobar_membresia_club' membresia.id %}" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                    <i class="bi bi-check-circle me-1"></i>Dar Visto Bueno
                 </a>
             </div>
         </div>
@@ -489,27 +530,30 @@
 <!-- Modal de Rechazo -->
 <div class="modal fade" id="rechazarMembresia{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
             <form method="post" action="{% url 'rechazar_membresia' membresia.id %}">
                 {% csrf_token %}
-                <div class="modal-header" style="background: #dc3545; border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title text-white fw-bold">
-                        <i class="bi bi-x-circle me-2"></i>Rechazar Membresía
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);"><i class="bi bi-x-circle-fill fs-5"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Rechazar Membresía</h5>
+                            <p class="mb-0 x-small text-white-50">{{ membresia.institucion.nombre }} → {{ membresia.club.nombre }}</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Está a punto de RECHAZAR la membresía de: <strong>{{ membresia.institucion.nombre }}</strong></p>
-                    <p class="text-muted">al club: <strong>{{ membresia.club.nombre }}</strong></p>
+                <div style="height: 3px; background: var(--accent-cyan);"></div>
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Observaciones (opcional)</label>
-                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                        <label class="form-label fw-bold text-dark"><i class="bi bi-chat-left-text me-1"></i>Observaciones <span class="text-muted fw-normal small">(Opcional)</span></label>
+                        <textarea name="observaciones" class="form-control border-0 shadow-sm" rows="3" style="border-radius: 12px; background: #f8fafc;" placeholder="Indique las razones del rechazo..."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
+                <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                    <button type="submit" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Rechazo
                     </button>
                 </div>
             </form>
@@ -522,61 +566,78 @@
 {% for membresia in membresias_con_visto_bueno %}
 <div class="modal fade" id="detalleVistoBueno{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header" style="background: linear-gradient(145deg, #7c3aed, #5b21b6); border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title text-white fw-bold">
-                    <i class="bi bi-people me-2"></i>Detalle de Membresía - En Revisión (Visto Bueno Fundadora)
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);"><i class="bi bi-people-fill fs-5"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Detalle de Membresía</h5>
+                        <p class="mb-0 x-small text-white-50">En Revisión — Visto Bueno Fundadora</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
-                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
-                        {% if membresia.institucion.estado %}
-                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
-                        {% endif %}
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-building me-1"></i>Institución Solicitante</small>
+                            <strong class="text-dark">{{ membresia.institucion.nombre }}</strong>
+                            {% if membresia.institucion.estado %}<div class="x-small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">CLUB</label>
-                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
-                        {% if membresia.club.siglas %}
-                        <small class="text-muted">{{ membresia.club.siglas }}</small>
-                        {% endif %}
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-collection-play me-1"></i>Club</small>
+                            <strong class="text-dark">{{ membresia.club.nombre }}</strong>
+                            {% if membresia.club.siglas %}<div class="x-small text-muted mt-1">{{ membresia.club.siglas }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
-                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-tag me-1"></i>Tipo de Línea</small>
+                            <span class="badge rounded-pill px-3" style="background: var(--blue-main); color: white; font-size: 0.75rem;">{{ membresia.get_tipo_linea_display }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">FECHA DE SOLICITUD</label>
-                        <p class="mb-0">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-calendar3 me-1"></i>Fecha de Solicitud</small>
+                            <strong class="text-dark">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</strong>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
-                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-envelope me-1"></i>Carta de Intención</small>
+                            <p class="mb-0 small text-dark">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
-                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-file-text me-1"></i>Propuesta Técnica</small>
+                            <p class="mb-0 small text-dark">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">REPRESENTANTE LEGAL</label>
-                        <p class="mb-0">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-person me-1"></i>Representante Legal</small>
+                            <p class="mb-0 small text-dark">{{ membresia.representante_legal|default:"No especificado" }}</p>
+                        </div>
                     </div>
                     {% if membresia.observaciones_fundadora %}
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">OBSERVACIONES DE LA FUNDADORA</label>
-                        <p class="mb-0 text-info">{{ membresia.observaciones_fundadora }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f0fdf4; border-left: 3px solid #10b981;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-check-circle me-1 text-success"></i>Observaciones de la Fundadora</small>
+                            <p class="mb-0 small text-dark">{{ membresia.observaciones_fundadora }}</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn btn-success" onclick="return confirm('¿Está seguro que desea APROBAR esta membresía?');">
-                    <i class="bi bi-check-circle me-2"></i>Aprobar
+            <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cerrar</button>
+                <a href="{% url 'aprobar_membresia' membresia.id %}" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                    <i class="bi bi-check-circle me-1"></i>Aprobar Membresía
                 </a>
             </div>
         </div>
@@ -586,27 +647,30 @@
 <!-- Modal de Rechazo para En Revisión -->
 <div class="modal fade" id="rechazarVistoBueno{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
             <form method="post" action="{% url 'rechazar_membresia' membresia.id %}">
                 {% csrf_token %}
-                <div class="modal-header" style="background: #dc3545; border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title text-white fw-bold">
-                        <i class="bi bi-x-circle me-2"></i>Rechazar Membresía
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);"><i class="bi bi-x-circle-fill fs-5"></i></div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Rechazar Membresía</h5>
+                            <p class="mb-0 x-small text-white-50">{{ membresia.institucion.nombre }} → {{ membresia.club.nombre }}</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Está a punto de RECHAZAR la membresía de: <strong>{{ membresia.institucion.nombre }}</strong></p>
-                    <p class="text-muted">al club: <strong>{{ membresia.club.nombre }}</strong></p>
+                <div style="height: 3px; background: var(--accent-cyan);"></div>
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Observaciones (opcional)</label>
-                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Indique las razones del rechazo..."></textarea>
+                        <label class="form-label fw-bold text-dark"><i class="bi bi-chat-left-text me-1"></i>Observaciones <span class="text-muted fw-normal small">(Opcional)</span></label>
+                        <textarea name="observaciones" class="form-control border-0 shadow-sm" rows="3" style="border-radius: 12px; background: #f8fafc;" placeholder="Indique las razones del rechazo..."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
+                <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancelar</button>
+                    <button type="submit" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Rechazo
                     </button>
                 </div>
             </form>
@@ -619,53 +683,73 @@
 {% for membresia in membresias_activas %}
 <div class="modal fade" id="detalleActiva{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 20px 20px 0 0;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 p-4" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark)); border-radius: 20px 20px 0 0;">
                 <h5 class="modal-title text-white fw-bold">
                     <i class="bi bi-check-circle me-2"></i>Detalle de Membresía - Miembro Activo
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN MIEMBRO</label>
-                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
-                        {% if membresia.institucion.estado %}
-                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
-                        {% endif %}
+                        <div class="p-3 rounded" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Institución Miembro</small>
+                            <strong class="text-dark">{{ membresia.institucion.nombre }}</strong>
+                            {% if membresia.institucion.estado %}
+                            <div class="x-small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</div>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">CLUB</label>
-                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
-                        {% if membresia.club.siglas %}
-                        <small class="text-muted">{{ membresia.club.siglas }}</small>
-                        {% endif %}
+                        <div class="p-3 rounded" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Club</small>
+                            <strong class="text-dark">{{ membresia.club.nombre }}</strong>
+                            {% if membresia.club.siglas %}
+                            <div class="x-small text-muted mt-1">{{ membresia.club.siglas }}</div>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
-                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                        <div class="p-3 rounded" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Tipo de Línea</small>
+                            <span class="badge bg-info mt-1">{{ membresia.get_tipo_linea_display }}</span>
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">FECHA DE APROBACIÓN</label>
-                        <p class="mb-0">{{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</p>
+                        <div class="p-3 rounded" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Fecha de Aprobación</small>
+                            <strong class="text-dark">{{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</strong>
+                        </div>
                     </div>
+                    {% if membresia.carta_intencion %}
                     <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
-                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                        <div class="p-3 rounded" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Carta de Intención</small>
+                            <p class="mb-0 small text-dark mt-1">{{ membresia.carta_intencion }}</p>
+                        </div>
                     </div>
+                    {% endif %}
+                    {% if membresia.propuesta_tecnica %}
                     <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
-                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
+                        <div class="p-3 rounded" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Propuesta Técnica</small>
+                            <p class="mb-0 small text-dark mt-1">{{ membresia.propuesta_tecnica }}</p>
+                        </div>
                     </div>
+                    {% endif %}
+                    {% if membresia.observaciones %}
                     <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">OBSERVACIONES</label>
-                        <p class="mb-0">{{ membresia.observaciones|default:"Sin observaciones" }}</p>
+                        <div class="p-3 rounded" style="background: #f8fafc; border-left: 3px solid var(--blue-main);">
+                            <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Observaciones</small>
+                            <p class="mb-0 small text-dark mt-1">{{ membresia.observaciones }}</p>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -676,69 +760,92 @@
 {% for membresia in membresias_rechazadas %}
 <div class="modal fade" id="detalleRechazada{{ membresia.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
-                <h5 class="modal-title text-white fw-bold">
-                    <i class="bi bi-x-circle me-2"></i>Detalle de Membresía - Rechazada
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);"><i class="bi bi-people-fill fs-5"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Detalle de Membresía</h5>
+                        <p class="mb-0 x-small text-white-50">Solicitud Rechazada</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">INSTITUCIÓN SOLICITANTE</label>
-                        <p class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</p>
-                        {% if membresia.institucion.estado %}
-                        <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</small>
-                        {% endif %}
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-building me-1"></i>Institución Solicitante</small>
+                            <strong class="text-dark">{{ membresia.institucion.nombre }}</strong>
+                            {% if membresia.institucion.estado %}<div class="x-small text-muted mt-1"><i class="bi bi-geo-alt me-1"></i>{{ membresia.institucion.estado.nombre }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">CLUB</label>
-                        <p class="mb-0 fw-bold">{{ membresia.club.nombre }}</p>
-                        {% if membresia.club.siglas %}
-                        <small class="text-muted">{{ membresia.club.siglas }}</small>
-                        {% endif %}
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc; border-left: 3px solid var(--accent-cyan);">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-collection-play me-1"></i>Club</small>
+                            <strong class="text-dark">{{ membresia.club.nombre }}</strong>
+                            {% if membresia.club.siglas %}<div class="x-small text-muted mt-1">{{ membresia.club.siglas }}</div>{% endif %}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">TIPO DE LÍNEA</label>
-                        <p class="mb-0">{{ membresia.get_tipo_linea_display }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-tag me-1"></i>Tipo de Línea</small>
+                            <span class="badge rounded-pill px-3" style="background: var(--blue-main); color: white; font-size: 0.75rem;">{{ membresia.get_tipo_linea_display }}</span>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label text-muted small fw-bold">FECHA DE RECHAZO</label>
-                        <p class="mb-0">{{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</p>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-calendar3 me-1"></i>Fecha de Rechazo</small>
+                            <strong class="text-dark">{{ membresia.fecha_respuesta|date:"d/m/Y H:i" }}</strong>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">CARTA DE INTENCIÓN</label>
-                        <p class="mb-0">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #f8fafc;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-envelope me-1"></i>Carta de Intención</small>
+                            <p class="mb-0 small text-dark">{{ membresia.carta_intencion|default:"No especificada" }}</p>
+                        </div>
                     </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">PROPUESTA TÉCNICA</label>
-                        <p class="mb-0">{{ membresia.propuesta_tecnica|default:"No especificada" }}</p>
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label class="form-label text-muted small fw-bold">OBSERVACIONES / MOTIVO DE RECHAZO</label>
-                        <p class="mb-0 text-danger">{{ membresia.observaciones|default:"Sin observaciones" }}</p>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background: #fff7ed; border-left: 3px solid #f59e0b;">
+                            <small class="text-muted d-block text-uppercase x-small fw-bold mb-1"><i class="bi bi-chat-left-text me-1"></i>Motivo de Rechazo</small>
+                            <p class="mb-0 small text-dark">{{ membresia.observaciones_rector|default:membresia.observaciones_fundadora|default:membresia.observaciones|default:"Sin observaciones" }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cerrar</button>
             </div>
         </div>
     </div>
 </div>
 {% endfor %}
+{% endblock %}
 
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Inicializar tooltips
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+            new bootstrap.Tooltip(el);
+        });
+
+        // Abrir modal desde botón con data-bs-modal
+        document.querySelectorAll('[data-bs-modal]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var modalId = this.getAttribute('data-bs-modal');
+                var modal = document.getElementById(modalId);
+                if (modal) new bootstrap.Modal(modal).show();
+            });
+        });
+
         // Contador animado
-        const counters = document.querySelectorAll('.counter');
-        counters.forEach(counter => {
-            const updateCount = () => {
-                const target = parseInt(counter.getAttribute('data-target'));
-                const count = parseInt(counter.innerText);
-                const increment = Math.max(Math.trunc(target / 20), 1);
+        document.querySelectorAll('.counter').forEach(function(counter) {
+            var target = parseInt(counter.getAttribute('data-target'));
+            var updateCount = function() {
+                var count = parseInt(counter.innerText);
+                var increment = Math.max(Math.trunc(target / 20), 1);
                 if (count < target) {
                     counter.innerText = count + increment;
                     setTimeout(updateCount, 30);
@@ -750,6 +857,5 @@
         });
     });
 </script>
-{% endblock %}
 {% endblock %}
 

@@ -83,21 +83,24 @@
                                 <span class="small text-muted">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span>
                             </td>
                             <td class="text-center px-4">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <button type="button" class="btn-action btn-view" 
-                                            data-bs-toggle="modal" 
+                                <div class="d-flex justify-content-center gap-1">
+                                    <button type="button"
+                                            class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                            data-bs-toggle="modal"
                                             data-bs-target="#detalleSolicitud{{ solicitud.id }}"
-                                            title="Ver detalles">
+                                            title="Ver Detalles">
                                         <i class="bi bi-eye"></i>
                                     </button>
-                                    <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" 
-                                       class="btn-action btn-approve"
-                                       title="Aprobar">
+                                    <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}"
+                                       class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar Solicitud">
                                         <i class="bi bi-check-circle"></i>
                                     </a>
-                                    <button type="button" class="btn-action btn-reject" 
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar Solicitud"
                                             onclick="rechazarSolicitud('{{ solicitud.id }}', '{{ solicitud.club.nombre|escapejs }}')"
-                                            title="Rechazar">
+                                            >
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </div>
@@ -122,49 +125,68 @@
 {% for solicitud in solicitudes_pendientes %}
 <div class="modal fade" id="detalleSolicitud{{ solicitud.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: var(--blue-main); border-radius: 20px 20px 0 0;">
-                <h5 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Detalle de Solicitud</h5>
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <!-- Header -->
+            <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Detalle de Solicitud</h5>
+                        <p class="mb-0 x-small text-white-50">Revisión de solicitud de eliminación</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <!-- Body -->
             <div class="modal-body p-4 bg-light">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Club</label>
+                        <div class="bg-white p-3 rounded-3 shadow-sm border-start border-3" style="border-color: var(--blue-main) !important;">
+                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-collection-play me-1"></i>Club</label>
                             <span class="fw-bold text-dark">{{ solicitud.club.nombre }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Institución</label>
+                        <div class="bg-white p-3 rounded-3 shadow-sm border-start border-3" style="border-color: var(--blue-main) !important;">
+                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-building me-1"></i>Institución Solicitante</label>
                             <span class="fw-bold text-dark">{{ solicitud.institucion_solicitante.nombre }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Fecha Solicitud</label>
-                            <span class="text-dark">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span>
+                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-calendar3 me-1"></i>Fecha Solicitud</label>
+                            <span class="fw-medium text-dark">{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Estado del Club</label>
-                            <span class="badge bg-secondary">{{ solicitud.club.get_status_display }}</span>
+                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-tag me-1"></i>Estado del Club</label>
+                            <span class="badge rounded-pill px-3 py-1"
+                                  style="background: var(--blue-main); color: white; font-size: 0.75rem;">
+                                {{ solicitud.club.get_status_display }}
+                            </span>
                         </div>
                     </div>
                     <div class="col-12">
                         <div class="bg-white p-3 rounded-3 shadow-sm">
-                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-1">Motivo</label>
-                            <p class="mb-0 text-dark">{{ solicitud.motivo }}</p>
+                            <label class="text-muted x-small fw-bold text-uppercase d-block mb-2"><i class="bi bi-chat-left-text me-1"></i>Motivo de Eliminación</label>
+                            <p class="mb-0 text-dark" style="line-height: 1.6;">{{ solicitud.motivo }}</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 bg-light pb-4 px-4 d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold w-100" data-bs-dismiss="modal">Cerrar</button>
-                <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}" class="btn text-white rounded-pill px-4 fw-bold w-100 shadow-sm" style="background: var(--blue-main);">
-                    Procesar Solicitud
+            <!-- Footer -->
+            <div class="modal-footer border-0 bg-white px-4 py-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Cerrar
+                </button>
+                <a href="{% url 'aprobar_eliminacion_club' solicitud.id %}"
+                   class="btn fw-bold px-4 text-white shadow-sm"
+                   style="background: var(--blue-main); border-radius: 10px;">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Procesar Solicitud
                 </a>
             </div>
         </div>
@@ -172,24 +194,56 @@
 </div>
 {% endfor %}
 
+<!-- Modal Confirmar Rechazo -->
+<div class="modal fade" id="modalConfirmarRechazo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header border-0 px-4 py-3 text-white" style="background: var(--blue-main);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.15);">
+                        <i class="bi bi-x-circle-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Rechazar Solicitud</h5>
+                        <p class="mb-0 x-small text-white-50">Esta acción no se puede deshacer</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="modal-body p-4">
+                <p class="text-dark mb-0">¿Está seguro de rechazar la solicitud de eliminación del club <strong id="modalRechazarClubNombre" class="text-dark"></strong>?</p>
+            </div>
+            <div class="modal-footer border-0 px-4 py-3 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                </button>
+                <button type="button" id="btnConfirmarRechazo" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                    <i class="bi bi-check-lg me-1"></i>Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
     .avatar-circle { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 0.75rem; }
-    .btn-action { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #e2e8f0; background: white; transition: 0.2s; color: #64748b; }
-    .btn-view:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-2px); }
-    .btn-approve:hover { color: #10b981; border-color: #10b981; background: #f0fdf4; transform: translateY(-2px); }
-    .btn-reject:hover { color: #ef4444; border-color: #ef4444; background: #fef2f2; transform: translateY(-2px); }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 </style>
 
 <script>
 function rechazarSolicitud(solicitudId, clubNombre) {
-    if(confirm(`¿Está seguro de rechazar la solicitud de eliminación del club "${clubNombre}"?`)) {
-        window.location.href = `/admin/clubes/solicitudes-eliminacion/${solicitudId}/rechazar/`;
-    }
+    document.getElementById('modalRechazarClubNombre').textContent = clubNombre;
+    document.getElementById('btnConfirmarRechazo').onclick = function() {
+        window.location.href = `/registry/admin/clubes/solicitudes-eliminacion/${solicitudId}/rechazar/`;
+    };
+    new bootstrap.Modal(document.getElementById('modalConfirmarRechazo')).show();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     document.querySelectorAll('.counter').forEach(c => {
         const target = +c.getAttribute('data-target');
         const update = () => {

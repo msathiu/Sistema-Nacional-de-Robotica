@@ -14,6 +14,7 @@ from .club import (
     CalificacionClub,
     Club,
     ClubLineaInvestigacion,
+    ClubTutor,
     ComentarioClub,
     HistorialClub,
     MembresiaClu,
@@ -46,7 +47,6 @@ from .tutor import Tutor, TutorInstitucion
 
 __all__ = [
     "normalizar_texto_titulo",
-    "normalizar_texto_titulo_op",
     "NACIONALIDAD_CHOICES",
     "SEXO_CHOICES",
     "CODIGO_AREA_CHOICES",
@@ -83,5 +83,6 @@ __all__ = [
     "ComentarioClub",
     "CalificacionClub",
     "ClubLineaInvestigacion",
+    "ClubTutor",
     "Notificacion",
 ]

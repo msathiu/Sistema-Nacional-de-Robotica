@@ -21,6 +21,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic.edit import UpdateView
 from registry.forms import ParticipanteForm
 from registry.models import (
+    AsistenciaEvento,
     Club,
     Dependencia,
     Estado,
@@ -55,6 +56,30 @@ from .forms import (
 )
 from .models import Municipios, UserProfile
 from .selectors import EventoSelector, JurisdictionSelector, ParticipanteSelector, InstitucionSelector
+
+
+def _get_evento_institucional(evento_id, institution):
+    """
+    Resuelve un Evento verificando que la institución tenga pertenencia:
+    - Evento institucional propio (institucion=institution)
+    - Evento de club donde la institución es creadora del club
+    - Evento de club donde la institución es miembro activo del club
+    Lanza Http404 si no existe o no pertenece.
+    """
+    from django.http import Http404
+    from registry.models import MembresiaClu
+    evento = get_object_or_404(Evento, id=evento_id)
+    if (
+        evento.institucion == institution
+        or (evento.club_organizador and evento.club_organizador.institucion_creadora == institution)
+        or (evento.club_organizador and MembresiaClu.objects.filter(
+            club=evento.club_organizador,
+            institucion=institution,
+            estado="miembro_activo",
+        ).exists())
+    ):
+        return evento
+    raise Http404
 from .services.identity_service import IdentityService
 from .services.participante_service import ParticipanteService
 from .services.evento_service import EventoService
@@ -119,6 +144,21 @@ def detalle_evento_inscripcion(request, evento_id):
 
     evento = EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
     if not evento:
+        # La institución creadora no aparece en get_eventos_visibles (excluye propios)
+        # pero sí debe poder inscribir en sus propios eventos abiertos
+        from registry.models import MembresiaClu
+        institution = user_profile.institution
+        evento = Evento.objects.filter(
+            id=evento_id,
+            estado_evento=EstadoEvento.ABIERTO,
+        ).filter(
+            Q(institucion=institution)
+            | Q(club_organizador__institucion_creadora=institution)
+            | Q(club_organizador_id__in=MembresiaClu.objects.filter(
+                institucion=institution, estado="miembro_activo"
+            ).values_list("club_id", flat=True))
+        ).first()
+    if not evento:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
         return redirect("eventos_disponibles")
 
@@ -164,6 +204,21 @@ def inscribir_grupo_evento(request, evento_id):
 
     user_profile = request.user.userprofile
     evento = EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
+    if not evento:
+        # Fallback: la institución creadora está excluida de get_eventos_visibles
+        # pero sí puede inscribir en sus propios eventos abiertos
+        from registry.models import MembresiaClu
+        institution = user_profile.institution
+        evento = Evento.objects.filter(
+            id=evento_id,
+            estado_evento=EstadoEvento.ABIERTO,
+        ).filter(
+            Q(institucion=institution)
+            | Q(club_organizador__institucion_creadora=institution)
+            | Q(club_organizador_id__in=MembresiaClu.objects.filter(
+                institucion=institution, estado="miembro_activo"
+            ).values_list("club_id", flat=True))
+        ).first()
     if not evento:
         messages.error(request, "El evento no existe o no tienes permiso para inscribirte en él.")
         return redirect("eventos_disponibles")
@@ -936,6 +991,7 @@ def registrar_institucion(request):
                             "nombre_inst": institucion.nombre,
                             "email": institucion.email,
                             "base_template": base_template,
+                            "tipo_institucion": institucion.tipo_institucion,
                         },
                     )
 
@@ -1428,11 +1484,13 @@ def gestionar_eventos_institucion(request):
     # Mantener en listado los eventos activos y los cancelados (para trazabilidad). Eliminados siguen ocultos.
     # Regla: Los eventos de instituciones en estado "borrador" no son visibles para fed_central hasta que se envíen a revisión
     eventos = Evento.objects.select_related(
-        "estado", "municipio", "parroquia", "institucion", "club_organizador"
+        "estado", "municipio", "parroquia", "institucion", "club_organizador", "club_organizador__institucion_creadora"
     ).filter(
         Q(activo=True) | Q(cancelado=True)
     ).exclude(
-        Q(institucion__isnull=False) & Q(estado_evento=EstadoEvento.BORRADOR)
+        # Ocultar borradores de instituciones y clubes hasta que sean enviados a revisión
+        Q(estado_evento=EstadoEvento.BORRADOR) &
+        (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
     )
     
     eventos = JurisdictionSelector.filtrar_por_territorio(eventos, perfil)
@@ -1440,37 +1498,43 @@ def gestionar_eventos_institucion(request):
     institution = getattr(perfil, "institution", None)
 
     # Filtros adicionales desde la UI
-    estado_filtro = request.GET.get("estado")
+    q_filtro = request.GET.get("q", "").strip()
     tipo_filtro = request.GET.get("tipo")
+    tipo_evento_filtro = request.GET.get("tipo_evento")
     estado_evento_filtro = request.GET.get("estado_evento")
-    federacion_institucion_filtro = request.GET.get("federacion_institucion")
     estado_nacional_filtro = request.GET.get("estado_nacional")
 
-    if estado_filtro:
-        eventos = eventos.filter(estado_id=estado_filtro)
+    if q_filtro:
+        eventos = eventos.filter(
+            Q(nombre__icontains=q_filtro)
+            | Q(descripcion__icontains=q_filtro)
+            | Q(institucion__nombre__icontains=q_filtro)
+            | Q(club_organizador__nombre__icontains=q_filtro)
+        )
     if tipo_filtro:
         eventos = eventos.filter(tipo=tipo_filtro)
+    if tipo_evento_filtro:
+        if tipo_evento_filtro == 'federacion':
+            eventos = eventos.filter(institucion__isnull=True, club_organizador__isnull=True)
+        else:
+            eventos = eventos.filter(tipo_evento=tipo_evento_filtro)
     if estado_evento_filtro:
-        eventos = eventos.filter(estado_evento=estado_evento_filtro)
-    
-    # Filtro por Federación o Institución (separado de ubicación)
-    if federacion_institucion_filtro:
-        if federacion_institucion_filtro == 'federacion':
-            # Eventos creados por Federación Central (sin institución)
-            eventos = eventos.filter(institucion__isnull=True)
-        elif federacion_institucion_filtro == 'todas_instituciones':
-            # Eventos de TODAS las instituciones (sin filtrar por institución específica)
-            eventos = eventos.filter(institucion__isnull=False)
-        elif federacion_institucion_filtro.startswith('inst_'):
-            # Eventos de una institución específica
-            institucion_id = federacion_institucion_filtro.replace('inst_', '')
-            eventos = eventos.filter(institucion_id=institucion_id)
-    
-    # Filtro por estado nacional (ubicación del evento) - independiente del filtro anterior
+        if estado_evento_filtro == 'cancelado':
+            eventos = eventos.filter(cancelado=True)
+        else:
+            eventos = eventos.filter(estado_evento=estado_evento_filtro, cancelado=False)
+
+    # Filtro por estado geográfico (ubicación del evento)
     if estado_nacional_filtro:
         eventos = eventos.filter(estado_id=estado_nacional_filtro)
 
-    eventos = eventos.order_by("-fecha_creacion")
+    eventos = eventos.annotate(
+        total_inscritos=Count(
+            "inscripciones_grupo",
+            filter=Q(inscripciones_grupo__activo=True),
+            distinct=True,
+        )
+    ).order_by("-fecha_creacion")
 
     # Estadísticas Globales
     stats = eventos.aggregate(
@@ -1517,7 +1581,6 @@ def gestionar_eventos_institucion(request):
         "total_inscripciones": total_inscripciones,
         "eventos_activos": eventos_activos,
         "estados": Estado.objects.all().order_by("nombre"),
-        "instituciones": Institucion.objects.all().order_by("nombre"),
         "tipos": Evento.TIPO_CHOICES,
         "estados_evento": EstadoEvento.choices,
         "es_fed_central": es_fed_central,
@@ -1541,14 +1604,12 @@ def aprobar_evento(request, evento_id):
     
     if request.method == "POST":
         observaciones = request.POST.get("observaciones", "").strip()
-        
+
         with transaction.atomic():
-            evento.estado_evento = EstadoEvento.ABIERTO
-            evento.aprobado_por = request.user
-            evento.observaciones_aprobacion = observaciones
-            evento.fecha_aprobacion = timezone.now()
-            evento.save()
-        
+            if not evento.aprobar(request.user, observaciones):
+                messages.error(request, "No se puede aprobar el evento en su estado actual.")
+                return redirect("admin_eventos")
+
         messages.success(request, f"Evento '{evento.nombre}' aprobado exitosamente.")
         return redirect("admin_eventos")
     
@@ -1587,7 +1648,13 @@ def rechazar_evento(request, evento_id):
 def seguimiento_eventos_institucion(request):
     """
     Vista de Mis Eventos para la institución autenticada.
+    Muestra eventos:
+    - Creados por la institución (eventos institucionales)
+    - Creados por clubes donde la institución es creadora
+    - Creados por clubes donde la institución es miembro activo
     """
+    from django.db.models import Q
+
     perfil = request.user.userprofile
     institution = perfil.institution
 
@@ -1596,7 +1663,35 @@ def seguimiento_eventos_institucion(request):
     filtro_estado = request.GET.get("estado_evento", "")
     filtro_tipo = request.GET.get("tipo_evento", "")
 
-    base_qs = Evento.objects.filter(institucion=institution).select_related("estado", "municipio")
+    # Obtener IDs de clubes donde la institución es miembro activo
+    from registry.models.club import MembresiaClu
+    clubes_miembro_ids = list(
+        MembresiaClu.objects.filter(
+            institucion=institution,
+            estado="miembro_activo"
+        ).values_list("club_id", flat=True)
+    )
+    # Cachear en perfil para que el templatetag lo use sin N+1
+    perfil._clubes_miembro_ids = set(clubes_miembro_ids)
+
+    # Query base:
+    # 1. Eventos institucionales propios
+    # 2. Eventos de club creados por un usuario de esta institución (cubre tanto propietario como miembro)
+    # Los eventos de club creados por OTRA institución se ven en /eventos/, no aquí.
+    base_qs = Evento.objects.filter(
+        Q(institucion=institution)
+        | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institution)
+    ).select_related(
+        "estado", "municipio", "institucion", "institucion__estado",
+        "club_organizador", "club_organizador__institucion_creadora",
+        "club_organizador__institucion_creadora__estado",
+    ).annotate(
+        total_inscritos=Count(
+            "inscripciones_grupo",
+            filter=Q(inscripciones_grupo__activo=True),
+            distinct=True,
+        )
+    )
     if q:
         base_qs = base_qs.filter(nombre__icontains=q)
     if filtro_tipo:
@@ -1630,10 +1725,20 @@ def seguimiento_eventos_institucion(request):
         "total_abiertos": eventos_abiertos.count(),
         "total_rechazados": eventos_rechazados.count(),
         "total_otros": eventos_otros.count(),
-        "total": Evento.objects.filter(institucion=institution).count(),
+        "total": Evento.objects.filter(
+            Q(institucion=institution)
+            | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institution)
+        ).count(),
     }
 
+    # Queryset unificado para el template (una sola tabla)
+    if filtro_estado:
+        eventos = base_qs.filter(estado_evento=filtro_estado).order_by("-fecha_creacion")
+    else:
+        eventos = base_qs.order_by("-fecha_creacion")
+
     context = {
+        "eventos": eventos,
         "eventos_borrador": eventos_borrador,
         "eventos_revision": eventos_revision,
         "eventos_abiertos": eventos_abiertos,
@@ -1665,11 +1770,7 @@ def enviar_evento_revision(request, evento_id):
 
     try:
         institution = request.user.userprofile.institution
-        evento = get_object_or_404(
-            Evento,
-            id=evento_id,
-            institucion=institution,
-        )
+        evento = _get_evento_institucional(evento_id, institution)
 
         if evento.estado_evento not in [EstadoEvento.BORRADOR, EstadoEvento.RECHAZADO]:
             return JsonResponse(
@@ -1716,11 +1817,7 @@ def editar_evento(request, evento_id):
             return redirect("admin_eventos")
         redirect_destino = "admin_eventos"
     elif user_type == "institucional":
-        evento = get_object_or_404(
-            Evento,
-            id=evento_id,
-            institucion=request.user.userprofile.institution,
-        )
+        evento = _get_evento_institucional(evento_id, request.user.userprofile.institution)
         if not evento.puede_ser_editado():
             messages.error(
                 request,
@@ -1763,9 +1860,7 @@ def cambiar_estado_evento(request, evento_id):
     Vista institucional para cancelar un evento propio segun la maquina de estados.
     """
     if request.method == "POST":
-        evento = get_object_or_404(
-            Evento, id=evento_id, institucion=request.user.userprofile.institution
-        )
+        evento = _get_evento_institucional(evento_id, request.user.userprofile.institution)
 
         nuevo_estado = request.POST.get("estado_evento")
         motivo = request.POST.get("motivo", "").strip()
@@ -1847,7 +1942,7 @@ def cancelar_evento(request, evento_id):
     """
     Vista para cancelar un evento por parte de la institución.
     """
-    evento = get_object_or_404(Evento, id=evento_id, institucion=request.user.userprofile.institution)
+    evento = _get_evento_institucional(evento_id, request.user.userprofile.institution)
     motivo = request.POST.get("motivo", "").strip()
 
     try:
@@ -2421,9 +2516,10 @@ def detalle_evento_institucion(request, evento_id):
     user_profile = request.user.userprofile
     institucion = user_profile.institution
 
-    # Evento propio (organizador) o visible en el catálogo institucional
+    # Evento propio: institucional de esta institución, o de club creado por esta institución
     es_propio = Evento.objects.filter(
-        Q(institucion=institucion) | Q(club_organizador__institucion_creadora=institucion),
+        Q(institucion=institucion)
+        | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institucion),
         id=evento_id,
     ).exists()
 
@@ -2436,7 +2532,6 @@ def detalle_evento_institucion(request, evento_id):
     evento = get_object_or_404(
         Evento.objects.select_related("estado", "municipio", "parroquia", "institucion"),
         id=evento_id,
-        activo=True,
     )
 
     # Solo mostrar inscripciones de la propia institución
@@ -3188,3 +3283,112 @@ def detalle_institucion_api(request, institucion_id):
         return JsonResponse(
             {"error": str(e), "traceback": traceback.format_exc()}, status=500
         )
+
+
+@login_required
+def toggle_submenu(request):
+    """
+    Endpoint HTMX para expandir/colapsar un submenu del sidebar.
+    Persiste el estado en la sesión y re-renderiza solo el sidebar.
+    """
+    from django.template.loader import render_to_string
+
+    label = request.GET.get("label", "")
+    if not label:
+        return HttpResponse(status=400)
+
+    # Generar slug del label (mismo método que en context_processor)
+    slug = label.lower().replace(" ", "-").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+
+    # Toggle en sesión
+    expanded = request.session.get("expanded_submenus", [])
+    if slug in expanded:
+        expanded.remove(slug)
+    else:
+        expanded.append(slug)
+    request.session["expanded_submenus"] = expanded
+    request.session.modified = True
+
+    # Re-renderizar el sidebar con el nuevo estado
+    from users.context_processors import sidebar_menu
+    context = sidebar_menu(request)
+    html = render_to_string("users/partials/_sidebar.html", context, request=request)
+    return HttpResponse(html)
+
+
+# ============================================
+# ASISTENCIA A EVENTOS
+# ============================================
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def registro_asistencia(request, evento_id):
+    """
+    GET: muestra la lista de participantes con su estado de asistencia.
+    POST: guarda masivamente los estados de asistencia.
+    Solo accesible por el organizador del evento o federación.
+    """
+    perfil = request.user.userprofile
+    es_rector = EventoSelector.es_rector_eventos(perfil)
+
+    evento = get_object_or_404(Evento, id=evento_id, activo=True)
+
+    # Verificar permiso: organizador o federación
+    if not es_rector:
+        institucion = perfil.institution
+        es_organizador = (
+            evento.institucion == institucion
+            or (evento.club_organizador and evento.club_organizador.institucion_creadora == institucion)
+            or (evento.creado_por and evento.creado_por.userprofile.institution == institucion)
+        )
+        if not es_organizador:
+            messages.error(request, "No tienes permiso para gestionar la asistencia de este evento.")
+            return redirect("mis_eventos")
+
+    # Solo disponible en en_proceso o finalizado
+    if evento.estado_evento not in [EstadoEvento.EN_PROCESO, EstadoEvento.FINALIZADO]:
+        messages.warning(request, "La asistencia solo puede registrarse cuando el evento está En Proceso o Finalizado.")
+        return redirect("detalle_evento_gestion", evento_id=evento_id)
+
+    if request.method == "POST":
+        with transaction.atomic():
+            for key, valor in request.POST.items():
+                if key.startswith("asistencia_"):
+                    participante_id = key.replace("asistencia_", "")
+                    observacion = request.POST.get(f"obs_{participante_id}", "").strip()
+                    AsistenciaEvento.objects.filter(
+                        evento=evento, participante_id=participante_id
+                    ).update(
+                        asistencia=valor,
+                        observacion=observacion,
+                        fecha_asistencia=timezone.now() if valor == "asistio" else None,
+                    )
+        messages.success(request, "✅ Asistencia guardada correctamente.")
+        return redirect("registro_asistencia", evento_id=evento_id)
+
+    # GET: cargar asistencias agrupadas por equipo
+    asistencias = (
+        AsistenciaEvento.objects.filter(evento=evento)
+        .select_related("participante", "grupo")
+        .order_by("grupo__nombre", "participante__apellidos")
+    )
+
+    # Agrupar por equipo
+    equipos = {}
+    for a in asistencias:
+        nombre_grupo = a.grupo.nombre if a.grupo else "Sin equipo"
+        equipos.setdefault(nombre_grupo, []).append(a)
+
+    context = {
+        "evento": evento,
+        "equipos": equipos,
+        "total": asistencias.count(),
+        "asistieron": asistencias.filter(asistencia="asistio").count(),
+        "ausentes": asistencias.filter(asistencia="ausente").count(),
+        "pendientes": asistencias.filter(asistencia="pendiente").count(),
+        "CHOICES": AsistenciaEvento.ASISTENCIA_CHOICES,
+        "puede_editar": evento.estado_evento == EstadoEvento.EN_PROCESO,
+    }
+    return render(request, "users/registro_asistencia.html", context)
+
+

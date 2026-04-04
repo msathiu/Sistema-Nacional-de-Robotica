@@ -161,6 +161,7 @@ urlpatterns = [
         name="inscribir_grupo_evento",
     ),
     path("eventos/editar/<int:evento_id>/", views.editar_evento, name="editar_evento"),
+    path("eventos/<int:evento_id>/asistencia/",   views.registro_asistencia,  name="registro_asistencia"),
     path(
         "eventos/cambiar-estado/<int:evento_id>/",
         views.cambiar_estado_evento,
@@ -242,4 +243,6 @@ urlpatterns = [
         views.api_participantes_grupo,
         name="api_participantes_grupo",
     ),
+    # --- HTMX endpoints ---
+    path("htmx/toggle-submenu/", views.toggle_submenu, name="toggle_submenu"),
 ]

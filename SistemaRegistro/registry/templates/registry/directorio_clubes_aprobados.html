@@ -9,7 +9,7 @@
         --blue-main: #0b2c6d;
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
-        --success: #10b981;
+        --success: var(--accent-cyan);
     }
     
     .counter {
@@ -33,8 +33,9 @@
     }
     
     .badge-cupo.disponible {
-        background: #d1fae5;
-        color: #059669;
+        background: rgba(0, 212, 255, 0.12);
+        color: var(--blue-main);
+        border: 1px solid rgba(0, 212, 255, 0.4);
     }
     
     .badge-cupo.lleno {
@@ -50,8 +51,9 @@
     }
     
     .badge-estado.abierto {
-        background: #d1fae5;
-        color: #059669;
+        background: rgba(0, 212, 255, 0.12);
+        color: var(--blue-main);
+        border: 1px solid rgba(0, 212, 255, 0.4);
     }
     
     .badge-estado.cerrado {
@@ -65,6 +67,7 @@
     }
     
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 </style>
 {% endblock %}
 
@@ -160,8 +163,8 @@
                             <tr>
                                 <td class="px-4">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle p-2 me-3" style="background: rgba(5, 150, 105, 0.1);">
-                                            <i class="bi bi-robot fs-5" style="color: #059669;"></i>
+                                        <div class="rounded-circle p-2 me-3" style="background: rgba(11, 44, 109, 0.08); border: 1px solid rgba(0,212,255,0.3);">
+                                            <i class="bi bi-robot fs-5" style="color: var(--blue-main);"></i>
                                         </div>
                                         <div>
                                             <div class="fw-bold small text-dark">{{ club.nombre }}</div>
@@ -172,16 +175,18 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="small fw-semibold">{{ club.institucion_creadora.nombre_publico|truncatewords:5 }}</div>
+                                    <div class="small fw-semibold">
+                                        {% if club.tipo_creador == 'fed_central' %}Federación{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre_publico|truncatewords:5 }}{% endif %}
+                                    </div>
                                     <div class="x-small text-muted">
-                                        <i class="bi bi-geo-alt"></i> {{ club.institucion_creadora.estado.nombre }}
+                                        <i class="bi bi-geo-alt"></i> {% if club.institucion_creadora %}{{ club.institucion_creadora.estado.nombre }}{% else %}Nacional{% endif %}
                                     </div>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
                                         {% for linea in club.lineas_investigacion %}
-                                            <span class="badge-linea">
-                                                {{ linea|truncatewords:2 }}
+                                            <span class="badge-linea" title="{{ linea }}">
+                                                {{ linea }}
                                             </span>
                                         {% endfor %}
                                     </div>
@@ -213,8 +218,9 @@
                                 </td>
                                 <td class="text-center px-4">
                                     <a href="{% url 'detalle_club' club.id %}" 
-                                       class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
-                                        <i class="bi bi-eye me-1"></i>Ver Detalles
+                                       class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                       data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -237,6 +243,11 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Inicializar tooltips
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+            new bootstrap.Tooltip(el);
+        });
+
         // Contadores animados con requestAnimationFrame
         const counters = document.querySelectorAll('.counter');
         

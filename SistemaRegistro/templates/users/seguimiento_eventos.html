@@ -24,23 +24,21 @@
     <!-- KPIs -->
     <div class="row g-4 mb-5">
         <div class="col-xl-2 col-md-4 col-6">
-            <a href="#" class="text-decoration-none">
-                <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
-                    <div class="card-body p-4 position-relative z-1">
-                        <div class="text-white-50 small fw-bold text-uppercase mb-2">Borradores</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total_borradores|default:0 }}">0</h2>
-                        <i class="bi bi-file-earmark-text position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
-                    </div>
-                    <div style="height: 4px; background: var(--accent-cyan);"></div>
+            <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
+                <div class="card-body p-4 position-relative z-1">
+                    <div class="text-white-50 small fw-bold text-uppercase mb-2">Borradores</div>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total_borradores|default:0 }}">0</h2>
+                    <i class="bi bi-file-earmark-text kpi-icon position-absolute opacity-10"></i>
                 </div>
-            </a>
+                <div style="height: 4px; background: var(--accent-cyan);"></div>
+            </div>
         </div>
         <div class="col-xl-2 col-md-4 col-6">
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">En Revisión</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total_revision|default:0 }}">0</h2>
-                    <i class="bi bi-hourglass-split position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total_revision|default:0 }}">0</h2>
+                    <i class="bi bi-hourglass-split kpi-icon position-absolute opacity-10"></i>
                 </div>
                 <div style="height: 4px; background: #f59e0b;"></div>
             </div>
@@ -49,8 +47,8 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Abiertos</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total_abiertos|default:0 }}">0</h2>
-                    <i class="bi bi-unlock-fill position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total_abiertos|default:0 }}">0</h2>
+                    <i class="bi bi-unlock-fill kpi-icon position-absolute opacity-10"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>
             </div>
@@ -59,8 +57,8 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Rechazados</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total_rechazados|default:0 }}">0</h2>
-                    <i class="bi bi-x-octagon-fill position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total_rechazados|default:0 }}">0</h2>
+                    <i class="bi bi-x-octagon-fill kpi-icon position-absolute opacity-10"></i>
                 </div>
                 <div style="height: 4px; background: #ef4444;"></div>
             </div>
@@ -69,8 +67,8 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Otros</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total_otros|default:0 }}">0</h2>
-                    <i class="bi bi-collection-fill position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total_otros|default:0 }}">0</h2>
+                    <i class="bi bi-collection-fill kpi-icon position-absolute opacity-10"></i>
                 </div>
                 <div style="height: 4px; background: #3b82f6;"></div>
             </div>
@@ -79,8 +77,8 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white kpi-card">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Total</div>
-                    <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ stats.total|default:0 }}">0</h2>
-                    <i class="bi bi-bar-chart-fill position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                    <h2 class="fw-bold mb-0 counter" data-target="{{ stats.total|default:0 }}">0</h2>
+                    <i class="bi bi-bar-chart-fill kpi-icon position-absolute opacity-10"></i>
                 </div>
                 <div style="height: 4px; background: #8b5cf6;"></div>
             </div>
@@ -153,294 +151,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {# BORRADORES #}
-                        {% load evento_actions %}
-                        {% for evento in eventos_borrador %}
-                        {% get_acciones evento perfil 'mis_eventos' as acciones %}
-                        <tr class="evento-row" data-estado="borrador" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
-                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple"><i class="bi bi-people me-1"></i>Club</span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue"><i class="bi bi-building me-1"></i>Institucional</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
-                            <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Equipos</div>
-                            </td>
-                            <td>
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
-                            </td>
-                            <td>
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.institucion.nombre|default:"—" }}</div>
-                                <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
-                            </td>
-                            <td class="text-center"><span class="badge bg-secondary opacity-75">Borrador</span></td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    {% if acciones.editar %}
-                                    <a href="{% url 'editar_evento' evento.id %}" class="btn-action btn-edit" title="Editar">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    {% endif %}
-                                    {% if acciones.enviar_revision %}
-                                    <button class="btn-action btn-send" onclick="enviarRevision({{ evento.id }})" title="Enviar a revisión">
-                                        <i class="bi bi-send-check-fill"></i>
-                                    </button>
-                                    {% endif %}
-                                    {% if acciones.eliminar %}
-                                    <button class="btn-action btn-retry" onclick="eliminarEvento({{ evento.id }}, '{{ evento.nombre|escapejs }}')" title="Eliminar">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                    {% endif %}
-                                    <button class="btn-action btn-obs" onclick="verObservaciones({{ evento.id }}, '{{ evento.nombre|escapejs }}', '{{ evento.motivo_cancelacion|escapejs }}', '{{ evento.observaciones_aprobacion|escapejs }}', '{{ evento.observacion_estado|escapejs }}', '{{ evento.estado_evento|escapejs }}')" title="Ver Observaciones">
-                                        <i class="bi bi-chat-text"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-
-                        {# RECHAZADOS #}
-                        {% for evento in eventos_rechazados %}
-                        <tr class="evento-row" data-estado="rechazado" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
-                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple"><i class="bi bi-people me-1"></i>Club</span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue"><i class="bi bi-building me-1"></i>Institucional</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
-                            <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Equipos</div>
-                            </td>
-                            <td>
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
-                            </td>
-                            <td>
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.institucion.nombre|default:"—" }}</div>
-                                <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-danger" data-bs-toggle="tooltip" title="{{ evento.observaciones_aprobacion|default:'Sin observaciones' }}">Rechazado</span>
-                            </td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'editar_evento' evento.id %}" class="btn-action btn-edit" title="Corregir">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <button class="btn-action btn-retry" onclick="eliminarEvento({{ evento.id }}, '{{ evento.nombre|escapejs }}')" title="Eliminar">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                    <button class="btn-action btn-obs" onclick="verObservaciones({{ evento.id }}, '{{ evento.nombre|escapejs }}', '{{ evento.motivo_cancelacion|escapejs }}', '{{ evento.observaciones_aprobacion|escapejs }}', '{{ evento.observacion_estado|escapejs }}', '{{ evento.estado_evento|escapejs }}')" title="Ver Observaciones">
-                                        <i class="bi bi-chat-text"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-
-                        {# EN REVISIÓN #}
-                        {% for evento in eventos_revision %}
-                        <tr class="evento-row" data-estado="revision" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
-                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple"><i class="bi bi-people me-1"></i>Club</span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue"><i class="bi bi-building me-1"></i>Institucional</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
-                            <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Equipos</div>
-                            </td>
-                            <td>
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
-                            </td>
-                            <td>
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.institucion.nombre|default:"—" }}</div>
-                                <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
-                            </td>
-                            <td class="text-center"><span class="badge bg-warning text-dark">En revisión</span></td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-view" title="Ver detalles">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <button class="btn-action btn-obs" onclick="verObservaciones({{ evento.id }}, '{{ evento.nombre|escapejs }}', '{{ evento.motivo_cancelacion|escapejs }}', '{{ evento.observaciones_aprobacion|escapejs }}', '{{ evento.observacion_estado|escapejs }}', '{{ evento.estado_evento|escapejs }}')" title="Ver Observaciones">
-                                        <i class="bi bi-chat-text"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-
-                        {# ABIERTOS #}
-                        {% for evento in eventos_abiertos %}
-                        <tr class="evento-row" data-estado="abierto" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
-                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple"><i class="bi bi-people me-1"></i>Club</span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue"><i class="bi bi-building me-1"></i>Institucional</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
-                            <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Equipos</div>
-                            </td>
-                            <td>
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
-                            </td>
-                            <td>
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.institucion.nombre|default:"—" }}</div>
-                                <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
-                            </td>
-                            <td class="text-center"><span class="badge bg-success">Abierto</span></td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-view" title="Ver gestión">
-                                        <i class="bi bi-calendar-check"></i>
-                                    </a>
-                                    <button class="btn-action btn-obs" onclick="verObservaciones({{ evento.id }}, '{{ evento.nombre|escapejs }}', '{{ evento.motivo_cancelacion|escapejs }}', '{{ evento.observaciones_aprobacion|escapejs }}', '{{ evento.observacion_estado|escapejs }}', '{{ evento.estado_evento|escapejs }}')" title="Ver Observaciones">
-                                        <i class="bi bi-chat-text"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-
-                        {# OTROS (PAUSADO, CANCELADO, EN PROCESO, FINALIZADO) #}
-                        {% for evento in eventos_otros %}
-                        <tr class="evento-row" data-estado="{{ evento.estado_evento }}" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
-                            <td class="px-4">
-                                <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
-                                <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple"><i class="bi bi-people me-1"></i>Club</span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue"><i class="bi bi-building me-1"></i>Institucional</span>
-                                {% endif %}
-                            </td>
-                            <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
-                            <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
-                                <div class="x-small text-muted text-uppercase">Equipos</div>
-                            </td>
-                            <td>
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
-                                <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
-                            </td>
-                            <td>
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-                            <td>
-                                <div class="small fw-bold">{{ evento.institucion.nombre|default:"—" }}</div>
-                                <div class="x-small text-muted">{{ evento.institucion.estado.nombre|default:"" }}</div>
-                            </td>
-                            <td class="text-center">
-                                {% if evento.estado_evento == 'pausado' %}
-                                    <span class="badge bg-warning">Pausado</span>
-                                {% elif evento.estado_evento == 'cancelado' %}
-                                    <span class="badge bg-danger">Cancelado</span>
-                                {% elif evento.estado_evento == 'en_proceso' %}
-                                    <span class="badge bg-primary">En Proceso</span>
-                                {% elif evento.estado_evento == 'finalizado' %}
-                                    <span class="badge bg-dark">Finalizado</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-view" title="Ver detalles">
-                                    <i class="bi bi-info-circle"></i>
-                                </a>
-                                <button class="btn-action btn-obs" onclick="verObservaciones({{ evento.id }}, '{{ evento.nombre|escapejs }}', '{{ evento.motivo_cancelacion|escapejs }}', '{{ evento.observaciones_aprobacion|escapejs }}', '{{ evento.observacion_estado|escapejs }}', '{{ evento.estado_evento|escapejs }}')" title="Ver Observaciones">
-                                    <i class="bi bi-chat-text"></i>
-                                </button>
+                        {% for evento in eventos %}
+                        {% include "users/partials/_evento_row.html" %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 mb-3 d-block opacity-50"></i>
+                                <h5>No se encontraron eventos</h5>
+                                <p class="small">Intenta ajustar los filtros o crea un nuevo evento.</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -568,10 +286,16 @@
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn.rounded-circle.p-2:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); transition: all 0.2s; }
     .kpi-card {
         background: linear-gradient(145deg, #0b2c6d, #051636);
         border-radius: 15px;
+        min-height: 110px;
     }
+    .kpi-card .card-body { padding: 1.25rem !important; }
+    .kpi-card h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+    .kpi-card .kpi-icon { font-size: clamp(2.5rem, 5vw, 3.5rem); right: 12px; bottom: 8px; }
     .badge-tipo {
         padding: 0.35rem 0.6rem;
         border-radius: 6px;
@@ -601,54 +325,7 @@
         border-color: var(--blue-main);
         transform: translateY(-1px);
     }
-    .btn-action { 
-        width: 36px; 
-        height: 36px; 
-        display: inline-flex; 
-        align-items: center; 
-        justify-content: center; 
-        border-radius: 10px; 
-        border: 1.5px solid #e2e8f0; 
-        background: white; 
-        transition: all 0.3s ease; 
-        color: #64748b;
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .btn-action:hover { 
-        transform: translateY(-3px); 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .btn-edit:hover { 
-        color: #0ea5e9; 
-        border-color: #0ea5e9; 
-        background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
-    }
-    .btn-send:hover { 
-        color: #10b981; 
-        border-color: #10b981; 
-        background: linear-gradient(145deg, #f0fdf4, #dcfce7);
-    }
-    .btn-view:hover { 
-        color: #8b5cf6; 
-        border-color: #8b5cf6; 
-        background: linear-gradient(145deg, #faf5ff, #f3e8ff);
-    }
-    .btn-team:hover { 
-        color: #f59e0b; 
-        border-color: #f59e0b; 
-        background: linear-gradient(145deg, #fffbeb, #fef3c7);
-    }
-    .btn-retry:hover { 
-        color: #ef4444; 
-        border-color: #ef4444; 
-        background: linear-gradient(145deg, #fef2f2, #fee2e2);
-    }
-    .btn-obs:hover { 
-        color: #8b5cf6; 
-        border-color: #8b5cf6; 
-        background: linear-gradient(145deg, #faf5ff, #f3e8ff);
-    }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
     .text-purple { color: #7c3aed; }
 </style>
 
@@ -701,24 +378,6 @@ function enviarRevision(eventoId) {
     _eventoRevisionId = eventoId;
     new bootstrap.Modal(document.getElementById('modalEnviarRevision')).show();
 }
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('btnConfirmarRevision').addEventListener('click', function() {
-        bootstrap.Modal.getInstance(document.getElementById('modalEnviarRevision')).hide();
-        if (!_eventoRevisionId) return;
-        fetch('/eventos/enviar-revision/' + _eventoRevisionId + '/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) { location.reload(); }
-            else { alert('❌ Error: ' + (data.error || 'No se pudo enviar el evento')); }
-        });
-    });
-});
 
 const OBS_CONFIG = {
     abierto:    { campo: 'aprobacion', label: 'Observación de Aprobación', icon: 'bi-check-circle-fill', bg: 'linear-gradient(145deg,#dbeafe,#bfdbfe)', color: '#1d4ed8' },
@@ -751,6 +410,11 @@ function verObservaciones(id, nombre, motivoCancelacion, obsAprobacion, obsEstad
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Inicializar tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el);
+    });
+
     // Contadores animados
     document.querySelectorAll('.counter').forEach(c => {
         const target = +c.getAttribute('data-target');
@@ -762,15 +426,24 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         update();
     });
-    
-    // Inicializar tooltips de Bootstrap
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+
+    // Confirmar envío a revisión
+    document.getElementById('btnConfirmarRevision').addEventListener('click', function() {
+        bootstrap.Modal.getInstance(document.getElementById('modalEnviarRevision')).hide();
+        if (!_eventoRevisionId) return;
+        fetch('/eventos/enviar-revision/' + _eventoRevisionId + '/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { location.reload(); }
+            else { alert('Error: ' + (data.error || 'No se pudo enviar el evento')); }
+        });
     });
 });
 </script>
-<form style="display:none;">
-    {% csrf_token %}
-</form>
 {% endblock %}

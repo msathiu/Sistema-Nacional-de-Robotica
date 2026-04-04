@@ -9,574 +9,274 @@
         --blue-main: #0b2c6d;
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
-        --success: #10b981;
-        --warning: #f59e0b;
     }
     
-    .page-header {
-        background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 100%);
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 200px;
-        height: 200px;
-        background: var(--accent-cyan);
-        opacity: 0.1;
-        border-radius: 50%;
-    }
-    
-    .page-header::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: 10%;
-        width: 150px;
-        height: 150px;
-        background: var(--accent-cyan);
-        opacity: 0.05;
-        border-radius: 50%;
-    }
-    
-    .page-header .breadcrumb {
-        background: transparent;
-        padding: 0;
-        margin-bottom: 0.5rem;
-    }
-    
-    .page-header .breadcrumb-item,
-    .page-header .breadcrumb-item a {
-        color: rgba(255,255,255,0.7);
-        font-size: 0.85rem;
-        text-decoration: none;
-    }
-    
-    .page-header .breadcrumb-item.active {
-        color: var(--accent-cyan);
-    }
-    
-    .page-header h2 {
-        color: white;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    .main-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    
-    .main-card .card-header {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-        position: relative;
-    }
-    
-    .main-card .card-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--accent-cyan);
-    }
-    
-    .main-card .card-header h4 {
-        margin: 0;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 600;
-    }
-    
-    .info-card {
+    .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
-        transition: all 0.3s ease;
+        overflow: hidden;
     }
     
-    .info-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    }
-    
-    .info-card .card-header-custom {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border-radius: 15px 15px 0 0;
-        padding: 1rem 1.25rem;
-    }
-    
-    .club-info-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
-    }
-    
-    .alert-modern {
+    .section-card .card-header {
         border: none;
-        border-radius: 16px;
-        padding: 1.25rem;
-    }
-    
-    .alert-warning-modern {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 4px solid var(--warning);
-    }
-    .alert-info-modern {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 4px solid var(--blue-main);
-    }
-    
-    .checklist-card {
-        border: 2px solid #e2e8f0;
-        border-radius: 16px;
-        transition: all 0.3s ease;
-    }
-    
-    .checklist-card:hover {
-        border-color: var(--accent-cyan);
-        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.15);
-    }
-    
-    .checklist-card .card-header {
-        background: transparent;
-        border-bottom: 1px solid #e2e8f0;
         padding: 1rem 1.25rem;
     }
     
-    .checklist-item {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 0.75rem;
-        background: #f8fafc;
-        border: 2px solid transparent;
-        transition: all 0.3s ease;
-    }
-    
-    .checklist-item:hover {
-        background: white;
-        border-color: var(--accent-cyan);
-    }
-    
-    .checklist-item .form-check-input {
-        width: 1.25rem;
-        height: 1.25rem;
-        margin-top: 0;
-    }
-    
-    .checklist-item .form-check-input:checked {
-        background-color: var(--success);
-        border-color: var(--success);
-    }
-    
-    .checklist-item .form-check-label {
-        font-weight: 500;
-        color: #334155;
-    }
-    
-    .summary-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        background: #f8fafc;
-        border-radius: 12px;
-        margin-bottom: 0.75rem;
-        transition: all 0.3s ease;
-    }
-    
-    .summary-item:hover {
-        background: white;
-        transform: translateX(5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
-    
-    .summary-icon {
+    .section-icon {
         width: 40px;
         height: 40px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: 1rem;
-        flex-shrink: 0;
     }
     
-    .summary-icon.blue {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        color: var(--blue-main);
+    .info-item {
+        padding: 0.75rem;
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
     }
     
-    .summary-icon.cyan {
-        background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
-        color: #0891b2;
+    .info-item:last-child { margin-bottom: 0; }
+    .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-item strong { color: #1e293b; }
+    
+    .checklist-item {
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
     }
     
-    .summary-icon.green {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        color: #059669;
+    .checklist-item:hover {
+        border-color: var(--accent-cyan);
     }
     
-    .summary-icon.purple {
-        background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-        color: #7c3aed;
+    .checklist-item .form-check-input {
+        width: 1.1rem;
+        height: 1.1rem;
     }
     
     .badge-linea {
         background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
         color: white;
-        padding: 0.35rem 0.75rem;
+        padding: 0.25rem 0.6rem;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 500;
     }
     
-    .btn-action {
-        padding: 0.75rem 1.5rem;
-        border-radius: 50px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    .x-small { font-size: 0.72rem; }
     
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-    
-    .btn-cancel {
-        background: transparent;
-        border: 2px solid #e2e8f0;
-        color: #64748b;
-    }
-    
-    .btn-cancel:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #334155;
-    }
-    
-    .btn-send {
-        background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
-        border: none;
-        color: white;
-    }
-    
-    .btn-send:hover {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    }
-    
-    .btn-resend {
-        background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
-        border: none;
-        color: white;
-    }
-    
-    .btn-resend:hover {
-        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-        box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4);
-    }
-    
-    .status-badge {
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    .status-borrador {
-        background: #f1f5f9;
-        color: #64748b;
-    }
-    
-    .status-pendiente {
-        background: #fef3c7;
-        color: #d97706;
-    }
-    
-    .status-aprobado {
-        background: #d1fae5;
-        color: #059669;
-    }
-    
-    .status-rechazado {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-    
-    /* Animations */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .animate-fade-in {
-        animation: fadeInUp 0.5s ease forwards;
-    }
-    
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="page-header animate-fade-in">
-        <div class="d-flex justify-content-between align-items-center">
+    <!-- Header unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} fs-2 text-white"></i>
+                </div>
                 <div>
-                    <h2>
-                        <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} me-2"></i>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
                         {% if es_reenvio %}Reenviar Club a Revisión{% else %}Enviar Club a Revisión{% endif %}
                     </h2>
-                    <p class="mb-0 text-white-50">Confirma los datos y envía el club para aprobación</p>
+                    <p class="text-muted mb-0 small">{{ club.nombre }}{% if club.siglas %} · {{ club.siglas }}{% endif %}</p>
                 </div>
             </div>
-            <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-cancel">
-                <i class="bi bi-arrow-left"></i> Volver a Clubes
+            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-2"></i> Volver a Clubes
             </a>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- Card Principal -->
-            <div class="card main-card animate-fade-in delay-1">
-                <div class="card-header text-white">
-                    <h4 class="mb-0">
-                        <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} me-2"></i>
-                        {% if es_reenvio %}Reenviar{% else %}Enviar{% endif %} Club: {{ club.nombre }}
-                    </h4>
+            <!-- Info del club -->
+            <div class="section-card mb-4 animate-fade-in">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">{{ club.nombre }}</h5>
+                    <span class="badge rounded-pill ms-auto px-3 py-2 fw-bold" style="font-size: 0.7rem;
+                        {% if club.status == 'borrador' %}background: #f1f5f9; color: #64748b;
+                        {% elif club.status == 'rechazado' %}background: #fee2e2; color: #dc2626;
+                        {% else %}background: #fef3c7; color: #d97706;{% endif %}">
+                        {{ club.get_status_display }}
+                    </span>
                 </div>
                 <div class="card-body p-4">
-                    <!-- Información del Club -->
-                    <div class="info-card mb-4">
-                        <div class="card-header-custom d-flex align-items-center">
-                            <div class="club-info-icon me-3">
-                                <i class="bi bi-robot text-white"></i>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Institución Creadora</small>
+                                <strong>{% if club.tipo_creador == 'fed_central' %}Federación Venezolana de Robótica Creativa{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre }}{% endif %}</strong>
                             </div>
-                            <div>
-                                <h5 class="mb-0 text-white fw-bold">{{ club.nombre }}</h5>
-                                {% if club.siglas %}
-                                <small class="text-white-50">{{ club.siglas }}</small>
-                                {% endif %}
-                            </div>
-                            <span class="status-badge status-{{ club.status }} ms-auto">
-                                {{ club.get_status_display }}
-                            </span>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p class="mb-2"><strong>Institución:</strong> {{ club.institucion_creadora.nombre }}</p>
-                                    <p class="mb-0"><strong>Coordinador:</strong> {{ club.coordinador.get_full_name|default:club.coordinador.username }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-2"><strong>Fecha de Creación:</strong> {{ club.fecha_creacion|date:"d/m/Y" }}</p>
-                                    <p class="mb-0"><strong>Membresías:</strong> {{ club.membresias.count }} instituciones</p>
-                                </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Fecha de Creación</small>
+                                <strong>{{ club.fecha_creacion|date:"d/m/Y" }}</strong>
                             </div>
                         </div>
                     </div>
-
-                    {% if es_reenvio %}
-                    <!-- FASE 2: Información de Reenvío -->
-                    <div class="alert-modern alert-warning-modern mb-4 animate-fade-in delay-2">
-                        <div class="d-flex align-items-start">
-                            <div class="me-3">
-                                <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="fw-bold text-warning-dark mb-2">
-                                    <i class="bi bi-arrow-repeat me-2"></i>Reenvío de Club Rechazado
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Intentos realizados:</strong> {{ num_reenvios }} / {{ max_reenvios }}</p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p class="mb-1"><strong>Intentos restantes:</strong> <span class="text-success fw-bold">{{ intentos_restantes }}</span></p>
-                                    </div>
-                                </div>
-                                {% if ultimo_rechazo %}
-                                <hr>
-                                <p class="mb-2"><strong>Motivo del último rechazo:</strong></p>
-                                <div class="bg-white p-3 rounded" style="border-left: 3px solid #dc2626;">
-                                    <p class="mb-0 text-dark">{{ ultimo_rechazo.observaciones }}</p>
-                                </div>
-                                <div class="mt-3 d-flex align-items-center">
-                                    <i class="bi bi-info-circle text-danger me-2"></i>
-                                    <span class="text-danger fw-bold">Asegúrate de haber corregido todos los puntos antes de reenviar.</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FASE 2: Checklist de Correcciones -->
-                    <div class="checklist-card mb-4 animate-fade-in delay-3">
-                        <div class="card-header">
-                            <h6 class="mb-0 fw-bold">
-                                <i class="bi bi-check2-square me-2 text-success"></i>Checklist de Correcciones
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted mb-3">Confirma que has realizado las siguientes correcciones antes de reenviar:</p>
-                            
-                            <div class="checklist-item">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="correccion_documentacion" id="check1" required>
-                                    <label class="form-check-label" for="check1">
-                                        He corregido la documentación y datos del club
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="checklist-item">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="correccion_lineas" id="check2" required>
-                                    <label class="form-check-label" for="check2">
-                                        He actualizado las líneas de investigación según el feedback recibido
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="checklist-item">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="correccion_descripcion" id="check3" required>
-                                    <label class="form-check-label" for="check3">
-                                        He mejorado la descripción y objetivos del club
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- Mensaje para primer envío -->
-                    <div class="alert-modern alert-info-modern mb-4 animate-fade-in delay-2">
-                        <div class="d-flex align-items-start">
-                            <div class="me-3">
-                                <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold text-primary-dark mb-1">Estás a punto de enviar el club a revisión</h6>
-                                <p class="mb-0 text-muted">Una vez enviado, el equipo de la Federación revisará los datos y aprobará o rechazará el club. Recibirás una notificación con el resultado.</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <hr class="my-4">
-
-                    <!-- Resumen del Club -->
-                    <h6 class="fw-bold mb-3">
-                        <i class="bi bi-clipboard-data me-2 text-primary"></i>Resumen del Club
-                    </h6>
-                    
-                    <div class="summary-item animate-fade-in delay-3">
-                        <div class="summary-icon blue">
-                            <i class="bi bi-building"></i>
-                        </div>
-                        <div>
-                            <small class="text-muted d-block">Institución Creadora</small>
-                            <strong>{{ club.institucion_creadora.nombre }}</strong>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-item animate-fade-in delay-3">
-                        <div class="summary-icon cyan">
-                            <i class="bi bi-lightbulb"></i>
-                        </div>
-                        <div>
-                            <small class="text-muted d-block">Líneas de Investigación</small>
-                            <div class="mt-1">
-                                {% for linea in club.lineas_investigacion %}
-                                    <span class="badge-linea me-1">{{ linea }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-item animate-fade-in delay-4">
-                        <div class="summary-icon green">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        <div>
-                            <small class="text-muted d-block">Cupo Máximo</small>
-                            <strong>{{ club.cupo_maximo }} instituciones</strong>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-item animate-fade-in delay-4">
-                        <div class="summary-icon purple">
-                            <i class="bi bi-link-45deg"></i>
-                        </div>
-                        <div>
-                            <small class="text-muted d-block">Estado de Vinculación</small>
-                            <strong>{{ club.get_estado_vinculacion_display }}</strong>
-                        </div>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <!-- Formulario -->
-                    <form method="post" id="formEnviar">
-                        {% csrf_token %}
-                        
-                        <div class="d-flex justify-content-between gap-3">
-                            <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-cancel flex-grow-1">
-                                <i class="bi bi-x-circle"></i>Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-action {% if es_reenvio %}btn-resend{% else %}btn-send{% endif %} flex-grow-1">
-                                <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %}"></i>
-                                {% if es_reenvio %}Reenviar a Revisión{% else %}Enviar a Revisión{% endif %}
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
-        </div>
-        
-        <!-- Sidebar con información adicional -->
-        <div class="col-lg-4">
-            <!-- Tips -->
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+
+            {% if es_reenvio %}
+            <!-- Alerta de reenvío -->
+            <div class="section-card mb-4 animate-fade-in delay-1">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Reenvío de Club Rechazado</h5>
+                </div>
                 <div class="card-body p-4">
-                    <h6 class="fw-bold mb-3">
-                        <i class="bi bi-lightbulb text-warning me-2"></i>Consejos para la aprobación
-                    </h6>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Intentos realizados</small>
+                            <strong>{{ num_reenvios }} / {{ max_reenvios }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Intentos restantes</small>
+                            <strong class="text-success">{{ intentos_restantes }}</strong>
+                        </div>
+                    </div>
+                    {% if ultimo_rechazo %}
+                    <div class="p-3 rounded mb-3" style="background: #fef2f2; border-left: 3px solid #dc2626;">
+                        <small class="text-muted d-block mb-1">Motivo del último rechazo</small>
+                        <p class="mb-0 small text-dark">{{ ultimo_rechazo.observaciones }}</p>
+                    </div>
+                    <p class="mb-0 small text-danger fw-bold">
+                        <i class="bi bi-info-circle me-1"></i>Asegúrate de haber corregido todos los puntos antes de reenviar.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Checklist -->
+            <div class="section-card mb-4 animate-fade-in delay-2">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-check2-square"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Checklist de Correcciones</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted small mb-3">Confirma que has realizado las siguientes correcciones antes de reenviar:</p>
+                    <div class="checklist-item">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="correccion_documentacion" id="check1" required>
+                            <label class="form-check-label small" for="check1">He corregido la documentación y datos del club</label>
+                        </div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="correccion_lineas" id="check2" required>
+                            <label class="form-check-label small" for="check2">He actualizado las líneas de investigación según el feedback recibido</label>
+                        </div>
+                    </div>
+                    <div class="checklist-item mb-0">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="correccion_descripcion" id="check3" required>
+                            <label class="form-check-label small" for="check3">He mejorado la descripción y objetivos del club</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Info primer envío -->
+            <div class="section-card mb-4 animate-fade-in delay-1">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Envío a Revisión</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-0">Una vez enviado, el equipo de la Federación revisará los datos y aprobará o rechazará el club. Recibirás una notificación con el resultado.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Resumen -->
+            <div class="section-card mb-4 animate-fade-in delay-2">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-clipboard-data"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Resumen del Club</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="info-item">
+                        <small class="text-muted d-block">Líneas de Investigación</small>
+                        <div class="mt-1">
+                            {% for linea in club.lineas_investigacion %}
+                                <span class="badge-linea me-1">{{ linea }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Cupo Máximo</small>
+                                <strong>{{ club.cupo_maximo }} instituciones</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="info-item">
+                                <small class="text-muted d-block">Estado de Vinculación</small>
+                                <strong>{{ club.get_estado_vinculacion_display }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <form method="post" id="formEnviar">
+                {% csrf_token %}
+                <div class="d-flex justify-content-end gap-3">
+                    <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn fw-bold rounded-pill px-4" style="background: var(--blue-main); color: white;">
+                        <i class="bi {% if es_reenvio %}bi-arrow-repeat{% else %}bi-send{% endif %} me-2"></i>
+                        {% if es_reenvio %}Reenviar a Revisión{% else %}Enviar a Revisión{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="section-card mb-4 animate-fade-in delay-3">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-lightbulb"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Consejos</h5>
+                </div>
+                <div class="card-body p-4">
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2 d-flex">
                             <i class="bi bi-check-circle text-success me-2 mt-1"></i>
-                            <small class="text-muted">Asegúrate de completar todos los campos requeridos</small>
+                            <small class="text-muted">Completa todos los campos requeridos</small>
                         </li>
                         <li class="mb-2 d-flex">
                             <i class="bi bi-check-circle text-success me-2 mt-1"></i>
@@ -593,15 +293,18 @@
                     </ul>
                 </div>
             </div>
-            
-            <!-- Contacto soporte -->
-            <div class="card border-0 shadow-sm" style="border-radius: 20px; background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);">
-                <div class="card-body p-4 text-white text-center">
-                    <i class="bi bi-question-circle fs-1 mb-3 opacity-75"></i>
-                    <h6 class="fw-bold mb-2">¿Necesitas ayuda?</h6>
-                    <p class="small mb-3 opacity-75">Si tienes dudas sobre el proceso de envío, contacta al equipo de soporte.</p>
-                    <a href="#" class="btn btn-light btn-sm fw-bold px-4" style="border-radius: 20px;">
-                        <i class="bi bi-envelope me-1"></i>Contactar Soporte
+
+            <div class="section-card animate-fade-in delay-3">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-question-circle"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">¿Necesitas ayuda?</h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <p class="small text-muted mb-3">Si tienes dudas sobre el proceso de envío, contacta al equipo de soporte.</p>
+                    <a href="#" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                        <i class="bi bi-envelope me-2"></i>Contactar Soporte
                     </a>
                 </div>
             </div>
@@ -614,39 +317,13 @@
 document.getElementById('formEnviar').addEventListener('submit', function(e) {
     const checks = document.querySelectorAll('input[type="checkbox"][required]');
     let allChecked = true;
-    
-    checks.forEach(check => {
-        if (!check.checked) {
-            allChecked = false;
-        }
-    });
+    checks.forEach(check => { if (!check.checked) allChecked = false; });
     
     if (!allChecked) {
         e.preventDefault();
-        // Mostrar alerta nicer
-        const alertHtml = `
-            <div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-radius: 12px;">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Debes confirmar</strong> que has realizado todas las correcciones antes de reenviar.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        
-        // Insertar alerta antes del formulario
-        const form = document.getElementById('formEnviar');
-        form.parentNode.insertBefore(createElementFromHTML(alertHtml), form);
-        
-        // Scroll al inicio
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        alert('Debes confirmar que has realizado todas las correcciones antes de reenviar.');
     }
 });
-
-function createElementFromHTML(htmlString) {
-    const div = document.createElement('div');
-    div.innerHTML = htmlString;
-    return div.firstChild;
-}
 </script>
 {% endif %}
 {% endblock %}
-

@@ -95,6 +95,8 @@ TEMPLATES = [
                 "registry.context_processors.clubes_pendientes_federacion",
                 # Context processor para solicitudes de eliminación pendientes
                 "registry.context_processors.solicitudes_eliminacion_pendientes",
+                # Context processor para menú del sidebar dinámico
+                "users.context_processors.sidebar_menu",
             ],
         },
     },

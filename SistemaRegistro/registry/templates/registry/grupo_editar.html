@@ -99,19 +99,19 @@
     }
     
     .btn-submit-custom {
-        background: var(--success);
+        background: var(--blue-main);
         border: none;
         color: white;
-        border-radius: 8px;
+        border-radius: 12px;
         padding: 0.7rem 1.5rem;
         font-weight: 600;
-        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
     }
     
     .btn-submit-custom:hover {
-        background: #059669;
-        transform: translateY(-1px);
+        background: var(--blue-dark);
+        transform: translateY(-2px);
         color: white;
     }
     
@@ -526,14 +526,10 @@ function eliminarParticipanteNuevo(btn) {
 }
 
 function eliminarParticipanteActual(btn) {
-    if (confirm('¿Eliminar este participante del equipo?')) {
-        const row = btn.closest('tr');
-        const input = row.querySelector('input[name="participantes[]"]');
-        if (input) {
-            input.remove();
-        }
-        row.remove();
-    }
+    const row = btn.closest('tr');
+    // Guardar referencia para ejecutar al confirmar
+    document.getElementById('modalEliminarParticipante')._targetRow = row;
+    new bootstrap.Modal(document.getElementById('modalEliminarParticipante')).show();
 }
 
 function buscarParticipante(btn) {
@@ -600,6 +596,49 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
         alert('Debe tener al menos un participante en el equipo');
         return false;
     }
+});
+</script>
+
+<!-- Modal: Confirmar eliminación de participante -->
+<div class="modal fade" id="modalEliminarParticipante" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:44px;height:44px;background:#fef2f2;">
+                        <i class="bi bi-person-x-fill text-danger fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0 text-dark">Eliminar participante</h5>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-muted mb-0" style="font-size:0.93rem;">
+                    ¿Estás seguro de que deseas eliminar este participante del equipo? Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 gap-2">
+                <button type="button" class="btn btn-light fw-semibold px-4" style="border-radius:10px;"
+                        data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger fw-semibold px-4" style="border-radius:10px;"
+                        id="btnConfirmarEliminarParticipante">
+                    <i class="bi bi-trash3 me-1"></i>Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('btnConfirmarEliminarParticipante').addEventListener('click', function () {
+    const modal = document.getElementById('modalEliminarParticipante');
+    const row = modal._targetRow;
+    if (row) {
+        const input = row.querySelector('input[name="participantes[]"]');
+        if (input) input.remove();
+        row.remove();
+    }
+    bootstrap.Modal.getInstance(modal).hide();
 });
 </script>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "users/base_dashboard.html" %}
 {% load static %}
 
-{% block title %}Estado del Club - {{ club.nombre }}{% endblock %}
+{% block title %}Historial del Club - {{ club.nombre }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,187 +9,41 @@
         --blue-main: #0b2c6d;
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #dc2626;
-        --info: #0ea5e9;
     }
     
-    .page-header {
-        background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-main) 100%);
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .page-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 200px;
-        height: 200px;
-        background: var(--accent-cyan);
-        opacity: 0.1;
-        border-radius: 50%;
-    }
-    
-    .page-header::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: 10%;
-        width: 150px;
-        height: 150px;
-        background: var(--accent-cyan);
-        opacity: 0.05;
-        border-radius: 50%;
-    }
-    
-    .page-header h2 {
-        color: white;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    .page-header p {
-        color: rgba(255,255,255,0.7);
-        margin-bottom: 0;
-    }
-    
-    .main-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        overflow: hidden;
-    }
-    
-    .main-card .card-header {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-        position: relative;
-    }
-    
-    .main-card .card-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--accent-cyan);
-    }
-    
-    .main-card .card-header h5 {
-        margin: 0;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 600;
-        color: white;
-    }
-    
-    .status-alert {
-        border: none;
+    .section-card {
+        border: 1px solid #e2e8f0;
         border-radius: 16px;
-        padding: 1.25rem;
-    }
-    
-    .status-borrador {
-        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-        border-left: 4px solid #64748b;
-    }
-    
-    .status-pendiente {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 4px solid var(--warning);
-    }
-    
-    .status-en_revision {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 4px solid var(--info);
-    }
-    
-    .status-aprobado {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 4px solid var(--success);
-    }
-    
-    .status-rechazado {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 4px solid var(--danger);
-    }
-    
-    .status-badge {
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    .badge-borrador { background: #f1f5f9; color: #64748b; }
-    .badge-pendiente { background: #fef3c7; color: #d97706; }
-    .badge-en_revision { background: #dbeafe; color: #0369a1; }
-    .badge-aprobado { background: #d1fae5; color: #059669; }
-    .badge-rechazado { background: #fee2e2; color: #dc2626; }
-    
-    .sidebar-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        background: #f8fafc;
         overflow: hidden;
     }
     
-    .sidebar-card .card-header {
+    .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
     
-    .sidebar-card .card-body {
-        padding: 1.25rem;
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .info-item {
         padding: 0.75rem;
-        background: #f8fafc;
+        background: white;
         border-radius: 12px;
         margin-bottom: 0.75rem;
-        transition: all 0.3s ease;
     }
     
-    .info-item:hover {
-        background: white;
-        transform: translateX(5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
+    .info-item:last-child { margin-bottom: 0; }
+    .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-item strong { color: #1e293b; }
     
-    .info-item:last-child {
-        margin-bottom: 0;
-    }
-    
-    .info-item small {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .info-item strong {
-        color: #1e293b;
-    }
-    
-    .club-info-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
-    }
-    
-    /* Timeline Styles */
+    /* Timeline */
     .timeline {
         position: relative;
         padding: 20px 0;
@@ -209,12 +63,10 @@
     .timeline-item {
         position: relative;
         padding-left: 70px;
-        margin-bottom: 30px;
+        margin-bottom: 24px;
     }
     
-    .timeline-item:last-child {
-        margin-bottom: 0;
-    }
+    .timeline-item:last-child { margin-bottom: 0; }
     
     .timeline-marker {
         position: absolute;
@@ -225,245 +77,105 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         z-index: 1;
-        transition: transform 0.3s ease;
     }
     
-    .timeline-marker:hover {
-        transform: scale(1.1);
-    }
-    
-    .timeline-marker.aprobado {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-    
-    .timeline-marker.rechazado {
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
-    }
-    
-    .timeline-marker.en_revision {
-        background: linear-gradient(135deg, #0ea5e9, #0284c7);
-    }
-    
-    .timeline-marker.pendiente {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-    
-    .timeline-marker.borrador {
-        background: linear-gradient(135deg, #64748b, #475569);
-    }
+    .timeline-marker.aprobado { background: linear-gradient(135deg, #10b981, #059669); }
+    .timeline-marker.rechazado { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .timeline-marker.en_revision { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .timeline-marker.pendiente { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .timeline-marker.borrador { background: linear-gradient(135deg, #64748b, #475569); }
     
     .timeline-content {
         background: white;
         border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 1.25rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-    }
-    
-    .timeline-content:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    }
-    
-    .timeline-date {
-        font-size: 0.75rem;
-        color: #64748b;
-        margin-bottom: 0.5rem;
-    }
-    
-    .timeline-title {
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-    
-    .timeline-user {
-        font-size: 0.85rem;
-        color: #64748b;
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     
     .timeline-comment {
         background: #f8fafc;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        margin-top: 0.75rem;
         border-left: 3px solid var(--accent-cyan);
     }
     
-    .timeline-comment p {
-        margin: 0;
-        color: #334155;
-    }
+    .x-small { font-size: 0.72rem; }
     
-    /* Animations */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .animate-fade-in {
-        animation: fadeInUp 0.5s ease forwards;
-    }
-    
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
-    
-    .btn-action {
-        padding: 0.75rem 1.5rem;
-        border-radius: 50px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        text-decoration: none;
-    }
-    
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-    
-    .btn-back {
-        background: transparent;
-        border: 2px solid rgba(255,255,255,0.3);
-        color: white;
-    }
-    
-    .btn-back:hover {
-        background: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.5);
-        color: white;
-    }
-    
-    .btn-edit {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border: none;
-        color: white;
-    }
-    
-    .btn-edit:hover {
-        box-shadow: 0 8px 20px rgba(11, 44, 109, 0.4);
-        color: white;
-    }
-    
-    .section-header {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    .section-header h5 {
-        margin: 0;
-        color: white;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-    }
-    
-    .empty-state i {
-        font-size: 4rem;
-        color: #cbd5e1;
-        margin-bottom: 1rem;
-    }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="page-header animate-fade-in">
-        <div class="d-flex justify-content-between align-items-center">
+    <!-- Header unificado -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <div class="club-info-icon me-3">
-                    <i class="bi bi-clock-history text-white fs-4"></i>
+                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-clock-history fs-2 text-white"></i>
                 </div>
                 <div>
-                    <h2><i class="fas fa-chart-line me-2"></i>Estado del Club</h2>
-                    <p>Historial y seguimiento de {{ club.nombre }}</p>
+                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Historial del Club</h2>
+                    <p class="text-muted mb-0 small">{{ club.nombre }}{% if club.siglas %} · {{ club.siglas }}{% endif %}</p>
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-back">
-                    <i class="bi bi-arrow-left"></i> Volver
-                </a>
                 {% if club.status == 'borrador' or club.status == 'rechazado' %}
-                    <a href="{% url 'editar_club' club.id %}" class="btn btn-action btn-edit">
-                        <i class="bi bi-pencil"></i> Editar Club
-                    </a>
+                <a href="{% url 'editar_club' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: var(--blue-main); color: white;">
+                    <i class="bi bi-pencil me-2"></i> Editar Club
+                </a>
                 {% endif %}
+                <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                    <i class="bi bi-arrow-left me-2"></i> Volver a Clubes
+                </a>
             </div>
         </div>
     </div>
+    <hr class="mt-2 mb-4 opacity-10">
 
-    <!-- Estado Actual del Club -->
-    <div class="status-alert 
-        {% if club.status == 'borrador' %}status-borrador
-        {% elif club.status == 'pendiente' %}status-pendiente
-        {% elif club.status == 'en_revision' %}status-en_revision
-        {% elif club.status == 'aprobado' %}status-aprobado
-        {% elif club.status == 'rechazado' %}status-rechazado
-        {% endif %} mb-4 animate-fade-in delay-1">
-        <div class="d-flex align-items-center">
-            <i class="bi 
-                {% if club.status == 'borrador' %}bi-file-earmark-text
-                {% elif club.status == 'pendiente' %}bi-hourglass-split
-                {% elif club.status == 'en_revision' %}bi-clipboard-check
-                {% elif club.status == 'aprobado' %}bi-check-circle-fill
-                {% elif club.status == 'rechazado' %}bi-x-circle-fill
-                {% else %}bi-info-circle{% endif %} 
-                fs-2 me-3
-                {% if club.status == 'borrador' %}text-secondary
-                {% elif club.status == 'pendiente' %}text-warning
-                {% elif club.status == 'en_revision' %}text-info
-                {% elif club.status == 'aprobado' %}text-success
-                {% elif club.status == 'rechazado' %}text-danger
-                {% endif %}"></i>
-            <div>
-                <strong>Estado actual:</strong> 
-                <span class="status-badge badge-{{ club.status }}">{{ club.get_status_display }}</span>
-                {% if club.status == 'borrador' %}
-                    <span class="d-block small text-muted mt-1">El club no será visible hasta que sea aprobado</span>
-                {% elif club.status == 'rechazado' %}
-                    <span class="d-block small text-muted mt-1">Puede editar y reenviar a revisión</span>
-                {% elif club.status == 'pendiente' %}
-                    <span class="d-block small text-muted mt-1">El club está en espera de ser asignado a un revisor</span>
-                {% elif club.status == 'en_revision' %}
-                    <span class="d-block small text-muted mt-1">El club está siendo evaluado por la federación</span>
-                {% elif club.status == 'aprobado' %}
-                    <span class="d-block small text-muted mt-1">El club está activo y visible en el directorio</span>
-                {% endif %}
+    <!-- Estado Actual -->
+    <div class="section-card mb-4 animate-fade-in">
+        <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg,
+            {% if club.status == 'borrador' %}#64748b, #475569
+            {% elif club.status == 'pendiente' %}#f59e0b, #d97706
+            {% elif club.status == 'en_revision' %}#0ea5e9, #0284c7
+            {% elif club.status == 'aprobado' %}#059669, #047857
+            {% elif club.status == 'rechazado' %}#dc2626, #b91c1c
+            {% else %}var(--blue-main), var(--blue-dark){% endif %});">
+            <div class="section-icon bg-white bg-opacity-25 me-3">
+                <i class="bi {% if club.status == 'borrador' %}bi-file-earmark-text{% elif club.status == 'pendiente' %}bi-hourglass-split{% elif club.status == 'en_revision' %}bi-clipboard-check{% elif club.status == 'aprobado' %}bi-check-circle-fill{% elif club.status == 'rechazado' %}bi-x-circle-fill{% else %}bi-info-circle{% endif %}"></i>
             </div>
+            <h5 class="mb-0 fw-bold">Estado Actual: {{ club.get_status_display }}</h5>
+        </div>
+        <div class="card-body p-4">
+            <p class="mb-0 text-muted small">
+                {% if club.status == 'borrador' %}El club no será visible hasta que sea aprobado.
+                {% elif club.status == 'rechazado' %}Puede editar y reenviar a revisión.
+                {% elif club.status == 'pendiente' %}El club está en espera de ser asignado a un revisor.
+                {% elif club.status == 'en_revision' %}El club está siendo evaluado por la federación.
+                {% elif club.status == 'aprobado' %}El club está activo y visible en el directorio.
+                {% endif %}
+            </p>
         </div>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <!-- Timeline Principal -->
-            <div class="card main-card animate-fade-in delay-2">
-                <div class="card-header text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-clock-history me-2"></i>Línea de Tiempo
-                    </h5>
+            <!-- Línea de Tiempo -->
+            <div class="section-card mb-4 animate-fade-in delay-1">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Línea de Tiempo</h5>
                 </div>
                 <div class="card-body p-4">
                     {% if historial %}
@@ -471,39 +183,28 @@
                             {% for registro in historial %}
                             <div class="timeline-item">
                                 <div class="timeline-marker {{ registro.estado_nuevo }}">
-                                    {% if registro.estado_nuevo == 'aprobado' %}
-                                        <i class="bi bi-check-circle-fill text-white fs-5"></i>
-                                    {% elif registro.estado_nuevo == 'rechazado' %}
-                                        <i class="bi bi-x-circle-fill text-white fs-5"></i>
-                                    {% elif registro.estado_nuevo == 'en_revision' %}
-                                        <i class="bi bi-clipboard-check text-white fs-5"></i>
-                                    {% elif registro.estado_nuevo == 'pendiente' %}
-                                        <i class="bi bi-hourglass-split text-white fs-5"></i>
-                                    {% else %}
-                                        <i class="bi bi-circle-fill text-white fs-5"></i>
-                                    {% endif %}
+                                    <i class="bi {% if registro.estado_nuevo == 'aprobado' %}bi-check-circle-fill{% elif registro.estado_nuevo == 'rechazado' %}bi-x-circle-fill{% elif registro.estado_nuevo == 'en_revision' %}bi-clipboard-check{% elif registro.estado_nuevo == 'pendiente' %}bi-hourglass-split{% else %}bi-circle-fill{% endif %} text-white fs-5"></i>
                                 </div>
                                 <div class="timeline-content">
-                                    <div class="timeline-date">
-                                        <i class="bi bi-calendar3 me-1"></i>
-                                        {{ registro.fecha|date:"d de F del Y" }} a las {{ registro.fecha|date:"H:i" }}
+                                    <div class="x-small text-muted mb-2">
+                                        <i class="bi bi-calendar3 me-1"></i>{{ registro.fecha|date:"d/m/Y H:i" }}
                                     </div>
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="status-badge badge-{{ registro.estado_nuevo }}">
+                                        <span class="badge rounded-pill px-3 py-2 fw-bold" style="font-size: 0.7rem;
+                                            {% if registro.estado_nuevo == 'aprobado' %}background: #d1fae5; color: #059669;
+                                            {% elif registro.estado_nuevo == 'rechazado' %}background: #fee2e2; color: #dc2626;
+                                            {% elif registro.estado_nuevo == 'en_revision' %}background: #dbeafe; color: #0369a1;
+                                            {% elif registro.estado_nuevo == 'pendiente' %}background: #fef3c7; color: #d97706;
+                                            {% else %}background: #f1f5f9; color: #64748b;{% endif %}">
                                             {{ registro.get_estado_nuevo_display|upper }}
                                         </span>
                                     </div>
-                                    <div class="timeline-user">
-                                        <i class="bi bi-person-circle me-1"></i>
-                                        {{ registro.usuario.get_full_name|default:registro.usuario.username }}
+                                    <div class="small text-muted">
+                                        <i class="bi bi-person-circle me-1"></i>{{ registro.usuario.get_full_name|default:registro.usuario.username }}
                                     </div>
-                                    
                                     {% if registro.observaciones %}
                                     <div class="timeline-comment">
-                                        <p class="mb-0">
-                                            <i class="bi bi-chat-quote me-2 text-primary"></i>
-                                            {{ registro.observaciones }}
-                                        </p>
+                                        <p class="mb-0 small"><i class="bi bi-chat-quote me-2 text-primary"></i>{{ registro.observaciones }}</p>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -511,96 +212,50 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="empty-state">
-                            <i class="bi bi-clock-history"></i>
-                            <h5>Sin historial registrado</h5>
-                            <p class="text-muted">Aún no hay cambios de estado para este club.</p>
+                        <div class="text-center py-4">
+                            <i class="bi bi-clock text-muted fs-1 mb-3 d-block opacity-50"></i>
+                            <p class="text-muted mb-0">Sin historial registrado. Aún no hay cambios de estado para este club.</p>
                         </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Información del Proceso -->
-            {% if club.status == 'pendiente' or club.status == 'en_revision' %}
-            <div class="card main-card mt-4 animate-fade-in delay-3">
-                <div class="card-header text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>Información del Proceso
-                    </h5>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="bi bi-hourglass-split fs-1 text-warning"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1">Tiempo de Espera</h6>
-                                    <p class="text-muted mb-0 small">
-                                        {% if club.status == 'pendiente' %}
-                                            Tu club está en cola de revisión. Por favor ten paciencia.
-                                        {% else %}
-                                            Tu club está siendo evaluado por nuestro equipo.
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="bi bi-question-circle fs-1 text-info"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-1">¿Tienes dudas?</h6>
-                                    <p class="text-muted mb-0 small">
-                                        Contáctanos a través de los canales oficiales de la federación.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
             <!-- Acciones Disponibles -->
             {% if club.status == 'borrador' or club.status == 'rechazado' %}
-            <div class="card main-card mt-4 animate-fade-in delay-3">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <h5 class="mb-0">
-                        <i class="bi bi-send me-2"></i>Acciones Disponibles
-                    </h5>
+            <div class="section-card animate-fade-in delay-2">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-send"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Acciones Disponibles</h5>
                 </div>
                 <div class="card-body p-4">
                     {% if club.status == 'borrador' %}
                         <p class="mb-3">El club está en estado borrador. ¿Desea enviarlo a revisión?</p>
-                        <a href="{% url 'enviar_club_revision' club.id %}" class="btn btn-action" 
-                           style="background: linear-gradient(135deg, #10b981, #34d399); color: white;">
-                            <i class="bi bi-send"></i>Enviar a Revisión
+                        <a href="{% url 'enviar_club_revision' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #059669; color: white;">
+                            <i class="bi bi-send me-2"></i>Enviar a Revisión
                         </a>
                     {% elif club.status == 'rechazado' %}
-                        <p class="mb-3">El club fue rechazado. Revise los motivos y envíelo nuevamente.</p>
-                        <div class="d-flex gap-3">
-                            <a href="{% url 'editar_club' club.id %}" class="btn btn-action" 
-                               style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white;">
-                                <i class="bi bi-pencil"></i>Corregir y Enviar
-                            </a>
-                        </div>
+                        <p class="mb-3">El club fue rechazado. Revise los motivos y corríjalo.</p>
+                        <a href="{% url 'editar_club' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #f59e0b; color: white;">
+                            <i class="bi bi-pencil me-2"></i>Corregir y Enviar
+                        </a>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
         </div>
 
+        <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- Información del Club -->
-            <div class="card sidebar-card mb-4 animate-fade-in delay-3">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, var(--blue-main), #1a4ca8);">
-                    <h5 class="mb-0"><i class="bi bi-robot me-2"></i>Datos del Club</h5>
+            <div class="section-card mb-4 animate-fade-in delay-2">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Datos del Club</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="info-item">
                         <small class="text-muted d-block">Nombre</small>
                         <strong>{{ club.nombre }}</strong>
@@ -613,11 +268,36 @@
                     {% endif %}
                     <div class="info-item">
                         <small class="text-muted d-block">Institución Creadora</small>
-                        <strong>{{ club.institucion_creadora.nombre }}</strong>
+                        <strong>{% if club.tipo_creador == 'fed_central' %}Federación Venezolana de Robótica Creativa{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre }}{% endif %}</strong>
                     </div>
                     <div class="info-item">
                         <small class="text-muted d-block">Coordinador</small>
-                        <strong>{{ club.coordinador.get_full_name|default:club.coordinador.username }}</strong>
+                        <strong>
+                            {% if club.tipo_creador == 'fed_central' %}
+                                Federación Central
+                            {% elif club.tipo_creador == 'fed_regional' %}
+                                Sede Regional
+                            {% else %}
+                                {{ club.institucion_creadora.codigo }}
+                            {% endif %}
+                        </strong>
+                        {% with responsables=club.tutores.all|dictsort:"fecha_asignacion" %}
+                        {% if responsables %}
+                        <div class="mt-2">
+                            {% for ct in responsables %}
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-person-fill me-2 x-small" style="color: {% if ct.rol == 'responsable' %}var(--blue-main){% else %}#64748b{% endif %};"></i>
+                                <div>
+                                    <span class="small">{{ ct.tutor.get_nombre_completo }}</span>
+                                    <span class="badge rounded-pill ms-1" style="font-size: 0.6rem; padding: 0.15rem 0.4rem; background: rgba(0,0,0,0.05); color: #64748b;">
+                                        {{ ct.get_rol_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
                     </div>
                     <div class="info-item">
                         <small class="text-muted d-block">Fecha de Creación</small>
@@ -630,47 +310,39 @@
                     </div>
                     {% endif %}
                     <div class="info-item">
-                        <small class="text-muted d-block">Cupo</small>
-                        <strong>{{ club.cupos_disponibles }}/{{ club.cupo_maximo }}</strong> lugares disponibles
+                        <small class="text-muted d-block">Cupos</small>
+                        <strong>{{ club.cupos_disponibles }}/{{ club.cupo_maximo }}</strong> disponibles
                     </div>
                 </div>
             </div>
 
-            <!-- Leyenda de Estados -->
-            <div class="card sidebar-card animate-fade-in delay-4">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, #64748b, #475569);">
-                    <h5 class="mb-0"><i class="bi bi-book me-2"></i>Estados del Club</h5>
+            <div class="section-card animate-fade-in delay-3">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #64748b, #475569);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Estados del Club</h5>
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <span class="status-badge badge-borrador d-inline-flex align-items-center">
-                            <i class="bi bi-file-earmark-text me-1"></i> Borrador
-                        </span>
-                        <small class="d-block text-muted mt-1">Club sin enviar a revisión</small>
+                <div class="card-body p-4">
+                    <div class="mb-2 d-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold me-2" style="font-size: 0.7rem; background: #f1f5f9; color: #64748b;">Borrador</span>
+                        <small class="text-muted">Sin enviar</small>
                     </div>
-                    <div class="mb-3">
-                        <span class="status-badge badge-pendiente d-inline-flex align-items-center">
-                            <i class="bi bi-hourglass-split me-1"></i> Pendiente
-                        </span>
-                        <small class="d-block text-muted mt-1">En espera de asignación</small>
+                    <div class="mb-2 d-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold me-2" style="font-size: 0.7rem; background: #fef3c7; color: #d97706;">Pendiente</span>
+                        <small class="text-muted">En espera</small>
                     </div>
-                    <div class="mb-3">
-                        <span class="status-badge badge-en_revision d-inline-flex align-items-center">
-                            <i class="bi bi-clipboard-check me-1"></i> En Revisión
-                        </span>
-                        <small class="d-block text-muted mt-1">Siendo evaluado</small>
+                    <div class="mb-2 d-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold me-2" style="font-size: 0.7rem; background: #dbeafe; color: #0369a1;">En Revisión</span>
+                        <small class="text-muted">Evaluándose</small>
                     </div>
-                    <div class="mb-3">
-                        <span class="status-badge badge-aprobado d-inline-flex align-items-center">
-                            <i class="bi bi-check-circle me-1"></i> Aprobado
-                        </span>
-                        <small class="d-block text-muted mt-1">Activo y visible</small>
+                    <div class="mb-2 d-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold me-2" style="font-size: 0.7rem; background: #d1fae5; color: #059669;">Aprobado</span>
+                        <small class="text-muted">Activo</small>
                     </div>
-                    <div class="mb-0">
-                        <span class="status-badge badge-rechazado d-inline-flex align-items-center">
-                            <i class="bi bi-x-circle me-1"></i> Rechazado
-                        </span>
-                        <small class="d-block text-muted mt-1">Requiere correcciones</small>
+                    <div class="mb-0 d-flex align-items-center">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold me-2" style="font-size: 0.7rem; background: #fee2e2; color: #dc2626;">Rechazado</span>
+                        <small class="text-muted">Corregir</small>
                     </div>
                 </div>
             </div>
@@ -678,4 +350,3 @@
     </div>
 </div>
 {% endblock %}
-

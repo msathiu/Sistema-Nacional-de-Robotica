@@ -9,7 +9,11 @@
             </div>
             <h2 class="fw-bold mb-3">Registro en Verificación</h2>
             <p class="text-muted fs-5">
-                La institución <strong>{{ nombre_inst }}</strong> ha sido registrada exitosamente en nuestra base de datos.
+                {% if tipo_institucion == 'particular' %}
+                    Usted, <strong>{{ nombre_inst }}</strong>, ha sido registrado exitosamente en nuestra base de datos.
+                {% else %}
+                    La institución <strong>{{ nombre_inst }}</strong> ha sido registrada exitosamente en nuestra base de datos.
+                {% endif %}
             </p>
             
             <div class="alert alert-warning border-0 bg-light-subtle p-4 my-4">
@@ -24,7 +28,7 @@
                 </p>
             </div>
 
-            <a href="{% url 'home' %}" class="btn btn-primary btn-lg px-5 shadow-sm" style="border-radius: 30px;">
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary shadow-sm px-5 fw-bold" style="border-radius: 12px;">
                 <i class="bi bi-house-door me-2"></i>Ir al Inicio
             </a>
         </div>

@@ -29,52 +29,52 @@
 
     <!-- Tarjetas KPI con estilo unificado -->
     <div class="row g-4 mb-5">
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <a href="{% url 'eventos_disponibles' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Disponibles</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ eventos_disponibles|default:0 }}">0</h2>
-                        <i class="bi bi-search position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ eventos_disponibles|default:0 }}">0</h2>
+                        <i class="bi bi-search kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: var(--accent-cyan);"></div>
                 </div>
             </a>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <a href="{% url 'mis_grupos' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Equipos</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_grupos|default:0 }}">0</h2>
-                        <i class="bi bi-microsoft-teams position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ total_mis_grupos|default:0 }}">0</h2>
+                        <i class="bi bi-microsoft-teams kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: #10b981;"></div>
                 </div>
             </a>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <a href="{% url 'admin_eventos' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos Asignados</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ eventos_asignados|default:0 }}">0</h2>
-                        <i class="bi bi-calendar-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ eventos_asignados|default:0 }}">0</h2>
+                        <i class="bi bi-calendar-check kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: #f59e0b;"></div>
                 </div>
             </a>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <a href="{% url 'lista_participantes' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Participantes Totales</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_participantes|default:0 }}">0</h2>
-                        <i class="bi bi-person-check position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ total_mis_participantes|default:0 }}">0</h2>
+                        <i class="bi bi-person-check kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: #8b5cf6;"></div>
                 </div>
@@ -84,42 +84,42 @@
 
     <!-- Tarjetas de Clubes -->
     <div class="row g-4 mb-5">
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Mis Clubes</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ total_mis_clubes|default:0 }}">0</h2>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ total_mis_clubes|default:0 }}">0</h2>
                         <p class="text-white-50 small mb-0">Club(es) creado(s) por mi institución</p>
-                        <i class="bi bi-people-robot position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <i class="bi bi-diagram-3 kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: #3b82f6;"></div>
                 </div>
             </a>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Clubes Aprobados</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
                         <p class="text-white-50 small mb-0">Club(es) con aprobación vigente</p>
-                        <i class="bi bi-check-circle position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <i class="bi bi-check-circle kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: #10b981;"></div>
                 </div>
             </a>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <a href="{% url 'clubes_lista' %}" class="text-decoration-none">
-                <div class="card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
-                    <div class="card-body p-4 position-relative z-1">
+                <div class="kpi-card card border-0 shadow-lg overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
+                    <div class="card-body p-3 p-md-4 position-relative">
                         <div class="text-white-50 small fw-bold text-uppercase mb-2">Eventos de Club</div>
-                        <h2 class="display-5 fw-bold mb-0 counter" data-target="{{ mis_clubes_aprobados|default:0 }}">0</h2>
+                        <h2 class="fw-bold mb-0 counter kpi-number" data-target="{{ eventos_club_disponibles|default:0 }}">0</h2>
                         <p class="text-white-50 small mb-0">Eventos exclusivos para clubes aprobados</p>
-                        <i class="bi bi-calendar-event position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
+                        <i class="bi bi-calendar-event kpi-icon position-absolute opacity-10"></i>
                     </div>
                     <div style="height: 4px; background: var(--accent-cyan);"></div>
                 </div>
@@ -268,13 +268,33 @@
     .tech-kpi-card {
         transition: transform 0.3s ease;
     }
-    
+
     .tech-kpi-card:hover {
         transform: translateY(-5px);
     }
-    
-    .counter {
+
+    .kpi-card {
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(11, 44, 109, 0.35) !important;
+    }
+
+    /* Número del KPI: escala con la pantalla */
+    .kpi-number {
         font-family: 'Space Grotesk', sans-serif;
+        font-size: clamp(1.6rem, 4vw, 2.5rem);
+    }
+
+    /* Icono decorativo: siempre contenido dentro del card */
+    .kpi-icon {
+        font-size: clamp(3rem, 6vw, 4.5rem);
+        right: 12px;
+        bottom: 8px;
+        pointer-events: none;
+        line-height: 1;
     }
     
     .btn-outline-primary {

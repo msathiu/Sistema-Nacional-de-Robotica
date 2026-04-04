@@ -1,0 +1,136 @@
+{% extends 'users/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-3 shadow-sm" style="background: var(--blue-main);">
+                    <i class="bi bi-clipboard2-check fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0 text-dark">Registro de Asistencia</h2>
+                    <p class="text-muted mb-0 small">{{ evento.nombre }}</p>
+                </div>
+            </div>
+            <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn btn-outline-secondary px-4" style="border-radius:12px;">
+                <i class="bi bi-arrow-left me-2"></i>Volver al Evento
+            </a>
+        </div>
+    </div>
+    <hr class="mt-2 mb-4 opacity-10">
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        {% for label, value, color in kpis %}{% endfor %}
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3" style="border-radius:15px;border-top:4px solid #10b981;">
+                <div class="fw-bold fs-3 text-dark">{{ asistieron }}</div>
+                <div class="text-muted small">Asistieron</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3" style="border-radius:15px;border-top:4px solid #ef4444;">
+                <div class="fw-bold fs-3 text-dark">{{ ausentes }}</div>
+                <div class="text-muted small">Ausentes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3" style="border-radius:15px;border-top:4px solid #f59e0b;">
+                <div class="fw-bold fs-3 text-dark">{{ pendientes }}</div>
+                <div class="text-muted small">Pendientes</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3" style="border-radius:15px;border-top:4px solid var(--blue-main);">
+                <div class="fw-bold fs-3 text-dark">{{ total }}</div>
+                <div class="text-muted small">Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post">
+        {% csrf_token %}
+        {% for nombre_equipo, asistencias in equipos.items %}
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:16px;overflow:hidden;">
+            <div class="card-header border-0 py-3 px-4 d-flex align-items-center" style="background: linear-gradient(135deg, var(--blue-main), #0d3b8e);">
+                <i class="bi bi-microsoft-teams text-white me-2"></i>
+                <h6 class="fw-bold mb-0 text-white">{{ nombre_equipo }}</h6>
+                <span class="badge ms-2 rounded-pill" style="background:rgba(255,255,255,0.2);font-size:0.75rem;">{{ asistencias|length }} participantes</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead style="background:#f8fafc;">
+                            <tr class="text-uppercase x-small fw-bold text-muted">
+                                <th class="px-4 py-3">Participante</th>
+                                <th class="py-3">Cédula</th>
+                                <th class="py-3 text-center">Asistencia</th>
+                                <th class="py-3">Observación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in asistencias %}
+                            <tr>
+                                <td class="px-4 py-3 fw-semibold">{{ a.participante.apellidos }}, {{ a.participante.nombres }}</td>
+                                <td class="py-3 text-muted small">{{ a.participante.cedula_completa }}</td>
+                                <td class="py-3 text-center">
+                                    {% if puede_editar %}
+                                    <select name="asistencia_{{ a.participante.id }}" class="form-select form-select-sm asistencia-select" style="min-width:130px;border-radius:8px;">
+                                        {% for val, label in CHOICES %}
+                                        <option value="{{ val }}" {% if a.asistencia == val %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% else %}
+                                    <span class="badge rounded-pill
+                                        {% if a.asistencia == 'asistio' %}bg-success
+                                        {% elif a.asistencia == 'ausente' %}bg-danger
+                                        {% elif a.asistencia == 'justificado' %}bg-warning text-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ a.get_asistencia_display }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3">
+                                    {% if puede_editar %}
+                                    <input type="text" name="obs_{{ a.participante.id }}" value="{{ a.observacion }}"
+                                           class="form-control form-control-sm" style="border-radius:8px;" placeholder="Opcional">
+                                    {% else %}
+                                    <span class="text-muted small">{{ a.observacion|default:"—" }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+            <h5>No hay participantes registrados</h5>
+            <p class="small">Asegúrate de que el evento tenga equipos inscritos con participantes.</p>
+        </div>
+        {% endfor %}
+
+        {% if puede_editar and equipos %}
+        <div class="d-flex justify-content-end gap-3 mt-2">
+            <button type="submit" class="btn fw-bold px-5 py-2 shadow-sm"
+                    style="background: var(--blue-main); color: white; border-radius: 12px;">
+                <i class="bi bi-save me-2"></i>Guardar Asistencia
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<style>
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .asistencia-select option[value="asistio"]    { color: #059669; }
+    .asistencia-select option[value="ausente"]    { color: #dc2626; }
+    .asistencia-select option[value="justificado"]{ color: #d97706; }
+</style>
+{% endblock %}

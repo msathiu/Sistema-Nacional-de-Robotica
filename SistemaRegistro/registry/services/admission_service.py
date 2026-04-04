@@ -346,12 +346,21 @@ class AdmissionService:
                 "Solo el Ente Rector (Federación Central) puede dar la aprobación final."
             )
         
-        # Validación de estado previo - Debe tener visto bueno
-        if membresia.estado != 'visto_bueno_fundadora':
+        # Validación de estado previo
+        # Si el club tiene institución fundadora, requiere visto bueno
+        # Si el club es de federación (sin institución fundadora), puede aprobarse directamente
+        tiene_fundadora = membresia.club.institucion_creadora is not None
+        
+        if tiene_fundadora and membresia.estado != 'visto_bueno_fundadora':
             raise ValidationError(
                 "La membresía debe tener el visto bueno de la Institución Fundadora "
                 "antes de ser aprobada por el Ente Rector. "
                 f"Estado actual: {membresia.get_estado_display()}"
+            )
+        
+        if not tiene_fundadora and membresia.estado not in ['pendiente_filtro', 'visto_bueno_fundadora']:
+            raise ValidationError(
+                f"La membresía no puede ser aprobada. Estado actual: {membresia.get_estado_display()}"
             )
         
         # Validar cupos disponibles (doble verificación)

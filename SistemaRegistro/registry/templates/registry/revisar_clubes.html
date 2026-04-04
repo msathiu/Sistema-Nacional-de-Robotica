@@ -57,7 +57,7 @@
                                             <div class="fw-bold small text-dark">{{ club.nombre }}</div>
                                             <div class="x-small text-muted">{{ club.siglas }}</div>
                                         </td>
-                                        <td><span class="small">{{ club.institucion_creadora.nombre }}</span></td>
+                                        <td><span class="small">{% if club.tipo_creador == 'fed_central' %}Federación{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre }}{% endif %}</span></td>
                                         <td>
                                             {% for linea in club.lineas_investigacion %}
                                                 <span class="badge rounded-pill me-1" style="background: var(--blue-main);">{{ linea }}</span>
@@ -65,21 +65,25 @@
                                         </td>
                                         <td><span class="small">{{ club.fecha_creacion|date:"d/m/Y" }}</span></td>
                                         <td class="text-center px-4">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center gap-1">
                                                 <a href="{% url 'detalle_club' club.id %}" 
-                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" title="Ver Detalles">
-                                                    <i class="bi bi-eye me-1"></i>Ver
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                                 <a href="{% url 'tomar_en_revision_club' club.id %}" 
-                                                   class="btn btn-sm rounded-pill px-3 fw-bold text-white" style="background: var(--accent-cyan); color: var(--blue-main) !important;" title="Tomar en Revisión">
-                                                    <i class="bi bi-clipboard-check me-1"></i>Revisar
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Tomar en Revisión">
+                                                    <i class="bi bi-clipboard-check"></i>
                                                 </a>
                                                 <a href="{% url 'aprobar_club' club.id %}" 
-                                                   class="btn btn-sm btn-success rounded-pill px-3 fw-bold" title="Aprobar">
-                                                    <i class="bi bi-check-circle me-1"></i>Aprobar
+                                                   class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </a>
-                                                <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                                                        onclick="rechazarClub('{{ club.id }}', '{{ club.nombre|escapejs }}')" title="Rechazar">
+                                                <button class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar"
+                                                        onclick="rechazarClub('{{ club.id }}', '{{ club.nombre|escapejs }}')">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
                                             </div>
@@ -118,7 +122,7 @@
                                             <div class="fw-bold small text-dark">{{ club.nombre }}</div>
                                             <div class="x-small text-muted">{{ club.siglas }}</div>
                                         </td>
-                                        <td><span class="small">{{ club.institucion_creadora.nombre }}</span></td>
+                                        <td><span class="small">{% if club.tipo_creador == 'fed_central' %}Federación{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre }}{% endif %}</span></td>
                                         <td>
                                             {% for linea in club.lineas_investigacion %}
                                                 <span class="badge rounded-pill me-1" style="background: var(--blue-main);">{{ linea }}</span>
@@ -126,17 +130,20 @@
                                         </td>
                                         <td><span class="small">{{ club.fecha_creacion|date:"d/m/Y" }}</span></td>
                                         <td class="text-center px-4">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center gap-1">
                                                 <a href="{% url 'detalle_club' club.id %}" 
-                                                   class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" title="Ver Detalles">
-                                                    <i class="bi bi-eye me-1"></i>Ver
+                                                   class="btn btn-outline-info btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                                 <a href="{% url 'aprobar_club' club.id %}" 
-                                                   class="btn btn-sm btn-success rounded-pill px-3 fw-bold" title="Aprobar">
-                                                    <i class="bi bi-check-circle me-1"></i>Aprobar
+                                                   class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                                   data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar">
+                                                    <i class="bi bi-check-circle"></i>
                                                 </a>
-                                                <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                                                        onclick="rechazarClub('{{ club.id }}', '{{ club.nombre|escapejs }}')" title="Rechazar">
+                                                <button class="btn btn-outline-danger btn-sm rounded-circle p-2"
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Rechazar"
+                                                        onclick="rechazarClub('{{ club.id }}', '{{ club.nombre|escapejs }}')">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
                                             </div>
@@ -161,12 +168,19 @@
 <style>
     :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
     .nav-tabs .nav-link { color: #64748b; border: none; }
     .nav-tabs .nav-link.active { background: white; color: var(--blue-main); border-bottom: 3px solid var(--accent-cyan); }
     .nav-tabs .nav-link:hover { color: var(--blue-main); }
 </style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+
 function rechazarClub(clubId, clubNombre) {
     // Buscar el modal correspondiente y mostrarlo
     const modal = document.getElementById('rechazarClub' + clubId);

@@ -211,13 +211,13 @@
                             <td class="text-center px-2">
                                 {% if perfil.user_type == 'institucional' and perfil.institution %}
                                     <div class="d-flex justify-content-center gap-1">
-                                        <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn-action btn-view" title="Ver Detalles del Evento">
+                                        <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn btn-outline-info btn-sm rounded-circle p-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         {% if evento.institucion == perfil.institution or evento.club_organizador.institucion_creadora == perfil.institution %}
                                         <span class="badge bg-secondary">Propio</span>
                                         {% elif evento.estado_evento == 'abierto' %}
-                                        <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn-action btn-primary" title="Inscribir Equipos">
+                                        <a href="{% url 'detalle_evento_inscripcion' evento.id %}" class="btn btn-outline-primary btn-sm rounded-circle p-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Inscribir Equipo">
                                             <i class="bi bi-person-plus"></i>
                                         </a>
                                         {% endif %}
@@ -298,22 +298,8 @@
     .bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
     .bg-cyan { background: #cffafe !important; color: #155e75 !important; border: 1px solid #a5f3fc; }
 
-    .btn-action {
-        width: 32px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        background: white;
-        transition: all 0.2s;
-        color: #64748b;
-        text-decoration: none;
-    }
-    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .btn-view:hover { color: #0ea5e9; border-color: #0ea5e9; background: #f0f9ff; transform: translateY(-2px); }
-    .btn-primary:hover { color: var(--blue-main); border-color: var(--blue-main); background: #f0f9ff; }
+    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn.rounded-circle.p-2:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); transition: all 0.2s; }
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }
 </style>
@@ -322,6 +308,7 @@
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
         document.querySelectorAll('.counter').forEach(counter => {
             const updateCount = () => {
                 const target = parseInt(counter.getAttribute('data-target')) || 0;

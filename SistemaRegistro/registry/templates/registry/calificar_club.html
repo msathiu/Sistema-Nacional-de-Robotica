@@ -8,19 +8,19 @@
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex align-items-center">
-                <a href="{% url 'detalle_club' club.id %}" 
-                   class="btn btn-outline-secondary back-btn me-3 rounded-circle" 
-                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-arrow-left"></i>
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #d97706, #b45309); border: 1px solid rgba(255,255,255,0.3);">
+                        <i class="bi bi-star-fill fs-2 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Calificar Club</h2>
+                        <p class="text-muted mb-0 small">Evalúa tu experiencia con este club</p>
+                    </div>
+                </div>
+                <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                    <i class="bi bi-arrow-left me-2"></i> Volver
                 </a>
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #d97706, #b45309); border: 1px solid rgba(255,255,255,0.3);">
-                    <i class="bi bi-star-fill fs-2 text-white"></i>
-                </div>
-                <div>
-                    <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Calificar Club</h2>
-                    <p class="text-muted mb-0 small">Evalúa tu experiencia con este club</p>
-                </div>
             </div>
         </div>
     </div>

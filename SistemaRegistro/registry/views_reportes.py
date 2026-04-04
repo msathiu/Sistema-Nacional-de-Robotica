@@ -1,15 +1,18 @@
 """Vistas para búsqueda avanzada y reportes de clubes."""
 
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Avg
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Count, Q, Avg, F, ExpressionWrapper, DurationField
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import csv
 
-from .models import Club, MembresiaClu, HistorialClub
+from .models import Club, MembresiaClu, HistorialClub, Grupo, InscripcionGrupoEvento
+from .models.tutor import Tutor, TutorInstitucion
+from .models.institucion import Institucion
 
 
 @login_required
@@ -45,7 +48,12 @@ def buscar_clubes(request):
             Q(institucion_creadora__nombre__icontains=busqueda)
         )
     
-    clubes = clubes.select_related('institucion_creadora').annotate(
+    clubes = clubes.select_related(
+        'institucion_creadora',
+        'institucion_creadora__estado',
+    ).prefetch_related(
+        'club_lineas__linea',
+    ).annotate(
         num_membresias=Count('membresias', filter=Q(membresias__estado='miembro_activo'))
     )
     
@@ -93,8 +101,8 @@ def dashboard_metricas_clubes(request):
     clubes_pendientes = clubes_base.filter(status='pendiente').count()
     clubes_rechazados = clubes_base.filter(status='rechazado').count()
     
-    # Tasa de aprobación
-    total_procesados = Club.objects.filter(status__in=['aprobado', 'rechazado']).count()
+    # Tasa de aprobación: aprobados / (aprobados + rechazados) dentro del scope del usuario
+    total_procesados = clubes_base.filter(status__in=['aprobado', 'rechazado']).count()
     tasa_aprobacion = (clubes_aprobados / total_procesados * 100) if total_procesados > 0 else 0
     
     # Clubes por línea de investigación - ✅ CORRECCIÓN
@@ -140,13 +148,18 @@ def dashboard_metricas_clubes(request):
         fecha_aprobacion__gte=ultimos_30_dias
     )
     
-    tiempos_revision = []
-    for club in clubes_aprobados_recientes:
-        if club.fecha_aprobacion and club.fecha_creacion:
-            dias = (club.fecha_aprobacion - club.fecha_creacion).days
-            tiempos_revision.append(dias)
-    
-    tiempo_promedio_revision = sum(tiempos_revision) / len(tiempos_revision) if tiempos_revision else 0
+    resultado = clubes_aprobados_recientes.filter(
+        fecha_aprobacion__isnull=False,
+        fecha_creacion__isnull=False
+    ).annotate(
+        duracion=ExpressionWrapper(
+            F('fecha_aprobacion') - F('fecha_creacion'),
+            output_field=DurationField()
+        )
+    ).aggregate(promedio=Avg('duracion'))
+
+    promedio = resultado['promedio']
+    tiempo_promedio_revision = round(promedio.days, 1) if promedio else 0
     
     # Clubes más populares (más membresías)
     clubes_populares = clubes_base.filter(
@@ -162,6 +175,7 @@ def dashboard_metricas_clubes(request):
         'clubes_pendientes': clubes_pendientes,
         'clubes_rechazados': clubes_rechazados,
         'tasa_aprobacion': round(tasa_aprobacion, 1),
+        'total_procesados': total_procesados,
         'clubes_por_linea': clubes_por_linea,
         'clubes_por_estado': clubes_por_estado,
         'tiempo_promedio_revision': round(tiempo_promedio_revision, 1),
@@ -239,3 +253,198 @@ def exportar_clubes_json(request):
         })
     
     return JsonResponse({'clubes': data, 'total': len(data)})
+
+
+# ─────────────────────────────────────────────
+# EXPORTACIONES EXCEL (openpyxl via HttpResponse)
+# ─────────────────────────────────────────────
+
+def _es_federacion(perfil):
+    return perfil.user_type in ("fed_central", "fed_regional", "superuser", "tecnologico")
+
+
+def _es_institucional(perfil):
+    return perfil.user_type == "institucional"
+
+
+def _filtro_territorial(qs, perfil, campo_estado):
+    """Aplica filtro por estado si el usuario es fed_regional."""
+    if perfil.user_type == "fed_regional" and perfil.estado:
+        return qs.filter(**{campo_estado: perfil.estado})
+    return qs
+
+
+def _csv_response(filename, headers, rows):
+    """Helper: devuelve HttpResponse CSV con cabecera y filas."""
+    response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    return response
+
+
+@login_required
+def exportar_equipos_excel(request):
+    """Exporta equipos (grupos) a CSV según permisos del usuario."""
+    perfil = request.user.userprofile
+    if not (_es_federacion(perfil) or _es_institucional(perfil)):
+        messages.error(request, "No tienes permisos para exportar equipos.")
+        return redirect("dashboard")
+
+    qs = Grupo.objects.filter(activo=True).select_related(
+        "institucion", "institucion__estado", "evento"
+    ).prefetch_related("tutores", "participantes")
+
+    if _es_institucional(perfil):
+        qs = qs.filter(institucion=perfil.institution)
+    else:
+        qs = _filtro_territorial(qs, perfil, "institucion__estado")
+
+    headers = [
+        "Código", "Nombre", "Criterio", "Nivel Educativo",
+        "Estado Grupo", "Institución", "Estado", "Tutores",
+        "N° Participantes", "Evento Inscrito", "Fecha Registro",
+    ]
+    rows = []
+    for g in qs:
+        tutores = ", ".join(
+            f"{t.nombres} {t.apellidos}" for t in g.tutores.all()
+        )
+        rows.append([
+            g.codigo,
+            g.nombre,
+            g.get_criterio_display(),
+            g.nivel_educativo or "",
+            g.get_estado_grupo_display(),
+            g.institucion.nombre if g.institucion else "",
+            g.institucion.estado.nombre if g.institucion and g.institucion.estado else "",
+            tutores,
+            g.participantes.count(),
+            g.evento.nombre if g.evento else "",
+            g.fecha_registro.strftime("%d/%m/%Y") if g.fecha_registro else "",
+        ])
+
+    return _csv_response("equipos_export.csv", headers, rows)
+
+
+@login_required
+def exportar_tutores_excel(request):
+    """Exporta tutores a CSV según permisos del usuario."""
+    perfil = request.user.userprofile
+    if not (_es_federacion(perfil) or _es_institucional(perfil)):
+        messages.error(request, "No tienes permisos para exportar tutores.")
+        return redirect("dashboard")
+
+    qs = TutorInstitucion.objects.select_related(
+        "tutor", "institucion", "institucion__estado", "estado"
+    )
+    if _es_institucional(perfil):
+        qs = qs.filter(institucion=perfil.institution)
+    else:
+        qs = _filtro_territorial(qs, perfil, "institucion__estado")
+
+    headers = [
+        "Nombres", "Apellidos", "Cédula", "Sexo", "Email",
+        "Teléfono", "Profesión", "Institución", "Estado",
+        "Rol", "Status Vinculación",
+    ]
+    rows = []
+    for vi in qs:
+        t = vi.tutor
+        rows.append([
+            t.nombres,
+            t.apellidos,
+            f"{t.nacionalidad}-{t.cedula}" if t.cedula else "",
+            t.get_sexo_display() if t.sexo else "",
+            t.email,
+            f"{t.telefono_codigo}-{t.telefono}" if t.telefono else "",
+            t.profesion or "",
+            vi.institucion.nombre if vi.institucion else "",
+            vi.institucion.estado.nombre if vi.institucion and vi.institucion.estado else "",
+            vi.rol or "",
+            vi.get_status_display(),
+        ])
+
+    return _csv_response("tutores_export.csv", headers, rows)
+
+
+@login_required
+def exportar_instituciones_excel(request):
+    """Exporta instituciones a CSV. Solo federación."""
+    perfil = request.user.userprofile
+    if not _es_federacion(perfil):
+        messages.error(request, "No tienes permisos para exportar instituciones.")
+        return redirect("dashboard")
+
+    qs = Institucion.objects.filter(eliminado=False).select_related(
+        "estado", "municipio"
+    )
+    qs = _filtro_territorial(qs, perfil, "estado")
+
+    headers = [
+        "Código", "Nombre", "RIF", "Tipo", "Naturaleza",
+        "Estado", "Municipio", "Email", "Teléfono",
+        "Estatus", "Federado", "Fecha Registro",
+    ]
+    rows = []
+    for inst in qs:
+        rows.append([
+            inst.codigo,
+            inst.nombre,
+            inst.rif or "",
+            inst.get_tipo_institucion_display() if inst.tipo_institucion else "",
+            inst.get_naturaleza_display() if inst.naturaleza else "",
+            inst.estado.nombre if inst.estado else "",
+            inst.municipio.nombre if inst.municipio else "",
+            inst.email or "",
+            inst.telefono or "",
+            inst.estatus,
+            "Sí" if inst.federado else "No",
+            inst.fecha_registro.strftime("%d/%m/%Y") if inst.fecha_registro else "",
+        ])
+
+    return _csv_response("instituciones_export.csv", headers, rows)
+
+
+@login_required
+def exportar_inscripciones_excel(request):
+    """Exporta inscripciones de equipos a eventos a CSV."""
+    perfil = request.user.userprofile
+    if not (_es_federacion(perfil) or _es_institucional(perfil)):
+        messages.error(request, "No tienes permisos para exportar inscripciones.")
+        return redirect("dashboard")
+
+    qs = InscripcionGrupoEvento.objects.filter(activo=True).select_related(
+        "evento", "evento__estado", "grupo", "grupo__institucion",
+        "grupo__institucion__estado",
+    ).prefetch_related("grupo__tutores", "grupo__participantes")
+
+    if _es_institucional(perfil):
+        qs = qs.filter(grupo__institucion=perfil.institution)
+    else:
+        qs = _filtro_territorial(qs, perfil, "grupo__institucion__estado")
+
+    headers = [
+        "Evento", "Fecha Evento", "Estado Evento",
+        "Equipo", "Código Equipo", "Institución",
+        "Tutor(es)", "N° Participantes", "Fecha Inscripción",
+    ]
+    rows = []
+    for ins in qs:
+        tutores = ", ".join(
+            f"{t.nombres} {t.apellidos}" for t in ins.grupo.tutores.all()
+        )
+        rows.append([
+            ins.evento.nombre,
+            ins.evento.fecha.strftime("%d/%m/%Y") if ins.evento.fecha else "",
+            ins.evento.get_estado_evento_display(),
+            ins.grupo.nombre,
+            ins.grupo.codigo,
+            ins.grupo.institucion.nombre if ins.grupo.institucion else "",
+            tutores,
+            ins.grupo.participantes.count(),
+            ins.fecha_inscripcion.strftime("%d/%m/%Y") if hasattr(ins, "fecha_inscripcion") and ins.fecha_inscripcion else "",
+        ])
+
+    return _csv_response("inscripciones_export.csv", headers, rows)

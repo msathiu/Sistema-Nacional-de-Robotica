@@ -21,29 +21,6 @@
         overflow: hidden;
     }
     
-    .main-card .card-header {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-        position: relative;
-    }
-    
-    .main-card .card-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--accent-cyan);
-    }
-    
-    .main-card .card-header h5 {
-        margin: 0;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 600;
-    }
-    
     .info-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
@@ -54,22 +31,6 @@
     .info-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    }
-    
-    .section-header {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    .section-header h5 {
-        margin: 0;
-        color: white;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
     
     .form-label {
@@ -148,72 +109,6 @@
         color: #dc2626;
     }
     
-    .btn-action {
-        padding: 0.75rem 1.5rem;
-        border-radius: 50px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-    
-    .btn-cancel {
-        background: transparent;
-        border: 2px solid #e2e8f0;
-        color: #64748b;
-    }
-    
-    .btn-cancel:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #334155;
-    }
-    
-    .btn-save {
-        background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
-        border: none;
-        color: white;
-    }
-    
-    .btn-save:hover {
-        background: linear-gradient(135deg, #1a4ca8 0%, #234d94 100%);
-        box-shadow: 0 8px 20px rgba(11, 44, 109, 0.4);
-    }
-    
-    .btn-send {
-        background: linear-gradient(135deg, var(--success) 0%, #34d399 100%);
-        border: none;
-        color: white;
-    }
-    
-    .btn-send:hover {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    }
-    
-    .sidebar-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
-    
-    .sidebar-card .card-header {
-        border: none;
-        padding: 1rem 1.25rem;
-    }
-    
-    .sidebar-card .card-body {
-        padding: 1.25rem;
-    }
-    
     .info-item {
         padding: 0.75rem;
         background: #f8fafc;
@@ -263,6 +158,11 @@
     .delay-3 { animation-delay: 0.3s; }
     .delay-4 { animation-delay: 0.4s; }
     
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    
     .club-info-icon {
         width: 48px;
         height: 48px;
@@ -271,6 +171,47 @@
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
+    }
+    
+    .x-small { font-size: 0.72rem; }
+    
+    .responsable-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        background: white;
+        transition: all 0.2s ease;
+    }
+    
+    .responsable-card:hover {
+        border-color: var(--accent-cyan);
+        box-shadow: 0 2px 8px rgba(0, 212, 255, 0.1);
+    }
+    
+    .responsable-card.primero {
+        border-left: 3px solid var(--blue-main);
+    }
+    
+    .section-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #f8fafc;
+        overflow: hidden;
+    }
+    
+    .section-card .card-header {
+        border: none;
+        padding: 1rem 1.25rem;
+    }
+    
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .linea-badge {
@@ -355,121 +296,177 @@
                         {% csrf_token %}
                         
                         <!-- Información Básica -->
-                        <div class="section-header">
-                            <h5><i class="bi bi-info-circle"></i>Información Básica</h5>
-                        </div>
-                        
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-8">
-                                <label for="nombre" class="form-label">Nombre del Club *</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" 
-                                       value="{{ club.nombre }}" required>
-                                <div class="invalid-feedback">Por favor ingrese el nombre del club</div>
+                        <div class="section-card mb-4">
+                            <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                                <div class="section-icon bg-white bg-opacity-25 me-3">
+                                    <i class="bi bi-info-circle"></i>
+                                </div>
+                                <h5 class="mb-0 fw-bold">Información Básica</h5>
                             </div>
-                            <div class="col-md-4">
-                                <label for="siglas" class="form-label">Siglas</label>
-                                <input type="text" class="form-control" id="siglas" name="siglas" 
-                                       value="{{ club.siglas|default:'' }}" maxlength="10" placeholder="Ej: CIR">
-                            </div>
-                        </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-8">
+                                        <label for="nombre" class="form-label fw-bold">Nombre del Club *</label>
+                                        <input type="text" class="form-control" id="nombre" name="nombre" 
+                                               value="{{ club.nombre }}" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="siglas" class="form-label fw-bold">Siglas</label>
+                                        <input type="text" class="form-control" id="siglas" name="siglas" 
+                                               value="{{ club.siglas|default:'' }}" maxlength="10" placeholder="Ej: CIR">
+                                    </div>
+                                </div>
 
-                        <div class="mb-4">
-                            <label for="descripcion" class="form-label">Descripción *</label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" 
-                                      rows="4" required placeholder="Describe los objetivos y actividades del club...">{{ club.descripcion|default:'' }}</textarea>
-                        </div>
+                                <div class="mb-4">
+                                    <label for="descripcion" class="form-label fw-bold">Descripción *</label>
+                                    <textarea class="form-control" id="descripcion" name="descripcion" 
+                                              rows="4" required>{{ club.descripcion|default:'' }}</textarea>
+                                </div>
 
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label for="ubicacion" class="form-label">Ubicación</label>
-                                <input type="text" class="form-control" id="ubicacion" name="ubicacion" 
-                                       value="{{ club.ubicacion|default:'' }}" placeholder="Dirección o ubicación física">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="fecha_fundacion" class="form-label">Fecha de Fundación</label>
-                                <input type="date" class="form-control" id="fecha_fundacion" name="fecha_fundacion" 
-                                       value="{{ club.fecha_fundacion|date:'Y-m-d'|default:'' }}">
+                                <div class="row g-3 mb-0">
+                                    <div class="col-md-6">
+                                        <label for="ubicacion" class="form-label fw-bold">Ubicación</label>
+                                        <input type="text" class="form-control" id="ubicacion" name="ubicacion" 
+                                               value="{{ club.ubicacion|default:'' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="fecha_fundacion" class="form-label fw-bold">Fecha de Fundación</label>
+                                        <input type="date" class="form-control" id="fecha_fundacion" name="fecha_fundacion" 
+                                               value="{{ club.fecha_fundacion|date:'Y-m-d'|default:'' }}">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Líneas de Investigación -->
-                        <div class="section-header mt-5">
-                            <h5><i class="bi bi-microscope"></i>Líneas de Investigación</h5>
+                        <div class="section-card mb-4">
+                            <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                                <div class="section-icon bg-white bg-opacity-25 me-3">
+                                    <i class="bi bi-lightbulb"></i>
+                                </div>
+                                <h5 class="mb-0 fw-bold">Líneas de Investigación</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-0">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Línea Principal *</label>
+                                        {{ form.linea_investigacion_1 }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Línea Secundaria</label>
+                                        {{ form.linea_investigacion_2 }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Línea Terciaria</label>
+                                        {{ form.linea_investigacion_3 }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                {{ form.linea_investigacion_1.label_tag }}
-                                {{ form.linea_investigacion_1 }}
-                                {% if form.linea_investigacion_1.errors %}
-                                    <div class="text-danger small">{{ form.linea_investigacion_1.errors }}</div>
-                                {% endif %}
+                        <!-- Responsables del Club -->
+                        <div class="section-card mb-4">
+                            <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                                <div class="section-icon bg-white bg-opacity-25 me-3">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <h5 class="mb-0 fw-bold">Responsables del Club</h5>
                             </div>
-                            <div class="col-md-4">
-                                {{ form.linea_investigacion_2.label_tag }}
-                                {{ form.linea_investigacion_2 }}
-                                {% if form.linea_investigacion_2.errors %}
-                                    <div class="text-danger small">{{ form.linea_investigacion_2.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4">
-                                {{ form.linea_investigacion_3.label_tag }}
-                                {{ form.linea_investigacion_3 }}
-                                {% if form.linea_investigacion_3.errors %}
-                                    <div class="text-danger small">{{ form.linea_investigacion_3.errors }}</div>
-                                {% endif %}
+                            <div class="card-body p-4">
+                                <p class="text-muted small mb-3">
+                                    <i class="bi bi-info-circle me-1"></i> Busque tutores por cédula para asignarlos como responsables del club.
+                                </p>
+
+                                <!-- Buscador de tutor -->
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" id="buscarCedulaTutor" class="form-control border-start-0" placeholder="Ingrese cédula del tutor (ej: 12345678)" maxlength="12">
+                                    <button type="button" id="btnBuscarTutor" class="btn fw-bold" style="background: var(--accent-cyan); color: var(--blue-main);">
+                                        <i class="bi bi-search me-1"></i> Buscar
+                                    </button>
+                                </div>
+
+                                <!-- Resultado de búsqueda -->
+                                <div id="resultadoBusqueda" class="d-none mb-3">
+                                    <div class="alert alert-light border d-flex align-items-center justify-content-between mb-0" style="border-radius: 12px;">
+                                        <div>
+                                            <div class="fw-bold text-dark" id="tutorNombre"></div>
+                                            <div class="x-small text-muted">
+                                                <span id="tutorCedula"></span> · <span id="tutorEmail"></span> · <span id="tutorProfesion"></span>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="btnAgregarTutor" class="btn btn-sm btn-success rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-plus-circle me-1"></i> Agregar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="errorBusqueda" class="alert alert-danger d-none mb-3" style="border-radius: 12px;">
+                                    <i class="bi bi-exclamation-circle me-2"></i><span id="errorBusquedaMsg"></span>
+                                </div>
+
+                                <!-- Lista de responsables asignados -->
+                                <div id="listaResponsables" class="mb-0"></div>
+
+                                <div id="sinResponsables" class="text-center py-3 text-muted {% if tutores_club %}d-none{% endif %}">
+                                    <i class="bi bi-people fs-3 d-block mb-2 opacity-50"></i>
+                                    <small>No hay responsables asignados. Busque y agregue al menos uno.</small>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Configuración -->
-                        <div class="section-header mt-5">
-                            <h5><i class="bi bi-gear"></i>Configuración</h5>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label for="estado_vinculacion" class="form-label">Estado de Vinculación *</label>
-                                <select class="form-select" id="estado_vinculacion" name="estado_vinculacion" required>
-                                    <option value="">Seleccionar...</option>
-                                    {% for value, label in estados_vinculacion %}
-                                    <option value="{{ value }}" {% if club.estado_vinculacion == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <small class="form-text">
-                                    "Abierto": Cualquier institución puede postular<br>
-                                    "Por Invitación": Solo instituciones invitadas pueden postular
-                                </small>
+                        <div class="section-card mb-4">
+                            <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #7c3aed, #5b21b6);">
+                                <div class="section-icon bg-white bg-opacity-25 me-3">
+                                    <i class="bi bi-gear"></i>
+                                </div>
+                                <h5 class="mb-0 fw-bold">Configuración</h5>
                             </div>
-                            <div class="col-md-6">
-                                <label for="cupo_maximo" class="form-label">Cupo Máximo *</label>
-                                <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo" 
-                                       value="{{ club.cupo_maximo }}" min="1" max="100" required>
-                                <small class="form-text">Número máximo de instituciones miembro</small>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label for="estado_vinculacion" class="form-label fw-bold">Estado de Vinculación *</label>
+                                        <select class="form-select" id="estado_vinculacion" name="estado_vinculacion" required>
+                                            {% for value, label in estados_vinculacion %}
+                                            <option value="{{ value }}" {% if club.estado_vinculacion == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <small class="form-text">
+                                            "Abierto": Cualquier institución puede postular<br>
+                                            "Por Invitación": Solo instituciones invitadas pueden postular
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="cupo_maximo" class="form-label fw-bold">Cupo Máximo *</label>
+                                        <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo" 
+                                               value="{{ club.cupo_maximo }}" min="1" max="100" required>
+                                        <small class="form-text">Número máximo de instituciones miembro</small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="requisitos" class="form-label fw-bold">Requisitos de Membresía</label>
+                                    <textarea class="form-control" id="requisitos" name="requisitos" 
+                                              rows="3">{{ club.requisitos|default:'' }}</textarea>
+                                </div>
+
+                                <div class="mb-0">
+                                    <label for="documento_legal" class="form-label fw-bold">Documento Legal</label>
+                                    <textarea class="form-control" id="documento_legal" name="documento_legal" 
+                                              rows="2">{{ club.documento_legal|default:'' }}</textarea>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="mb-4">
-                            <label for="requisitos" class="form-label">Requisitos de Membresía</label>
-                            <textarea class="form-control" id="requisitos" name="requisitos" 
-                                      rows="3" placeholder="Describe los requisitos para ser miembro del club...">{{ club.requisitos|default:'' }}</textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="documento_legal" class="form-label">Documento Legal</label>
-                            <textarea class="form-control" id="documento_legal" name="documento_legal" 
-                                      rows="2" placeholder="Documentos o normas legales del club...">{{ club.documento_legal|default:'' }}</textarea>
-                        </div>
-
-                        <hr class="my-4">
 
                         <div class="d-flex justify-content-end gap-3">
-                            <a href="{% url 'clubes_lista' %}" class="btn btn-action btn-cancel">
-                                <i class="bi bi-x-circle"></i>Cancelar
+                            <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-action btn-save">
-                                <i class="bi bi-check-lg"></i>Guardar Cambios
+                            <button type="submit" class="btn fw-bold rounded-pill px-4" style="background: linear-gradient(135deg, #059669, #10b981); color: white;">
+                                <i class="bi bi-check-lg me-2"></i>Guardar Cambios
                             </button>
                         </div>
                     </form>
@@ -479,14 +476,17 @@
 
         <div class="col-lg-4">
             <!-- Información del Club -->
-            <div class="card sidebar-card mb-4 animate-fade-in delay-3">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información</h5>
+            <div class="section-card mb-4 animate-fade-in delay-3">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-info-square"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Información</h5>
                 </div>
                 <div class="card-body">
                     <div class="info-item">
                         <small class="text-muted d-block">Institución Creadora</small>
-                        <strong>{{ club.institucion_creadora.nombre }}</strong>
+                        <strong>{% if club.tipo_creador == 'fed_central' %}Federación Venezolana de Robótica Creativa{% elif club.tipo_creador == 'fed_regional' %}Sede Regional{% else %}{{ club.institucion_creadora.nombre }}{% endif %}</strong>
                     </div>
                     <div class="info-item">
                         <small class="text-muted d-block">Coordinador</small>
@@ -505,20 +505,23 @@
 
             <!-- Acciones Disponibles -->
             {% if club.status == 'borrador' or club.status == 'rechazado' %}
-            <div class="card sidebar-card animate-fade-in delay-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-send me-2"></i>Acciones</h5>
+            <div class="section-card animate-fade-in delay-4">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #059669, #047857);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-send"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Acciones</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     {% if club.status == 'borrador' %}
                     <p class="small mb-3">El club está en estado borrador. ¿Desea enviarlo a revisión?</p>
-                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn btn-action btn-send w-100">
-                        <i class="bi bi-send"></i>Enviar a Revisión
+                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn fw-bold rounded-pill px-4 w-100" style="background: #059669; color: white;">
+                        <i class="bi bi-send me-2"></i>Enviar a Revisión
                     </a>
                     {% elif club.status == 'rechazado' %}
                     <p class="small mb-3">El club fue rechazado. Corrija los datos y envíelo nuevamente.</p>
-                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn btn-action btn-send w-100">
-                        <i class="bi bi-arrow-repeat"></i>Reenviar a Revisión
+                    <a href="{% url 'enviar_club_revision' club.id %}" class="btn fw-bold rounded-pill px-4 w-100" style="background: #059669; color: white;">
+                        <i class="bi bi-arrow-repeat me-2"></i>Reenviar a Revisión
                     </a>
                     {% endif %}
                 </div>
@@ -527,11 +530,14 @@
             
             <!-- Tips -->
             {% if club.status == 'aprobado' %}
-            <div class="card sidebar-card mt-4 animate-fade-in delay-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Consejos</h5>
+            <div class="section-card mt-4 animate-fade-in delay-4">
+                <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
+                    <div class="section-icon bg-white bg-opacity-25 me-3">
+                        <i class="bi bi-lightbulb"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">Consejos</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <ul class="list-unstyled mb-0 small">
                         <li class="mb-2 d-flex">
                             <i class="bi bi-check-circle text-success me-2 mt-1"></i>
@@ -568,6 +574,187 @@
             }, false);
         });
     })();
+
+    // === RESPONSABLES DEL CLUB ===
+    const rolChoices = [
+        {% for value, label in rol_choices %}
+        {value: '{{ value }}', label: '{{ label }}'}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Cargar responsables existentes desde el servidor
+    const responsables = [
+        {% for ct in tutores_club %}
+        {
+            id: '{{ ct.tutor.id }}',
+            nombre_completo: '{{ ct.tutor.get_nombre_completo|escapejs }}',
+            nacionalidad: '{{ ct.tutor.get_nacionalidad_display }}',
+            cedula: '{{ ct.tutor.cedula }}',
+            email: '{{ ct.tutor.email }}',
+            profesion: '{{ ct.tutor.profesion|default:"" }}',
+            rol: '{{ ct.rol }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    let tutorEncontrado = null;
+
+    function buscarTutor() {
+        const cedula = document.getElementById('buscarCedulaTutor').value.trim();
+        if (!cedula) return;
+
+        document.getElementById('resultadoBusqueda').classList.add('d-none');
+        document.getElementById('errorBusqueda').classList.add('d-none');
+        document.getElementById('btnBuscarTutor').disabled = true;
+        document.getElementById('btnBuscarTutor').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Buscando...';
+
+        fetch(`/registry/api/clubes/buscar-tutor/?cedula=${encodeURIComponent(cedula)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.found) {
+                    if (responsables.find(r => r.id === data.id)) {
+                        mostrarErrorBusqueda('Este tutor ya fue agregado como responsable.');
+                        return;
+                    }
+                    tutorEncontrado = data;
+                    document.getElementById('tutorNombre').textContent = data.nombre_completo;
+                    document.getElementById('tutorCedula').textContent = data.nacionalidad + '-' + data.cedula;
+                    document.getElementById('tutorEmail').textContent = data.email;
+                    document.getElementById('tutorProfesion').textContent = data.profesion;
+                    document.getElementById('resultadoBusqueda').classList.remove('d-none');
+                } else {
+                    mostrarErrorBusqueda(data.error || 'Tutor no encontrado con esa cédula.');
+                }
+            })
+            .catch(() => mostrarErrorBusqueda('Error de conexión. Intente de nuevo.'))
+            .finally(() => {
+                document.getElementById('btnBuscarTutor').disabled = false;
+                document.getElementById('btnBuscarTutor').innerHTML = '<i class="bi bi-search me-1"></i> Buscar';
+            });
+    }
+
+    function mostrarErrorBusqueda(msg) {
+        document.getElementById('errorBusquedaMsg').textContent = msg;
+        document.getElementById('errorBusqueda').classList.remove('d-none');
+    }
+
+    function agregarTutor() {
+        if (!tutorEncontrado) return;
+        if (responsables.find(r => r.id === tutorEncontrado.id)) return;
+
+        const rol = responsables.length === 0 ? 'responsable' : 'coordinador';
+        responsables.push({...tutorEncontrado, rol: rol});
+        tutorEncontrado = null;
+        document.getElementById('resultadoBusqueda').classList.add('d-none');
+        document.getElementById('buscarCedulaTutor').value = '';
+        renderizarResponsables();
+    }
+
+    function eliminarResponsable(index) {
+        responsables.splice(index, 1);
+        if (responsables.length > 0 && responsables[0].rol !== 'responsable') {
+            responsables[0].rol = 'responsable';
+        }
+        renderizarResponsables();
+    }
+
+    function cambiarRol(index, nuevoRol) {
+        if (nuevoRol === 'responsable') {
+            const anteriorResponsable = responsables.findIndex(r => r.rol === 'responsable');
+            if (anteriorResponsable !== -1 && anteriorResponsable !== index) {
+                responsables[anteriorResponsable].rol = 'coordinador';
+            }
+        }
+        responsables[index].rol = nuevoRol;
+        renderizarResponsables();
+    }
+
+    function renderizarResponsables() {
+        const container = document.getElementById('listaResponsables');
+        const sinResp = document.getElementById('sinResponsables');
+
+        if (responsables.length === 0) {
+            container.innerHTML = '';
+            sinResp.classList.remove('d-none');
+            return;
+        }
+
+        sinResp.classList.add('d-none');
+        let html = '';
+
+        responsables.forEach((r, i) => {
+            const esPrimero = i === 0;
+            let selectHtml = '';
+            rolChoices.forEach(o => {
+                const selected = o.value === r.rol ? 'selected' : '';
+                selectHtml += `<option value="${o.value}" ${selected}>${o.label}</option>`;
+            });
+
+            html += `
+                <div class="responsable-card ${esPrimero ? 'primero' : ''}">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center flex-grow-1">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" 
+                                 style="width: 40px; height: 40px; background: ${esPrimero ? 'var(--blue-main)' : '#64748b'}; color: white; font-size: 0.8rem; font-weight: bold;">
+                                ${r.nombre_completo.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small text-dark">${r.nombre_completo}</div>
+                                <div class="x-small text-muted">${r.nacionalidad}-${r.cedula} · ${r.email}${r.profesion ? ' · ' + r.profesion : ''}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select form-select-sm" style="width: 180px; border-radius: 8px; font-size: 0.75rem;"
+                                    onchange="cambiarRol(${i}, this.value)">
+                                ${selectHtml}
+                            </select>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" 
+                                    style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"
+                                    onclick="eliminarResponsable(${i})" title="Eliminar">
+                                <i class="bi bi-trash3" style="font-size: 0.7rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    document.getElementById('btnBuscarTutor').addEventListener('click', buscarTutor);
+    document.getElementById('btnAgregarTutor').addEventListener('click', agregarTutor);
+    document.getElementById('buscarCedulaTutor').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); buscarTutor(); }
+    });
+
+    // Renderizar responsables existentes al cargar
+    renderizarResponsables();
+
+    // Al enviar, generar inputs hidden con los responsables
+    document.querySelector('form.needs-validation').addEventListener('submit', function(e) {
+        this.querySelectorAll('input[name^="responsable_"]').forEach(el => el.remove());
+
+        responsables.forEach((r, i) => {
+            const inputId = document.createElement('input');
+            inputId.type = 'hidden';
+            inputId.name = `responsable_${i}_tutor_id`;
+            inputId.value = r.id;
+            this.appendChild(inputId);
+
+            const inputRol = document.createElement('input');
+            inputRol.type = 'hidden';
+            inputRol.name = `responsable_${i}_rol`;
+            inputRol.value = r.rol;
+            this.appendChild(inputRol);
+        });
+
+        const inputCount = document.createElement('input');
+        inputCount.type = 'hidden';
+        inputCount.name = 'responsables_count';
+        inputCount.value = responsables.length;
+        this.appendChild(inputCount);
+    });
 </script>
 {% endblock %}
 

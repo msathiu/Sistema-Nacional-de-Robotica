@@ -455,6 +455,14 @@ class Evento(models.Model):
             return True
         return False
 
+    def iniciar(self):
+        """Inicia el evento (ABIERTO → EN_PROCESO). Llamado por el comando actualizar_estados_eventos."""
+        if self.puede_transicionar(EstadoEvento.EN_PROCESO):
+            self.estado_evento = EstadoEvento.EN_PROCESO
+            self.save(update_fields=["estado_evento"])
+            return True
+        return False
+
     def es_visible_para_todos(self):
         """Evento visible para todos: abierto, en proceso o si es publicacion especial."""
         return (
@@ -628,6 +636,51 @@ class Evento(models.Model):
             raise ValidationError("Evento de club debe tener club organizador")
         if self.institucion and self.club_organizador:
             raise ValidationError("Evento no puede tener ambos organizadores")
+
+    # --- Configuración centralizada de estados para UI ---
+    ESTADO_UI_CONFIG = {
+        "borrador":    {"label": "Borrador",     "badge_class": "bg-secondary opacity-75"},
+        "revision":    {"label": "En revisión",   "badge_class": "bg-warning text-dark"},
+        "abierto":     {"label": "Abierto",       "badge_class": "bg-success"},
+        "rechazado":   {"label": "Rechazado",     "badge_class": "bg-danger"},
+        "pausado":     {"label": "Pausado",       "badge_class": "bg-warning"},
+        "cancelado":   {"label": "Cancelado",     "badge_class": "bg-danger"},
+        "en_proceso":  {"label": "En Proceso",    "badge_class": "bg-primary"},
+        "finalizado":  {"label": "Finalizado",    "badge_class": "bg-dark"},
+    }
+
+    @property
+    def estado_ui(self):
+        """Retorna dict con label y badge_class para el estado actual."""
+        config = self.ESTADO_UI_CONFIG.get(self.estado_evento, {})
+        if self.cancelado:
+            return {"label": "Cancelado", "badge_class": "bg-danger"}
+        return {
+            "label": config.get("label", self.get_estado_evento_display()),
+            "badge_class": config.get("badge_class", "bg-secondary"),
+        }
+
+    @property
+    def estado_badge_html(self):
+        """Retorna el HTML completo del badge de estado."""
+        ui = self.estado_ui
+        return f'<span class="badge {ui["badge_class"]}">{ui["label"]}</span>'
+
+    @property
+    def tipo_evento_ui(self):
+        """Retorna dict con label, icono y clase CSS para tipo de evento."""
+        if self.tipo_evento == "club":
+            return {"label": "Club", "icon": "bi-people", "class": "badge-tipo bg-purple"}
+        return {"label": "Institucional", "icon": "bi-building", "class": "badge-tipo bg-blue"}
+
+    @property
+    def modalidad_ui(self):
+        """Retorna dict con label, icono y clase CSS para modalidad."""
+        if self.modalidad == "presencial":
+            return {"label": "Presencial", "icon": "bi-geo-alt", "class": "badge-tipo-generic bg-success text-white"}
+        if self.modalidad == "virtual":
+            return {"label": "Virtual", "icon": "bi bi-display", "class": "badge-tipo-generic bg-info text-white"}
+        return {"label": "Híbrido", "icon": "bi-diagram-3", "class": "badge-tipo-generic bg-warning text-dark"}
 
 
 class Inscripcion(models.Model):

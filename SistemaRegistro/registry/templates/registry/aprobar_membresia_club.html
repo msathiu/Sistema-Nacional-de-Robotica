@@ -3,128 +3,113 @@
 
 {% block title %}Dar Visto Bueno a Membresía{% endblock %}
 
-{% block extra_css %}
-<style>
-    .modern-card {
-        border-radius: 20px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-    }
-    
-    .card-header-modern {
-        border-radius: 20px 20px 0 0 !important;
-        padding: 1.5rem;
-        border: none;
-    }
-    
-    .success-gradient {
-        background: linear-gradient(145deg, #059669, #047857);
-    }
-    
-    .info-gradient {
-        background: linear-gradient(145deg, #0891b2, #0e7490);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
+
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center">
-                <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" 
-                   class="btn btn-secondary btn-circle me-3" 
-                   style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-arrow-left"></i>
-                </a>
-                <div class="p-3 rounded-3 me-3 shadow-sm" style="background: linear-gradient(145deg, #059669, #047857);">
-                    <i class="bi bi-check-circle fs-2 text-white"></i>
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="text-decoration-none">Gestionar Membresías</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Dar Visto Bueno</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-3 rounded-3 shadow-sm" style="background: var(--blue-main); border: 1px solid var(--accent-cyan);">
+                    <i class="bi bi-check-circle-fill fs-2 text-white"></i>
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">Dar Visto Bueno</h2>
-                    <p class="text-muted mb-0 small">Aprobar solicitud de membresía</p>
+                    <p class="text-muted mb-0 small">Aprobar solicitud de membresía al club</p>
                 </div>
             </div>
         </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-outline-secondary shadow-sm px-4 fw-bold" style="border-radius: 12px;">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </a>
+        </div>
     </div>
-    <hr class="mt-2 mb-4 opacity-10">
 
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="modern-card">
-                <div class="card-header card-header-modern success-gradient text-white d-flex align-items-center">
-                    <i class="bi bi-check-circle me-3 fs-4"></i>
-                    <h4 class="mb-0 fw-bold">Dar Visto Bueno a Membresía</h4>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-collection-play text-white me-3 fs-5"></i>
+                        <h5 class="fw-bold mb-0 text-white">{{ membresia.club.nombre }}</h5>
+                    </div>
                 </div>
+                <div style="height: 3px; background: var(--accent-cyan);"></div>
+
                 <div class="card-body p-4">
-                    <div class="alert mb-4" style="background: linear-gradient(135deg, #e0f2fe, #f0f9ff); border-radius: 12px; border-left: 4px solid #0891b2;">
-                        <div class="d-flex align-items-start">
-                            <i class="bi bi-info-circle fs-5 me-3 mt-1" style="color: #0891b2;"></i>
-                            <div>
-                                <strong>Información:</strong> Al dar visto bueno, la solicitud será enviada al Ente Rector para su aprobación final.
+                    <!-- Datos de la membresía -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded-3 border-start border-3" style="border-color: var(--blue-main) !important;">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-building me-1"></i>Institución Solicitante</label>
+                                <span class="fw-bold text-dark">{{ membresia.institucion.nombre }}</span>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded-3 border-start border-3" style="border-color: var(--blue-main) !important;">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-tag me-1"></i>Tipo de Línea</label>
+                                <span class="fw-bold text-dark">{{ membresia.get_tipo_linea_display|default:"No especificado" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded-3">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-calendar3 me-1"></i>Fecha de Solicitud</label>
+                                <span class="fw-medium text-dark">{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded-3">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-person me-1"></i>Representante Legal</label>
+                                <span class="fw-medium text-dark">{{ membresia.representante_legal|default:"No especificado" }}</span>
+                            </div>
+                        </div>
+                        {% if membresia.carta_intencion %}
+                        <div class="col-12">
+                            <div class="bg-light p-3 rounded-3">
+                                <label class="text-muted x-small fw-bold text-uppercase d-block mb-1"><i class="bi bi-envelope me-1"></i>Carta de Intención</label>
+                                <p class="mb-0 text-dark small" style="line-height: 1.6;">{{ membresia.carta_intencion|truncatewords:30 }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <div class="mb-4 p-4 rounded" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
-                        <h5 class="fw-bold mb-3" style="color: var(--blue-main);">
-                            <i class="bi bi-file-text me-2"></i>Información de la Solicitud
-                        </h5>
-                        <table class="table table-borderless">
-                            <tr>
-                                <th width="30%"><i class="bi bi-robot me-2"></i>Club:</th>
-                                <td>{{ membresia.club.nombre }}</td>
-                            </tr>
-                            <tr>
-                                <th><i class="bi bi-building me-2"></i>Institución Solicitante:</th>
-                                <td>{{ membresia.institucion.nombre }}</td>
-                            </tr>
-                            <tr>
-                                <th><i class="bi bi-calendar me-2"></i>Fecha de Solicitud:</th>
-                                <td>{{ membresia.fecha_solicitud|date:"d/m/Y H:i" }}</td>
-                            </tr>
-                            <tr>
-                                <th><i class="bi bi-tag me-2"></i>Tipo de Línea:</th>
-                                <td>{{ membresia.get_tipo_linea_display|default:"No especificado" }}</td>
-                            </tr>
-                            <tr>
-                                <th><i class="bi bi-person me-2"></i>Representante Legal:</th>
-                                <td>{{ membresia.representante_legal|default:"No especificado" }}</td>
-                            </tr>
-                            {% if membresia.carta_intencion %}
-                            <tr>
-                                <th><i class="bi bi-envelope me-2"></i>Carta de Intención:</th>
-                                <td>{{ membresia.carta_intencion|truncatewords:30 }}</td>
-                            </tr>
-                            {% endif %}
-                        </table>
+                    <!-- Alerta informativa -->
+                    <div class="p-3 rounded-3 mb-4" style="background: #eff6ff; border-left: 4px solid var(--blue-main);">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-info-circle-fill mt-1" style="color: var(--blue-main);"></i>
+                            <p class="mb-0 small text-dark">Al dar visto bueno, la solicitud será enviada al Ente Rector para su aprobación final.</p>
+                        </div>
                     </div>
 
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-4">
-                            <label for="observaciones" class="form-label fw-bold" style="color: var(--blue-main);">
-                                <i class="bi bi-chat-left-text me-2"></i>Observaciones (opcional)
+                            <label for="observaciones" class="form-label fw-bold text-dark">
+                                <i class="bi bi-chat-left-text me-1"></i>Observaciones
+                                <span class="text-muted fw-normal small ms-1">(Opcional)</span>
                             </label>
-                            <textarea 
-                                name="observaciones" 
-                                id="observaciones" 
-                                class="form-control" 
-                                rows="4" 
-                                placeholder="Agrega comentarios sobre la solicitud..."
-                                style="border-radius: 12px; border: 2px solid #e5e7eb;"
-                            ></textarea>
+                            <textarea name="observaciones" id="observaciones"
+                                      class="form-control border-0 shadow-sm"
+                                      rows="4"
+                                      style="border-radius: 12px; background: #f8fafc;"
+                                      placeholder="Agrega comentarios sobre la solicitud..."></textarea>
                             <small class="text-muted mt-1 d-block">Estas observaciones serán visibles para el Ente Rector.</small>
                         </div>
 
-                        <div class="d-flex justify-content-between pt-3">
-                            <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'gestionar_membresias_club' membresia.club.id %}" class="btn btn-outline-secondary fw-bold px-4" style="border-radius: 10px;">
+                                <i class="bi bi-x-lg me-1"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-2"></i>Dar Visto Bueno
+                            <button type="submit" class="btn fw-bold px-4 text-white shadow-sm" style="background: var(--blue-main); border-radius: 10px;">
+                                <i class="bi bi-check-circle me-1"></i>Dar Visto Bueno
                             </button>
                         </div>
                     </form>
@@ -133,5 +118,9 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
+<style>
+    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
+    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+</style>
+{% endblock %}
