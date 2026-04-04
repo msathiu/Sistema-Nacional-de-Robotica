@@ -34,6 +34,7 @@ from registry.models import (
     IntegranteEquipo,
     MembresiaClu,
     Municipio,
+    Notificacion,
     Parroquia,
     Participante,
     ParticipanteInstitucion,
@@ -286,6 +287,119 @@ def inscribir_grupo_evento(request, evento_id):
         messages.error(request, "❌ Error al procesar la inscripción. Intenta nuevamente.")
 
     return redirect("detalle_evento_inscripcion", evento_id=evento_id)
+
+
+@login_required
+def cancelar_inscripcion_grupo(request, inscripcion_id):
+    """
+    Cancela la inscripción de un grupo en un evento y revierte el estado del grupo.
+    Solo puede hacerlo la institución dueña del grupo, y solo si el evento está abierto.
+    """
+    if request.method != "POST":
+        return redirect("eventos_disponibles")
+
+    inscripcion = get_object_or_404(
+        InscripcionGrupoEvento.objects.select_related("grupo", "evento"),
+        id=inscripcion_id,
+        activo=True,
+    )
+
+    grupo = inscripcion.grupo
+    evento = inscripcion.evento
+    user_profile = request.user.userprofile
+
+    # Verificar que el grupo pertenece a la institución del usuario
+    if grupo.usuario_creador != request.user:
+        messages.error(request, "❌ No tienes permiso para cancelar esta inscripción.")
+        return redirect("detalle_evento_inscripcion", evento_id=evento.id)
+
+    # Solo se puede cancelar si el evento sigue abierto
+    if evento.estado_evento != EstadoEvento.ABIERTO:
+        messages.error(
+            request,
+            f"❌ No se puede cancelar la inscripción: el evento está en estado '{evento.get_estado_evento_display()}'.",
+        )
+        return redirect("detalle_evento_inscripcion", evento_id=evento.id)
+
+    # El grupo no debe estar bloqueado (evento finalizado lo bloquea)
+    if grupo.estado_grupo == "bloqueado":
+        messages.error(request, "❌ El equipo está bloqueado y no puede desvincularse.")
+        return redirect("detalle_evento_inscripcion", evento_id=evento.id)
+
+    try:
+        with transaction.atomic():
+            inscripcion.delete()
+            grupo.estado_grupo = "editable"
+            grupo.evento = None
+            grupo.save(update_fields=["estado_grupo", "evento"])
+        messages.success(
+            request,
+            f"✅ Inscripción del equipo '{grupo.nombre}' cancelada. El equipo está disponible nuevamente.",
+        )
+    except Exception:
+        messages.error(request, "❌ Error al cancelar la inscripción. Intenta nuevamente.")
+
+    return redirect("detalle_evento_inscripcion", evento_id=evento.id)
+
+
+@login_required
+def cancelar_inscripcion_grupo_admin(request, inscripcion_id):
+    """
+    Cancela la inscripción de un grupo desde el panel de administración (fed_central).
+    Revierte el estado del grupo, desvincula del evento y envía notificación al creador.
+    """
+    if request.method != "POST":
+        return redirect("admin_eventos")
+
+    if request.user.userprofile.user_type not in ["fed_central", "superuser", "tecnologico"]:
+        messages.error(request, "❌ No tienes permiso para realizar esta acción.")
+        return redirect("admin_eventos")
+
+    inscripcion = get_object_or_404(
+        InscripcionGrupoEvento.objects.select_related("grupo", "evento"),
+        id=inscripcion_id,
+        activo=True,
+    )
+
+    grupo = inscripcion.grupo
+    evento = inscripcion.evento
+    observacion = request.POST.get("observacion", "").strip()
+
+    if not observacion:
+        messages.error(request, "❌ Debes ingresar una observación para cancelar la inscripción.")
+        return redirect("detalle_evento_gestion_admin", evento_id=evento.id)
+
+    if grupo.estado_grupo == "bloqueado":
+        messages.error(request, "❌ El equipo está bloqueado y no puede desvincularse.")
+        return redirect("detalle_evento_gestion_admin", evento_id=evento.id)
+
+    try:
+        with transaction.atomic():
+            inscripcion.delete()
+            grupo.estado_grupo = "editable"
+            grupo.evento = None
+            grupo.save(update_fields=["estado_grupo", "evento"])
+
+            Notificacion.objects.create(
+                destinatario=grupo.usuario_creador,
+                tipo="sistema",
+                titulo=f"Inscripción cancelada: {evento.nombre}",
+                mensaje=(
+                    f"La Federación ha cancelado la inscripción del equipo «{grupo.nombre}» "
+                    f"en el evento «{evento.nombre}».\n\n"
+                    f"Motivo: {observacion}\n\n"
+                    f"El equipo queda disponible para inscribirse en otros eventos."
+                ),
+            )
+
+        messages.success(
+            request,
+            f"✅ Inscripción del equipo '{grupo.nombre}' cancelada. Se notificó a la institución.",
+        )
+    except Exception:
+        messages.error(request, "❌ Error al cancelar la inscripción. Intenta nuevamente.")
+
+    return redirect("detalle_evento_gestion_admin", evento_id=evento.id)
 
 
 def home(request):

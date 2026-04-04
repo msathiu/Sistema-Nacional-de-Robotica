@@ -160,6 +160,16 @@ urlpatterns = [
         views.inscribir_grupo_evento,
         name="inscribir_grupo_evento",
     ),
+    path(
+        "eventos/cancelar-inscripcion/<int:inscripcion_id>/",
+        views.cancelar_inscripcion_grupo,
+        name="cancelar_inscripcion_grupo",
+    ),
+    path(
+        "eventos/cancelar-inscripcion-admin/<int:inscripcion_id>/",
+        views.cancelar_inscripcion_grupo_admin,
+        name="cancelar_inscripcion_grupo_admin",
+    ),
     path("eventos/editar/<int:evento_id>/", views.editar_evento, name="editar_evento"),
     path("eventos/<int:evento_id>/asistencia/",   views.registro_asistencia,  name="registro_asistencia"),
     path(

@@ -156,12 +156,22 @@
                                     <td>{{ inscripcion.grupo.usuario_creador.userprofile.institution.nombre }}</td>
                                     <td>{{ inscripcion.fecha_inscripcion|date:"d/m/Y" }}</td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes"
-                                                data-grupo-id="{{ inscripcion.grupo.id }}"
-                                                data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
-                                                title="Ver participantes del grupo">
-                                            <i class="bi bi-eye me-1"></i>Ver
-                                        </button>
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes"
+                                                    data-grupo-id="{{ inscripcion.grupo.id }}"
+                                                    data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
+                                                    title="Ver participantes del grupo">
+                                                <i class="bi bi-eye me-1"></i>Ver
+                                            </button>
+                                            {% if evento.estado_evento == 'abierto' and inscripcion.grupo.usuario_creador == request.user %}
+                                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold btn-cancelar-inscripcion"
+                                                    data-inscripcion-id="{{ inscripcion.id }}"
+                                                    data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
+                                                    title="Cancelar inscripción">
+                                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                                            </button>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -228,6 +238,30 @@
     </div>
 </div>
 
+<!-- Modal cancelar inscripción -->
+<div class="modal fade" id="cancelarInscripcionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4" style="background: #dc2626; border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0 text-white"><i class="bi bi-x-circle me-2"></i>Cancelar Inscripción</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 py-4 text-center">
+                <p class="text-muted mb-0">Se cancelará la inscripción del equipo<br><strong id="cancelarGrupoNombre"></strong><br>y quedará disponible para inscribirse nuevamente.</p>
+            </div>
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">No, volver</button>
+                <form id="formCancelarInscripcion" method="POST" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        <i class="bi bi-x-circle me-1"></i>Sí, cancelar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal participantes del grupo -->
 <div class="modal fade" id="participantesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -273,6 +307,27 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.classList.remove('modal-open');
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('padding-right');
+    });
+
+    const cancelarModalEl = document.getElementById('cancelarInscripcionModal');
+    const cancelarModal = bootstrap.Modal.getOrCreateInstance(cancelarModalEl);
+
+    cancelarModalEl.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    });
+
+    document.querySelectorAll('.btn-cancelar-inscripcion').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const inscripcionId = this.dataset.inscripcionId;
+            const grupoNombre = this.dataset.grupoNombre;
+            document.getElementById('cancelarGrupoNombre').textContent = grupoNombre;
+            document.getElementById('formCancelarInscripcion').action =
+                `/eventos/cancelar-inscripcion/${inscripcionId}/`;
+            cancelarModal.show();
+        });
     });
 
     document.querySelectorAll('.btn-ver-participantes').forEach(btn => {
