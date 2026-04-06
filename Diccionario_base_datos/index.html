@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diccionario de Datos — RNR-PRO</title>
+<link rel="stylesheet" href="styles.css">
+<style media="print">
+  #sidebar, #menuToggle, #scrollTop, #topbar, .print-btn { display: none !important; }
+  #main { margin-left: 0 !important; width: 100% !important; }
+  body, #content, .table-card, .catalog-card, .diagram-card, .section-header {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  .section-header {
+    page-break-before: always !important;
+    break-before: always !important;
+    background: #e9ecef !important;
+    border-top: 3px solid #007bff !important;
+    padding: 10px !important;
+    margin-top: 0 !important;
+  }
+  .section-header:first-of-type {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+  .section-header + * {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+  .table-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 12px !important;
+  }
+  .table-card-header {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  .table-card-header h3,
+  .table-card-header .db-name,
+  .table-card-header .desc {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  .data-table-wrap {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+  table {
+    page-break-inside: auto !important;
+  }
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  thead {
+    display: table-header-group !important;
+  }
+  tfoot {
+    display: table-footer-group !important;
+  }
+  [style*="grid-template-columns:1fr 1fr"] { display: block !important; }
+  .state-machine { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .hero { background: #f8f9fa !important; border-bottom: 2px solid #333 !important; page-break-after: avoid !important; }
+  .table-card-header { background: #f8f9fa !important; border-bottom: 2px solid #dee2e6 !important; }
+  table { border-collapse: collapse !important; width: 100% !important; }
+  th, td { border: 1px solid #ddd !important; padding: 6px !important; font-size: 9pt !important; }
+  th { background: #e9ecef !important; font-weight: bold !important; }
+  .field-name { font-weight: 600 !important; color: #333 !important; }
+  .tag { border: 1px solid #999 !important; padding: 1px 4px !important; font-size: 7pt !important; }
+  .tag-pk { background: #ffc107 !important; color: #000 !important; }
+  .tag-fk { background: #17a2b8 !important; color: #fff !important; }
+  .tag-idx { background: #28a745 !important; color: #fff !important; }
+  .tag-unique { background: #dc3545 !important; color: #fff !important; }
+  .badge { border: 1px solid #666 !important; padding: 2px 6px !important; font-size: 8pt !important; }
+  .info-block { background: #f8f9fa !important; border-left: 3px solid #007bff !important; padding: 8px !important; margin-top: 8px !important; page-break-inside: avoid !important; }
+  .idx-tag, .constraint-tag { background: #e9ecef !important; border: 1px solid #adb5bd !important; padding: 2px 5px !important; font-size: 8pt !important; }
+  .catalog-card { border: 1px solid #ddd !important; page-break-inside: avoid !important; margin-bottom: 10px !important; }
+  .cat-header { background: #007bff !important; color: white !important; padding: 6px !important; font-weight: bold !important; }
+  .diagram-card { border: 2px solid #333 !important; background: #fff !important; page-break-inside: avoid !important; }
+  .diag-header { background: #343a40 !important; color: white !important; padding: 8px !important; font-weight: bold !important; }
+  .state-machine { border: 1px solid #333 !important; background: #f8f9fa !important; padding: 10px !important; }
+  .state-item { border: 1px solid #999 !important; background: white !important; padding: 6px !important; }
+  .state-name { font-weight: bold !important; color: #007bff !important; }
+  h2 { color: #333 !important; border-bottom: 2px solid #007bff !important; padding-bottom: 5px !important; }
+  h3 { color: #495057 !important; page-break-after: avoid !important; }
+  .db-name { color: #6c757d !important; font-style: italic !important; font-family: monospace !important; }
+  .catalog-grid { page-break-inside: auto !important; }
+  .info-blocks { page-break-inside: avoid !important; }
+  .hero { page-break-after: always !important; }
+  #catalogs { page-break-before: avoid !important; }
+  @page { size: A4; margin: 1.5cm; }
+  @page :first { margin-top: 2cm; }
+</style>
+<style>
+  .print-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .print-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #003d80);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,123,255,0.5);
+  }
+  .print-btn:active {
+    transform: translateY(0);
+  }
+  .print-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+</style>
+<style>
+  .print-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0,123,255,0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .print-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #003d80);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,123,255,0.5);
+  }
+  .print-btn:active {
+    transform: translateY(0);
+  }
+  .print-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+</style>
+</head>
+<body>
+
+<button id="menuToggle">☰</button>
+<button class="print-btn" onclick="window.print()" title="Imprimir o guardar como PDF">
+<svg viewBox="0 0 24 24"><path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-2h8zm2-2v-2H6v2H5v-4c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v4h-1z"/><circle cx="18" cy="11.5" r="1"/></svg>
+Imprimir PDF
+</button>
+<button class="print-btn" onclick="window.print()" title="Imprimir o guardar como PDF">
+<svg viewBox="0 0 24 24"><path d="M19 8h-1V3H6v5H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zM8 5h8v3H8V5zm8 12v2H8v-2h8zm2-2v-2H6v2H5v-4c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v4h-1z"/><circle cx="18" cy="11.5" r="1"/></svg>
+Imprimir PDF
+</button>
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+<aside id="sidebar">
+  <div class="brand">
+    <h1>🤖 RNR-PRO</h1>
+    <p>Diccionario de Datos v1.0</p>
+  </div>
+  <div class="search-box">
+    <input type="text" id="sidebarSearch" placeholder="Buscar tabla…">
+  </div>
+  <nav>
+    <div class="section-label">Introducción</div>
+    <a href="#catalogs">📋 Catálogos de Valores</a>
+    <a href="#diagram">🔗 Diagrama de Relaciones</a>
+
+    <div class="section-label">Geografía</div>
+    <a href="#t1">Estado <span class="num">1</span></a>
+    <a href="#t2">Municipio <span class="num">2</span></a>
+    <a href="#t3">Parroquia <span class="num">3</span></a>
+    <a href="#t4">Dependencia <span class="num">4</span></a>
+
+    <div class="section-label">Usuarios</div>
+    <a href="#t5">Institucion <span class="num">5</span></a>
+    <a href="#t6">UserProfile <span class="num">6</span></a>
+
+    <div class="section-label">Participantes</div>
+    <a href="#t7">Participante <span class="num">7</span></a>
+    <a href="#t8">ParticipanteInstitucion <span class="num">8</span></a>
+    <a href="#t9">ParticipanteGrupo <span class="num">9</span></a>
+    <a href="#t10">AsistenciaEvento <span class="num">10</span></a>
+
+    <div class="section-label">Tutores</div>
+    <a href="#t11">Tutor <span class="num">11</span></a>
+    <a href="#t12">TutorInstitucion <span class="num">12</span></a>
+
+    <div class="section-label">Investigación</div>
+    <a href="#t13">LineaInvestigacion <span class="num">13</span></a>
+
+    <div class="section-label">Clubes</div>
+    <a href="#t14">Club <span class="num">14</span></a>
+    <a href="#t15">MembresiaClu <span class="num">15</span></a>
+    <a href="#t16">ClubLineaInvestigacion <span class="num">16</span></a>
+    <a href="#t17">ClubTutor <span class="num">17</span></a>
+    <a href="#t18">HistorialClub <span class="num">18</span></a>
+    <a href="#t19">ComentarioClub <span class="num">19</span></a>
+    <a href="#t20">CalificacionClub <span class="num">20</span></a>
+    <a href="#t21">SolicitudEliminacionClub <span class="num">21</span></a>
+
+    <div class="section-label">Eventos</div>
+    <a href="#t22">Evento <span class="num">22</span></a>
+    <a href="#t23">Inscripcion <span class="num">23</span></a>
+    <a href="#t24">IntegranteEquipo <span class="num">24</span></a>
+    <a href="#t25">InscripcionGrupoEvento <span class="num">25</span></a>
+    <a href="#t26">ClubEvento <span class="num">26</span></a>
+
+    <div class="section-label">Grupos</div>
+    <a href="#t27">Grupo <span class="num">27</span></a>
+
+    <div class="section-label">Notificaciones</div>
+    <a href="#t28">Notificacion <span class="num">28</span></a>
+  </nav>
+  <div class="footer">Django 5.0 · Python 3.12 · SQLite3/PostgreSQL</div>
+</aside>
+
+<!-- ══════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════ -->
+<div id="main">
+  <div id="topbar">
+    <div class="breadcrumb">Documentación / <span>Diccionario de Datos</span></div>
+    <div class="meta-badges">
+      <span class="meta-badge">Versión <strong>1.0</strong></span>
+      <span class="meta-badge">Tablas <strong>28</strong></span>
+      <span class="meta-badge">Fecha <strong>2026-04-03</strong></span>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- HERO -->
+    <div class="hero">
+      <h2>Diccionario de Datos — RNR-PRO</h2>
+      <p>Documentación técnica completa del modelo de datos del Sistema Nacional de Robótica. Incluye estructura de tablas, tipos de datos, restricciones, índices y relaciones entre entidades.</p>
+      <div class="stats">
+        <div class="stat"><div class="val">28</div><div class="lbl">Tablas</div></div>
+        <div class="stat"><div class="val">200+</div><div class="lbl">Campos</div></div>
+        <div class="stat"><div class="val">40+</div><div class="lbl">Índices</div></div>
+        <div class="stat"><div class="val">8</div><div class="lbl">Estados Evento</div></div>
+      </div>
+    </div>
+
+    <!-- ── CATÁLOGOS ── -->
+    <div id="catalogs" class="section-header" style="scroll-margin-top:80px">
+      <div class="icon">📋</div>
+      <div><h2>Catálogos de Valores</h2><p>Valores permitidos (choices) usados en múltiples tablas</p></div>
+    </div>
+
+    <div class="catalog-grid">
+      <div class="catalog-card">
+        <div class="cat-header">Nacionalidad</div>
+        <table><thead><tr><th>Código</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">V</td><td>Venezolano</td></tr>
+          <tr><td class="field-name">E</td><td>Extranjero</td></tr>
+        </tbody></table>
+      </div>
+      <div class="catalog-card">
+        <div class="cat-header">Sexo</div>
+        <table><thead><tr><th>Código</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">M</td><td>Masculino</td></tr>
+          <tr><td class="field-name">F</td><td>Femenino</td></tr>
+          <tr><td class="field-name">O</td><td>Otro</td></tr>
+        </tbody></table>
+      </div>
+      <div class="catalog-card">
+        <div class="cat-header">Código de Área Telefónico</div>
+        <table><thead><tr><th>Código</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">0424 · 0414 · 0422 · 0412 · 0426 · 0416 · 0212</td></tr>
+        </tbody></table>
+      </div>
+      <div class="catalog-card">
+        <div class="cat-header">Grado Escolar</div>
+        <table><thead><tr><th>Código</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td class="field-name">NO</td><td>No estudia</td></tr>
+          <tr><td class="field-name">P1/P2</td><td>Preescolar Nivel 1/2</td></tr>
+          <tr><td class="field-name">PR1–PR6</td><td>1er–6to Grado Primaria</td></tr>
+          <tr><td class="field-name">L1–L6</td><td>1er–6to Año Liceo</td></tr>
+          <tr><td class="field-name">U</td><td>Estudios Universitarios</td></tr>
+          <tr><td class="field-name">OTRO</td><td>Otro/No especificado</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- ── DIAGRAMA ── -->
+    <div id="diagram" class="diagram-card" style="scroll-margin-top:80px">
+      <div class="diag-header">🔗 Diagrama de Relaciones Principales</div>
+      <pre>
+User (Django)
+ └── UserProfile ──────────────────────── Institucion
+                                              │
+                    ┌─────────────────────────┤
+                    │                         │
+               Participante            Club ──┤── MembresiaClu
+                    │                    │    │
+         ParticipanteInstitucion    ClubTutor │
+                    │                    │    │
+                  Grupo ◄───────── Tutor ─────┘
+                    │         TutorInstitucion
+                    │
+              Evento ◄── InscripcionGrupoEvento
+                    │
+              AsistenciaEvento
+      </pre>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TABLAS GEOGRAFÍA
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">🗺️</div>
+      <div><h2>Geografía</h2><p>Catálogos de ubicación geográfica de Venezuela</p></div>
+    </div>
+
+    <!-- T1: Estado -->
+    <div class="table-card" id="t1">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>1. Estado</h3>
+          <div class="db-name">registry_estado</div>
+          <p class="desc" style="margin-top:6px">Catálogo de estados (entidades federales) de Venezuela.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">3 campos</span>
+          <span class="badge badge-indexes">2 índices</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Nombre del estado</td></tr>
+            <tr><td class="field-name">codigo</td><td class="field-type">CharField(10)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Código del estado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_estado_nombre</span><span class="idx-tag">idx_estado_codigo</span></div></div>
+      </div>
+    </div>
+
+    <!-- T2: Municipio -->
+    <div class="table-card" id="t2">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>2. Municipio</h3>
+          <div class="db-name">registry_municipio</div>
+          <p class="desc" style="margin-top:6px">Catálogo de municipios, relacionados con su estado.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">3 campos</span>
+          <span class="badge badge-indexes">1 índice</span>
+          <span class="badge badge-constraints">1 restricción</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Estado al que pertenece</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombre del municipio</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_mun_estado_nombre</span></div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [estado, nombre]</span></div></div>
+      </div>
+    </div>
+
+    <!-- T3: Parroquia -->
+    <div class="table-card" id="t3">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>3. Parroquia</h3>
+          <div class="db-name">registry_parroquia</div>
+          <p class="desc" style="margin-top:6px">Catálogo de parroquias, relacionadas con su municipio.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">3 campos</span>
+          <span class="badge badge-indexes">1 índice</span>
+          <span class="badge badge-constraints">1 restricción</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>municipio_id</td><td class="field-type">→ Municipio</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Municipio al que pertenece</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombre de la parroquia</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_parr_mun_nombre</span></div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [municipio, nombre]</span></div></div>
+      </div>
+    </div>
+
+    <!-- T4: Dependencia -->
+    <div class="table-card" id="t4">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>4. Dependencia</h3>
+          <div class="db-name">registry_dependencia</div>
+          <p class="desc" style="margin-top:6px">Catálogo de dependencias institucionales (ej. MPPE, MINCYT).</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">3 campos</span>
+          <span class="badge badge-indexes">1 índice</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(255)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Nombre de la dependencia</td></tr>
+            <tr><td class="field-name">activa</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si está activa (default: True)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_dep_activa_nombre</span></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         USUARIOS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">🏛️</div>
+      <div><h2>Usuarios e Instituciones</h2><p>Entidades principales del sistema de registro</p></div>
+    </div>
+
+    <!-- T5: Institucion -->
+    <div class="table-card" id="t5">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>5. Institucion</h3>
+          <div class="db-name">registry_institucion</div>
+          <p class="desc" style="margin-top:6px">Entidad central del sistema. Representa instituciones educativas, organizaciones, clubes o particulares registrados en el RNR.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">32 campos</span>
+          <span class="badge badge-indexes">8 índices</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>usuario_id</td><td class="field-type">→ User (1:1)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Usuario Django asociado</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(255)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombre de la institución</td></tr>
+            <tr><td class="field-name">rif</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>RIF de la institución</td></tr>
+            <tr><td class="field-name">particular_nombres</td><td class="field-type">CharField(100)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombres (solo para particulares)</td></tr>
+            <tr><td class="field-name">particular_apellidos</td><td class="field-type">CharField(100)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Apellidos (solo para particulares)</td></tr>
+            <tr><td class="field-name">particular_nacionalidad</td><td class="field-type">CharField(1)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nacionalidad del particular (V/E)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>particular_cedula</td><td class="field-type">CharField(10)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Cédula del particular (solo números)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>tipo_institucion</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>educativa · publica · privada · otra · particular</td></tr>
+            <tr><td class="field-name">naturaleza</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>publica · privada</td></tr>
+            <tr><td class="field-name">subcategoria</td><td class="field-type">CharField(120)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Subcategoría institucional</td></tr>
+            <tr><td class="field-name">tipo_federado</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>institucion · organizacion · particular</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>federado</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si está federado (default: False)</td></tr>
+            <tr><td class="field-name">categoria</td><td class="field-type">CharField(50)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Categoría adicional</td></tr>
+            <tr><td class="field-name">codigo_mppe</td><td class="field-type">CharField(30)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Código MPPE (instituciones educativas)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Estado de ubicación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>municipio_id</td><td class="field-type">→ Municipio</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Municipio de ubicación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>parroquia_id</td><td class="field-type">→ Parroquia</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Parroquia de ubicación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-unique">UNQ</span><span class="tag tag-idx">IDX</span>codigo</td><td class="field-type">CharField(35)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Código RNR único (auto-generado)</td></tr>
+            <tr><td class="field-name">direccion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Dirección física</td></tr>
+            <tr><td class="field-name">telefono_codigo</td><td class="field-type">CharField(4)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Código de área del teléfono</td></tr>
+            <tr><td class="field-name">telefono_numero</td><td class="field-type">CharField(7)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Número de teléfono (7 dígitos)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>email</td><td class="field-type">EmailField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Correo electrónico</td></tr>
+            <tr><td class="field-name">fecha_registro</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de registro (auto)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>estatus</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>pendiente · aprobado · rechazado</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activa</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si la institución está activa</td></tr>
+            <tr><td class="field-name">eliminado</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Soft delete</td></tr>
+            <tr><td class="field-name">fecha_eliminacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de eliminación lógica</td></tr>
+            <tr><td class="field-name">dependencia</td><td class="field-type">CharField(255)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombre de dependencia (texto libre)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>dependencia_rel_id</td><td class="field-type">→ Dependencia</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Dependencia relacionada (catálogo)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list">
+          <span class="idx-tag">idx_inst_codigo</span><span class="idx-tag">idx_inst_email</span>
+          <span class="idx-tag">idx_inst_estatus</span><span class="idx-tag">idx_inst_activa</span>
+          <span class="idx-tag">idx_inst_ubicacion</span><span class="idx-tag">idx_inst_tipo</span>
+          <span class="idx-tag">idx_inst_federado</span><span class="idx-tag">idx_inst_part_cedula</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- T6: UserProfile -->
+    <div class="table-card" id="t6">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>6. UserProfile</h3>
+          <div class="db-name">users_userprofile</div>
+          <p class="desc" style="margin-top:6px">Perfil extendido del usuario Django. Define el rol y la institución asociada.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">12 campos</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>user_id</td><td class="field-type">→ User (1:1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Usuario Django</td></tr>
+            <tr><td class="field-name">user_type</td><td class="field-type">CharField(25)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>participante · institucional · fed_central · fed_regional · tecnologico · superuser</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institution_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Institución asociada</td></tr>
+            <tr><td class="field-name">phone</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Teléfono del usuario</td></tr>
+            <tr><td class="field-name">cedula</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Cédula del usuario</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Estado (para territorialidad regional)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>municipio_id</td><td class="field-type">→ Municipio</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Municipio</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>parroquia_id</td><td class="field-type">→ Parroquia</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Parroquia</td></tr>
+            <tr><td class="field-name">ubicacion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Descripción de ubicación</td></tr>
+            <tr><td class="field-name">created_at</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación (auto)</td></tr>
+            <tr><td class="field-name">updated_at</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de actualización (auto)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Roles de Usuario</h4><div class="tags-list">
+          <span class="constraint-tag">participante</span>
+          <span class="constraint-tag">institucional</span>
+          <span class="constraint-tag">fed_central</span>
+          <span class="constraint-tag">fed_regional</span>
+          <span class="constraint-tag">tecnologico</span>
+          <span class="constraint-tag">superuser</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PARTICIPANTES
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">👤</div>
+      <div><h2>Participantes</h2><p>Registro y vinculación de participantes del sistema</p></div>
+    </div>
+
+    <!-- T7: Participante -->
+    <div class="table-card" id="t7">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>7. Participante</h3>
+          <div class="db-name">registry_participante</div>
+          <p class="desc" style="margin-top:6px">Datos personales únicos de cada participante. Un participante puede estar vinculado a múltiples instituciones.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">28 campos</span>
+          <span class="badge badge-indexes">5 índices</span>
+          <span class="badge badge-constraints">3 restricciones</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span><span class="tag tag-uuid">UUID</span>id</td><td class="field-type">UUIDField (uuid7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador único universal</td></tr>
+            <tr><td class="field-name">nacionalidad</td><td class="field-type">CharField(1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>V · E</td></tr>
+            <tr><td class="field-name"><span class="tag tag-unique">UNQ</span><span class="tag tag-idx">IDX</span>cedula</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Cédula de identidad (solo números)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-unique">UNQ</span><span class="tag tag-idx">IDX</span>cedula_escolar</td><td class="field-type">CharField(20)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Cédula escolar (menores de 10 años)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>nombres</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombres del participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>apellidos</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Apellidos del participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha_nacimiento</td><td class="field-type">DateField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de nacimiento (mín. 4 años)</td></tr>
+            <tr><td class="field-name">sexo</td><td class="field-type">CharField(1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>M · F · O</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>email</td><td class="field-type">EmailField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Correo electrónico</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Estado de residencia</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>municipio_id</td><td class="field-type">→ Municipio</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Municipio de residencia</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>parroquia_id</td><td class="field-type">→ Parroquia</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Parroquia de residencia</td></tr>
+            <tr><td class="field-name">direccion</td><td class="field-type">TextField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Dirección de residencia</td></tr>
+            <tr><td class="field-name">codigo_area</td><td class="field-type">CharField(4)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Código de área del teléfono</td></tr>
+            <tr><td class="field-name">numero_telefono</td><td class="field-type">CharField(7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Número de teléfono (7 dígitos)</td></tr>
+            <tr><td class="field-name">grado_escolar</td><td class="field-type">CharField(4)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nivel educativo (ver catálogo)</td></tr>
+            <tr><td class="field-name">titulo_universitario</td><td class="field-type">CharField(200)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Título universitario (si aplica)</td></tr>
+            <tr><td class="field-name">campo1</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Campo adicional para grado/nivel libre</td></tr>
+            <tr><td class="field-name">nombre_representante</td><td class="field-type">CharField(200)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Obligatorio si menor de 18 años</td></tr>
+            <tr><td class="field-name">nacionalidad_representante</td><td class="field-type">CharField(1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>V · E</td></tr>
+            <tr><td class="field-name">cedula_representante</td><td class="field-type">CharField(10)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Cédula del representante (7–10 dígitos)</td></tr>
+            <tr><td class="field-name">codigo_area_representante</td><td class="field-type">CharField(4)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Código de área del representante</td></tr>
+            <tr><td class="field-name">numero_telefono_representante</td><td class="field-type">CharField(7)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Teléfono del representante</td></tr>
+            <tr><td class="field-name">email_representante</td><td class="field-type">EmailField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Correo del representante</td></tr>
+            <tr><td class="field-name">condicion_tea</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Condición TEA (default: False)</td></tr>
+            <tr><td class="field-name">creado_por_federacion</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Registrado por la federación</td></tr>
+            <tr><td class="field-name">fecha_registro</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de registro (auto)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>user_id</td><td class="field-type">→ User (1:1)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Usuario Django asociado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list">
+          <span class="idx-tag">idx_part_cedula</span><span class="idx-tag">idx_part_cedula_esc</span>
+          <span class="idx-tag">idx_part_email</span><span class="idx-tag">idx_part_nombre</span>
+          <span class="idx-tag">idx_part_nombre_fn</span>
+        </div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list">
+          <span class="constraint-tag">unique [nombres + apellidos + fecha_nacimiento]</span>
+          <span class="constraint-tag">Edad mínima: 4 años</span>
+          <span class="constraint-tag">Representante obligatorio si &lt; 18 años</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- T8: ParticipanteInstitucion -->
+    <div class="table-card" id="t8">
+      <div class="table-card-header">
+        <div class="left">
+          <h3>8. ParticipanteInstitucion</h3>
+          <div class="db-name">registry_participanteinstitucion</div>
+          <p class="desc" style="margin-top:6px">Vinculación entre participantes e instituciones. Permite múltiples instituciones con estados independientes.</p>
+        </div>
+        <div class="badges">
+          <span class="badge badge-fields">11 campos</span>
+          <span class="badge badge-indexes">4 índices</span>
+          <span class="badge badge-constraints">3 restricciones</span>
+        </div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span><span class="tag tag-uuid">UUID</span>id</td><td class="field-type">UUIDField (uuid7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador único</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>participante_id</td><td class="field-type">→ Participante</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Participante vinculado</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Institución vinculada</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Estado (para vinculación regional)</td></tr>
+            <tr><td class="field-name">tipo_vinculacion</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>institucional · regional · central</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>grupo_actual_id</td><td class="field-type">→ Grupo</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Grupo actual del participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>status</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>activo · inactivo · suspendido · egresado</td></tr>
+            <tr><td class="field-name">fecha_vinculacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de vinculación (auto)</td></tr>
+            <tr><td class="field-name">fecha_desvinculacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de desvinculación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>registrado_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Usuario que registró la vinculación</td></tr>
+            <tr><td class="field-name">observaciones</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Observaciones adicionales</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list">
+          <span class="idx-tag">idx_partinst_part_st</span><span class="idx-tag">idx_partinst_inst_st</span>
+          <span class="idx-tag">idx_partinst_st_fecha</span><span class="idx-tag">idx_partinst_grupo</span>
+        </div></div>
+        <div class="info-block"><h4>Restricciones Únicas</h4><div class="tags-list">
+          <span class="constraint-tag">unique [participante + institucion] (institucional)</span>
+          <span class="constraint-tag">unique [participante + estado] (regional)</span>
+          <span class="constraint-tag">unique [participante] (central)</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- T9 y T10 compactos -->
+    <div class="table-card" id="t9">
+      <div class="table-card-header">
+        <div class="left"><h3>9. ParticipanteGrupo</h3><div class="db-name">registry_participantegrupo</div><p class="desc" style="margin-top:6px">Historial de pertenencia de participantes a grupos.</p></div>
+        <div class="badges"><span class="badge badge-fields">6 campos</span><span class="badge badge-indexes">2 índices</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span><span class="tag tag-uuid">UUID</span>id</td><td class="field-type">UUIDField (uuid7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador único</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>participante_id</td><td class="field-type">→ Participante</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>grupo_id</td><td class="field-type">→ Grupo</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Grupo</td></tr>
+            <tr><td class="field-name">fecha_ingreso</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de ingreso (auto)</td></tr>
+            <tr><td class="field-name">fecha_salida</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de salida del grupo</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activo</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Membresía activa</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_partgrp_part_act</span><span class="idx-tag">idx_partgrp_grp_act</span></div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [participante, grupo]</span></div></div>
+      </div>
+    </div>
+
+    <div class="table-card" id="t10">
+      <div class="table-card-header">
+        <div class="left"><h3>10. AsistenciaEvento</h3><div class="db-name">registry_asistenciaevento</div><p class="desc" style="margin-top:6px">Registro de asistencia de participantes a eventos.</p></div>
+        <div class="badges"><span class="badge badge-fields">8 campos</span><span class="badge badge-constraints">1 restricción</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>evento_id</td><td class="field-type">→ Evento</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>participante_id</td><td class="field-type">→ Participante</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>grupo_id</td><td class="field-type">→ Grupo</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Grupo del participante</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>asistencia</td><td class="field-type">CharField(12)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>asistio · ausente · pendiente · justificado</td></tr>
+            <tr><td class="field-name">observacion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Observación adicional</td></tr>
+            <tr><td class="field-name">fecha_asistencia</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha/hora en que se marcó</td></tr>
+            <tr><td class="field-name">fecha_creacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación (auto)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [evento, participante]</span></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         TUTORES
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">🎓</div>
+      <div><h2>Tutores</h2><p>Responsables y entrenadores de grupos de robótica</p></div>
+    </div>
+
+    <!-- T11: Tutor -->
+    <div class="table-card" id="t11">
+      <div class="table-card-header">
+        <div class="left"><h3>11. Tutor</h3><div class="db-name">registry_tutor</div><p class="desc" style="margin-top:6px">Tutores o responsables de grupos. Pueden estar vinculados a múltiples instituciones.</p></div>
+        <div class="badges"><span class="badge badge-fields">13 campos</span><span class="badge badge-indexes">1 índice</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span><span class="tag tag-uuid">UUID</span>id</td><td class="field-type">UUIDField (uuid7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador único</td></tr>
+            <tr><td class="field-name">nacionalidad</td><td class="field-type">CharField(1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>V · E</td></tr>
+            <tr><td class="field-name">nombres</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombres del tutor</td></tr>
+            <tr><td class="field-name">apellidos</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Apellidos del tutor</td></tr>
+            <tr><td class="field-name">sexo</td><td class="field-type">CharField(1)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>M · F · O</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>cedula</td><td class="field-type">CharField(12)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Cédula (solo números)</td></tr>
+            <tr><td class="field-name">telefono_codigo</td><td class="field-type">CharField(4)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Código de área del teléfono</td></tr>
+            <tr><td class="field-name">telefono</td><td class="field-type">CharField(7)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Número de teléfono (7 dígitos)</td></tr>
+            <tr><td class="field-name">email</td><td class="field-type">EmailField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Correo electrónico</td></tr>
+            <tr><td class="field-name">profesion</td><td class="field-type">CharField(100)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Profesión</td></tr>
+            <tr><td class="field-name">experiencia</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Experiencia en robótica</td></tr>
+            <tr><td class="field-name">creado_por_federacion</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Registrado por la federación</td></tr>
+            <tr><td class="field-name">created_at</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación (auto)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_tutor_cedula</span></div></div>
+      </div>
+    </div>
+
+    <!-- T12: TutorInstitucion -->
+    <div class="table-card" id="t12">
+      <div class="table-card-header">
+        <div class="left"><h3>12. TutorInstitucion</h3><div class="db-name">registry_tutorinstitucion</div><p class="desc" style="margin-top:6px">Vinculación entre tutores e instituciones con rol y estado independiente.</p></div>
+        <div class="badges"><span class="badge badge-fields">10 campos</span><span class="badge badge-indexes">3 índices</span><span class="badge badge-constraints">3 restricciones</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span><span class="tag tag-uuid">UUID</span>id</td><td class="field-type">UUIDField (uuid7)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador único</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>tutor_id</td><td class="field-type">→ Tutor</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Tutor vinculado</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Institución vinculada</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Estado (para vinculación regional)</td></tr>
+            <tr><td class="field-name">tipo_vinculacion</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>institucional · regional · central</td></tr>
+            <tr><td class="field-name">rol</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>asistente · entrenador · instructor · coordinador · delegado · representante · colaborador</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>status</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>activo · inactivo · suspendido</td></tr>
+            <tr><td class="field-name">fecha_vinculacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de vinculación (auto)</td></tr>
+            <tr><td class="field-name">fecha_desvinculacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de desvinculación</td></tr>
+            <tr><td class="field-name">observaciones</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Observaciones</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_tutinst_tutor_st</span><span class="idx-tag">idx_tutinst_inst_st</span><span class="idx-tag">idx_tutinst_st_fecha</span></div></div>
+        <div class="info-block"><h4>Restricciones Únicas</h4><div class="tags-list">
+          <span class="constraint-tag">unique [tutor + institucion] (institucional)</span>
+          <span class="constraint-tag">unique [tutor + estado] (regional)</span>
+          <span class="constraint-tag">unique [tutor] (central)</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         INVESTIGACIÓN
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">🔬</div>
+      <div><h2>Líneas de Investigación</h2><p>Catálogo gestionado por el Ente Rector</p></div>
+    </div>
+
+    <div class="table-card" id="t13">
+      <div class="table-card-header">
+        <div class="left"><h3>13. LineaInvestigacion</h3><div class="db-name">registry_lineainvestigacion</div><p class="desc" style="margin-top:6px">Catálogo de líneas de investigación gestionado por el Ente Rector.</p></div>
+        <div class="badges"><span class="badge badge-fields">8 campos</span><span class="badge badge-indexes">1 índice</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-unique">UNQ</span><span class="tag tag-idx">IDX</span>codigo</td><td class="field-type">CharField(50)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Código único de la línea</td></tr>
+            <tr><td class="field-name">nombre</td><td class="field-type">CharField(200)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombre de la línea</td></tr>
+            <tr><td class="field-name">descripcion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Descripción detallada</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activa</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si está activa (default: True)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>orden</td><td class="field-type">IntegerField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Orden de visualización (default: 0)</td></tr>
+            <tr><td class="field-name">fecha_creacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación (auto)</td></tr>
+            <tr><td class="field-name">fecha_actualizacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de actualización (auto)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_linea_activa_orden</span></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         CLUBES
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">🤝</div>
+      <div><h2>Clubes</h2><p>Clubes de robótica y sus relaciones</p></div>
+    </div>
+
+    <!-- T14: Club -->
+    <div class="table-card" id="t14">
+      <div class="table-card-header">
+        <div class="left"><h3>14. Club</h3><div class="db-name">registry_club</div><p class="desc" style="margin-top:6px">Clubes de robótica que agrupan múltiples instituciones. Requieren aprobación de la federación.</p></div>
+        <div class="badges"><span class="badge badge-fields">22 campos</span><span class="badge badge-indexes">2 índices</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>nombre</td><td class="field-type">CharField(200)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombre del club</td></tr>
+            <tr><td class="field-name">logo</td><td class="field-type">ImageField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Logo del club (upload: clubes/logos/)</td></tr>
+            <tr><td class="field-name">siglas</td><td class="field-type">CharField(10)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Siglas del club</td></tr>
+            <tr><td class="field-name">descripcion</td><td class="field-type">TextField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Descripción del club</td></tr>
+            <tr><td class="field-name">ubicacion</td><td class="field-type">CharField(255)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Ubicación del club</td></tr>
+            <tr><td class="field-name">fecha_fundacion</td><td class="field-type">DateField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de fundación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_creadora_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Institución que creó el club</td></tr>
+            <tr><td class="field-name">tipo_creador</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>institucion · fed_central · fed_regional</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>coordinador_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Coordinador del club</td></tr>
+            <tr><td class="field-name">documento_legal</td><td class="field-type">CharField(255)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Documento legal / aval institucional</td></tr>
+            <tr><td class="field-name">estado_vinculacion</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>abierto · cerrado · invitacion</td></tr>
+            <tr><td class="field-name">cupo_maximo</td><td class="field-type">IntegerField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Cupo máximo de instituciones (default: 10)</td></tr>
+            <tr><td class="field-name">requisitos</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Requisitos para unirse</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>status</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>borrador · pendiente · en_revision · aprobado · rechazado</td></tr>
+            <tr><td class="field-name">fecha_creacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación</td></tr>
+            <tr><td class="field-name">fecha_aprobacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de aprobación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activo</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si está activo (default: True)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>eliminado</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Soft delete (default: False)</td></tr>
+            <tr><td class="field-name">fecha_eliminacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de eliminación lógica</td></tr>
+            <tr><td class="field-name">motivo_eliminacion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Motivo de eliminación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>eliminado_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Usuario que eliminó el club</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_club_activo_status</span><span class="idx-tag">idx_club_status_nombre</span></div></div>
+      </div>
+    </div>
+
+    <!-- T15-T21 compactos -->
+    <div class="table-card" id="t15">
+      <div class="table-card-header">
+        <div class="left"><h3>15. MembresiaClu</h3><div class="db-name">registry_membresiaclu</div><p class="desc" style="margin-top:6px">Solicitudes y membresías de instituciones a clubes. Flujo de aprobación en dos etapas: fundadora + ente rector.</p></div>
+        <div class="badges"><span class="badge badge-fields">20 campos</span><span class="badge badge-indexes">1 índice</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td><span class="pill-no">✗</span></td><td>Club al que se solicita membresía</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_id</td><td class="field-type">→ Institucion</td><td><span class="pill-no">✗</span></td><td>Institución solicitante</td></tr>
+            <tr><td class="field-name">carta_intencion</td><td class="field-type">TextField</td><td><span class="pill-no">✗</span></td><td>Carta de intención</td></tr>
+            <tr><td class="field-name">propuesta_tecnica</td><td class="field-type">TextField</td><td><span class="pill-no">✗</span></td><td>Propuesta técnica</td></tr>
+            <tr><td class="field-name">representante_legal</td><td class="field-type">CharField(200)</td><td><span class="pill-no">✗</span></td><td>Nombre del representante legal</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>representante_tutor_id</td><td class="field-type">→ Tutor</td><td><span class="pill-yes">✓</span></td><td>Tutor representante legal</td></tr>
+            <tr><td class="field-name">tipo_linea</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td>soporte · afines · vinculantes</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>estado</td><td class="field-type">CharField(25)</td><td><span class="pill-no">✗</span></td><td>pendiente_filtro · visto_bueno_fundadora · miembro_activo · rechazada</td></tr>
+            <tr><td class="field-name">fecha_solicitud</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td>Fecha de solicitud (auto)</td></tr>
+            <tr><td class="field-name">visto_bueno_fundadora</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td>Visto bueno de la institución fundadora</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>visto_bueno_fundadora_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td>Usuario que dio el visto bueno</td></tr>
+            <tr><td class="field-name">visto_bueno_fundadora_fecha</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td>Fecha del visto bueno</td></tr>
+            <tr><td class="field-name">observaciones_fundadora</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td>Observaciones de la fundadora</td></tr>
+            <tr><td class="field-name">aprobacion_ente_rector</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td>Aprobación del ente rector</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>aprobacion_ente_rector_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td>Usuario del ente rector que aprobó</td></tr>
+            <tr><td class="field-name">aprobacion_ente_rector_fecha</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td>Fecha de aprobación del ente rector</td></tr>
+            <tr><td class="field-name">observaciones_rector</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td>Observaciones del ente rector</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_memb_club_inst_active (parcial)</span></div></div>
+      </div>
+    </div>
+
+    <!-- T16-T21 muy compactos -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+      <div class="table-card" id="t16" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>16. ClubLineaInvestigacion</h3><div class="db-name">registry_clublineainvestigacion</div></div><div class="badges"><span class="badge badge-fields">5 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>linea_id</td><td class="field-type">→ LineaInvestigacion</td><td>Línea de investigación</td></tr>
+          <tr><td class="field-name">tipo_linea</td><td class="field-type">CharField(20)</td><td>principal · soporte · afines</td></tr>
+          <tr><td class="field-name">orden</td><td class="field-type">IntegerField</td><td>Orden de visualización</td></tr>
+          <tr><td class="field-name">fecha_vinculacion</td><td class="field-type">DateTimeField</td><td>Fecha de vinculación (auto)</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [club, linea]</span></div></div></div>
+      </div>
+
+      <div class="table-card" id="t17" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>17. ClubTutor</h3><div class="db-name">registry_clubtutor</div></div><div class="badges"><span class="badge badge-fields">5 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>tutor_id</td><td class="field-type">→ Tutor</td><td>Tutor</td></tr>
+          <tr><td class="field-name">rol</td><td class="field-type">CharField(20)</td><td>responsable · coordinador · entrenador · instructor · colaborador…</td></tr>
+          <tr><td class="field-name">status</td><td class="field-type">CharField(20)</td><td>activo · inactivo</td></tr>
+          <tr><td class="field-name">fecha_asignacion</td><td class="field-type">DateTimeField</td><td>Fecha de asignación (auto)</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [club, tutor]</span></div></div></div>
+      </div>
+
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+      <div class="table-card" id="t18" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>18. HistorialClub</h3><div class="db-name">registry_historialclub</div></div><div class="badges"><span class="badge badge-fields">7 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>usuario_id</td><td class="field-type">→ User</td><td>Usuario que realizó el cambio</td></tr>
+          <tr><td class="field-name">estado_anterior</td><td class="field-type">CharField(20)</td><td>Estado anterior del club</td></tr>
+          <tr><td class="field-name">estado_nuevo</td><td class="field-type">CharField(20)</td><td>Nuevo estado del club</td></tr>
+          <tr><td class="field-name">observaciones</td><td class="field-type">TextField</td><td>Observaciones del cambio</td></tr>
+          <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha</td><td class="field-type">DateTimeField</td><td>Fecha del cambio (auto)</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_hist_club_fecha</span></div></div></div>
+      </div>
+
+      <div class="table-card" id="t19" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>19. ComentarioClub</h3><div class="db-name">registry_comentarioclub</div></div><div class="badges"><span class="badge badge-fields">6 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club comentado</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>usuario_id</td><td class="field-type">→ User</td><td>Usuario que comenta</td></tr>
+          <tr><td class="field-name">comentario</td><td class="field-type">TextField</td><td>Contenido del comentario</td></tr>
+          <tr><td class="field-name">es_federacion</td><td class="field-type">BooleanField</td><td>Comentario de la federación</td></tr>
+          <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha</td><td class="field-type">DateTimeField</td><td>Fecha del comentario (auto)</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_com_club_fecha</span></div></div></div>
+      </div>
+
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px">
+
+      <div class="table-card" id="t20" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>20. CalificacionClub</h3><div class="db-name">registry_calificacionclub</div></div><div class="badges"><span class="badge badge-fields">6 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club calificado</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_id</td><td class="field-type">→ Institucion</td><td>Institución que califica</td></tr>
+          <tr><td class="field-name">puntuacion</td><td class="field-type">IntegerField</td><td>1 (Muy Malo) a 5 (Excelente)</td></tr>
+          <tr><td class="field-name">resena</td><td class="field-type">TextField</td><td>Reseña textual</td></tr>
+          <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha</td><td class="field-type">DateTimeField</td><td>Fecha de la calificación (auto)</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [club, institucion]</span></div></div></div>
+      </div>
+
+      <div class="table-card" id="t21" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>21. SolicitudEliminacionClub</h3><div class="db-name">registry_solicitudeliminacionclub</div></div><div class="badges"><span class="badge badge-fields">9 campos</span></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club cuya eliminación se solicita</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_solicitante_id</td><td class="field-type">→ Institucion</td><td>Institución solicitante</td></tr>
+          <tr><td class="field-name">motivo</td><td class="field-type">TextField</td><td>Motivo de la solicitud</td></tr>
+          <tr><td class="field-name"><span class="tag tag-idx">IDX</span>estado</td><td class="field-type">CharField(20)</td><td>pendiente · aprobada · rechazada</td></tr>
+          <tr><td class="field-name">fecha_solicitud</td><td class="field-type">DateTimeField</td><td>Fecha de solicitud (auto)</td></tr>
+          <tr><td class="field-name">fecha_respuesta</td><td class="field-type">DateTimeField</td><td>Fecha de respuesta</td></tr>
+          <tr><td class="field-name">observaciones_federacion</td><td class="field-type">TextField</td><td>Observaciones de la federación</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>revisado_por_id</td><td class="field-type">→ User</td><td>Usuario que revisó</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_sol_elim_estado</span></div></div></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         EVENTOS
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">📅</div>
+      <div><h2>Eventos</h2><p>Gestión de eventos con máquina de estados y flujo de aprobación</p></div>
+    </div>
+
+    <!-- T22: Evento -->
+    <div class="table-card" id="t22">
+      <div class="table-card-header">
+        <div class="left"><h3>22. Evento</h3><div class="db-name">registry_evento</div><p class="desc" style="margin-top:6px">Eventos del sistema (competencias, talleres, etc.). Puede ser institucional o de club, con flujo de aprobación y máquina de estados.</p></div>
+        <div class="badges"><span class="badge badge-fields">34 campos</span><span class="badge badge-indexes">5 índices</span><span class="badge badge-constraints">1 restricción</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>nombre</td><td class="field-type">CharField(255)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombre del evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>tipo</td><td class="field-type">CharField(100)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Competencia · Taller · Seminario · Conferencia · Exhibición · Hackathon · Feria · Encuentro · Capacitación · Otro</td></tr>
+            <tr><td class="field-name">categoria</td><td class="field-type">CharField(100)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Categoría del evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha</td><td class="field-type">DateField</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de inicio</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha_hasta</td><td class="field-type">DateField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de fin</td></tr>
+            <tr><td class="field-name">descripcion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Descripción del evento</td></tr>
+            <tr><td class="field-name">modalidad</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>presencial · virtual · hibrido</td></tr>
+            <tr><td class="field-name">ubicacion</td><td class="field-type">CharField(255)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Ubicación del evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>estado_evento</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>borrador · revision · abierto · rechazado · pausado · en_proceso · finalizado · cancelado</td></tr>
+            <tr><td class="field-name">observacion_estado</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Motivo de pausa, rechazo o cancelación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>estado_id</td><td class="field-type">→ Estado</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Estado geográfico del evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>municipio_id</td><td class="field-type">→ Municipio</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Municipio del evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>parroquia_id</td><td class="field-type">→ Parroquia</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Parroquia del evento</td></tr>
+            <tr><td class="field-name">direccion</td><td class="field-type">CharField(300)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Dirección del evento</td></tr>
+            <tr><td class="field-name">capacidad_maxima</td><td class="field-type">PositiveIntegerField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Capacidad máxima de inscripciones</td></tr>
+            <tr><td class="field-name">requisitos</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Requisitos para participar</td></tr>
+            <tr><td class="field-name">telefono_codigo</td><td class="field-type">CharField(4)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Código de área del teléfono de contacto</td></tr>
+            <tr><td class="field-name">telefono_numero</td><td class="field-type">CharField(7)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Número de teléfono de contacto</td></tr>
+            <tr><td class="field-name">email_contacto</td><td class="field-type">EmailField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Correo de contacto</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>tipo_evento</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>institucional · club</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>es_publico</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Visible para todas las instituciones</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>audiencia</td><td class="field-type">CharField(25)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>publica · club_exclusivo · institucional_privado</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>institucion_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Institución organizadora (eventos institucionales)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_organizador_id</td><td class="field-type">→ Club</td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Club organizador (eventos de club)</td></tr>
+            <tr><td class="field-name">fecha_aprobacion</td><td class="field-type">DateTimeField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Fecha de aprobación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>aprobado_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Usuario que aprobó el evento</td></tr>
+            <tr><td class="field-name">observaciones_aprobacion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Observaciones de aprobación</td></tr>
+            <tr><td class="field-name">fecha_creacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de creación</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>creado_por_id</td><td class="field-type">→ User</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Usuario que creó el evento</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activo</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si está activo</td></tr>
+            <tr><td class="field-name">cancelado</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Indica si fue cancelado</td></tr>
+            <tr><td class="field-name">motivo_cancelacion</td><td class="field-type">TextField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Motivo de cancelación</td></tr>
+            <tr><td class="field-name">fecha_actualizacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de última actualización (auto)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="state-machine">
+        <h4>⚙️ Máquina de Estados del Evento</h4>
+        <div class="states-grid">
+          <div class="state-item s-borrador"><div class="state-name">borrador</div><div class="state-desc">Recién creado, editable</div><div class="state-trans">→ <span>revision</span>, <span>cancelado</span></div></div>
+          <div class="state-item s-revision"><div class="state-name">revision</div><div class="state-desc">Enviado para aprobación</div><div class="state-trans">→ <span>abierto</span>, <span>rechazado</span>, <span>cancelado</span></div></div>
+          <div class="state-item s-abierto"><div class="state-name">abierto</div><div class="state-desc">Abierto para inscripciones</div><div class="state-trans">→ <span>pausado</span>, <span>cancelado</span>, <span>en_proceso</span></div></div>
+          <div class="state-item s-rechazado"><div class="state-name">rechazado</div><div class="state-desc">Rechazado por el ente rector</div><div class="state-trans">→ <span>revision</span>, <span>cancelado</span></div></div>
+          <div class="state-item s-pausado"><div class="state-name">pausado</div><div class="state-desc">Temporalmente suspendido</div><div class="state-trans">→ <span>abierto</span>, <span>cancelado</span></div></div>
+          <div class="state-item s-en_proceso"><div class="state-name">en_proceso</div><div class="state-desc">Evento en curso</div><div class="state-trans">→ <span>finalizado</span>, <span>cancelado</span>, <span>pausado</span></div></div>
+          <div class="state-item s-finalizado"><div class="state-name">finalizado</div><div class="state-desc">Evento concluido</div><div class="state-trans">Estado terminal — sin transiciones</div></div>
+          <div class="state-item s-cancelado"><div class="state-name">cancelado</div><div class="state-desc">Cancelado definitivamente</div><div class="state-trans">Estado terminal — sin transiciones</div></div>
+        </div>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list">
+          <span class="idx-tag">idx_evt_fecha_activo</span><span class="idx-tag">idx_evt_institucion</span>
+          <span class="idx-tag">idx_evt_tipo_estado</span><span class="idx-tag">idx_evt_club_estado</span>
+          <span class="idx-tag">idx_evt_audiencia_estado</span>
+        </div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list">
+          <span class="constraint-tag">CheckConstraint: organizador_valido (institucional XOR club)</span>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- T23-T26 compactos -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px">
+
+      <div class="table-card" id="t23" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>23. Inscripcion</h3><div class="db-name">registry_inscripcion</div><p class="desc" style="margin-top:4px">Inscripciones individuales o de equipo (modelo legado).</p></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>evento_id</td><td class="field-type">→ Evento</td><td>Evento al que se inscribe</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>lider_id</td><td class="field-type">→ User</td><td>Usuario líder</td></tr>
+          <tr><td class="field-name">modalidad</td><td class="field-type">CharField(20)</td><td>individual · equipo</td></tr>
+          <tr><td class="field-name">nombre_proyecto</td><td class="field-type">CharField(150)</td><td>Nombre del proyecto</td></tr>
+          <tr><td class="field-name">descripcion_proyecto</td><td class="field-type">TextField</td><td>Descripción del proyecto</td></tr>
+          <tr><td class="field-name">fecha_inscripcion</td><td class="field-type">DateTimeField</td><td>Fecha de inscripción (auto)</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="table-card" id="t24" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>24. IntegranteEquipo</h3><div class="db-name">registry_integranteequipo</div><p class="desc" style="margin-top:4px">Integrantes de una inscripción de equipo.</p></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>inscripcion_id</td><td class="field-type">→ Inscripcion</td><td>Inscripción de equipo</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>usuario_id</td><td class="field-type">→ User</td><td>Usuario integrante</td></tr>
+        </tbody></table></div>
+      </div>
+
+      <div class="table-card" id="t25" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>25. InscripcionGrupoEvento</h3><div class="db-name">registry_inscripciongrupoevento</div><p class="desc" style="margin-top:4px">Inscripción de grupos a eventos. Modelo principal de participación.</p></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>evento_id</td><td class="field-type">→ Evento</td><td>Evento</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>grupo_id</td><td class="field-type">→ Grupo</td><td>Grupo inscrito</td></tr>
+          <tr><td class="field-name">rol_participacion</td><td class="field-type">CharField(20)</td><td>participante · expositor · competidor</td></tr>
+          <tr><td class="field-name">fecha_inscripcion</td><td class="field-type">DateTimeField</td><td>Fecha de inscripción (auto)</td></tr>
+          <tr><td class="field-name">activo</td><td class="field-type">BooleanField</td><td>Inscripción activa</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [evento, grupo]</span></div></div></div>
+      </div>
+
+      <div class="table-card" id="t26" style="margin-bottom:0">
+        <div class="table-card-header"><div class="left"><h3>26. ClubEvento</h3><div class="db-name">registry_clubevento</div><p class="desc" style="margin-top:4px">Vinculación de clubes a eventos con rol específico.</p></div></div>
+        <div class="data-table-wrap"><table><thead><tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>
+          <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td>Identificador</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td>Club</td></tr>
+          <tr><td class="field-name"><span class="tag tag-fk">FK</span>evento_id</td><td class="field-type">→ Evento</td><td>Evento</td></tr>
+          <tr><td class="field-name">rol</td><td class="field-type">CharField(20)</td><td>organizador · colaborador · participante</td></tr>
+          <tr><td class="field-name">fecha_vinculacion</td><td class="field-type">DateTimeField</td><td>Fecha de vinculación (auto)</td></tr>
+          <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activo</td><td class="field-type">BooleanField</td><td>Vinculación activa</td></tr>
+        </tbody></table></div>
+        <div class="info-blocks"><div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_together [club, evento]</span></div></div></div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         GRUPOS Y NOTIFICACIONES
+    ══════════════════════════════════════════ -->
+    <div class="section-header">
+      <div class="icon">👥</div>
+      <div><h2>Grupos y Notificaciones</h2><p>Equipos de participantes y sistema de mensajería interna</p></div>
+    </div>
+
+    <!-- T27: Grupo -->
+    <div class="table-card" id="t27">
+      <div class="table-card-header">
+        <div class="left"><h3>27. Grupo</h3><div class="db-name">registry_grupo</div><p class="desc" style="margin-top:6px">Grupos (equipos) de participantes que se inscriben a eventos. Cada grupo pertenece a una institución.</p></div>
+        <div class="badges"><span class="badge badge-fields">17 campos</span><span class="badge badge-indexes">2 índices</span><span class="badge badge-constraints">1 restricción</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>nombre</td><td class="field-type">CharField(150)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Nombre del grupo</td></tr>
+            <tr><td class="field-name"><span class="tag tag-unique">UNQ</span>codigo</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td>Código único auto-generado (EQP-DDMMYY-XXXXXXXX)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>criterio</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>edad · nivel · proyecto</td></tr>
+            <tr><td class="field-name">edad_desde</td><td class="field-type">PositiveIntegerField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Edad mínima (criterio edad)</td></tr>
+            <tr><td class="field-name">edad_hasta</td><td class="field-type">PositiveIntegerField</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Edad máxima (criterio edad)</td></tr>
+            <tr><td class="field-name">nivel_educativo</td><td class="field-type">CharField(4)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nivel educativo (criterio nivel)</td></tr>
+            <tr><td class="field-name">nombre_proyecto</td><td class="field-type">CharField(200)</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Nombre del proyecto (criterio proyecto)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>estado_grupo</td><td class="field-type">CharField(20)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>editable · inscrito · bloqueado</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>usuario_creador_id</td><td class="field-type">→ User</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Usuario que creó el grupo</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span><span class="tag tag-idx">IDX</span>institucion_id</td><td class="field-type">→ Institucion</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Institución del grupo</td></tr>
+            <tr><td class="field-name">tutores</td><td class="field-type">ManyToMany → Tutor</td><td>—</td><td>—</td><td>—</td><td>Tutores asignados al grupo</td></tr>
+            <tr><td class="field-name">participantes</td><td class="field-type">ManyToMany → Participante</td><td>—</td><td>—</td><td>—</td><td>Participantes del grupo</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>evento_id</td><td class="field-type">→ Evento</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Evento al que está inscrito</td></tr>
+            <tr><td class="field-name">fecha_registro</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Fecha de registro (auto)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>activo</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si el grupo está activo</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_grupo_criterio</span><span class="idx-tag">idx_grupo_institucion</span></div></div>
+        <div class="info-block"><h4>Restricciones</h4><div class="tags-list"><span class="constraint-tag">unique_nombre_evento_case_insensitive (nombre + evento)</span></div></div>
+      </div>
+    </div>
+
+    <!-- T28: Notificacion -->
+    <div class="table-card" id="t28">
+      <div class="table-card-header">
+        <div class="left"><h3>28. Notificacion</h3><div class="db-name">registry_notificacion</div><p class="desc" style="margin-top:6px">Sistema de notificaciones internas (buzón de mensajes) para usuarios del sistema.</p></div>
+        <div class="badges"><span class="badge badge-fields">8 campos</span><span class="badge badge-indexes">1 índice</span></div>
+      </div>
+      <div class="data-table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Tipo</th><th>Nulo</th><th>Único</th><th>Índice</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="field-name"><span class="tag tag-pk">PK</span>id</td><td class="field-type">Integer</td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td><span class="pill-yes">✓</span></td><td>Identificador automático</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>destinatario_id</td><td class="field-type">→ User</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Usuario destinatario</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>tipo</td><td class="field-type">CharField(30)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>club_aprobado · club_rechazado · solicitud_eliminacion · eliminacion_aprobada · eliminacion_rechazada · membresia_aprobada · membresia_rechazada · salida_club · sistema</td></tr>
+            <tr><td class="field-name">titulo</td><td class="field-type">CharField(200)</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Título de la notificación</td></tr>
+            <tr><td class="field-name">mensaje</td><td class="field-type">TextField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Contenido del mensaje</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>leida</td><td class="field-type">BooleanField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Indica si fue leída (default: False)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-idx">IDX</span>fecha_creacion</td><td class="field-type">DateTimeField</td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-yes">✓</span></td><td>Fecha de creación (auto)</td></tr>
+            <tr><td class="field-name"><span class="tag tag-fk">FK</span>club_id</td><td class="field-type">→ Club</td><td><span class="pill-yes">✓</span></td><td><span class="pill-no">✗</span></td><td><span class="pill-no">✗</span></td><td>Club relacionado (si aplica)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-blocks">
+        <div class="info-block"><h4>Índices</h4><div class="tags-list"><span class="idx-tag">idx_notif_dest_leida</span></div></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align:center;padding:32px 0 16px;color:#9ab5cc;font-size:.78rem;border-top:1px solid var(--border);margin-top:16px">
+      RNR-PRO — Sistema Nacional de Robótica · Diccionario de Datos v1.0 · 2026-04-03<br>
+      Django 5.0 / Python 3.12 · SQLite3 / PostgreSQL · MINCYT Venezuela
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<button id="scrollTop" title="Volver arriba">↑</button>
+
+<script src="app.js"></script>
+</body>
+</html>
