@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.utils import timezone
 from registry.models import Participante, Institucion, Estado, Municipio, Parroquia, Evento, Grupo, EstadoEvento
 from users.services.participante_service import ParticipanteService
 from users.services.institution_service import InstitutionService
@@ -7,6 +8,7 @@ from users.services.evento_service import EventoService
 from users.services.report_service import ReportService
 from users.services.grupo_service import GrupoService
 from datetime import date, timedelta
+
 
 class ServiceIntegrationTests(TestCase):
     def setUp(self):
@@ -190,3 +192,54 @@ class ServiceIntegrationTests(TestCase):
         
         self.assertGreaterEqual(metrics["total_participantes"], 1)
         self.assertIn("Test Estado", metrics["mapa_data"])
+
+    def test_report_service_institutional_stats_timezone(self):
+        """
+        Verifica que timezone.now() funciona correctamente para filtrado de fechas
+        en get_institutional_stats, especialmente para proximos_eventos.
+        """
+        # Crear evento futuro público que debería aparecer en proximos_eventos
+        # Nota: es_publico=True es requerido por el constraint evento_organizador_valido
+        evento_futuro = Evento.objects.create(
+            nombre="Evento Futuro Test",
+            fecha=timezone.now().date() + timedelta(days=5),
+            estado_evento=EstadoEvento.ABIERTO,
+            tipo_evento="institucional",
+            audiencia="publica",
+            es_publico=True,  # Requerido por constraint para eventos institucionales públicos
+            activo=True,
+            cancelado=False,
+            estado_id=self.estado.id,
+            municipio_id=self.municipio.id,
+            parroquia_id=self.parroquia.id,
+        )
+        
+        # Crear evento pasado que NO debería aparecer
+        Evento.objects.create(
+            nombre="Evento Pasado Test",
+            fecha=timezone.now().date() - timedelta(days=5),
+            estado_evento=EstadoEvento.ABIERTO,
+            tipo_evento="institucional",
+            audiencia="publica",
+            es_publico=True,
+            activo=True,
+            cancelado=False,
+            estado_id=self.estado.id,
+            municipio_id=self.municipio.id,
+            parroquia_id=self.parroquia.id,
+        )
+        
+        # Llamar al servicio
+        stats = ReportService.get_institutional_stats(
+            user=self.admin_user,
+            institution=self.institucion
+        )
+        
+        # Verificar que proximos_eventos existe y contiene el evento futuro
+        self.assertIn("proximos_eventos", stats)
+        proximos = list(stats["proximos_eventos"])
+        
+        # El evento futuro debe estar en proximos_eventos
+        self.assertEqual(len(proximos), 1)
+        self.assertEqual(proximos[0].id, evento_futuro.id)
+        self.assertEqual(proximos[0].nombre, "Evento Futuro Test")

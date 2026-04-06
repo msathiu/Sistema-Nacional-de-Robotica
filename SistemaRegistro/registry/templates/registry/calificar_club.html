@@ -136,7 +136,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <small class="text-muted d-block">Institución Creadora</small>
-                        <strong>{{ club.institucion_creadora.nombre_publico }}</strong>
+                        <strong>{% if club.institucion_creadora %}{{ club.institucion_creadora.nombre_publico }}{% else %}Federación Venezolana de Robótica Creativa{% endif %}</strong>
                     </div>
                     <hr>
                     <div class="mb-3">

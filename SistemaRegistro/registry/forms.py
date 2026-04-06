@@ -1,5 +1,8 @@
+import re
+
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from users.mixins import LocationFormMixin, ParticipanteBaseFormMixin
 from users.utils import StringUtils
 
@@ -9,8 +12,6 @@ from .models import (
     Estado,
     Institucion,
     LineaInvestigacion,
-    Municipio,
-    Parroquia,
     Participante,
     Tutor,
     TutorInstitucion,
@@ -20,11 +21,11 @@ from .models import (
 class ParticipanteForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.ModelForm):
     """
     Formulario para crear/editar participantes.
-    
+
     NOTA: institucion y grupo se manejan en ParticipanteInstitucion, no aquí.
     Este formulario solo maneja datos personales del participante.
     """
-    
+
     # Campos adicionales para manejo de cédulas
     cedula_personal = forms.CharField(
         required=False,
@@ -34,12 +35,12 @@ class ParticipanteForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.Model
                 "class": "form-control",
                 "placeholder": "Solo números",
                 "pattern": "[0-9]+",
-                "maxlength": "10"
+                "maxlength": "10",
             }
         ),
-        label="Cédula Personal"
+        label="Cédula Personal",
     )
-    
+
     cedula_escolar_input = forms.CharField(
         required=False,
         max_length=20,
@@ -48,33 +49,37 @@ class ParticipanteForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.Model
                 "class": "form-control",
                 "placeholder": "Solo números",
                 "pattern": "[0-9]+",
-                "maxlength": "20"
+                "maxlength": "20",
             }
         ),
-        label="Cédula Escolar"
+        label="Cédula Escolar",
     )
-    
+
     edad = forms.IntegerField(
         required=False,
         widget=forms.NumberInput(
-            attrs={"class": "form-control bg-light", "readonly": "readonly", "id": "id_edad_display"}
+            attrs={
+                "class": "form-control bg-light",
+                "readonly": "readonly",
+                "id": "id_edad_display",
+            }
         ),
-        label="Edad"
+        label="Edad",
     )
-    
+
     # Campos adicionales para vinculación (no del modelo Participante)
     institucion = forms.ModelChoiceField(
-        queryset=Institucion.objects.filter(estatus='aprobado'),
+        queryset=Institucion.objects.filter(estatus="aprobado"),
         required=False,
-        label='Institución',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        label="Institución",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
-    
+
     grupo = forms.ModelChoiceField(
         queryset=None,
         required=False,
-        label='Grupo',
-        widget=forms.Select(attrs={'class': 'form-select'})
+        label="Grupo",
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     class Meta:
@@ -106,60 +111,134 @@ class ParticipanteForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.Model
             "email_representante",
         ]
         widgets = {
-            "fecha_nacimiento": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "fecha_nacimiento": forms.DateInput(
+                attrs={"type": "date", "class": "form-control"}
+            ),
             "direccion": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
-            "cedula_escolar": forms.TextInput(attrs={"placeholder": "Cédula escolar (opcional)", "class": "form-control"}),
-            "titulo_universitario": forms.TextInput(attrs={"placeholder": "Título o carrera universitaria", "class": "form-control"}),
-            "campo1": forms.Textarea(attrs={"rows": 2, "placeholder": "Especifique el nivel/grado si seleccionó 'Otro'", "class": "form-control"}),
+            "cedula_escolar": forms.TextInput(
+                attrs={
+                    "placeholder": "Cédula escolar (opcional)",
+                    "class": "form-control",
+                }
+            ),
+            "titulo_universitario": forms.TextInput(
+                attrs={
+                    "placeholder": "Título o carrera universitaria",
+                    "class": "form-control",
+                }
+            ),
+            "campo1": forms.Textarea(
+                attrs={
+                    "rows": 2,
+                    "placeholder": "Especifique el nivel/grado si seleccionó 'Otro'",
+                    "class": "form-control",
+                }
+            ),
             "nombres": forms.TextInput(attrs={"class": "form-control"}),
             "apellidos": forms.TextInput(attrs={"class": "form-control"}),
             "email": forms.EmailInput(attrs={"class": "form-control"}),
-            "numero_telefono": forms.TextInput(attrs={"class": "form-control", "maxlength": "7"}),
+            "numero_telefono": forms.TextInput(
+                attrs={"class": "form-control", "maxlength": "7"}
+            ),
             "nombre_representante": forms.TextInput(attrs={"class": "form-control"}),
-            "cedula_representante": forms.TextInput(attrs={"class": "form-control", "placeholder": "Solo números"}),
-            "numero_telefono_representante": forms.TextInput(attrs={"class": "form-control", "maxlength": "7"}),
+            "cedula_representante": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Solo números"}
+            ),
+            "numero_telefono_representante": forms.TextInput(
+                attrs={"class": "form-control", "maxlength": "7"}
+            ),
             "email_representante": forms.EmailInput(attrs={"class": "form-control"}),
         }
 
     def __init__(self, *args, **kwargs):
         # Extraer institución si se pasa como parámetro
-        institucion = kwargs.pop('institucion', None)
+        institucion = kwargs.pop("institucion", None)
         super().__init__(*args, **kwargs)
-        
+
         # Estilizar campos
         for field_name, field in self.fields.items():
-            if field_name not in ['cedula_personal', 'cedula_escolar_input', 'edad']:
+            if field_name not in ["cedula_personal", "cedula_escolar_input", "edad"]:
                 if isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
                     field.widget.attrs.update({"class": "form-select"})
-                elif not field.widget.attrs.get('class'):
+                elif not field.widget.attrs.get("class"):
                     field.widget.attrs.update({"class": "form-control"})
-        
+
         # Configurar querysets de ubicación usando el Mixin
         self.setup_location_fields()
-        
+
         # Configurar queryset de grupos (vacío por defecto)
         from .models import Grupo
+
         self.fields["grupo"].queryset = Grupo.objects.none()
-        
+
         # Si se pasa institución, configurar grupos
         if institucion:
             self.fields["institucion"].initial = institucion
             self.fields["grupo"].queryset = Grupo.objects.filter(
-                institucion=institucion,
-                activo=True
-            ).order_by('nombre')
-        
+                institucion=institucion, activo=True
+            ).order_by("nombre")
+
         # Cargar datos iniciales si es edición
         if self.instance.pk:
             # Inicializar campos de cédula separados
-            self.initial['cedula_personal'] = StringUtils.clean_numeric_id(getattr(self.instance, 'cedula', ''))
-            self.initial['cedula_escolar_input'] = getattr(self.instance, 'cedula_escolar', '') or ''
+            self.initial["cedula_personal"] = StringUtils.clean_numeric_id(
+                getattr(self.instance, "cedula", "")
+            )
+            self.initial["cedula_escolar_input"] = (
+                getattr(self.instance, "cedula_escolar", "") or ""
+            )
 
     def clean_cedula_personal(self):
-        return StringUtils.clean_numeric_id(self.cleaned_data.get('cedula_personal'))
-    
+        return StringUtils.clean_numeric_id(self.cleaned_data.get("cedula_personal"))
+
     def clean_cedula_escolar_input(self):
-        return StringUtils.clean_numeric_id(self.cleaned_data.get('cedula_escolar_input'))
+        return StringUtils.clean_numeric_id(
+            self.cleaned_data.get("cedula_escolar_input")
+        )
+
+    def clean_nombres(self):
+        nombres = self.cleaned_data.get("nombres", "").strip()
+        if not nombres:
+            raise ValidationError("Los nombres son obligatorios.")
+        if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", nombres):
+            raise ValidationError("Los nombres solo pueden contener letras y espacios.")
+        if len(nombres) < 2:
+            raise ValidationError("Los nombres deben tener al menos 2 caracteres.")
+        return nombres
+
+    def clean_apellidos(self):
+        apellidos = self.cleaned_data.get("apellidos", "").strip()
+        if not apellidos:
+            raise ValidationError("Los apellidos son obligatorios.")
+        if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", apellidos):
+            raise ValidationError(
+                "Los apellidos solo pueden contener letras y espacios."
+            )
+        if len(apellidos) < 2:
+            raise ValidationError("Los apellidos deben tener al menos 2 caracteres.")
+        return apellidos
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if email and not re.match(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email
+        ):
+            raise ValidationError("El formato del email no es válido.")
+        return email
+
+    def clean_direccion(self):
+        direccion = StringUtils.clean_html(
+            self.cleaned_data.get("direccion", "").strip()
+        )
+        if len(direccion) > 500:
+            raise ValidationError("La dirección no puede exceder 500 caracteres.")
+        return direccion
+
+    def clean_campo1(self):
+        campo1 = StringUtils.clean_html(self.cleaned_data.get("campo1", "").strip())
+        if campo1 and len(campo1) > 250:
+            raise ValidationError("El campo adicional no puede exceder 250 caracteres.")
+        return campo1
 
     def clean(self):
         cleaned_data = super().clean()
@@ -172,7 +251,9 @@ class ParticipanteForm(ParticipanteBaseFormMixin, LocationFormMixin, forms.Model
         grupo = cleaned_data.get("grupo")
         institucion = cleaned_data.get("institucion")
         if grupo and institucion and grupo.institucion_id != institucion.id:
-            raise ValidationError("El grupo seleccionado no pertenece a la institución elegida.")
+            raise ValidationError(
+                "El grupo seleccionado no pertenece a la institución elegida."
+            )
 
         return cleaned_data
 
@@ -205,6 +286,22 @@ class InstitucionForm(LocationFormMixin, forms.ModelForm):
         # Configurar querysets de ubicación usando el Mixin
         self.setup_location_fields()
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if email and not re.match(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email
+        ):
+            raise ValidationError("El formato del email no es válido.")
+        return email
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get("telefono", "").strip()
+        if telefono and not re.match(r"^\d{3,4}-\d{7}$", telefono):
+            raise ValidationError(
+                "El formato del teléfono debe ser XXXX-XXXXXXX o XXX-XXXXXXX."
+            )
+        return telefono
+
     def clean(self):
         """Validación de integridad geográfica en el servidor"""
         cleaned_data = super().clean()
@@ -215,246 +312,400 @@ class InstitucionForm(LocationFormMixin, forms.ModelForm):
 
 class ClubForm(forms.ModelForm):
     """Formulario para crear/editar clubes con líneas de investigación dinámicas."""
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Obtener queryset de líneas de investigación activas
-        lineas_qs = LineaInvestigacion.objects.filter(activa=True).order_by('orden', 'nombre')
-        
+        lineas_qs = LineaInvestigacion.objects.filter(activa=True).order_by(
+            "orden", "nombre"
+        )
+
         # Asignar queryset a cada campo
-        self.fields['linea_investigacion_1'].queryset = lineas_qs
-        self.fields['linea_investigacion_2'].queryset = lineas_qs
-        self.fields['linea_investigacion_3'].queryset = lineas_qs
-        
+        self.fields["linea_investigacion_1"].queryset = lineas_qs
+        self.fields["linea_investigacion_2"].queryset = lineas_qs
+        self.fields["linea_investigacion_3"].queryset = lineas_qs
+
         # Verificar si hay líneas disponibles
         if not lineas_qs.exists():
             # Si no hay líneas, hacer el campo 1 opcional
-            self.fields['linea_investigacion_1'].required = False
-            self.fields['linea_investigacion_1'].empty_label = "No hay líneas disponibles - Contacte al administrador"
+            self.fields["linea_investigacion_1"].required = False
+            self.fields[
+                "linea_investigacion_1"
+            ].empty_label = "No hay líneas disponibles - Contacte al administrador"
         else:
-            self.fields['linea_investigacion_1'].empty_label = "Seleccione una línea"
-        
+            self.fields["linea_investigacion_1"].empty_label = "Seleccione una línea"
+
         # Si estamos editando, cargar las líneas existentes
         if self.instance and self.instance.pk:
-            lineas_existentes = self.instance.club_lineas.select_related('linea').order_by('orden')
-            
+            lineas_existentes = self.instance.club_lineas.select_related(
+                "linea"
+            ).order_by("orden")
+
             for idx, club_linea in enumerate(lineas_existentes, start=1):
-                field_name = f'linea_investigacion_{idx}'
+                field_name = f"linea_investigacion_{idx}"
                 if field_name in self.fields:
                     self.fields[field_name].initial = club_linea.linea
-    
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get("nombre", "").strip()
+        if not nombre:
+            raise ValidationError("El nombre del club es obligatorio.")
+        if len(nombre) < 3:
+            raise ValidationError("El nombre debe tener al menos 3 caracteres.")
+        return nombre
+
+    def clean_siglas(self):
+        siglas = self.cleaned_data.get("siglas", "").strip().upper()
+        if siglas and not re.match(r"^[A-Z0-9]+$", siglas):
+            raise ValidationError(
+                "Las siglas solo pueden contener letras mayúsculas y números."
+            )
+        if len(siglas) > 10:
+            raise ValidationError("Las siglas no pueden exceder 10 caracteres.")
+        return siglas
+
+    def clean_descripcion(self):
+        descripcion = StringUtils.clean_html(
+            self.cleaned_data.get("descripcion", "").strip()
+        )
+        if len(descripcion) > 1000:
+            raise ValidationError("La descripción no puede exceder 1000 caracteres.")
+        return descripcion
+
+    def clean_ubicacion(self):
+        ubicacion = self.cleaned_data.get("ubicacion", "").strip()
+        if len(ubicacion) > 255:
+            raise ValidationError("La ubicación no puede exceder 255 caracteres.")
+        return ubicacion
+
+    def clean_requisitos(self):
+        requisitos = StringUtils.clean_html(
+            self.cleaned_data.get("requisitos", "").strip()
+        )
+        if len(requisitos) > 1000:
+            raise ValidationError("Los requisitos no pueden exceder 1000 caracteres.")
+        return requisitos
+
+    def clean_documento_legal(self):
+        documento_legal = StringUtils.clean_html(
+            self.cleaned_data.get("documento_legal", "").strip()
+        )
+        if len(documento_legal) > 500:
+            raise ValidationError("El documento legal no puede exceder 500 caracteres.")
+        return documento_legal
+
+    def clean_cupo_maximo(self):
+        cupo_maximo = self.cleaned_data.get("cupo_maximo")
+        if cupo_maximo is not None and (cupo_maximo < 1 or cupo_maximo > 100):
+            raise ValidationError("El cupo máximo debe ser un número entre 1 y 100.")
+        return cupo_maximo
+
     # Campos para líneas de investigación (hasta 3)
     linea_investigacion_1 = forms.ModelChoiceField(
         queryset=LineaInvestigacion.objects.none(),
         required=True,
         label="Línea de Investigación 1 (Principal)",
         empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     linea_investigacion_2 = forms.ModelChoiceField(
         queryset=LineaInvestigacion.objects.none(),
         required=False,
         label="Línea de Investigación 2 (Opcional)",
         empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     linea_investigacion_3 = forms.ModelChoiceField(
         queryset=LineaInvestigacion.objects.none(),
         required=False,
         label="Línea de Investigación 3 (Opcional)",
         empty_label="Seleccione una línea",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
-    
+
     class Meta:
         model = Club
         fields = [
-            'nombre',
-            'siglas',
-            'descripcion',
-            'ubicacion',
-            'fecha_fundacion',
-            'estado_vinculacion',
-            'cupo_maximo',
-            'requisitos',
-            'documento_legal',
+            "nombre",
+            "siglas",
+            "descripcion",
+            "ubicacion",
+            "fecha_fundacion",
+            "estado_vinculacion",
+            "cupo_maximo",
+            "requisitos",
+            "documento_legal",
         ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Club de Robótica Educativa'}),
-            'siglas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: CRE', 'maxlength': '10'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe los objetivos y actividades del club...'}),
-            'ubicacion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección física del club'}),
-            'fecha_fundacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'estado_vinculacion': forms.Select(attrs={'class': 'form-select'}),
-            'cupo_maximo': forms.NumberInput(attrs={'class': 'form-control', 'value': '10', 'min': '1', 'max': '100'}),
-            'requisitos': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Requisitos para que una institución pueda ser miembro...'}),
-            'documento_legal': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Número de documento legal, resolución, etc.'}),
+            "nombre": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ej: Club de Robótica Educativa",
+                }
+            ),
+            "siglas": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Ej: CRE",
+                    "maxlength": "10",
+                }
+            ),
+            "descripcion": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 4,
+                    "placeholder": "Describe los objetivos y actividades del club...",
+                }
+            ),
+            "ubicacion": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Dirección física del club",
+                }
+            ),
+            "fecha_fundacion": forms.DateInput(
+                attrs={"class": "form-control", "type": "date"}
+            ),
+            "estado_vinculacion": forms.Select(attrs={"class": "form-select"}),
+            "cupo_maximo": forms.NumberInput(
+                attrs={"class": "form-control", "value": "10", "min": "1", "max": "100"}
+            ),
+            "requisitos": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 3,
+                    "placeholder": "Requisitos para que una institución pueda ser miembro...",
+                }
+            ),
+            "documento_legal": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 2,
+                    "placeholder": "Número de documento legal, resolución, etc.",
+                }
+            ),
         }
-    
+
     def clean(self):
         cleaned_data = super().clean()
-        
-        linea_1 = cleaned_data.get('linea_investigacion_1')
-        linea_2 = cleaned_data.get('linea_investigacion_2')
-        linea_3 = cleaned_data.get('linea_investigacion_3')
-        
+
+        linea_1 = cleaned_data.get("linea_investigacion_1")
+        linea_2 = cleaned_data.get("linea_investigacion_2")
+        linea_3 = cleaned_data.get("linea_investigacion_3")
+
         # Validar que la línea 1 sea obligatoria si hay líneas disponibles
         lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
         if lineas_disponibles and not linea_1:
-            raise ValidationError({
-                'linea_investigacion_1': 'Debe seleccionar al menos una línea de investigación principal.'
-            })
-        
+            raise ValidationError(
+                {
+                    "linea_investigacion_1": "Debe seleccionar al menos una línea de investigación principal."
+                }
+            )
+
         # Validar que no se repitan líneas
         lineas = [l for l in [linea_1, linea_2, linea_3] if l]
         if len(lineas) != len(set(lineas)):
-            raise ValidationError("No puede seleccionar la misma línea de investigación más de una vez.")
-        
+            raise ValidationError(
+                "No puede seleccionar la misma línea de investigación más de una vez."
+            )
+
+        # Validar fecha de fundación no futura
+        fecha_fundacion = cleaned_data.get("fecha_fundacion")
+        if fecha_fundacion and fecha_fundacion > timezone.now().date():
+            raise ValidationError(
+                {"fecha_fundacion": "La fecha de fundación no puede ser futura."}
+            )
+
         return cleaned_data
-    
+
     def save(self, commit=True):
         club = super().save(commit=commit)
-        
+
         if commit:
             # Obtener las líneas del formulario
-            linea_1 = self.cleaned_data.get('linea_investigacion_1')
-            linea_2 = self.cleaned_data.get('linea_investigacion_2')
-            linea_3 = self.cleaned_data.get('linea_investigacion_3')
-            
+            linea_1 = self.cleaned_data.get("linea_investigacion_1")
+            linea_2 = self.cleaned_data.get("linea_investigacion_2")
+            linea_3 = self.cleaned_data.get("linea_investigacion_3")
+
             # Verificar si hay líneas disponibles en la base de datos
             lineas_disponibles = LineaInvestigacion.objects.filter(activa=True).exists()
-            
+
             # Solo guardar líneas si hay líneas disponibles y seleccionadas
             if lineas_disponibles and (linea_1 or linea_2 or linea_3):
                 # Eliminar líneas existentes
                 ClubLineaInvestigacion.objects.filter(club=club).delete()
-                
+
                 # Agregar nuevas líneas
                 lineas_data = [
-                    (linea_1, 'principal', 1),
-                    (linea_2, 'soporte', 2),
-                    (linea_3, 'afines', 3),
+                    (linea_1, "principal", 1),
+                    (linea_2, "soporte", 2),
+                    (linea_3, "afines", 3),
                 ]
-                
+
                 for linea, tipo, orden in lineas_data:
                     if linea:
                         ClubLineaInvestigacion.objects.create(
-                            club=club,
-                            linea=linea,
-                            tipo_linea=tipo,
-                            orden=orden
+                            club=club, linea=linea, tipo_linea=tipo, orden=orden
                         )
-        
+
         return club
 
 
 class TutorForm(forms.ModelForm):
     """
     Formulario para crear y editar tutores.
-    
+
     Permite manejar vinculaciones institucionales, regionales y centrales.
     """
-    
+
     tipo_vinculacion = forms.ChoiceField(
         choices=TutorInstitucion.TIPO_VINCULACION_CHOICES,
-        initial='institucional',
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_vinculacion'}),
-        label='Tipo de Pertenencia'
+        initial="institucional",
+        widget=forms.Select(
+            attrs={"class": "form-select", "id": "id_tipo_vinculacion"}
+        ),
+        label="Tipo de Pertenencia",
     )
-    
+
     institucion = forms.ModelChoiceField(
-        queryset=Institucion.objects.filter(estatus='aprobado'),
+        queryset=Institucion.objects.filter(estatus="aprobado"),
         required=False,
-        label='Institución Educativa / Club',
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_institucion'})
+        label="Institución Educativa / Club",
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_institucion"}),
     )
 
     estado = forms.ModelChoiceField(
         queryset=Estado.objects.all(),
         required=False,
-        label='Estado (Sede Regional)',
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_estado'})
+        label="Estado (Sede Regional)",
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_estado"}),
     )
-    
+
     rol = forms.ChoiceField(
         choices=TutorInstitucion.ROL_CHOICES,
-        initial='colaborador',
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Rol en el Ente'
+        initial="colaborador",
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Rol en el Ente",
     )
 
     class Meta:
         model = Tutor
         fields = [
-            'nacionalidad',
-            'nombres',
-            'apellidos',
-            'sexo',
-            'cedula',
-            'telefono_codigo',
-            'telefono',
-            'email',
-            'profesion',
-            'experiencia',
+            "nacionalidad",
+            "nombres",
+            "apellidos",
+            "sexo",
+            "cedula",
+            "telefono_codigo",
+            "telefono",
+            "email",
+            "profesion",
+            "experiencia",
         ]
         widgets = {
-            'nacionalidad': forms.Select(attrs={'class': 'form-select'}),
-            'nombres': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombres'}),
-            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellidos'}),
-            'sexo': forms.Select(attrs={'class': 'form-select'}),
-            'cedula': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Solo números',
-                'maxlength': '12',
-            }),
-            'telefono_codigo': forms.Select(attrs={'class': 'form-select'}),
-            'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}),
-            'profesion': forms.TextInput(attrs={'class': 'form-control'}),
-            'experiencia': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            "nacionalidad": forms.Select(attrs={"class": "form-select"}),
+            "nombres": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Nombres"}
+            ),
+            "apellidos": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Apellidos"}
+            ),
+            "sexo": forms.Select(attrs={"class": "form-select"}),
+            "cedula": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Solo números",
+                    "maxlength": "12",
+                }
+            ),
+            "telefono_codigo": forms.Select(attrs={"class": "form-select"}),
+            "telefono": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "7 dígitos",
+                    "maxlength": "7",
+                    "minlength": "7",
+                    "inputmode": "numeric",
+                    "pattern": "[0-9]{7}",
+                    "autocomplete": "tel-national",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={"class": "form-control", "placeholder": "correo@ejemplo.com"}
+            ),
+            "profesion": forms.TextInput(attrs={"class": "form-control"}),
+            "experiencia": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        tipo = cleaned_data.get('tipo_vinculacion')
-        institucion = cleaned_data.get('institucion')
-        estado = cleaned_data.get('estado')
+        tipo = cleaned_data.get("tipo_vinculacion")
+        institucion = cleaned_data.get("institucion")
+        estado = cleaned_data.get("estado")
 
-        if tipo == 'institucional' and not institucion:
-            self.add_error('institucion', 'Debe seleccionar una institución para este tipo de vinculación.')
-        
-        if tipo == 'regional' and not estado:
-            self.add_error('estado', 'Debe seleccionar un estado para la vinculación regional.')
+        if tipo == "institucional" and not institucion:
+            self.add_error(
+                "institucion",
+                "Debe seleccionar una institución para este tipo de vinculación.",
+            )
+
+        if tipo == "regional" and not estado:
+            self.add_error(
+                "estado", "Debe seleccionar un estado para la vinculación regional."
+            )
 
         return cleaned_data
-    
+
     def clean_cedula(self):
         """Validar formato de cédula (solo números)."""
-        cedula = self.cleaned_data.get('cedula', '').strip()
-        
+        cedula = self.cleaned_data.get("cedula", "").strip()
+
         if not cedula:
             raise ValidationError("La cédula es obligatoria.")
-        
+
         # Limpiar: solo números
-        cedula_limpia = ''.join(filter(str.isdigit, cedula))
-        
+        cedula_limpia = "".join(filter(str.isdigit, cedula))
+
         if not cedula_limpia:
             raise ValidationError("La cédula debe contener números.")
-        
+
         # NOTA: No validamos unicidad aquí porque el sistema permite
         # que un tutor esté vinculado a múltiples instituciones.
         # La validación de vinculación se hace en TutorService.
-        
+
         return cedula_limpia
-    
+
+    def clean_telefono(self):
+        """Validar que el teléfono contenga exactamente 7 dígitos y no letras."""
+        raw_telefono = (self.cleaned_data.get("telefono") or "").strip()
+
+        if not raw_telefono:
+            raise ValidationError("El número de teléfono es obligatorio.")
+
+        if any(char.isalpha() for char in raw_telefono):
+            raise ValidationError("El número de teléfono debe contener solo dígitos.")
+
+        if re.search(r"[^0-9\s().-]", raw_telefono):
+            raise ValidationError(
+                "El número de teléfono contiene caracteres no permitidos."
+            )
+
+        telefono = StringUtils.clean_numeric_id(raw_telefono)
+        if len(telefono) != 7:
+            raise ValidationError(
+                "El número de teléfono debe tener exactamente 7 dígitos."
+            )
+
+        return telefono
+
     def clean_email(self):
         """Validar formato de email."""
-        email = self.cleaned_data.get('email', '')
+        email = self.cleaned_data.get("email", "")
         email = email.lower().strip()
-        
+
         # NOTA: No validamos unicidad aquí porque el sistema permite
         # que un tutor esté vinculado a múltiples instituciones.
         # Un mismo tutor (mismo email) puede estar en varias instituciones.
-        
+
         return email

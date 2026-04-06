@@ -96,7 +96,18 @@
                         <option value="F" {% if request.GET.sexo == 'F' %}selected{% endif %}>Femenino</option>
                     </select>
                 </div>
+                {% if es_institucional %}
                 <div class="col-md-2">
+                    <select name="status" class="form-select border-0 bg-light">
+                        <option value="">Status (Todos)</option>
+                        <option value="activo" {% if request.GET.status == 'activo' %}selected{% endif %}>Activos</option>
+                        <option value="inactivo" {% if request.GET.status == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                {% else %}
+                <div class="col-md-2">
+                {% endif %}
 <button type="submit" class="btn w-100 fw-bold" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;">
     <i class="bi bi-search me-1"></i> Buscar
 </button>
@@ -126,32 +137,13 @@
                             <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Estado (Región) <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            {% if es_institucional %}<th class="py-3 text-center">Status</th>{% endif %}
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in participantes %}
-                        <tr class="clickable-row" style="cursor: pointer;" onclick="verExpediente({
-                            nombres: '{{ p.nombres|escapejs }}',
-                            apellidos: '{{ p.apellidos|escapejs }}',
-                            cedula: '{{ p.cedula|default:"" }}',
-                            cedula_escolar: '{{ p.cedula_escolar|default:"" }}',
-                            edad: '{{ p.edad }}',
-                            sexo: '{{ p.get_sexo_display }}',
-                            email: '{{ p.email }}',
-                            condicion_tea: {{ p.condicion_tea|yesno:"true,false" }},
-                            nacionalidad: '{{ p.get_nacionalidad_display }}',
-                            telefono: '{{ p.codigo_area }}-{{ p.numero_telefono }}',
-                            estado: '{{ p.estado.nombre|default:"" }}',
-                            municipio: '{{ p.municipio.nombre|default:"" }}',
-                            parroquia: '{{ p.parroquia.nombre|default:"" }}',
-                            direccion: '{{ p.direccion|escapejs }}',
-                            nivel_educativo: '{{ p.get_grado_escolar_display|default:"" }}',
-                            nombre_representante: '{{ p.nombre_representante|default:"" }}',
-                            cedula_representante: '{{ p.cedula_representante|default:"" }}',
-                            email_representante: '{{ p.email_representante|default:"" }}',
-                            telefono_representante: '{% if p.numero_telefono_representante %}{{ p.codigo_area_representante }}-{{ p.numero_telefono_representante }}{% endif %}'
-                        })">
+                        <tr class="clickable-row" onclick="event.stopPropagation();">
                             <td class="px-4" data-sort-value="{{ p.apellidos }} {{ p.nombres }}">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle me-3 shadow-sm">
@@ -185,19 +177,54 @@
                                 <div class="small text-dark">{{ p.estado.nombre|default:"N/A" }}</div>
                             </td>
                             <td data-sort-value="{{ p.institucion.nombre }}">
-                                <div class="mb-1">
-                                    <span class="badge {% if p.vinculacion_tipo == 'institucional' %}bg-success{% elif p.vinculacion_tipo == 'regional' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} rounded-pill small">
-                                        {{ p.vinculacion_tipo|default:'central'|capfirst }}
-                                    </span>
-                                </div>
-                                {% if p.institucion.tipo_institucion == 'particular' %}
-                                    <div class="small text-dark text-truncate" style="max-width: 180px;">
-                                        <i class="bi bi-person-badge me-1 text-primary"></i>{{ p.institucion.nombre }}
-                                    </div>
+                                {% if es_central %}
+                                    {% if p.todas_vinculaciones|length > 1 %}
+                                        <button class="btn btn-sm btn-outline-primary px-2 py-1 fw-bold"
+                                                style="border-radius: 8px; font-size: 0.72rem;"
+                                                type="button"
+                                                onclick="verVinculaciones('{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}', {{ p.todas_vinculaciones|length }}, 'vinc-data-{{ p.id }}')"
+                                                title="Ver instituciones vinculadas">
+                                            <i class="bi bi-diagram-3 me-1"></i>{{ p.todas_vinculaciones|length }} vinculaciones
+                                        </button>
+                                        {# Datos serializados para el modal #}
+                                        <script type="application/json" id="vinc-data-{{ p.id }}">
+                                        [{% for vinc in p.todas_vinculaciones %}{% if not forloop.first %},{% endif %}{"nombre":"{% if vinc.tipo_vinculacion == 'institucional' and vinc.institucion %}{{ vinc.institucion.nombre|escapejs }}{% elif vinc.tipo_vinculacion == 'regional' and vinc.estado %}Federación Regional ({{ vinc.estado.nombre|escapejs }}){% else %}Federación Central{% endif %}","tipo":"{{ vinc.tipo_vinculacion|escapejs }}","tipo_inst":"{% if vinc.tipo_vinculacion == 'institucional' and vinc.institucion %}{{ vinc.institucion.get_tipo_institucion_display|escapejs }}{% elif vinc.tipo_vinculacion == 'regional' %}Federación Regional{% else %}Federación Central{% endif %}","fecha":"{{ vinc.fecha_vinculacion|date:'d/m/Y' }}","estado":"{{ vinc.get_status_display|escapejs }}"}{% endfor %}]
+                                        </script>
+                                    {% else %}
+                                        <div class="small text-dark text-truncate" style="max-width: 180px;">{{ p.institucion.nombre }}</div>
+                                    {% endif %}
                                 {% else %}
-                                    <div class="small text-dark text-truncate" style="max-width: 180px;">{{ p.institucion.nombre }}</div>
+                                    <div class="mb-1">
+                                        <span class="badge {% if p.vinculacion_tipo == 'institucional' %}bg-success{% elif p.vinculacion_tipo == 'regional' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} rounded-pill small">
+                                            {{ p.vinculacion_tipo|default:'central'|capfirst }}
+                                        </span>
+                                    </div>
+                                    {% if p.institucion.tipo_institucion == 'particular' %}
+                                        <div class="small text-dark text-truncate" style="max-width: 180px;">
+                                            <i class="bi bi-person-badge me-1 text-primary"></i>{{ p.institucion.nombre }}
+                                        </div>
+                                    {% else %}
+                                        <div class="small text-dark text-truncate" style="max-width: 180px;">{{ p.institucion.nombre }}</div>
+                                    {% endif %}
                                 {% endif %}
                             </td>
+                            {% if es_institucional %}
+                            <td class="text-center align-middle status-cell-part" onclick="event.stopPropagation();">
+                                <div class="form-check form-switch m-0 toggle-wrap-part">
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input toggle-participante"
+                                        role="switch"
+                                        data-part-id="{{ p.id }}"
+                                        data-part-nombre="{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}"
+                                        data-toggle-url="{% url 'cambiar_estado_participante' p.id %}"
+                                        data-status="{{ p.vinculacion_status|default:'activo' }}"
+                                        {% if p.vinculacion_status == 'activo' or not p.vinculacion_status %}checked{% endif %}
+                                        id="toggle_part_{{ p.id }}"
+                                    >
+                                </div>
+                            </td>
+                            {% endif %}
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-1">
                                     <a href="#"
@@ -211,17 +238,69 @@
                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    {% if es_central %}
                                     <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-2"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar del padrón"
                                             onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')">
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cambio Estado Participante -->
+<div class="modal fade" id="confirmTogglePartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div id="modalHeaderPart" class="modal-header border-0 pt-4 px-4 text-white" style="border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold mb-0" id="modalTitlePart"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 py-4 text-center">
+                <p class="fs-5 mb-0">¿Está seguro que desea <strong id="partActionText"></strong> al participante <strong id="partName"></strong>?</p>
+            </div>
+            <div class="modal-footer border-0 pb-4 px-4">
+                <button type="button" class="btn rounded-pill px-4 fw-bold w-100 text-white shadow" id="confirmTogglePartBtn">
+                    <i class="bi bi-check-lg me-1"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Participante -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastPart" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastPartHeader">
+            <i class="bi me-2" id="toastPartIcon"></i>
+            <strong class="me-auto" id="toastPartTitle"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastPartBody"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVinculaciones" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 480px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: var(--blue-main); border-radius: 20px 20px 0 0;">
+                <div>
+                    <h5 class="fw-bold mb-0"><i class="bi bi-diagram-3 me-2"></i>Vinculaciones</h5>
+                    <p class="x-small mb-0 text-white-50" id="vincModalSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div style="height: 3px; background: var(--accent-cyan);"></div>
+            <div class="modal-body p-4 bg-light">
+                <div id="vincModalBody"></div>
             </div>
         </div>
     </div>
@@ -473,6 +552,12 @@
     .bg-blue { background: #dbeafe; color: #1e40af; }
     .bg-pink { background: #fce7f3; color: #9d174d; }
     .font-monospace { font-family: 'JetBrains Mono', monospace !important; }
+    .status-cell-part { width: 80px; }
+    .toggle-wrap-part { display: flex; align-items: center; justify-content: center; }
+    .toggle-participante.form-check-input { width: 3.2rem; height: 1.6rem; cursor: pointer; border-radius: 999px; transition: all 0.3s ease; border: none; background-color: #cbd5e1; margin: 0; }
+    .toggle-participante.form-check-input:checked { background-color: #10b981; }
+    .toggle-participante.form-check-input:focus { box-shadow: 0 0 0 0.2rem rgba(0,212,255,0.22); }
+    tr.part-inactiva { opacity: 0.6; }
 </style>
 {% endblock %}
 
@@ -481,6 +566,125 @@
     const modalEditar = new bootstrap.Modal(document.getElementById('modalEditar'));
     const modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
     const modalEliminar = new bootstrap.Modal(document.getElementById('modalUniversal'));
+    const modalVinculaciones = new bootstrap.Modal(document.getElementById('modalVinculaciones'));
+    const modalTogglePart = new bootstrap.Modal(document.getElementById('confirmTogglePartModal'));
+    const toastPart = new bootstrap.Toast(document.getElementById('toastPart'));
+
+    // --- Toggle de estado de participante ---
+    (function initToggleParticipante() {
+        let pendingToggle = null, pendingStatus = null, prevChecked = null;
+
+        function getCsrf() {
+            const m = document.cookie.match(/csrftoken=([^;]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        function mostrarToastPart(ok, msg) {
+            const icon = document.getElementById('toastPartIcon');
+            const title = document.getElementById('toastPartTitle');
+            const body = document.getElementById('toastPartBody');
+            icon.className = ok ? 'bi bi-check-circle-fill text-success me-2' : 'bi bi-exclamation-circle-fill text-danger me-2';
+            title.textContent = ok ? 'Estado actualizado' : 'Error';
+            body.textContent = msg;
+            toastPart.show();
+        }
+
+        document.querySelectorAll('.toggle-participante').forEach(toggle => {
+            toggle.addEventListener('change', function () {
+                pendingToggle = this;
+                prevChecked = !this.checked;
+                pendingStatus = this.checked ? 'activo' : 'inactivo';
+                const nombre = this.dataset.partNombre;
+                const header = document.getElementById('modalHeaderPart');
+                const title = document.getElementById('modalTitlePart');
+                const btn = document.getElementById('confirmTogglePartBtn');
+                const actionText = document.getElementById('partActionText');
+                const partName = document.getElementById('partName');
+                if (pendingStatus === 'activo') {
+                    header.style.background = '#10b981';
+                    title.innerHTML = '<i class="bi bi-check-circle me-2"></i>Habilitar Participante';
+                    btn.style.background = '#10b981';
+                    actionText.textContent = 'habilitar';
+                } else {
+                    header.style.background = '#f59e0b';
+                    title.innerHTML = '<i class="bi bi-slash-circle me-2"></i>Inhabilitar Participante';
+                    btn.style.background = '#f59e0b';
+                    actionText.textContent = 'inhabilitar';
+                }
+                partName.textContent = nombre;
+                modalTogglePart.show();
+            });
+        });
+
+        document.getElementById('confirmTogglePartModal').addEventListener('hidden.bs.modal', function () {
+            if (pendingToggle) pendingToggle.checked = prevChecked;
+        });
+
+        document.getElementById('confirmTogglePartBtn').addEventListener('click', function () {
+            if (!pendingToggle) return;
+            const url = pendingToggle.dataset.toggleUrl;
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cambiando...';
+            const fd = new FormData();
+            fd.append('status', pendingStatus);
+            fetch(url, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrf() },
+                credentials: 'include'
+            })
+            .then(r => r.json().then(d => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+                if (ok && d.success) {
+                    pendingToggle.checked = pendingStatus === 'activo';
+                    pendingToggle.dataset.status = pendingStatus;
+                    const fila = pendingToggle.closest('tr');
+                    pendingStatus === 'activo' ? fila.classList.remove('part-inactiva') : fila.classList.add('part-inactiva');
+                    mostrarToastPart(true, d.message);
+                } else {
+                    pendingToggle.checked = prevChecked;
+                    mostrarToastPart(false, d.error || 'No se pudo cambiar el estado.');
+                }
+            })
+            .catch(() => { pendingToggle.checked = prevChecked; mostrarToastPart(false, 'Error de conexión.'); })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Confirmar';
+                pendingToggle = null; pendingStatus = null; prevChecked = null;
+                modalTogglePart.hide();
+            });
+        });
+    })();
+
+    function verVinculaciones(nombreParticipante, total, dataId) {
+        const raw = document.getElementById(dataId);
+        const vinculaciones = raw ? JSON.parse(raw.textContent) : [];
+
+        document.getElementById('vincModalSubtitle').innerText = nombreParticipante + ' — ' + total + ' institución(es)';
+
+        const TIPO_BADGE = { institucional: 'bg-success', regional: 'bg-warning text-dark', central: 'bg-info text-dark' };
+        const TIPO_ICON  = { institucional: 'bi-building', regional: 'bi-geo-alt', central: 'bi-globe' };
+
+        const html = vinculaciones.map(v => {
+            const badge = TIPO_BADGE[v.tipo] || 'bg-secondary';
+            const icon  = TIPO_ICON[v.tipo]  || 'bi-link';
+            return `<div class="d-flex align-items-start gap-3 p-3 bg-white rounded-3 shadow-sm mb-2">
+                <div class="p-2 rounded-2" style="background: var(--blue-main);">
+                    <i class="bi ${icon} text-white"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold text-dark small">${v.nombre}</div>
+                    <div class="x-small text-muted mt-1"><i class="bi bi-tag me-1"></i>${v.tipo_inst}</div>
+                    <div class="x-small text-muted"><i class="bi bi-calendar3 me-1"></i>Vinculado: ${v.fecha}</div>
+                </div>
+                <span class="badge ${badge} rounded-pill x-small align-self-center">${v.estado}</span>
+            </div>`;
+        }).join('');
+
+        document.getElementById('vincModalBody').innerHTML = html || '<p class="text-muted text-center">Sin vinculaciones registradas.</p>';
+        modalVinculaciones.show();
+    }
 
     // Ordenamiento de columnas
     (function initSortableTable() {

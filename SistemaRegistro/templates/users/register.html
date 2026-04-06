@@ -637,18 +637,21 @@
                 // Escapar la lista de instituciones vinculadas
                 const instVinculadasSeguras = (data.instituciones_vinculadas || []).map(escapeHTML).join(', ');
                 const numInstSeguro = escapeHTML(data.total_instituciones);
+                const detalleInstituciones = instVinculadasSeguras
+                    ? `Instituciones vinculadas (${numInstSeguro}): ${instVinculadasSeguras}`
+                    : `Registro detectado en ${numInstSeguro} vínculo(s) activo(s).`;
                 
                 if (data.ya_vinculado) {
                     // Ya está vinculado a esta institución
                     if (data.vinculacion_activa) {
                         textoVinculacion.innerHTML = `<strong>Este participante ya está registrado en tu institución.</strong><br>
-                            Instituciones vinculadas (${numInstSeguro}): ${instVinculadasSeguras}`;
+                            ${detalleInstituciones}`;
                         infoVinculacion.className = 'alert alert-success border-0 shadow-sm';
                         btnEditar.style.display = 'block';
                         btnVincular.style.display = 'none';
                     } else {
                         textoVinculacion.innerHTML = `<strong>Este participante estuvo vinculado a tu institución pero está inactivo.</strong><br>
-                            Instituciones vinculadas (${numInstSeguro}): ${instVinculadasSeguras}`;
+                            ${detalleInstituciones}`;
                         infoVinculacion.className = 'alert alert-warning border-0 shadow-sm';
                         btnVincular.style.display = 'block';
                         btnVincular.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Sí, reactivar en mi institución';
@@ -657,7 +660,7 @@
                 } else {
                     // NO está vinculado a esta institución
                     textoVinculacion.innerHTML = `<strong>Este participante existe en el sistema pero NO está vinculado a tu institución.</strong><br>
-                        Instituciones vinculadas (${numInstSeguro}): ${instVinculadasSeguras}`;
+                        ${detalleInstituciones}`;
                     infoVinculacion.className = 'alert alert-info border-0 shadow-sm';
                     btnVincular.style.display = 'block';
                     btnVincular.innerHTML = '<i class="bi bi-link-45deg me-1"></i> Sí, vincular a mi institución';

@@ -28,7 +28,7 @@ def _usuario_puede_gestionar_tutor(user, tutor, institucion=None) -> bool:
     Verifica si un usuario puede gestionar un tutor.
     
     Reglas:
-    - Ente Rector (fed_central) y superuser pueden gestionar cualquier tutor.
+    - Ente Rector funcional (`fed_central`) puede gestionar cualquier tutor.
     - Usuarios institucionales solo pueden gestionar tutores vinculados a su institución.
     """
     if not hasattr(user, 'userprofile'):
@@ -36,8 +36,8 @@ def _usuario_puede_gestionar_tutor(user, tutor, institucion=None) -> bool:
     
     user_type = user.userprofile.user_type
     
-    # Ente Rector y superuser pueden gestionar todos
-    if user_type in ['fed_central', 'superuser'] or user.is_superuser:
+    # Ente Rector funcional puede gestionar todos
+    if user_type == 'fed_central':
         return True
     
     # Usuarios institucionales solo pueden gestionar tutores vinculados a su institución
@@ -61,7 +61,7 @@ def _usuario_puede_gestionar_grupo(user, grupo) -> bool:
     Verifica si un usuario puede gestionar un grupo.
     
     Reglas:
-    - Ente Rector (fed_central) y superuser pueden gestionar cualquier grupo.
+    - Ente Rector funcional (`fed_central`) puede gestionar cualquier grupo.
     - Usuarios institucionales solo pueden gestionar grupos que crearon o de su institución.
     
     Args:
@@ -76,8 +76,8 @@ def _usuario_puede_gestionar_grupo(user, grupo) -> bool:
     
     user_type = user.userprofile.user_type
     
-    # Ente Rector y superuser pueden gestionar todos
-    if user_type in ['fed_central', 'superuser'] or user.is_superuser:
+    # Ente Rector funcional puede gestionar todos
+    if user_type == 'fed_central':
         return True
     
     # El creador del grupo siempre puede gestionarlo
@@ -102,7 +102,7 @@ def _usuario_puede_crear_tutor_para_institucion(user, institucion) -> bool:
     Verifica si un usuario puede crear tutores para una institución específica.
     
     Reglas:
-    - Ente Rector (fed_central) y superuser pueden crear tutores para cualquier institución.
+    - Ente Rector funcional (`fed_central`) puede crear tutores para cualquier institución.
     - Usuarios institucionales solo pueden crear tutores para su propia institución.
     
     Args:
@@ -117,8 +117,8 @@ def _usuario_puede_crear_tutor_para_institucion(user, institucion) -> bool:
     
     user_type = user.userprofile.user_type
     
-    # Ente Rector y superuser pueden crear para cualquier institución
-    if user_type in ['fed_central', 'superuser'] or user.is_superuser:
+    # Ente Rector funcional puede crear para cualquier institución
+    if user_type == 'fed_central':
         return True
     
     # Usuarios institucionales solo pueden crear para su propia institución
@@ -136,7 +136,7 @@ def lista_tutores(request):
     """
     user_profile = request.user.userprofile
     user_type = user_profile.user_type
-    puede_ver_todos = user_type in ['fed_central', 'superuser', 'tecnologico'] or request.user.is_superuser
+    puede_ver_todos = user_type in ['fed_central', 'tecnologico']
 
     # UX: recordar qué pestaña estaba activa al hacer búsquedas (query param `tab`).
     # IDs de pestañas en el template: `institucionales` y `federacion`.
@@ -185,7 +185,7 @@ def lista_tutores(request):
     tutores_federacion = []
     tutores_institucionales = []
     
-    if user_type in ['fed_central', 'fed_regional', 'superuser']:
+    if user_type in ['fed_central', 'fed_regional']:
         tutores_federacion = tutores_base.filter(tipo_vinculacion__in=['central', 'regional'])
         tutores_institucionales = tutores_base.filter(tipo_vinculacion='institucional')
     else:
@@ -265,8 +265,15 @@ def crear_tutor(request):
 
             except ValidationError as e:
                 form.add_error(None, e.message)
-            except Exception as e:
-                messages.error(request, f"Error inesperado: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando tutor. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al registrar el tutor. Intenta nuevamente.",
+                )
     else:
         # Valores iniciales por Rol
         initial = {}
@@ -312,7 +319,7 @@ def editar_tutor(request, tutor_id):
         elif user_type == 'fed_regional':
             vinculacion = TutorInstitucion.objects.filter(tutor=tutor, estado=user_profile.estado).first()
         
-        # Si no se encontró por contexto, tomar la más reciente (para superuser/central)
+        # Si no se encontró por contexto, tomar la más reciente (para central)
         if not vinculacion:
             vinculacion = TutorInstitucion.objects.filter(tutor=tutor).first()
 
@@ -330,7 +337,7 @@ def editar_tutor(request, tutor_id):
                     form.save()
                     
                     # 2. Actualizar vinculación si es permitido (solo para central/regional en sus campos)
-                    if user_type in ['fed_central', 'superuser']:
+                    if user_type == 'fed_central':
                         vinculacion.tipo_vinculacion = form.cleaned_data['tipo_vinculacion']
                         vinculacion.institucion = form.cleaned_data.get('institucion')
                         vinculacion.estado = form.cleaned_data.get('estado')
@@ -340,8 +347,16 @@ def editar_tutor(request, tutor_id):
                     
                     messages.success(request, f'Tutor {tutor.get_nombre_completo()} actualizado correctamente.')
                     return redirect('lista_tutores')
-            except Exception as e:
-                messages.error(request, f"Error al guardar: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error editando tutor. user_id=%s tutor_id=%s",
+                    request.user.id,
+                    tutor_id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al guardar los cambios del tutor.",
+                )
     else:
         # Pre-poblar formulario con datos de la vinculación encontrada
         initial = {
@@ -444,7 +459,7 @@ def asignar_tutor_grupo(request, grupo_id):
     # Filtrar tutores según permisos del usuario
     if hasattr(request.user, 'userprofile') and request.user.userprofile.institution:
         user_type = request.user.userprofile.user_type
-        if user_type not in ['fed_central', 'superuser'] and not request.user.is_superuser:
+        if user_type != 'fed_central':
             # Usuarios institucionales solo ven tutores activos en su institución
             vinculaciones_activas = TutorInstitucion.objects.filter(
                 institucion=request.user.userprofile.institution,

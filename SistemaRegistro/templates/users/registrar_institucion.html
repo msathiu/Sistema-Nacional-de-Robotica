@@ -532,7 +532,19 @@
                 <option value="0212" {% if form.codigo_area.value == '0212' %}selected{% endif %}>0212</option>
                 <option value="0281" {% if form.codigo_area.value == '0281' %}selected{% endif %}>0281</option>
               </select>
-              <input type="text" class="form-control" name="numero_telefono" id="telefono" maxlength="7" value="{{ form.numero_telefono.value|default:'' }}" placeholder="1234567">
+              <input
+                type="text"
+                class="form-control"
+                name="numero_telefono"
+                id="telefono"
+                maxlength="7"
+                minlength="7"
+                inputmode="numeric"
+                pattern="[0-9]{7}"
+                autocomplete="tel-national"
+                value="{{ form.numero_telefono.value|default:'' }}"
+                placeholder="1234567"
+                oninput="this.value=this.value.replace(/\D/g,'').slice(0,7)">
             </div>
             {% if form.codigo_area.errors %}<div class="validation-text">{{ form.codigo_area.errors|striptags }}</div>{% endif %}
             {% if form.numero_telefono.errors %}<div class="validation-text">{{ form.numero_telefono.errors|striptags }}</div>{% endif %}

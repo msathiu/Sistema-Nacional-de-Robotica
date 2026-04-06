@@ -1,18 +1,22 @@
 import uuid6
-from django.db import models
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils import timezone
 
 from .base import (
-    normalizar_texto_titulo, NACIONALIDAD_CHOICES, SEXO_CHOICES,
-    CODIGO_AREA_CHOICES
+    CODIGO_AREA_CHOICES,
+    NACIONALIDAD_CHOICES,
+    SEXO_CHOICES,
+    normalizar_texto_titulo,
 )
 from .institucion import Institucion
+
 
 class Tutor(models.Model):
     """
     Modelo para representar tutores de grupos.
     """
+
     STATUS_CHOICES = [
         ("activo", "Activo"),
         ("inactivo", "Inactivo"),
@@ -99,6 +103,13 @@ class Tutor(models.Model):
     def get_nombre_completo(self) -> str:
         return f"{self.nombres} {self.apellidos}"
 
+    def get_telefono_completo(self) -> str:
+        if self.telefono_codigo and self.telefono:
+            return f"({self.telefono_codigo}) {self.telefono}"
+        elif self.telefono:
+            return self.telefono
+        return ""
+
     def get_instituciones_activas(self):
         return Institucion.objects.filter(
             tutores_vinculados__tutor=self, tutores_vinculados__status="activo"
@@ -116,13 +127,13 @@ class Tutor(models.Model):
 
 class TutorInstitucion(models.Model):
     ROL_CHOICES = [
-    ("asistente", "Asistente"),
-    ("entrenador", "Entrenador"),
-    ("instructor", "Instructor/Monitor"),
-    ("coordinador", "Coordinador"),
-    ("delegado", "Delegado"),
-    ("representante", "Representante"),
-    ("colaborador", "Colaborador"),
+        ("asistente", "Asistente"),
+        ("entrenador", "Entrenador"),
+        ("instructor", "Instructor/Monitor"),
+        ("coordinador", "Coordinador"),
+        ("delegado", "Delegado"),
+        ("representante", "Representante"),
+        ("colaborador", "Colaborador"),
     ]
 
     STATUS_CHOICES = [

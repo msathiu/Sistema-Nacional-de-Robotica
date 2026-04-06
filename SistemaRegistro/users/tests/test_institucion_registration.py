@@ -256,6 +256,30 @@ class InstitucionRegistrationFormTests(TestCase):
         
         self.assertFalse(form.is_valid())
         self.assertIn("no coinciden", str(form.errors))
+
+    # ============================================================
+    # TEST 11: VALIDACIÓN - TELÉFONO SOLO ACEPTA DÍGITOS
+    # ============================================================
+    def test_numero_telefono_con_letras_rechazado(self):
+        """Validación: el número telefónico no debe aceptar letras."""
+        data = self.get_valid_form_data()
+        data["numero_telefono"] = "12AB567"
+        form = InstitucionRegistrationForm(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("solo dígitos", str(form.errors))
+
+    # ============================================================
+    # TEST 12: VALIDACIÓN - TELÉFONO SE NORMALIZA DESDE FORMATO SEGURO
+    # ============================================================
+    def test_numero_telefono_con_separadores_rechazado(self):
+        """Validación: el teléfono debe llegar como 7 dígitos estrictos."""
+        data = self.get_valid_form_data()
+        data["numero_telefono"] = "555-1234"
+        form = InstitucionRegistrationForm(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("numero_telefono", form.errors)
     
     # ============================================================
     # TEST 11: VALIDACIÓN - CASCADA UBICACIÓN (Municipio no en Estado)
@@ -440,6 +464,8 @@ class InstitucionRegistrationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("registroForm", response.content.decode())
         self.assertIn("tipoInstitucion", response.content.decode())
+        self.assertIn('inputmode="numeric"', response.content.decode())
+        self.assertIn('pattern="[0-9]{7}"', response.content.decode())
     
     # ============================================================
     # TEST 20: POST - Registro exitoso crea Usuario
@@ -511,7 +537,7 @@ class InstitucionRegistrationViewTests(TestCase):
         form = response.context["form"]
         self.assertIn("numero_telefono", form.errors)
         self.assertIn(
-            "Asegúrese de que este valor tenga como mínimo 7 caracteres",
+            "al menos 7",
             form.errors["numero_telefono"][0],
         )
 

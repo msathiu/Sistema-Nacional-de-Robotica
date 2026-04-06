@@ -251,7 +251,12 @@ class Municipio(models.Model):
     class Meta:
         verbose_name = "Municipio"
         verbose_name_plural = "Municipios"
-        unique_together = ["estado", "nombre"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["estado", "nombre"],
+                name="unique_municipio_estado_nombre",
+            )
+        ]
         ordering = ["estado", "nombre"]
         indexes = [
             models.Index(fields=["estado", "nombre"], name="idx_mun_estado_nombre"),
@@ -270,7 +275,12 @@ class Parroquia(models.Model):
     class Meta:
         verbose_name = "Parroquia"
         verbose_name_plural = "Parroquias"
-        unique_together = ["municipio", "nombre"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["municipio", "nombre"],
+                name="unique_parroquia_municipio_nombre",
+            )
+        ]
         ordering = ["nombre"]
         indexes = [
             models.Index(fields=["municipio", "nombre"], name="idx_parr_mun_nombre"),

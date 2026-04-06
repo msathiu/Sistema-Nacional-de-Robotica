@@ -82,6 +82,9 @@
 
                     <form method="post" id="editarForm">
                         {% csrf_token %}
+                        {{ participante_form.tipo_vinculacion.as_hidden }}
+                        {{ participante_form.vinculacion_institucion.as_hidden }}
+                        {{ participante_form.vinculacion_estado.as_hidden }}
 
                         <div class="mb-5">
                             <h5 class="fw-bold text-dark mb-4">

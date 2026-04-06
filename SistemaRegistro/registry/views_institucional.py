@@ -1,5 +1,7 @@
 """Vistas para el módulo institucional de gestión de grupos, eventos y clubes."""
 
+import logging
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from users.decorators import fed_central_required
@@ -33,6 +35,8 @@ from .notificaciones import (
     notificar_club_rechazado,
 )
 from .services import AdmissionService
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -86,8 +90,16 @@ def editar_grupo(request, grupo_id):
 
             messages.success(request, "Grupo actualizado exitosamente.")
             return redirect("grupos_institucion")
-        except Exception as e:
-            messages.error(request, f"Error al actualizar: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error actualizando grupo institucional. user_id=%s grupo_id=%s",
+                request.user.id,
+                grupo_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al actualizar el grupo.",
+            )
 
     institucion = request.user.userprofile.institution
     # Obtener participantes vinculados a la institución a través de ParticipanteInstitucion
@@ -145,21 +157,36 @@ def clubes_lista(request):
         return redirect("dashboard")
     
     user_type = request.user.userprofile.user_type
-    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
-    # Si es federación regional o superuser, redirigir a revisar clubes
-    if user_type in ["fed_regional", "superuser"]:
+    # Si es federación regional, redirigir a revisar clubes
+    if user_type == "fed_regional":
         return redirect("revisar_clubes")
     
     # fed_central puede crear clubes, mostrar su vista especial
     if user_type == "fed_central":
-        # Clubes creados por fed_central (usando tipo_creador)
-        mis_clubes_creados = Club.objects.filter(
-            tipo_creador="fed_central",
-            eliminado=False
-        ).order_by("-fecha_creacion")
+        # Clubes creados por fed_central (usando tipo_creador) con conteo de solicitudes pendientes
+        # Las solicitudes pendientes para el rector incluyen:
+        # - visto_bueno_fundadora (aprobada por fundadora)
+        # - pendiente_filtro en clubs de federacion (sin fundadora)
+        mis_clubes_creados = (
+            Club.objects.filter(
+                tipo_creador="fed_central",
+                eliminado=False
+            )
+            .annotate(
+                num_solicitudes_pendientes=Count(
+                    "membresias",
+                    filter=(
+                        Q(membresias__estado="visto_bueno_fundadora") |
+                        Q(membresias__estado="pendiente_filtro", institucion_creadora__isnull=True)
+                    )
+                )
+            )
+            .order_by("-fecha_creacion")
+        )
         
         context = {
             "mis_clubes_creados": mis_clubes_creados,
@@ -305,8 +332,15 @@ def crear_club(request):
                         f'Complete los datos y envíe a revisión.'
                     )
                 return redirect("clubes_lista")
-            except Exception as e:
-                messages.error(request, f"Error al crear club: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando club institucional. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al crear el club. Intenta nuevamente.",
+                )
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -333,7 +367,7 @@ def enviar_club_revision(request, club_id):
         return redirect("dashboard")
 
     user_type = request.user.userprofile.user_type
-    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -349,7 +383,7 @@ def enviar_club_revision(request, club_id):
         if club.coordinador != request.user and club.tipo_creador != "fed_regional":
             messages.error(request, "No tienes permiso para modificar este club.")
             return redirect("clubes_lista")
-    elif user_type in ["fed_central", "superuser"]:
+    elif user_type == "fed_central":
         # fed_central puede aprobar directamente sus propios clubes
         if club.tipo_creador == "fed_central" and club.status == "borrador":
             club.status = "aprobado"
@@ -453,7 +487,7 @@ def editar_club(request, club_id):
         return redirect("dashboard")
 
     user_type = request.user.userprofile.user_type
-    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -476,7 +510,7 @@ def editar_club(request, club_id):
         if club.status not in ["borrador", "rechazado"]:
             messages.warning(request, "No puedes editar un club que está en revisión o aprobado.")
             return redirect("clubes_lista")
-    # fed_central y superuser pueden editar cualquier club en cualquier estado
+    # fed_central puede editar cualquier club en cualquier estado
 
     if club.eliminado:
         messages.error(request, "No puedes editar un club eliminado.")
@@ -520,8 +554,16 @@ def editar_club(request, club_id):
                 
                 messages.success(request, f'Club "{club.nombre}" actualizado exitosamente.')
                 return redirect("clubes_lista")
-            except Exception as e:
-                messages.error(request, f"Error al actualizar club: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error actualizando club. user_id=%s club_id=%s",
+                    request.user.id,
+                    club_id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al actualizar el club.",
+                )
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -534,7 +576,7 @@ def editar_club(request, club_id):
         "club": club,
         "form": form,
         "estados_vinculacion": Club.ESTADO_VINCULACION_CHOICES,
-        "es_fed_central": user_type in ["fed_central", "superuser"],
+        "es_fed_central": user_type == "fed_central",
         "tutores_club": club.tutores.filter(status="activo").select_related("tutor"),
         "rol_choices": ClubTutor.ROL_CHOICES,
     }
@@ -584,8 +626,16 @@ def postular_club(request, club_id):
             )
             messages.success(request, "Solicitud enviada exitosamente.")
             return redirect("clubes_lista")
-        except Exception as e:
-            messages.error(request, f"Error: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error enviando club a revision. user_id=%s club_id=%s",
+                request.user.id,
+                club_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al procesar el envío a revisión.",
+            )
 
     context = {
         "club": club,
@@ -684,8 +734,16 @@ def aprobar_club(request, club_id):
                         messages.success(request, f'Club "{club.nombre}" ha sido APROBADO.')
                 else:
                     messages.success(request, f'Club "{club.nombre}" ha sido APROBADO.')
-        except Exception as e:
-            messages.error(request, f"Error al aprobar club: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error aprobando club. user_id=%s club_id=%s",
+                request.user.id,
+                club_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al aprobar el club.",
+            )
             return redirect("revisar_clubes")
         
         return redirect("revisar_clubes")
@@ -880,8 +938,16 @@ def aprobar_membresia(request, membresia_id):
             messages.success(
                 request, f'Membresía de "{membresia.institucion.nombre}" APROBADA como Miembro Activo.'
             )
-        except Exception as e:
-            messages.error(request, f"Error al aprobar membresía: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error aprobando membresia de club. user_id=%s membresia_id=%s",
+                request.user.id,
+                membresia_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al procesar la membresía.",
+            )
         
         return redirect("revisar_membresias")
     
@@ -909,8 +975,16 @@ def rechazar_membresia(request, membresia_id):
             # Usar el servicio de admisión para rechazar
             AdmissionService.rechazar_ente_rector(membresia, request.user, motivo)
             messages.success(request, "Membresía RECHAZADA.")
-        except Exception as e:
-            messages.error(request, f"Error al rechazar membresía: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error rechazando membresia de club. user_id=%s membresia_id=%s",
+                request.user.id,
+                membresia_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al rechazar la membresía.",
+            )
         
         return redirect("revisar_membresias")
 
@@ -1013,7 +1087,7 @@ def directorio_clubes_aprobados(request):
         return redirect("dashboard")
     
     user_type = request.user.userprofile.user_type
-    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -1065,7 +1139,7 @@ def detalle_club(request, club_id):
     user_type = request.user.userprofile.user_type
     
     # Permitir acceso a federación e institucionales
-    if user_type in ["fed_central", "fed_regional", "superuser"]:
+    if user_type in ["fed_central", "fed_regional"]:
         # Federación puede ver cualquier club
         club = get_object_or_404(Club.objects.select_related("institucion_creadora"), id=club_id)
     elif user_type == "institucional":
@@ -1146,7 +1220,7 @@ def eliminar_club(request, club_id):
         return redirect("dashboard")
 
     user_type = request.user.userprofile.user_type
-    if user_type not in ["institucional", "fed_central", "fed_regional", "superuser"]:
+    if user_type not in ["institucional", "fed_central", "fed_regional"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -1162,15 +1236,15 @@ def eliminar_club(request, club_id):
         if club.coordinador != request.user and club.tipo_creador != "fed_regional":
             messages.error(request, "No tienes permiso para eliminar este club.")
             return redirect("clubes_lista")
-    # fed_central y superuser pueden eliminar cualquier club
+    # fed_central puede eliminar cualquier club
 
     if club.eliminado:
         messages.warning(request, "Este club ya está eliminado.")
         return redirect("clubes_lista")
 
     if request.method == "POST":
-        # fed_central/superuser eliminan directamente (soft delete)
-        if user_type in ["fed_central", "superuser"]:
+        # fed_central elimina directamente (soft delete)
+        if user_type == "fed_central":
             nombre = club.nombre
             club.eliminado = True
             club.fecha_eliminacion = timezone.now()
@@ -1298,8 +1372,16 @@ def aprobar_eliminacion_club(request, solicitud_id):
                     
                     notificar_eliminacion_aprobada(solicitud)
                     messages.success(request, f'Club "{club.nombre}" eliminado correctamente.')
-        except Exception as e:
-            messages.error(request, f"Error al procesar solicitud: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error procesando solicitud de eliminacion de club. user_id=%s solicitud_id=%s",
+                request.user.id,
+                solicitud_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al procesar la solicitud.",
+            )
         
         return redirect("revisar_solicitudes_eliminacion")
     
@@ -1382,7 +1464,7 @@ def ver_historial_club(request, club_id):
         if club.institucion_creadora != request.user.userprofile.institution:
             messages.error(request, "No tienes permiso para ver este historial.")
             return redirect("clubes_lista")
-    elif user_type not in ["fed_central", "fed_regional", "superuser"]:
+    elif user_type not in ["fed_central", "fed_regional"]:
         messages.error(request, "No tienes permiso para ver este historial.")
         return redirect("dashboard")
     
@@ -1392,7 +1474,7 @@ def ver_historial_club(request, club_id):
     context = {
         "club": club,
         "historial": historial,
-        "es_federacion": user_type in ["fed_central", "fed_regional", "superuser"],
+        "es_federacion": user_type in ["fed_central", "fed_regional"],
     }
     return render(request, "registry/historial_club.html", context)
 
@@ -1471,10 +1553,21 @@ def gestionar_membresias_club(request, club_id):
     """Vista para que el propietario del club gestione membresías."""
     club = get_object_or_404(Club, id=club_id)
     
-    # Verificar que el usuario es propietario del club
-    if not hasattr(request.user, "userprofile") or club.institucion_creadora != request.user.userprofile.institution:
+    # Verificar permisos: puede ser institución fundadora O fed_central (para clubs de federación)
+    user = request.user
+    es_fed_central = hasattr(user, "userprofile") and user.userprofile.user_type == "fed_central"
+    es_institucion_creadora = (
+        hasattr(user, "userprofile") and 
+        user.userprofile.institution and 
+        club.institucion_creadora == user.userprofile.institution
+    )
+    
+    if not (es_fed_central or es_institucion_creadora):
         messages.error(request, "No tienes permiso para gestionar este club.")
         return redirect("clubes_lista")
+    
+    # Guardar en contexto si es fed_central para ajustar la lógica en template
+    puede_aprobar_directo = es_fed_central and club.institucion_creadora is None
     
     # Obtener membresías por estado federado
     membresias_pendientes = club.membresias.filter(estado="pendiente_filtro").select_related("institucion")
@@ -1496,6 +1589,8 @@ def gestionar_membresias_club(request, club_id):
         "total_miembros": total_miembros,
         "total_pendientes": total_pendientes,
         "cupos_disponibles": cupos_disponibles,
+        "es_fed_central": es_fed_central,
+        "puede_aprobar_directo": puede_aprobar_directo,
     }
     return render(request, "registry/gestionar_membresias_club.html", context)
 
@@ -1557,6 +1652,7 @@ def detalle_membresia(request, membresia_id):
 def aprobar_membresia_club(request, membresia_id):
     """
     Dar visto bueno a solicitud de membresía (Institución Fundadora).
+    Para clubs de federación (sin fundadora), fed_central aprueba directamente.
     
     Flujo de Doble Aprobación:
     - Este paso es realizado por la Institución Fundadora del club
@@ -1564,27 +1660,70 @@ def aprobar_membresia_club(request, membresia_id):
     - Luego el Ente Rector (Federación Central) debe dar la aprobación final
     """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
+    club = membresia.club
+    user = request.user
     
-    # Verificar que el usuario es propietario del club (Institución Fundadora)
-    if not hasattr(request.user, "userprofile") or membresia.club.institucion_creadora != request.user.userprofile.institution:
+    # Verificar permisos
+    es_fed_central = hasattr(user, "userprofile") and user.userprofile.user_type == "fed_central"
+    es_institucion_creadora = (
+        hasattr(user, "userprofile") and 
+        user.userprofile.institution and 
+        club.institucion_creadora == user.userprofile.institution
+    )
+    
+    if not (es_fed_central or es_institucion_creadora):
         messages.error(request, "No tienes permiso para aprobar esta membresía.")
         return redirect("clubes_lista")
     
+    # Si es fed_central y el club no tiene institución fundadora, aprobar directamente
+    es_club_federacion = club.institucion_creadora is None
+    if es_fed_central and es_club_federacion:
+        if request.method == "POST":
+            observaciones = request.POST.get("observaciones", "").strip()
+            try:
+                AdmissionService.aprobar_ente_rector(membresia, user, observaciones)
+                messages.success(
+                    request,
+                    f'Membresía de "{membresia.institucion.nombre}" aprobada directamente.'
+                )
+            except Exception:
+                logger.exception(
+                    "Error aprobando membresia como fed_central. user_id=%s membresia_id=%s",
+                    user.id,
+                    membresia_id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al procesar la aprobación.",
+                )
+            return redirect("gestionar_membresias_club", club_id=club.id)
+        
+        context = {"membresia": membresia, "es_aprobacion_directa": True}
+        return render(request, "registry/aprobar_membresia_club.html", context)
+    
+    # Flujo normal para institución fundadora
     if request.method == "POST":
         observaciones = request.POST.get("observaciones", "").strip()
         
         try:
-            # Usar el servicio de admisión para dar visto bueno
-            AdmissionService.dar_visto_bueno_fundadora(membresia, request.user, observaciones)
+            AdmissionService.dar_visto_bueno_fundadora(membresia, user, observaciones)
             messages.success(
                 request, 
                 f'Visto bueno otorgado a "{membresia.institucion.nombre}". '
                 f'La solicitud ha sido enviada al Ente Rector para aprobación final.'
             )
-        except Exception as e:
-            messages.error(request, f"Error al procesar la solicitud: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error dando visto bueno a membresia. user_id=%s membresia_id=%s",
+                user.id,
+                membresia_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al procesar la solicitud.",
+            )
         
-        return redirect("gestionar_membresias_club", club_id=membresia.club.id)
+        return redirect("gestionar_membresias_club", club_id=club.id)
     
     context = {"membresia": membresia}
     return render(request, "registry/aprobar_membresia_club.html", context)
@@ -1594,17 +1733,54 @@ def aprobar_membresia_club(request, membresia_id):
 def rechazar_membresia_club(request, membresia_id):
     """
     Rechazar solicitud de membresía (Institución Fundadora).
+    Para clubs de federación (sin fundadora), fed_central rechaza directamente.
     
     La Institución Fundadora puede rechazar solicitudes que no cumplan
     con los requisitos del club.
     """
     membresia = get_object_or_404(MembresiaClu, id=membresia_id)
+    club = membresia.club
+    user = request.user
     
-    # Verificar que el usuario es propietario del club (Institución Fundadora)
-    if not hasattr(request.user, "userprofile") or membresia.club.institucion_creadora != request.user.userprofile.institution:
+    # Verificar permisos
+    es_fed_central = hasattr(user, "userprofile") and user.userprofile.user_type == "fed_central"
+    es_institucion_creadora = (
+        hasattr(user, "userprofile") and 
+        user.userprofile.institution and 
+        club.institucion_creadora == user.userprofile.institution
+    )
+    
+    if not (es_fed_central or es_institucion_creadora):
         messages.error(request, "No tienes permiso para rechazar esta membresía.")
         return redirect("clubes_lista")
     
+    # Si es fed_central y el club no tiene institución fundadora, rechazar directamente
+    es_club_federacion = club.institucion_creadora is None
+    if es_fed_central and es_club_federacion:
+        if request.method == "POST":
+            motivo = request.POST.get("observaciones", "").strip()
+            if not motivo:
+                messages.error(request, "Debes proporcionar un motivo de rechazo.")
+                return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia, "es_rechazo_directo": True})
+            
+            try:
+                AdmissionService.rechazar_ente_rector(membresia, user, motivo)
+                messages.success(request, f'Membresía de "{membresia.institucion.nombre}" rechazada.')
+            except Exception:
+                logger.exception(
+                    "Error rechazando membresia como fed_central. user_id=%s membresia_id=%s",
+                    user.id,
+                    membresia_id,
+                )
+                messages.error(
+                    request,
+                    "Ocurrió un error interno al procesar el rechazo.",
+                )
+            return redirect("gestionar_membresias_club", club_id=club.id)
+        
+        return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia, "es_rechazo_directo": True})
+    
+    # Flujo normal para institución fundadora
     if request.method == "POST":
         motivo = request.POST.get("observaciones", "").strip()
         if not motivo:
@@ -1612,13 +1788,20 @@ def rechazar_membresia_club(request, membresia_id):
             return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia})
         
         try:
-            # Usar el servicio de admisión para rechazar
-            AdmissionService.rechazar_fundadora(membresia, request.user, motivo)
+            AdmissionService.rechazar_fundadora(membresia, user, motivo)
             messages.success(request, f'Membresía de "{membresia.institucion.nombre}" rechazada.')
-        except Exception as e:
-            messages.error(request, f"Error al procesar el rechazo: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error rechazando membresia como fundadora. user_id=%s membresia_id=%s",
+                user.id,
+                membresia_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al procesar el rechazo.",
+            )
         
-        return redirect("gestionar_membresias_club", club_id=membresia.club.id)
+        return redirect("gestionar_membresias_club", club_id=club.id)
     
     return render(request, "registry/rechazar_membresia_club.html", {"membresia": membresia})
 
@@ -1721,5 +1904,11 @@ def api_club_buscar_tutor(request):
         )
     except Tutor.DoesNotExist:
         return JsonResponse({"found": False, "error": "Tutor no encontrado con esa cédula"})
-    except Exception as e:
-        return JsonResponse({"found": False, "error": str(e)})
+    except Exception:
+        logger.exception(
+            "Error buscando tutor para club. user_id=%s",
+            request.user.id,
+        )
+        return JsonResponse(
+            {"found": False, "error": "Ocurrió un error interno al buscar el tutor."}
+        )

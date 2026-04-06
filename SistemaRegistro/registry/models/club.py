@@ -1,13 +1,14 @@
-from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.utils import timezone
+from django.db import models
 from django.db.models import Avg
+from django.utils import timezone
 
 from .base import normalizar_texto_titulo
 from .institucion import Institucion
 from .investigacion import LineaInvestigacion
 from .tutor import Tutor
+
 
 class Club(models.Model):
     ESTADO_VINCULACION_CHOICES = [
@@ -225,6 +226,17 @@ class Club(models.Model):
     def mi_calificacion(self, institucion):
         return self.calificaciones.filter(institucion=institucion).first()
 
+    @property
+    def solicitudes_pendientes_rector(self):
+        """Cantidad de solicitudes de membresía pendientes de aprobación por el ente rector (fed_central)."""
+        if not self.pk:
+            return 0
+        from django.db.models import Q
+        return self.membresias.filter(
+            Q(estado="visto_bueno_fundadora") |
+            Q(estado="pendiente_filtro", club__institucion_creadora__isnull=True)
+        ).count()
+
 
 class MembresiaClu(models.Model):
     ESTADO_CHOICES = [
@@ -423,7 +435,12 @@ class CalificacionClub(models.Model):
     class Meta:
         verbose_name = "Calificación de Club"
         verbose_name_plural = "Calificaciones de Clubes"
-        unique_together = ["club", "institucion"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["club", "institucion"],
+                name="unique_calificacion_club_institucion",
+            )
+        ]
         ordering = ["-fecha"]
         indexes = [
             models.Index(fields=["club", "-fecha"], name="idx_calif_club_fecha"),
@@ -456,7 +473,12 @@ class ClubLineaInvestigacion(models.Model):
     class Meta:
         verbose_name = "Club-Línea de Investigación"
         verbose_name_plural = "Clubes-Líneas de Investigación"
-        unique_together = ["club", "linea"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["club", "linea"],
+                name="unique_clublinea_club_linea",
+            )
+        ]
         ordering = ["orden"]
         indexes = [
             models.Index(fields=["club", "orden"], name="idx_clublinea_club_orden"),
@@ -464,7 +486,8 @@ class ClubLineaInvestigacion(models.Model):
 
     def __str__(self):
         return f"{self.club.nombre} - {self.linea.nombre} ({self.tipo_linea})"
-    
+
+
 class ClubTutor(models.Model):
     ROL_CHOICES = [
         ("responsable", "Responsable del Club"),
@@ -483,17 +506,16 @@ class ClubTutor(models.Model):
         ("inactivo", "Inactivo"),
     ]
 
-    club = models.ForeignKey(
-        Club, on_delete=models.CASCADE, related_name="tutores"
-    )
-    tutor = models.ForeignKey(
-        Tutor, on_delete=models.CASCADE, related_name="clubes"
-    )
+    club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name="tutores")
+    tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name="clubes")
     rol = models.CharField(max_length=20, choices=ROL_CHOICES)
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default="activo"
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="activo")
     fecha_asignacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ["club", "tutor"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["club", "tutor"],
+                name="unique_club_tutor",
+            )
+        ]

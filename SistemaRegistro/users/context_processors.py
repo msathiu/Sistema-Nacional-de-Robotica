@@ -42,7 +42,7 @@ def sidebar_menu(request):
         """Genera un slug simple para el label del submenu."""
         return label.lower().replace(" ", "-").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
-    es_central = user_type == "fed_central" or user.is_superuser
+    es_central = user_type == "fed_central"
     es_regional = user_type == "fed_regional"
 
     if es_central:
@@ -70,7 +70,7 @@ def sidebar_menu(request):
 
 
 def _menu_central(is_active, is_expanded, request=None):
-    """Menú para Federación Central y Superusuarios."""
+    """Menú para Federación Central."""
     from django.core.cache import cache
     from registry.models import Club
     cache_key = 'clubes_pendientes_count'

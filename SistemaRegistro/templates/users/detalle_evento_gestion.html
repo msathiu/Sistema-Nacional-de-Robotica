@@ -148,12 +148,14 @@
                     <div class="ev-info-item">
                         <span class="ev-label"><i class="bi bi-bank me-1"></i>Institución</span>
                         <span class="ev-value" style="font-size:0.88rem;">
-                            {% if evento.institucion %}
+                            {% if evento.organizador_display and not evento.institucion and not evento.club_organizador %}
+                                {{ evento.organizador_display }}
+                            {% elif evento.institucion %}
                                 {{ evento.institucion.nombre }}
                             {% elif evento.club_organizador %}
-                                {{ evento.club_organizador.institucion_creadora.nombre }}
-                                <small class="text-muted d-block" style="font-size:0.75rem;font-weight:400;">vía club: {{ evento.club_organizador.nombre }}</small>
-                            {% else %}—{% endif %}
+                                {{ evento.organizador_display }}
+                                <small class="text-muted d-block" style="font-size:0.75rem;font-weight:400;">via club: {{ evento.club_organizador.nombre }}</small>
+                            {% else %}-{% endif %}
                         </span>
                     </div>
                 </div>
@@ -232,6 +234,7 @@
                     <thead class="bg-light">
                         <tr class="text-uppercase small fw-bold text-muted">
                             <th class="px-4 py-3">Grupo / Código</th>
+                            <th class="py-3">Institución</th>
                             <th class="py-3">Tutor</th>
                             <th class="py-3 text-center">Participantes</th>
                             <th class="py-3">Fecha Inscripción</th>
@@ -244,6 +247,13 @@
                             <td class="px-4">
                                 <div class="fw-bold text-dark">{{ inscripcion.grupo.nombre }}</div>
                                 <div class="x-small text-muted font-monospace">{{ inscripcion.grupo.codigo }}</div>
+                            </td>
+                            <td>
+                                {% if inscripcion.grupo.institucion %}
+                                    <div class="fw-bold text-dark">{{ inscripcion.grupo.institucion.nombre }}</div>
+                                {% else %}
+                                    <span class="text-muted small">Sin institución</span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% for tutor in inscripcion.grupo.tutores.all %}
@@ -596,3 +606,4 @@ function mostrarParticipantes(participantes) {
 }
 </script>
 {% endblock %}
+

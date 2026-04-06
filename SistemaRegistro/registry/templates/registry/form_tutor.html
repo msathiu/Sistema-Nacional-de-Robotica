@@ -160,6 +160,9 @@
                                 {% if form.telefono.errors %}
                                     <span class="text-danger small">{{ form.telefono.errors.0 }}</span>
                                 {% endif %}
+                                <div id="telefono-feedback" class="invalid-feedback" style="display: none;">
+                                    Solo se permiten números en el teléfono.
+                                </div>
                                 <small class="text-muted">7 dígitos (ej: 1234567)</small>
                             </div>
 
@@ -227,6 +230,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     var cedulaInput = document.getElementById('id_cedula');
     var feedback = document.getElementById('cedula-feedback');
+    var telefonoInput = document.getElementById('id_telefono');
+    var telefonoFeedback = document.getElementById('telefono-feedback');
     let verificacionTimeout;
     const verificarCedulaUrl = "{% url 'verificar_tutor_cedula' %}";
     
@@ -278,6 +283,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     feedback.style.display = 'block';
                     cedulaInput.classList.add('is-invalid');
                 }
+            }
+        });
+    }
+
+    if (telefonoInput) {
+        telefonoInput.addEventListener('input', function(e) {
+            var value = e.target.value;
+            var soloNumeros = value.replace(/[^0-9]/g, '').slice(0, 7);
+
+            if (value !== soloNumeros) {
+                e.target.value = soloNumeros;
+
+                if (telefonoFeedback) {
+                    telefonoFeedback.style.display = 'block';
+                    telefonoFeedback.textContent = 'Solo se permiten números.';
+                    telefonoInput.classList.add('is-invalid');
+                }
+
+                setTimeout(function() {
+                    if (telefonoFeedback) {
+                        telefonoFeedback.style.display = 'none';
+                        telefonoInput.classList.remove('is-invalid');
+                    }
+                }, 2000);
+            } else if (telefonoFeedback) {
+                telefonoFeedback.style.display = 'none';
+                telefonoInput.classList.remove('is-invalid');
             }
         });
     }

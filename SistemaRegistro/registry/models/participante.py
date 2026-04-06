@@ -1,21 +1,29 @@
-import uuid6
 from datetime import date
-from django.db import models
-from django.db.models import UniqueConstraint, Q
-from django.core.validators import RegexValidator
+
+import uuid6
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.db import models
 
 from .base import (
-    normalizar_texto_titulo, Estado, Municipio, Parroquia,
-    NACIONALIDAD_CHOICES, SEXO_CHOICES, CODIGO_AREA_CHOICES,
-    GRADO_CHOICES, NUMERO_VALIDATOR
+    CODIGO_AREA_CHOICES,
+    GRADO_CHOICES,
+    NACIONALIDAD_CHOICES,
+    NUMERO_VALIDATOR,
+    SEXO_CHOICES,
+    Estado,
+    Municipio,
+    Parroquia,
+    normalizar_texto_titulo,
 )
 from .institucion import Institucion
+
 
 class Participante(models.Model):
     """
     Modelo para datos personales del participante (ÚNICOS).
     """
+
     id = models.UUIDField(default=uuid6.uuid7, primary_key=True, editable=False)
     nacionalidad = models.CharField(
         max_length=1,
@@ -103,10 +111,15 @@ class Participante(models.Model):
         verbose_name="Nacionalidad Representante",
     )
     cedula_representante = models.CharField(
-        max_length=10, 
+        max_length=10,
         blank=True,
-        validators=[RegexValidator(r'^\d{7,10}$', "La cédula del representante debe tener entre 7 y 10 números.")],
-        verbose_name="Cédula Representante"
+        validators=[
+            RegexValidator(
+                r"^\d{7,10}$",
+                "La cédula del representante debe tener entre 7 y 10 números.",
+            )
+        ],
+        verbose_name="Cédula Representante",
     )
     codigo_area_representante = models.CharField(
         max_length=4,
@@ -232,8 +245,12 @@ class Participante(models.Model):
 
     def save(self, *args, **kwargs):
         campos_titulo = [
-            "nombres", "apellidos", "direccion",
-            "titulo_universitario", "campo1", "nombre_representante",
+            "nombres",
+            "apellidos",
+            "direccion",
+            "titulo_universitario",
+            "campo1",
+            "nombre_representante",
         ]
         for campo in campos_titulo:
             valor = getattr(self, campo, None)
@@ -352,7 +369,11 @@ class ParticipanteInstitucion(models.Model):
 
     def clean(self):
         super().clean()
-        if self.grupo_actual and self.institucion and self.grupo_actual.institucion != self.institucion:
+        if (
+            self.grupo_actual
+            and self.institucion
+            and self.grupo_actual.institucion != self.institucion
+        ):
             raise ValidationError(
                 {
                     "grupo_actual": f"El grupo debe pertenecer a la institución {self.institucion.nombre}"
@@ -375,7 +396,12 @@ class ParticipanteGrupo(models.Model):
     class Meta:
         verbose_name = "Participante-Grupo"
         verbose_name_plural = "Participantes-Grupos"
-        unique_together = [["participante", "grupo"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["participante", "grupo"],
+                name="unique_participante_grupo",
+            )
+        ]
         ordering = ["-fecha_ingreso"]
         indexes = [
             models.Index(
@@ -421,7 +447,12 @@ class AsistenciaEvento(models.Model):
     class Meta:
         verbose_name = "Asistencia a Evento"
         verbose_name_plural = "Asistencias a Eventos"
-        unique_together = ["evento", "participante"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["evento", "participante"],
+                name="unique_asistenciaevento_evento_participante",
+            )
+        ]
         ordering = ["-evento__fecha", "participante__apellidos"]
 
     def __str__(self):

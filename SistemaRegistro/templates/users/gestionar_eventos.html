@@ -79,51 +79,56 @@
 
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
         <div class="card-body p-3">
-            <form method="GET" class="row g-3 align-items-center">
-                <div class="col-md-2">
-                    <div class="input-group input-group-merge">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label x-small fw-bold text-muted text-uppercase mb-1">Buscar</label>
+                    <div class="input-group">
                         <span class="input-group-text border-0 bg-light"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="q" class="form-control border-0 bg-light" placeholder="Buscar evento..." value="{{ request.GET.q }}">
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label x-small fw-bold text-muted text-uppercase mb-1">Estatus</label>
                     <select name="estado_evento" class="form-select border-0 bg-light">
-                        <option value="">Cualquier Estatus</option>
+                        <option value="">Todos</option>
                         {% for code, label in estados_evento %}
                         <option value="{{ code }}" {% if request.GET.estado_evento == code %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                         <option value="cancelado" {% if request.GET.estado_evento == 'cancelado' %}selected{% endif %}>Cancelado</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label x-small fw-bold text-muted text-uppercase mb-1">Categoría</label>
                     <select name="tipo" class="form-select border-0 bg-light">
-                        <option value="">Cualquier Tipo</option>
+                        <option value="">Todos</option>
                         {% for code, label in tipos %}
                         <option value="{{ code }}" {% if request.GET.tipo == code %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label x-small fw-bold text-muted text-uppercase mb-1">Origen</label>
                     <select name="tipo_evento" class="form-select border-0 bg-light">
-                        <option value="">Institucional / Club</option>
+                        <option value="">Todos</option>
                         <option value="institucional" {% if request.GET.tipo_evento == "institucional" %}selected{% endif %}>Institucional</option>
                         <option value="club" {% if request.GET.tipo_evento == "club" %}selected{% endif %}>Club</option>
-                        <option value="federacion" {% if request.GET.tipo_evento == "federacion" %}selected{% endif %}>Federación Central</option>
+                        <option value="federacion" {% if request.GET.tipo_evento == "federacion" %}selected{% endif %}>Federación</option>
                     </select>
                 </div>
-                <div class="col-md-1">
+                <div class="col-6 col-sm-4 col-lg-2">
+                    <label class="form-label x-small fw-bold text-muted text-uppercase mb-1">Estado</label>
                     <select name="estado_nacional" class="form-select border-0 bg-light">
-                        <option value="">Estado</option>
+                        <option value="">Todos</option>
                         {% for estado in estados %}
                         <option value="{{ estado.id }}" {% if request.GET.estado_nacional == estado.id|stringformat:"s" %}selected{% endif %}>{{ estado.nombre }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-1 d-flex gap-1">
-                    <button type="submit" class="btn fw-bold flex-grow-1" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;" data-bs-toggle="tooltip" title="Buscar eventos">
+                <div class="col-12 col-sm-4 col-lg-1 d-flex gap-1">
+                    <button type="submit" class="btn fw-bold flex-grow-1" style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 10px;" title="Buscar">
                         <i class="bi bi-search"></i>
                     </button>
-                    <a href="{% url 'admin_eventos' %}" class="btn btn-outline-secondary" style="border-radius: 10px;" data-bs-toggle="tooltip" title="Limpiar filtros">
+                    <a href="{% url 'admin_eventos' %}" class="btn btn-outline-secondary" style="border-radius: 10px;" title="Limpiar filtros">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
@@ -146,15 +151,13 @@
                 <table class="table table-hover align-middle mb-0" id="eventosTable">
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
-                            <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Evento / Descripción <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 text-center sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Tipo Evento <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 text-center sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Modalidad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 text-center sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Inscritos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Fecha y Sede <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="6" style="cursor:pointer; user-select:none;">Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="7" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="8" style="cursor:pointer; user-select:none;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">Evento <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th d-none d-md-table-cell" data-sort="1" style="cursor:pointer; user-select:none;">Origen <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th d-none d-lg-table-cell" data-sort="2" style="cursor:pointer; user-select:none;">Categoría / Modalidad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th d-none d-md-table-cell" data-sort="3" style="cursor:pointer; user-select:none;">Inscritos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th d-none d-lg-table-cell" data-sort="4" style="cursor:pointer; user-select:none;">Fecha / Sede <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th d-none d-xl-table-cell" data-sort="5" style="cursor:pointer; user-select:none;">Organizador <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="6" style="cursor:pointer; user-select:none;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -165,46 +168,44 @@
                             <td class="px-4" data-sort-value="{{ evento.nombre }}">
                                 <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
                                 <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
+                                {# En móvil mostramos fecha y estatus inline #}
+                                <div class="d-md-none mt-1">
+                                    {% with est=evento.estado_ui %}
+                                    <span class="badge {{ est.badge_class }} me-1">{{ est.label }}</span>
+                                    {% endwith %}
+                                    <span class="x-small text-muted"><i class="bi bi-calendar3 me-1"></i>{{ evento.rango_fechas_display }}</span>
+                                </div>
                             </td>
 
-                            {# Columna 2: Tipo Evento (Club/Institucional) #}
-                            <td class="text-center" data-sort-value="{{ evento.tipo_evento }}">
+                            {# Columna 2: Origen (Club/Institucional) #}
+                            <td class="text-center d-none d-md-table-cell" data-sort-value="{{ evento.tipo_evento }}">
                                 {% with tipo=evento.tipo_evento_ui %}
                                 <span class="{{ tipo.class }}"><i class="bi {{ tipo.icon }} me-1"></i>{{ tipo.label }}</span>
                                 {% endwith %}
                             </td>
 
-                            {# Columna 3: Tipo (Competencia, etc) #}
-                            <td data-sort-value="{{ evento.get_tipo_display }}">
-                                <span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span>
-                            </td>
-
-                            {# Columna 4: Modalidad #}
-                            <td class="text-center" data-sort-value="{{ evento.modalidad }}">
+                            {# Columna 3: Categoría + Modalidad fusionadas #}
+                            <td class="d-none d-lg-table-cell" data-sort-value="{{ evento.get_tipo_display }}">
+                                <div><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></div>
                                 {% with mod=evento.modalidad_ui %}
-                                <span class="{{ mod.class }}"><i class="bi {{ mod.icon }} me-1"></i>{{ mod.label }}</span>
+                                <div class="mt-1"><span class="{{ mod.class }} x-small"><i class="bi {{ mod.icon }} me-1"></i>{{ mod.label }}</span></div>
                                 {% endwith %}
                             </td>
 
-                            {# Columna 5: Inscritos #}
-                            <td class="text-center" data-sort-value="{{ evento.total_inscritos }}">
+                            {# Columna 4: Inscritos #}
+                            <td class="text-center d-none d-md-table-cell" data-sort-value="{{ evento.total_inscritos }}">
                                 <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
                                 <div class="x-small text-muted text-uppercase">Equipos</div>
                             </td>
 
-                            {# Columna 6: Fecha y Sede #}
-                            <td data-sort-value="{{ evento.fecha|date:'Ymd' }}">
-                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
+                            {# Columna 5: Fecha y Sede #}
+                            <td class="d-none d-lg-table-cell" data-sort-value="{{ evento.fecha|date:'Ymd' }}">
+                                <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i>{{ evento.rango_fechas_display }}</div>
                                 <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
                             </td>
 
-                            {# Columna 7: Teléfono #}
-                            <td data-sort-value="{{ evento.telefono_completo }}">
-                                {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
-                            </td>
-
-                            {# Columna 8: Institución / Club organizador #}
-                            <td data-sort-value="{% if evento.tipo_evento == 'club' and evento.club_organizador %}{{ evento.club_organizador.nombre }}{% elif evento.institucion %}{{ evento.institucion.nombre }}{% else %}Federación Venezolana de Róbotica Creativa{% endif %}">
+                            {# Columna 6: Organizador #}
+                            <td class="d-none d-xl-table-cell" data-sort-value="{% if evento.tipo_evento == 'club' and evento.club_organizador %}{{ evento.club_organizador.nombre }}{% elif evento.institucion %}{{ evento.institucion.nombre }}{% else %}Federación{% endif %}">
                                 {% if evento.tipo_evento == 'club' and evento.club_organizador %}
                                     <div class="small fw-bold"><i class="bi bi-people-fill me-1 text-primary" style="font-size:0.7rem;"></i>{{ evento.club_organizador.nombre }}</div>
                                     <div class="x-small text-muted">{{ evento.club_organizador.institucion_creadora.estado.nombre|default:"" }}</div>
@@ -217,8 +218,8 @@
                                 {% endif %}
                             </td>
 
-                            {# Columna 9: Estatus #}
-                            <td data-sort-value="{% if evento.cancelado %}cancelado{% else %}{{ evento.estado_evento }}{% endif %}">
+                            {# Columna 7: Estatus #}
+                            <td class="d-none d-md-table-cell" data-sort-value="{% if evento.cancelado %}cancelado{% else %}{{ evento.estado_evento }}{% endif %}">
                                 {% with est=evento.estado_ui %}
                                 <span class="badge {{ est.badge_class }}">{{ est.label }}</span>
                                 {% endwith %}
@@ -253,7 +254,7 @@
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                     {% endif %} 
-                                    {% if es_fed_central %}
+                                    {% if es_fed_central and evento.estado_evento not in 'cancelado,finalizado' and not evento.cancelado %}
                                     <button class="btn btn-outline-warning btn-sm rounded-circle p-2 btn-manage"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Gestionar Estado"
                                             data-id="{{ evento.id }}"
@@ -405,127 +406,67 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gestionar estado
     document.querySelectorAll('.btn-manage').forEach(btn => {
         btn.addEventListener('click', function() {
-            const eventoId = this.getAttribute('data-id');
-            const nombre = this.getAttribute('data-nombre');
-            const fecha = this.getAttribute('data-fecha');
-            const fechaHasta = this.getAttribute('data-fecha-hasta');
-            const estadoEvento = this.getAttribute('data-estado-evento');
-            const observacion = this.getAttribute('data-observacion');
-            const esFederacion = this.getAttribute('data-es-federacion') === '1';
-            const puedePausar = this.getAttribute('data-puede-pausar') === '1';
-            const puedeCancelar = this.getAttribute('data-puede-cancelar') === '1';
-            
-            // Set modal title
-            document.getElementById('gestionEstadoTitulo').innerHTML = '<i class="bi bi-gear-fill me-2"></i> GESTIONAR ESTADO';
-            
-            // Set event name
+            const eventoId   = this.dataset.id;
+            const nombre     = this.dataset.nombre;
+            const fecha      = this.dataset.fecha;
+            const fechaHasta = this.dataset.fechaHasta || '';
+            const estadoEvento = this.dataset.estadoEvento;
+
+            // Poblar campos fijos
             document.getElementById('gestion_estado_nombre').value = nombre;
-            
-            // Populate select options based on current state and permissions
-            const select = document.getElementById('gestion_estado_select');
-            select.innerHTML = '';
-            
-            if (estadoEvento === 'abierto' && puedePausar) {
-                select.innerHTML += '<option value="pausado">Pausar Evento</option>';
-            }
-            if (estadoEvento === 'pausado') {
-                select.innerHTML += '<option value="abierto">Reabrir Evento</option>';
-            }
-            if (puedeCancelar) {
-                select.innerHTML += '<option value="cancelado">Cancelar Evento</option>';
-            }
-            if (estadoEvento === 'abierto' || estadoEvento === 'pausado') {
-                select.innerHTML += '<option value="finalizado">Finalizar Evento</option>';
-            }
-            if (estadoEvento === 'abierto' || estadoEvento === 'pausado') {
-                select.innerHTML += '<option value="reprogramar">Reprogramar Evento</option>';
-            }
-            
-            // Set form action
-            document.getElementById('formGestionEstadoEvento').action = `/eventos/gestionar-estado/${eventoId}/`;
-            
-            // Set initial values for reprogramar
-            document.getElementById('gestion_estado_fecha').value = fecha;
+            document.getElementById('gestion_estado_fecha').value  = fecha;
             document.getElementById('gestion_estado_fecha_hasta').value = fechaHasta;
-            
-            // Restore last action and observation if exists
-            const lastAction = localStorage.getItem(`evento_${eventoId}_last_action`);
-            const lastObservation = localStorage.getItem(`evento_${eventoId}_last_observation`);
-            
-            if (lastAction) {
-                // Try to find and select the last action
-                const optionToSelect = select.querySelector(`option[value="${lastAction}"]`);
-                if (optionToSelect) {
-                    select.value = lastAction;
+            document.getElementById('formGestionEstadoEvento').action = `/eventos/gestionar-estado/${eventoId}/`;
+
+            // Construir opciones según estado actual
+            const select = document.getElementById('gestion_estado_select');
+            let options = '';
+            if (estadoEvento === 'revision') {
+                options += '<option value="">-- Seleccionar acción --</option>';
+                options += '<option value="abierto">Aprobar y abrir inscripciones</option>';
+                options += '<option value="rechazado">Rechazar evento</option>';
+            } else {
+                if (!['finalizado','cancelado'].includes(estadoEvento)) {
+                    options += '<option value="pausado">Pausar evento</option>';
+                }
+                if (estadoEvento === 'pausado') {
+                    options += '<option value="abierto">Reabrir evento</option>';
+                }
+                if (!['finalizado','cancelado'].includes(estadoEvento)) {
+                    options += '<option value="cancelado">Cancelar definitivamente</option>';
                 }
             }
-            
-            // Set observation - prioritize last saved, otherwise use current
-            const observationToUse = lastObservation || observacion || '';
-            document.getElementById('gestion_estado_observacion').value = observationToUse;
-            
-            // Show/hide date fields based on action
-            function updateFormVisibility(action) {
-                const bloqueNuevaFecha = document.getElementById('bloqueNuevaFecha');
-                const bloqueNuevaFechaHasta = document.getElementById('bloqueNuevaFechaHasta');
-                const observacionField = document.getElementById('gestion_estado_observacion');
-                const labelObservacion = document.getElementById('gestion_estado_label_observacion');
-                
-                if (action === 'reprogramar') {
-                    bloqueNuevaFecha.style.display = 'block';
-                    bloqueNuevaFechaHasta.style.display = 'block';
-                    document.getElementById('gestion_estado_fecha').required = true;
-                    document.getElementById('gestion_estado_fecha_hasta').required = false;
-                    labelObservacion.textContent = 'Observación (requerida para reprogramación)';
-                    observacionField.required = true;
-                } else {
-                    bloqueNuevaFecha.style.display = 'none';
-                    bloqueNuevaFechaHasta.style.display = 'none';
-                    document.getElementById('gestion_estado_fecha').required = false;
-                    document.getElementById('gestion_estado_fecha_hasta').required = false;
-                    labelObservacion.textContent = 'Observación';
-                    observacionField.required = true; // Always required for state changes
-                }
+            select.innerHTML = options;
+
+            const obsInput  = document.getElementById('gestion_estado_observacion');
+            const obsLabel  = document.getElementById('gestion_estado_label_observacion');
+            const bloqueFecha     = document.getElementById('bloqueNuevaFecha');
+            const bloqueFechaHasta = document.getElementById('bloqueNuevaFechaHasta');
+
+            const CONFIG = {
+                pausado:   { label: 'Motivo de Pausa',        placeholder: 'Explica el motivo visible para las instituciones inscritas...', required: true,  fechas: true  },
+                abierto:   { label: 'Nota de Reapertura',     placeholder: 'Opcional: agrega una nota sobre la reapertura...',              required: false, fechas: true  },
+                cancelado: { label: 'Motivo de Cancelación',  placeholder: 'Indica el motivo visible para las instituciones involucradas...', required: true,  fechas: false },
+                rechazado: { label: 'Observación de Rechazo', placeholder: 'Indica las razones del rechazo visibles para la institución...',  required: true,  fechas: false },
+                '':        { label: 'Observación',            placeholder: 'Explica el motivo...',                                           required: true,  fechas: false },
+            };
+
+            function syncUI() {
+                const accion = select.value;
+                const cfg = CONFIG[accion] || CONFIG[''];
+                obsLabel.textContent      = cfg.label;
+                obsInput.placeholder      = cfg.placeholder;
+                obsInput.required         = cfg.required;
+                bloqueFecha.style.display      = cfg.fechas ? 'block' : 'none';
+                bloqueFechaHasta.style.display = cfg.fechas ? 'block' : 'none';
+                document.getElementById('gestion_estado_fecha').required = cfg.fechas;
             }
-            
-            // Remove existing listener to avoid duplicates
-            const newSelect = select.cloneNode(true);
-            select.parentNode.replaceChild(newSelect, select);
-            
-            // Add change event listener
-            newSelect.addEventListener('change', function() {
-                const action = this.value;
-                updateFormVisibility(action);
-                
-                // Save current action to localStorage
-                localStorage.setItem(`evento_${eventoId}_last_action`, action);
-            });
-            
-            // Trigger change to set initial state
-            updateFormVisibility(newSelect.value || '');
-            
-            // Save observation on input
-            document.getElementById('gestion_estado_observacion').addEventListener('input', function() {
-                localStorage.setItem(`evento_${eventoId}_last_observation`, this.value);
-            });
-            
-            // Add form submission handler to clear stored data after successful submission
-            const form = document.getElementById('formGestionEstadoEvento');
-            form.addEventListener('submit', function(e) {
-                // Extract event ID from form action
-                const actionUrl = this.action;
-                const eventIdMatch = actionUrl.match(/\/gestionar-estado\/(\d+)\//);
-                if (eventIdMatch) {
-                    const formEventoId = eventIdMatch[1];
-                    
-                    // Clear stored data for this event after a short delay
-                    setTimeout(() => {
-                        localStorage.removeItem(`evento_${formEventoId}_last_action`);
-                        localStorage.removeItem(`evento_${formEventoId}_last_observation`);
-                    }, 1000); // 1 second delay to allow form submission
-                }
-            });
-            
+
+            // Limpiar observación al abrir (no persistir entre eventos distintos)
+            obsInput.value = '';
+            select.onchange = syncUI;
+            syncUI();
+
             new bootstrap.Modal(document.getElementById('modalGestionEstadoEvento')).show();
         });
     });
@@ -620,87 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
-<div class="modal fade" id="modalEditarEvento" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pt-4 px-4" style="background: var(--blue-main); color: white; border-radius: 20px 20px 0 0;">
-                <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i> EDITAR EVENTO</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            
-            <form id="formEditarEvento" method="POST" action="">
-                {% csrf_token %}
-                <input type="hidden" name="evento_id" id="edit_evento_id">
-                <!-- Campos ocultos obligatorios -->
-                <input type="hidden" name="nombre" id="edit_nombre_hidden">
-                <input type="hidden" name="direccion" id="edit_direccion_hidden">
-                <input type="hidden" name="estado" id="edit_estado_hidden">
-                <input type="hidden" name="tipo" id="edit_tipo_hidden">
-                <input type="hidden" name="modalidad" id="edit_modalidad_hidden">
-                
-                <div class="modal-body p-4">
-                    <div id="alertaErrorEditar" class="alert alert-danger d-none mb-3 rounded-4 fw-bold">
-                        <i class="bi bi-exclamation-octagon me-2"></i> <span id="errorMsgTextEditar"></span>
-                    </div>
-
-                    <!-- Mostrar el nombre del evento (solo lectura) -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-muted">
-                            <i class="bi bi-bookmark-star me-1 text-primary"></i> Nombre del Evento
-                        </label>
-                        <input type="text" class="form-control bg-light" id="edit_nombre_display" readonly disabled>
-                        <small class="text-muted">El nombre no se puede modificar</small>
-                    </div>
-
-                    <!-- Fecha del Evento -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-muted">
-                            <i class="bi bi-calendar-event me-1 text-primary"></i> Fecha del Evento
-                        </label>
-                        <input type="date" name="fecha" id="edit_fecha" class="form-control" required>
-                    </div>
-
-                    <!-- Estatus del Evento -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-muted">
-                            <i class="bi bi-activity me-1 text-primary"></i> Estatus del Evento
-                        </label>
-                        <select name="estado_evento" id="edit_estado_evento" class="form-select" required>
-                            <option value="borrador">Borrador</option>
-                            <option value="rechazado">Rechazado</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
-                        <small class="text-muted">La institución solo puede editar borradores/rechazados o cancelar sus propios eventos.</small>
-                    </div>
-
-                    <!-- Descripción -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-muted">
-                            <i class="bi bi-text-paragraph me-1 text-primary"></i> Descripción
-                        </label>
-                        <textarea name="descripcion" id="edit_descripcion" class="form-control" rows="3" placeholder="Descripción del evento..."></textarea>
-                    </div>
-
-                    <!-- Requisitos -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-muted">
-                            <i class="bi bi-card-checklist me-1 text-primary"></i> Requisitos
-                        </label>
-                        <textarea name="requisitos" id="edit_requisitos" class="form-control" rows="3" placeholder="Requisitos para participar..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
-                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" 
-                            style="background: var(--blue-main); color: white;">
-                        <i class="bi bi-check-circle me-2"></i> GUARDAR CAMBIOS
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- modalEditarEvento eliminado: la edición se realiza en /eventos/editar/<id>/ con validación completa en la vista -->
 
 <!-- MODAL DE GESTIÓN DE INSCRIPCIONES -->
 <div class="modal fade" id="modalGestionInscripcion" tabindex="-1" aria-hidden="true">
@@ -870,58 +731,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener("DOMContentLoaded", function() {
         // Inicializar modales
-        const modalEditar = new bootstrap.Modal(document.getElementById('modalEditarEvento'));
         const modalInscripcion = new bootstrap.Modal(document.getElementById('modalGestionInscripcion'));
         const modalEliminar = new bootstrap.Modal(document.getElementById('modalEliminarEvento'));
         const modalGestionEstado = new bootstrap.Modal(document.getElementById('modalGestionEstadoEvento'));
-        
-        // ============================================
-        // BOTONES DE EDICIÓN
-        // ============================================
-        document.querySelectorAll('.btn-editar-evento').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Obtener datos del botón
-                const id = this.dataset.id;
-                const nombre = this.dataset.nombre;
-                const fecha = this.dataset.fecha;
-                const descripcion = this.dataset.descripcion;
-                const requisitos = this.dataset.requisitos;
-                const estadoEvento = this.dataset.estadoEvento;
-                const direccion = this.dataset.direccion || '';
-                const estadoId = this.dataset.estado;
-                
-                // Valores por defecto para campos obligatorios
-                const tipo = 'competencia';
-                const modalidad = 'presencial';
-                
-                // Llenar el formulario
-                document.getElementById('edit_evento_id').value = id;
-                document.getElementById('edit_nombre_display').value = nombre;
-                document.getElementById('edit_nombre_hidden').value = nombre;
-                document.getElementById('edit_direccion_hidden').value = direccion;
-                document.getElementById('edit_estado_hidden').value = estadoId;
-                document.getElementById('edit_tipo_hidden').value = tipo;
-                document.getElementById('edit_modalidad_hidden').value = modalidad;
-                document.getElementById('edit_fecha').value = fecha;
-                document.getElementById('edit_descripcion').value = descripcion || '';
-                document.getElementById('edit_requisitos').value = requisitos || '';
-                
-                // Seleccionar el estado correcto
-                const selectEstado = document.getElementById('edit_estado_evento');
-                if (estadoEvento) {
-                    selectEstado.value = estadoEvento;
-                } else {
-                    selectEstado.value = 'borrador';
-                }
-                
-                // Establecer acción del formulario
-                document.getElementById('formEditarEvento').action = `/eventos/editar/${id}/`;
-                
-                modalEditar.show();
-            });
-        });
         
         // ============================================
         // BOTONES DE GESTIÓN DE INSCRIPCIONES
@@ -975,99 +787,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         alert('Error de conexión');
                     });
                 }
-            });
-        });
-        
-        // ============================================
-        // BOTONES DE PAUSAR/CANCELAR EVENTOS
-        // ============================================
-        document.querySelectorAll('.btn-pausar-evento').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const id = this.dataset.id;
-                const nombre = this.dataset.nombre;
-                const fecha = this.dataset.fecha;
-                const fechaHasta = this.dataset.fechaHasta || '';
-                const estadoEvento = this.dataset.estadoEvento;
-                const observacion = this.dataset.observacion || '';
-                const esFederacion = this.dataset.esFederacion === '1';
-                const puedePausar = this.dataset.puedePausar === '1';
-                const puedeCancelar = this.dataset.puedeCancelar === '1';
-                
-                document.getElementById('gestion_estado_nombre').value = nombre;
-                document.getElementById('gestion_estado_fecha').value = fecha;
-                document.getElementById('gestion_estado_fecha_hasta').value = fechaHasta;
-                document.getElementById('gestion_estado_observacion').value = observacion;
-                document.getElementById('formGestionEstadoEvento').action = `/eventos/gestionar-estado/${id}/`;
-
-                const selectEstado = document.getElementById('gestion_estado_select');
-                const bloqueNuevaFecha = document.getElementById('bloqueNuevaFecha');
-                const bloqueNuevaFechaHasta = document.getElementById('bloqueNuevaFechaHasta');
-                const observacionInput = document.getElementById('gestion_estado_observacion');
-                const observacionLabel = document.getElementById('gestion_estado_label_observacion');
-                const titulo = document.getElementById('gestionEstadoTitulo');
-
-                let options = '';
-                console.log('DEBUG: esFederacion =', esFederacion, 'estadoEvento =', estadoEvento);
-                if (esFederacion) {
-                    // Estados de revision: aprobar o rechazar
-                    if (estadoEvento === 'revision') {
-                        console.log('DEBUG: Evento en revision - mostrando opciones de aprobar/rechazar');
-                        options += `<option value="">-- Seleccionar acción --</option>`;
-                        options += `<option value="abierto">Aprobar y abrir inscripciones</option>`;
-                        options += `<option value="rechazado">Rechazar evento</option>`;
-                    } else {
-                        // Estados activos: pausar, cancelar
-                        if (puedePausar && estadoEvento !== 'finalizado' && estadoEvento !== 'cancelado') {
-                            options += `<option value="pausado" ${estadoEvento === 'pausado' ? 'selected' : ''}>Pausar y/o reprogramar</option>`;
-                        }
-                        if (estadoEvento === 'pausado') {
-                            options += `<option value="abierto">Reabrir evento</option>`;
-                        }
-                        if (puedeCancelar && estadoEvento !== 'finalizado' && estadoEvento !== 'cancelado') {
-                            options += `<option value="cancelado">Cancelar definitivamente</option>`;
-                        }
-                    }
-                    titulo.innerHTML = '<i class="bi bi-pause-circle me-2"></i> GESTIONAR ESTADO DEL EVENTO';
-                } else {
-                    options = `<option value="cancelado">Cancelar evento</option>`;
-                    titulo.innerHTML = '<i class="bi bi-x-octagon me-2"></i> CANCELAR EVENTO';
-                }
-
-                selectEstado.innerHTML = options;
-
-                function syncGestionEstadoUI() {
-                    const selected = selectEstado.value;
-                    const mostrarFecha = esFederacion && (selected === 'pausado' || selected === 'abierto');
-                    bloqueNuevaFecha.style.display = mostrarFecha ? 'block' : 'none';
-                    bloqueNuevaFechaHasta.style.display = mostrarFecha ? 'block' : 'none';
-
-                    if (selected === 'cancelado') {
-                        observacionLabel.textContent = 'Motivo de Cancelación';
-                        observacionInput.placeholder = 'Indica el motivo visible para las instituciones involucradas...';
-                        observacionInput.required = true;
-                    } else if (selected === 'rechazado') {
-                        observacionLabel.textContent = 'Observación de Rechazo';
-                        observacionInput.placeholder = 'Indica las razones del rechazo que serán visibles para la institución...';
-                        observacionInput.required = true;
-                    } else if (selected === 'abierto') {
-                        observacionLabel.textContent = 'Observación de Reapertura';
-                        observacionInput.placeholder = 'Opcional: agrega una nota sobre la reapertura o la nueva fecha...';
-                        observacionInput.required = false;
-                    } else {
-                        observacionLabel.textContent = 'Observación de Pausa';
-                        observacionInput.placeholder = 'Explica el motivo visible para las instituciones inscritas...';
-                        observacionInput.required = true;
-                    }
-                }
-
-                    observacionInput.required = selected !== 'abierto';
-                }
-
-                syncGestionEstadoUI();
-                selectEstado.onchange = syncGestionEstadoUI;
-                modalGestionEstado.show();
             });
         });
         

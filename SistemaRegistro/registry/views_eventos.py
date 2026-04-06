@@ -1,5 +1,7 @@
 """Vistas para gestión de eventos de club."""
 
+import logging
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -10,6 +12,7 @@ from django.utils import timezone
 
 from .models import Club, EstadoEvento, Evento, Grupo, InscripcionGrupoEvento
 
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -26,7 +29,7 @@ def listar_eventos_club(request, club_id):
     institucion = request.user.userprofile.institution
     
     # Federación puede ver todos
-    if user_type in ['fed_central', 'fed_regional', 'superuser']:
+    if user_type in ['fed_central', 'fed_regional']:
         eventos = club.eventos.all()
     # Propietario del club ve todos sus eventos
     elif club.institucion_creadora == institucion:
@@ -145,8 +148,16 @@ def aprobar_evento_club(request, evento_id):
                     f'Evento "{evento.nombre}" ha sido abierto. '
                     'El club puede comenzar a recibir inscripciones.'
                 )
-        except Exception as e:
-            messages.error(request, f"Error al abrir evento: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error aprobando evento de club. user_id=%s evento_id=%s",
+                request.user.id,
+                evento_id,
+            )
+            messages.error(
+                request,
+                "Ocurrió un error interno al abrir el evento.",
+            )
             return redirect('revisar_eventos_club')
         
         return redirect('revisar_eventos_club')
@@ -208,7 +219,7 @@ def detalle_evento_club(request, evento_id):
     institucion = request.user.userprofile.institution
     
     # Federación puede ver todos
-    puede_ver = user_type in ['fed_central', 'fed_regional', 'superuser']
+    puede_ver = user_type in ['fed_central', 'fed_regional']
     
     # Propietario del club puede ver todos sus eventos
     if not puede_ver:

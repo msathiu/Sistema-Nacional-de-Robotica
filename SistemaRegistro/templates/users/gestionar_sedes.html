@@ -40,7 +40,10 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-4 position-relative z-1">
                     <div class="text-white-50 small fw-bold text-uppercase mb-2">Disponibilidad del Sistema</div>
-                    <h2 class="display-5 fw-bold mb-0">98.5<span class="fs-4">%</span></h2>
+                    <h2 class="display-5 fw-bold mb-0">{{ disponibilidad_sistema|floatformat:1 }}<span class="fs-4">%</span></h2>
+                    <div class="small text-white-50 mt-1">
+                        <i class="bi bi-check-circle me-1"></i>{{ sedes_activas }} de {{ total_sedes }} activas
+                    </div>
                     <i class="bi bi-activity position-absolute opacity-10" style="font-size: 4.5rem; right: 15px; bottom: 10px;"></i>
                 </div>
                 <div style="height: 4px; background: #10b981;"></div>

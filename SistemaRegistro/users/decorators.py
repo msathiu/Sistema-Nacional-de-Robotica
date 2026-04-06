@@ -64,8 +64,8 @@ def admin_access_required(view_func):
 
 
 def fed_central_required(view_func):
-    """Requiere ser Federación Central, Superuser o Tecnológico"""
-    return role_required(['fed_central', 'superuser', 'tecnologico'])(view_func)
+    """Requiere ser Federación Central o Tecnológico."""
+    return role_required(['fed_central', 'tecnologico'])(view_func)
 
 
 def fed_regional_required(view_func):
@@ -75,7 +75,7 @@ def fed_regional_required(view_func):
 
 def fed_any_required(view_func):
     """Cualquier usuario de Federación (Central o Regional)"""
-    return role_required(['fed_central', 'fed_regional', 'superuser', 'tecnologico'])(view_func)
+    return role_required(['fed_central', 'fed_regional', 'tecnologico'])(view_func)
 
 
 def institucional_required(view_func):
@@ -90,7 +90,7 @@ def participante_required(view_func):
 
 def admin_required(view_func):
     """Cualquier rol administrativo (Fed Central, Fed Regional, Admin)"""
-    return role_required(['admin', 'fed_central', 'fed_regional', 'superuser', 'tecnologico'])(view_func)
+    return role_required(['admin', 'fed_central', 'fed_regional', 'tecnologico'])(view_func)
 
 
 def fed_central_cannot_create(redirect_to='dashboard'):
@@ -129,7 +129,7 @@ def admin_or_owner_required(view_func):
         user_type = user_profile.user_type
         
         # 1. Acceso Administrativo/Federación
-        if user_type in ['admin', 'fed_central', 'superuser', 'tecnologico', 'fed_regional']:
+        if user_type in ['admin', 'fed_central', 'tecnologico', 'fed_regional']:
             # Si es regional, validar que sea de su estado
             if user_type == 'fed_regional':
                 Institucion = apps.get_model('registry', 'Institucion')

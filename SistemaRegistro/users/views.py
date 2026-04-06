@@ -1,15 +1,17 @@
 import json
+import logging
 from datetime import date, datetime
 
 import pandas as pd
 from django.apps import apps
 from django.contrib import messages
-from django.contrib.admin.models import LogEntry
+from django.contrib.admin.models import DELETION, LogEntry
 from django.contrib.auth import authenticate, login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
@@ -17,12 +19,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic.edit import UpdateView
-from registry.forms import ParticipanteForm
 from registry.models import (
     AsistenciaEvento,
-    Club,
     Dependencia,
     Estado,
     EstadoEvento,
@@ -43,20 +43,26 @@ from registry.models import (
 from .decorators import (
     admin_or_owner_required,
     admin_required,
-    institucional_required,
-    not_superuser_required,
     fed_central_cannot_create,
     fed_central_required,
+    institucional_required,
+    not_superuser_required,
 )
 from .forms import (
-    ClubRegistrationForm,
+    InstitucionCredentialAdminForm,
+    InstitucionModalEditForm,
     InstitucionRegistrationForm,
     ParticipanteModalEditForm,
     ParticipanteRegistrationForm,
     SedeRegionalForm,
 )
-from .models import Municipios, UserProfile
-from .selectors import EventoSelector, JurisdictionSelector, ParticipanteSelector, InstitucionSelector
+from .models import UserProfile
+from .selectors import (
+    EventoSelector,
+    InstitucionSelector,
+    JurisdictionSelector,
+    ParticipanteSelector,
+)
 
 
 def _get_evento_institucional(evento_id, institution):
@@ -68,25 +74,44 @@ def _get_evento_institucional(evento_id, institution):
     Lanza Http404 si no existe o no pertenece.
     """
     from django.http import Http404
-    from registry.models import MembresiaClu
+
     evento = get_object_or_404(Evento, id=evento_id)
     if (
         evento.institucion == institution
-        or (evento.club_organizador and evento.club_organizador.institucion_creadora == institution)
-        or (evento.club_organizador and MembresiaClu.objects.filter(
-            club=evento.club_organizador,
-            institucion=institution,
-            estado="miembro_activo",
-        ).exists())
+        or (
+            evento.club_organizador
+            and evento.club_organizador.institucion_creadora == institution
+        )
+        or (
+            evento.club_organizador
+            and MembresiaClu.objects.filter(
+                club=evento.club_organizador,
+                institucion=institution,
+                estado="miembro_activo",
+            ).exists()
+        )
     ):
         return evento
     raise Http404
-from .services.identity_service import IdentityService
-from .services.participante_service import ParticipanteService
+
+
 from .services.evento_service import EventoService
-from .services.report_service import ReportService
 from .services.grupo_service import GrupoService
+from .services.identity_service import IdentityService
 from .services.institution_service import InstitutionService
+from .services.participante_service import ParticipanteService
+from .services.report_service import ReportService
+
+logger = logging.getLogger(__name__)
+
+
+def _mask_identifier_tail(value, visible_digits=4, prefix=""):
+    numeric_value = "".join(filter(str.isdigit, str(value or "")))
+    if not numeric_value:
+        return "N/A"
+    masked_length = max(len(numeric_value) - visible_digits, 0)
+    masked = ("*" * masked_length) + numeric_value[-visible_digits:]
+    return f"{prefix}{masked}" if prefix else masked
 
 
 def _render_formulario_evento(
@@ -97,7 +122,11 @@ def _render_formulario_evento(
     valores_previos=None,
     errores=None,
 ):
-    institution = perfil.institution if getattr(perfil, "user_type", None) == "institucional" else None
+    institution = (
+        perfil.institution
+        if getattr(perfil, "user_type", None) == "institucional"
+        else None
+    )
     es_federacion = EventoSelector.es_usuario_federacion_eventos(perfil)
     estado_institucion = EventoSelector.get_estado_contexto(perfil, institution)
     estados = Estado.objects.all().order_by("nombre")
@@ -143,33 +172,46 @@ def detalle_evento_inscripcion(request, evento_id):
     """
     user_profile = request.user.userprofile
 
-    evento = EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
+    evento = (
+        EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
+    )
     if not evento:
         # La institución creadora no aparece en get_eventos_visibles (excluye propios)
         # pero sí debe poder inscribir en sus propios eventos abiertos
         from registry.models import MembresiaClu
+
         institution = user_profile.institution
-        evento = Evento.objects.filter(
-            id=evento_id,
-            estado_evento=EstadoEvento.ABIERTO,
-        ).filter(
-            Q(institucion=institution)
-            | Q(club_organizador__institucion_creadora=institution)
-            | Q(club_organizador_id__in=MembresiaClu.objects.filter(
-                institucion=institution, estado="miembro_activo"
-            ).values_list("club_id", flat=True))
-        ).first()
+        evento = (
+            Evento.objects.filter(
+                id=evento_id,
+                estado_evento=EstadoEvento.ABIERTO,
+            )
+            .filter(
+                Q(institucion=institution)
+                | Q(club_organizador__institucion_creadora=institution)
+                | Q(
+                    club_organizador_id__in=MembresiaClu.objects.filter(
+                        institucion=institution, estado="miembro_activo"
+                    ).values_list("club_id", flat=True)
+                )
+            )
+            .first()
+        )
     if not evento:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
         return redirect("eventos_disponibles")
 
     # Verificar si la institución del usuario ya tiene un grupo inscrito en este evento
     institucion = user_profile.institution
-    grupo_ya_inscrito = InscripcionGrupoEvento.objects.filter(
-        evento=evento,
-        activo=True,
-        grupo__usuario_creador__userprofile__institution=institucion,
-    ).select_related("grupo").first()
+    grupo_ya_inscrito = (
+        InscripcionGrupoEvento.objects.filter(
+            evento=evento,
+            activo=True,
+            grupo__usuario_creador__userprofile__institution=institucion,
+        )
+        .select_related("grupo")
+        .first()
+    )
 
     # Solo mostrar grupos disponibles si la institución aún no tiene uno inscrito
     grupos_disponibles = (
@@ -204,24 +246,35 @@ def inscribir_grupo_evento(request, evento_id):
         return redirect("eventos_disponibles")
 
     user_profile = request.user.userprofile
-    evento = EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
+    evento = (
+        EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).first()
+    )
     if not evento:
         # Fallback: la institución creadora está excluida de get_eventos_visibles
         # pero sí puede inscribir en sus propios eventos abiertos
         from registry.models import MembresiaClu
+
         institution = user_profile.institution
-        evento = Evento.objects.filter(
-            id=evento_id,
-            estado_evento=EstadoEvento.ABIERTO,
-        ).filter(
-            Q(institucion=institution)
-            | Q(club_organizador__institucion_creadora=institution)
-            | Q(club_organizador_id__in=MembresiaClu.objects.filter(
-                institucion=institution, estado="miembro_activo"
-            ).values_list("club_id", flat=True))
-        ).first()
+        evento = (
+            Evento.objects.filter(
+                id=evento_id,
+                estado_evento=EstadoEvento.ABIERTO,
+            )
+            .filter(
+                Q(institucion=institution)
+                | Q(club_organizador__institucion_creadora=institution)
+                | Q(
+                    club_organizador_id__in=MembresiaClu.objects.filter(
+                        institucion=institution, estado="miembro_activo"
+                    ).values_list("club_id", flat=True)
+                )
+            )
+            .first()
+        )
     if not evento:
-        messages.error(request, "El evento no existe o no tienes permiso para inscribirte en él.")
+        messages.error(
+            request, "El evento no existe o no tienes permiso para inscribirte en él."
+        )
         return redirect("eventos_disponibles")
 
     grupo_id = request.POST.get("grupo_id")
@@ -232,7 +285,9 @@ def inscribir_grupo_evento(request, evento_id):
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     try:
-        grupo = Grupo.objects.get(id=grupo_id, usuario_creador=request.user, activo=True)
+        grupo = Grupo.objects.get(
+            id=grupo_id, usuario_creador=request.user, activo=True
+        )
     except Grupo.DoesNotExist:
         messages.error(request, "❌ El grupo seleccionado no existe o no te pertenece.")
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
@@ -246,7 +301,10 @@ def inscribir_grupo_evento(request, evento_id):
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     if not evento.puede_inscribirse:
-        messages.error(request, "❌ Este evento no está disponible para inscripciones en este momento.")
+        messages.error(
+            request,
+            "❌ Este evento no está disponible para inscripciones en este momento.",
+        )
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     if evento.fecha < date.today():
@@ -254,7 +312,9 @@ def inscribir_grupo_evento(request, evento_id):
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     if InscripcionGrupoEvento.objects.filter(evento=evento, grupo=grupo).exists():
-        messages.warning(request, f"⚠️ El grupo '{grupo.nombre}' ya está inscrito en este evento.")
+        messages.warning(
+            request, f"⚠️ El grupo '{grupo.nombre}' ya está inscrito en este evento."
+        )
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     # Regla: solo un grupo por institución por evento
@@ -284,7 +344,9 @@ def inscribir_grupo_evento(request, evento_id):
             f"✅ Equipo '{grupo.nombre}' inscrito exitosamente en '{evento.nombre}'.",
         )
     except Exception:
-        messages.error(request, "❌ Error al procesar la inscripción. Intenta nuevamente.")
+        messages.error(
+            request, "❌ Error al procesar la inscripción. Intenta nuevamente."
+        )
 
     return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
@@ -337,7 +399,9 @@ def cancelar_inscripcion_grupo(request, inscripcion_id):
             f"✅ Inscripción del equipo '{grupo.nombre}' cancelada. El equipo está disponible nuevamente.",
         )
     except Exception:
-        messages.error(request, "❌ Error al cancelar la inscripción. Intenta nuevamente.")
+        messages.error(
+            request, "❌ Error al cancelar la inscripción. Intenta nuevamente."
+        )
 
     return redirect("detalle_evento_inscripcion", evento_id=evento.id)
 
@@ -351,7 +415,7 @@ def cancelar_inscripcion_grupo_admin(request, inscripcion_id):
     if request.method != "POST":
         return redirect("admin_eventos")
 
-    if request.user.userprofile.user_type not in ["fed_central", "superuser", "tecnologico"]:
+    if request.user.userprofile.user_type not in ["fed_central", "tecnologico"]:
         messages.error(request, "❌ No tienes permiso para realizar esta acción.")
         return redirect("admin_eventos")
 
@@ -366,7 +430,9 @@ def cancelar_inscripcion_grupo_admin(request, inscripcion_id):
     observacion = request.POST.get("observacion", "").strip()
 
     if not observacion:
-        messages.error(request, "❌ Debes ingresar una observación para cancelar la inscripción.")
+        messages.error(
+            request, "❌ Debes ingresar una observación para cancelar la inscripción."
+        )
         return redirect("detalle_evento_gestion_admin", evento_id=evento.id)
 
     if grupo.estado_grupo == "bloqueado":
@@ -397,7 +463,9 @@ def cancelar_inscripcion_grupo_admin(request, inscripcion_id):
             f"✅ Inscripción del equipo '{grupo.nombre}' cancelada. Se notificó a la institución.",
         )
     except Exception:
-        messages.error(request, "❌ Error al cancelar la inscripción. Intenta nuevamente.")
+        messages.error(
+            request, "❌ Error al cancelar la inscripción. Intenta nuevamente."
+        )
 
     return redirect("detalle_evento_gestion_admin", evento_id=evento.id)
 
@@ -408,7 +476,8 @@ def home(request):
 
 
 @login_required
-@require_http_methods(["POST", "GET"])
+@login_required
+@require_http_methods(["POST"])
 def verificar_participante_duplicado(request):
     """
     Vista AJAX para verificar si existe un participante con datos similares.
@@ -466,26 +535,16 @@ def verificar_participante_duplicado(request):
                 vinculacion = ParticipanteInstitucion.objects.filter(
                     participante=participante_existente, institucion=institucion_actual
                 ).first()
-
-                # Formatear cédula para mostrar con nacionalidad
-                cedula_display = (
-                    f"{participante_existente.nacionalidad or 'V'}-{participante_existente.cedula}"
-                    if participante_existente.cedula
-                    else "N/A"
-                )
-                cedula_escolar_display = (
-                    f"E-{participante_existente.cedula_escolar}"
-                    if participante_existente.cedula_escolar
-                    else "N/A"
-                )
-
-                # Obtener instituciones donde está vinculado
                 instituciones_vinculadas = (
                     participante_existente.get_instituciones_activas()
                 )
-                instituciones_nombres = [
-                    inst.nombre for inst in instituciones_vinculadas
-                ]
+                puede_ver_detalle_ampliado = JurisdictionSelector.es_federacion(perfil)
+
+                instituciones_nombres = []
+                if puede_ver_detalle_ampliado:
+                    instituciones_nombres = [
+                        inst.nombre for inst in instituciones_vinculadas
+                    ]
 
                 return JsonResponse(
                     {
@@ -496,15 +555,21 @@ def verificar_participante_duplicado(request):
                         if vinculacion
                         else False,
                         "instituciones_vinculadas": instituciones_nombres,
-                        "total_instituciones": len(instituciones_nombres),
+                        "total_instituciones": instituciones_vinculadas.count(),
                         "datos": {
                             "nombres": participante_existente.nombres,
                             "apellidos": participante_existente.apellidos,
                             "fecha_nacimiento": participante_existente.fecha_nacimiento.strftime(
                                 "%Y-%m-%d"
                             ),
-                            "cedula": cedula_display,
-                            "cedula_escolar": cedula_escolar_display,
+                            "cedula": _mask_identifier_tail(
+                                participante_existente.cedula,
+                                prefix=f"{participante_existente.nacionalidad or 'V'}-",
+                            ),
+                            "cedula_escolar": _mask_identifier_tail(
+                                participante_existente.cedula_escolar,
+                                prefix="E-",
+                            ),
                             "edad": participante_existente.edad,
                         },
                     }
@@ -512,8 +577,15 @@ def verificar_participante_duplicado(request):
             else:
                 return JsonResponse({"existe": False})
 
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+        except Exception:
+            logger.exception(
+                "Error verificando participante duplicado para user_id=%s",
+                getattr(request.user, "id", None),
+            )
+            return JsonResponse(
+                {"error": "Ocurrió un error interno al verificar el participante."},
+                status=500,
+            )
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
@@ -627,9 +699,17 @@ def vincular_participante_existente(request):
         return JsonResponse(
             {"success": False, "error": "Participante no encontrado"}, status=404
         )
-    except Exception as e:
+    except Exception:
+        logger.exception(
+            "Error vinculando participante existente. user_id=%s participante_id=%s",
+            request.user.id,
+            locals().get("participante_id"),
+        )
         return JsonResponse(
-            {"success": False, "error": f"Error al vincular participante: {str(e)}"},
+            {
+                "success": False,
+                "error": "Ocurrió un error interno al vincular el participante.",
+            },
             status=500,
         )
 
@@ -652,7 +732,7 @@ def crear_participante(request):
     # Obtener contexto territorial mediante Selectors
     estado_base = ParticipanteSelector.get_estado_para_formulario(perfil, institucion)
     es_admin_central = JurisdictionSelector.es_rector(perfil)
-    
+
     # Determinar estado seleccionado (POST o base)
     estado_id = request.POST.get("estado")
     if estado_id:
@@ -665,9 +745,11 @@ def crear_participante(request):
             request.POST or None,
             initial={"estado": estado_seleccionado.id} if estado_seleccionado else None,
             user_role=user_type,
-            user_institution=institucion
+            user_institution=institucion,
         ),
-        "municipios": ParticipanteSelector.get_municipios_para_formulario(estado_seleccionado),
+        "municipios": ParticipanteSelector.get_municipios_para_formulario(
+            estado_seleccionado
+        ),
         "institucion": institucion,
         "nombre_sede": ParticipanteSelector.get_nombre_sede(perfil, institucion),
         "estado": estado_seleccionado,
@@ -685,15 +767,27 @@ def crear_participante(request):
                     institucion=institucion,
                     registrado_por=request.user,
                     user_type_registrador=user_type,
-                    tipo_vinculacion=form.cleaned_data.get('tipo_vinculacion', 'institucional'),
-                    estado_vinculacion=form.cleaned_data.get('vinculacion_estado')
+                    tipo_vinculacion=form.cleaned_data.get(
+                        "tipo_vinculacion", "institucional"
+                    ),
+                    estado_vinculacion=form.cleaned_data.get("vinculacion_estado"),
                 )
-                messages.success(request, f'✅ Participante "{participante.nombres} {participante.apellidos}" registrado.')
+                messages.success(
+                    request,
+                    f'✅ Participante "{participante.nombres} {participante.apellidos}" registrado.',
+                )
                 return redirect("lista_participantes")
             except ValueError as ve:
                 messages.error(request, f"❌ {str(ve)}")
-            except Exception as e:
-                messages.error(request, f"❌ Error crítico: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando participante desde crear_participante. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "❌ Ocurrió un error interno al registrar el participante. Intenta nuevamente.",
+                )
 
     return render(request, "users/register.html", context)
 
@@ -723,10 +817,10 @@ def register(request):
 
     if request.method == "POST":
         participante_form = ParticipanteRegistrationForm(
-            request.POST, 
+            request.POST,
             initial={"estado": estado_inst.id} if estado_inst else None,
             user_role="institucional",
-            user_institution=perfil_inst
+            user_institution=perfil_inst,
         )
 
         if participante_form.is_valid():
@@ -737,8 +831,12 @@ def register(request):
                     institucion=perfil_inst,
                     registrado_por=request.user,
                     user_type_registrador="institucional",
-                    tipo_vinculacion=participante_form.cleaned_data.get('tipo_vinculacion', 'institucional'),
-                    estado_vinculacion=participante_form.cleaned_data.get('vinculacion_estado')
+                    tipo_vinculacion=participante_form.cleaned_data.get(
+                        "tipo_vinculacion", "institucional"
+                    ),
+                    estado_vinculacion=participante_form.cleaned_data.get(
+                        "vinculacion_estado"
+                    ),
                 )
 
                 messages.success(
@@ -748,13 +846,20 @@ def register(request):
 
             except ValueError as ve:
                 messages.error(request, f"❌ {str(ve)}")
-            except Exception as e:
-                messages.error(request, f"❌ Error: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando participante desde register legacy. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "❌ Ocurrió un error interno al registrar el participante. Intenta nuevamente.",
+                )
     else:
         participante_form = ParticipanteRegistrationForm(
             initial={"estado": estado_inst.id} if estado_inst else None,
             user_role="institucional",
-            user_institution=perfil_inst
+            user_institution=perfil_inst,
         )
 
     return render(
@@ -839,10 +944,20 @@ def dashboard(request):
             "es_central": JurisdictionSelector.es_rector(user_profile),
             "es_regional": user_type == "fed_regional",
             "meses_labels": [
-                "Ene", "Feb", "Mar", "Abr", "May", "Jun", 
-                "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+                "Ene",
+                "Feb",
+                "Mar",
+                "Abr",
+                "May",
+                "Jun",
+                "Jul",
+                "Ago",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dic",
             ],
-            **metrics
+            **metrics,
         }
         return render(request, "users/dashboard_admin.html", context)
 
@@ -906,10 +1021,7 @@ def dashboard_institucional(request):
     institution = user_profile.institution
     metrics = ReportService.get_institutional_stats(request.user, institution)
 
-    context = {
-        "institution": institution,
-        **metrics
-    }
+    context = {"institution": institution, **metrics}
     return render(request, "users/dashboard_institucional.html", context)
 
 
@@ -922,15 +1034,20 @@ def exportar_participantes_excel(request):
 
     # 1. Obtener participantes según permisos mediante Selector
     participantes = ParticipanteSelector.get_participantes_para_perfil(perfil)
-    
-    if not participantes and user_type not in ["fed_central", "superuser", "tecnologico", "fed_regional", "institucional"]:
+
+    if not participantes and user_type not in [
+        "fed_central",
+        "tecnologico",
+        "fed_regional",
+        "institucional",
+    ]:
         messages.error(request, "No tienes permisos para exportar participantes.")
         return redirect("dashboard")
 
     # 2. Aplicar filtros si existen en el GET (reutilizar lógica de lista_participantes)
     q = request.GET.get("q")
     participantes = ParticipanteSelector.buscar_participantes(participantes, q)
-    
+
     estado_f = request.GET.get("estado")
     if estado_f and user_type != "fed_regional":
         participantes = participantes.filter(estado_id=estado_f)
@@ -993,7 +1110,9 @@ def exportar_participantes_excel(request):
     df = pd.DataFrame(data)
 
     # Crear respuesta HTTP con nombre dinámico mediante Selector
-    filename = f"Participantes_{ParticipanteSelector.get_nombre_sede(perfil) or 'Padron_Nacional'}.xlsx".replace(" ", "_")
+    filename = f"Participantes_{ParticipanteSelector.get_nombre_sede(perfil) or 'Padron_Nacional'}.xlsx".replace(
+        " ", "_"
+    )
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1034,7 +1153,9 @@ def lista_instituciones(request):
     stats = InstitucionSelector.get_stats_instituciones(instituciones_qs)
 
     # 3. Construcción de lista con usuarios
-    instituciones_con_usuarios = InstitucionSelector.get_instituciones_con_usuarios(instituciones_qs)
+    instituciones_con_usuarios = InstitucionSelector.get_instituciones_con_usuarios(
+        instituciones_qs
+    )
 
     context = {
         "instituciones_con_usuarios": instituciones_con_usuarios,
@@ -1042,7 +1163,7 @@ def lista_instituciones(request):
         "instituciones_activas": stats["activas"],
         "instituciones_pendientes": stats["pendientes"],
         "estados": Estado.objects.all(),
-        "es_central": user_type in ["fed_central", "superuser"],
+        "es_central": user_type == "fed_central",
         "es_regional": user_type == "fed_regional",
         "perfil": perfil,
     }
@@ -1072,30 +1193,37 @@ def registrar_institucion(request):
         if form.is_valid():
             try:
                 # ⚡ Verificar si se reactivó una institución eliminada
-                if hasattr(form, '_institucion_reactivada'):
+                if hasattr(form, "_institucion_reactivada"):
                     institucion = form._institucion_reactivada
                     messages.warning(
                         request,
                         f"✅ La institución '{institucion.nombre}' ha sido reactivada exitosamente.\n\n"
                         f"📋 Estado actual: Pendiente de aprobación\n"
                         f"⏰ Tiempo estimado: 24-48 horas\n\n"
-                        f"Recibirás una notificación cuando la administración central la apruebe."
+                        f"Recibirás una notificación cuando la administración central la apruebe.",
                     )
-                    return redirect("login")  # Redirigir al login ya que el usuario está desactivado
-                
+                    return redirect(
+                        "login"
+                    )  # Redirigir al login ya que el usuario está desactivado
+
                 # Usar el servicio para creación atómica de institución y usuario (solo para nuevas)
                 institucion = InstitutionService.crear_institucion_con_usuario(
                     data=form.cleaned_data,
                     es_central=es_central,
                     es_regional=es_regional,
-                    perfil_admin=perfil_admin
+                    perfil_admin=perfil_admin,
                 )
 
                 if es_central:
-                    messages.success(request, f"Sede '{institucion.nombre}' activada con éxito.")
+                    messages.success(
+                        request, f"Sede '{institucion.nombre}' activada con éxito."
+                    )
                     return redirect("lista_instituciones")
                 elif es_federacion:
-                    messages.info(request, f"Registro de '{institucion.nombre}' enviado a Sede Central.")
+                    messages.info(
+                        request,
+                        f"Registro de '{institucion.nombre}' enviado a Sede Central.",
+                    )
                     return redirect("lista_instituciones")
                 else:
                     return render(
@@ -1109,8 +1237,15 @@ def registrar_institucion(request):
                         },
                     )
 
-            except Exception as e:
-                messages.error(request, f"Error: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error registrando institucion. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "No se pudo completar el registro de la institución. Intenta nuevamente.",
+                )
     else:
         # Inicialización del formulario con el estado predeterminado
         initial_data = {}
@@ -1141,11 +1276,29 @@ def lista_participantes(request):
     """Vista inteligente: Federación (Central/Regional) e Instituciones"""
     perfil = request.user.userprofile
     user_type = perfil.user_type
+    institucion_actual = perfil.institution if user_type == "institucional" else None
 
     # 1. Obtener Queryset base desde Selector
     participantes = ParticipanteSelector.get_participantes_para_perfil(perfil)
-    
-    if not participantes and user_type not in ["fed_central", "superuser", "tecnologico", "fed_regional", "institucional"]:
+
+    # Para institucional con filtro de status: ampliar el queryset base para incluir
+    # vinculaciones no activas (el prefetch filtrará por el status solicitado)
+    status_f = request.GET.get("status") if user_type == "institucional" else None
+    vinc_status_filter = status_f if status_f in ["activo", "inactivo", "suspendido", "egresado"] else "activo"
+
+    if user_type == "institucional" and perfil.institution and vinc_status_filter != "activo":
+        # Reemplazar el queryset base para incluir el status solicitado
+        participantes = Participante.objects.filter(
+            vinculaciones__institucion=perfil.institution,
+            vinculaciones__status=vinc_status_filter,
+        ).distinct()
+
+    if not participantes and user_type not in [
+        "fed_central",
+        "tecnologico",
+        "fed_regional",
+        "institucional",
+    ]:
         return redirect("dashboard")
 
     # 2. Aplicar filtros usando el Selector
@@ -1160,74 +1313,115 @@ def lista_participantes(request):
     if sexo_f:
         participantes = participantes.filter(sexo=sexo_f)
 
-    # 3. Lógica para Menores de Edad (Evitar el FieldError de 'edad')
-    # Calculamos la fecha límite: hoy hace 18 años
+    # 3. Lógica para Menores de Edad
     hoy = date.today()
     fecha_limite_menores = date(hoy.year - 18, hoy.month, hoy.day)
 
-    # 4. Métricas KPI según rol (evitar duplicados para fed_central)
-    # Nota: `participantes` ya viene filtrado por `ParticipanteSelector.get_participantes_para_perfil(perfil)`,
-    # que garantiza los criterios territoriales y el tratamiento de duplicados para fed_central/fed_regional.
+    # 4. Métricas KPI
     stats = participantes.aggregate(
         total_participantes=Count("id", distinct=True),
-        participantes_hombres=Count(
-            "id", filter=Q(sexo="M"), distinct=True
-        ),
-        participantes_mujeres=Count(
-            "id", filter=Q(sexo="F"), distinct=True
-        ),
+        participantes_hombres=Count("id", filter=Q(sexo="M"), distinct=True),
+        participantes_mujeres=Count("id", filter=Q(sexo="F"), distinct=True),
         menores_edad=Count(
             "id", filter=Q(fecha_nacimiento__gt=fecha_limite_menores), distinct=True
         ),
     )
 
-    # 5. Agregar información de institución a cada participante (optimizado)
-    # Evitamos N+1 consultando una sola vez las vinculaciones activas más recientes.
+    # 5. Cargar vinculaciones filtrando por el status solicitado
     from django.db.models import Prefetch
+
+    # Para institucional: filtrar el prefetch por su institución Y el status pedido
+    # Para otros roles: solo filtrar por status activo (siempre)
+    if user_type == "institucional" and institucion_actual:
+        prefetch_filter = Q(status=vinc_status_filter, institucion=institucion_actual)
+    else:
+        prefetch_filter = Q(status="activo")
 
     vinculaciones_prefetch = Prefetch(
         "vinculaciones",
         queryset=(
-            ParticipanteInstitucion.objects.filter(status="activo")
+            ParticipanteInstitucion.objects.filter(prefetch_filter)
             .select_related("institucion", "estado")
             .order_by("-fecha_vinculacion")
         ),
         to_attr="vinculaciones_activas",
     )
 
-    participantes = participantes.order_by("-fecha_registro").prefetch_related(vinculaciones_prefetch)
+    participantes = participantes.order_by("-fecha_registro").prefetch_related(
+        vinculaciones_prefetch
+    )
 
+    # 6. Procesar vinculaciones según el rol de usuario
     for p in participantes:
         vinculaciones_activas = getattr(p, "vinculaciones_activas", [])
-        vinculacion = vinculaciones_activas[0] if vinculaciones_activas else None
 
-        if vinculacion:
-            p.vinculacion_tipo = vinculacion.tipo_vinculacion
-            if vinculacion.tipo_vinculacion == "institucional" and vinculacion.institucion:
-                p.institucion = vinculacion.institucion
-            elif vinculacion.tipo_vinculacion == "regional" and vinculacion.estado:
-                p.institucion = type(
-                    "obj",
-                    (object,),
-                    {
-                        "nombre": f"Federación Regional ({vinculacion.estado.nombre})",
-                        "tipo_institucion": "federacion",
-                    },
-                )()
+        if user_type == "institucional" and institucion_actual:
+            # Para usuarios institucionales: mostrar SOLO su vinculación con su institución
+            vinculacion_suya = next(
+                (
+                    v
+                    for v in vinculaciones_activas
+                    if v.institucion_id == institucion_actual.id
+                ),
+                None,
+            )
+
+            if vinculacion_suya:
+                p.institucion = vinculacion_suya.institucion
+                p.vinculacion_tipo = vinculacion_suya.tipo_vinculacion
+                p.vinculacion_status = vinculacion_suya.status
+                p.todas_vinculaciones = [vinculacion_suya]  # Solo la de su institución
             else:
+                # No debería alcanzarse porque ParticipanteSelector ya filtra por institución
                 p.institucion = type(
                     "obj",
                     (object,),
-                    {"nombre": "Federación Central", "tipo_institucion": "federacion"},
+                    {"nombre": "No vinculado", "tipo_institucion": "N/A"},
                 )()
+                p.vinculacion_tipo = "ninguna"
+                p.todas_vinculaciones = []
         else:
-            # Si no tiene vinculación, mostrar "Federación"
-            p.vinculacion_tipo = "central"
-            p.institucion = type(
-                "obj",
-                (object,),
-                {"nombre": "Federación", "tipo_institucion": "federacion"},
-            )()
+            # Para fed_central, fed_regional, etc: mostrar TODAS las vinculaciones
+            p.todas_vinculaciones = vinculaciones_activas
+
+            if vinculaciones_activas:
+                # Primera vinculación como principal (para compatibilidad con template)
+                vinculacion = vinculaciones_activas[0]
+                p.vinculacion_tipo = vinculacion.tipo_vinculacion
+                p.vinculacion_status = vinculacion.status
+
+                if (
+                    vinculacion.tipo_vinculacion == "institucional"
+                    and vinculacion.institucion
+                ):
+                    p.institucion = vinculacion.institucion
+                elif vinculacion.tipo_vinculacion == "regional" and vinculacion.estado:
+                    p.institucion = type(
+                        "obj",
+                        (object,),
+                        {
+                            "nombre": f"Federación Regional ({vinculacion.estado.nombre})",
+                            "tipo_institucion": "federacion",
+                        },
+                    )()
+                else:
+                    p.institucion = type(
+                        "obj",
+                        (object,),
+                        {
+                            "nombre": "Federación Central",
+                            "tipo_institucion": "federacion",
+                        },
+                    )()
+            else:
+                # Sin vinculación
+                p.vinculacion_tipo = "central"
+                p.institucion = type(
+                    "obj",
+                    (object,),
+                    {"nombre": "Federación", "tipo_institucion": "federacion"},
+                )()
+                p.todas_vinculaciones = []
 
     context = {
         "participantes": participantes,
@@ -1236,8 +1430,9 @@ def lista_participantes(request):
         "participantes_mujeres": stats.get("participantes_mujeres", 0) or 0,
         "menores_edad": stats.get("menores_edad", 0) or 0,
         "estados": Estado.objects.all().order_by("nombre"),
-        "es_central": user_type in ["fed_central", "superuser"],
+        "es_central": user_type == "fed_central",
         "es_regional": user_type == "fed_regional",
+        "es_institucional": user_type == "institucional",
         "perfil": perfil,
         "user_type": user_type,
     }
@@ -1249,38 +1444,44 @@ def editar_participante(request, pk):
     """
     Vista optimizada para editar participantes.
     """
-    participante = get_object_or_404(Participante, pk=pk)
     perfil = request.user.userprofile
     user_type = perfil.user_type
-
-    # Validación de permisos territoriales
-    if user_type == "institucional":
-        vinculacion = participante.vinculaciones.filter(
-            institucion=perfil.institution, status="activo"
-        ).exists()
-        if not vinculacion:
-            messages.error(request, "No tienes permisos para editar participantes de otra institución.")
-            return redirect("lista_participantes")
+    institucion = perfil.institution
+    participante = get_object_or_404(
+        ParticipanteSelector.get_participantes_visibles_para_usuario(request.user),
+        pk=pk,
+    )
 
     # Preparar contexto usando Selectors
     context = {
         "participante_form": ParticipanteRegistrationForm(
-            request.POST or None, 
-            instance=participante, 
-            initial={"estado": participante.estado.id} if participante.estado else None
+            request.POST or None,
+            instance=participante,
+            initial={"estado": participante.estado.id} if participante.estado else None,
+            user_role=user_type,
+            user_institution=institucion,
         ),
         "participante": participante,
         "perfil": perfil,
         "edad": participante.edad,
-        "cedula_personal": "".join(filter(str.isdigit, str(participante.cedula))) if participante.cedula else "",
+        "cedula_personal": "".join(filter(str.isdigit, str(participante.cedula)))
+        if participante.cedula
+        else "",
         "cedula_escolar": participante.cedula_escolar or "",
         "estado": participante.estado,
         "estado_id": participante.estado.id if participante.estado else None,
         "municipio": participante.municipio,
-        "municipios": ParticipanteSelector.get_municipios_para_formulario(participante.estado),
-        "parroquias": Parroquia.objects.filter(municipio=participante.municipio).order_by("nombre") if participante.municipio else [],
+        "municipios": ParticipanteSelector.get_municipios_para_formulario(
+            participante.estado
+        ),
+        "parroquias": Parroquia.objects.filter(
+            municipio=participante.municipio
+        ).order_by("nombre")
+        if participante.municipio
+        else [],
         "todos_estados": ParticipanteSelector.get_todos_estados_para_formulario(perfil),
         "es_admin_central": JurisdictionSelector.es_rector(perfil),
+        "user_role": user_type,
     }
 
     if request.method == "POST":
@@ -1288,13 +1489,27 @@ def editar_participante(request, pk):
         if form.is_valid():
             try:
                 ParticipanteService.actualizar_participante(
-                    participante=participante,
-                    cleaned_data=form.cleaned_data
+                    participante=participante, cleaned_data=form.cleaned_data
                 )
-                messages.success(request, f'✅ Datos de "{participante.nombres}" actualizados.')
+                messages.success(
+                    request, f'✅ Datos de "{participante.nombres}" actualizados.'
+                )
                 return redirect("lista_participantes")
-            except Exception as e:
-                messages.error(request, f"❌ Error: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error actualizando participante. user_id=%s participante_id=%s",
+                    request.user.id,
+                    participante.id,
+                )
+                messages.error(
+                    request,
+                    "❌ Ocurrió un error interno al actualizar el participante.",
+                )
+        else:
+            messages.error(
+                request,
+                "❌ No se pudo actualizar el participante. Verifica los datos resaltados.",
+            )
 
     return render(request, "users/participante_editar_full.html", context)
 
@@ -1309,19 +1524,27 @@ def admin_crear_institucion(request):
                 data = form.cleaned_data.copy()
                 data["activa"] = True
                 data["estatus"] = "aprobado"
-                
+
                 InstitutionService.crear_institucion_con_usuario(
-                    data=data,
-                    es_central=True
+                    data=data, es_central=True
                 )
 
-                messages.success(request, "Institución creada y activada correctamente.")
+                messages.success(
+                    request, "Institución creada y activada correctamente."
+                )
                 return redirect("lista_instituciones")
-            except Exception as e:
-                messages.error(request, f"Error: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando institucion desde admin. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "No se pudo crear la institución. Intenta nuevamente.",
+                )
     else:
         form = InstitucionRegistrationForm()
-    
+
     return render(request, "users/admin_crear_institucion.html", {"form": form})
 
 
@@ -1360,12 +1583,12 @@ def crear_evento(request):
     institution = perfil.institution if user_type == "institucional" else None
 
     # Manejar pre-selección de club vía GET
-    club_preseleccionado_id = request.GET.get('club_id')
+    club_preseleccionado_id = request.GET.get("club_id")
     valores_iniciales = {}
     if club_preseleccionado_id:
         valores_iniciales = {
-            'club_organizador': club_preseleccionado_id,
-            'tipo_evento': 'club'
+            "club_organizador": club_preseleccionado_id,
+            "tipo_evento": "club",
         }
 
     estado_institucion = EventoSelector.get_estado_contexto(perfil, institution)
@@ -1380,9 +1603,7 @@ def crear_evento(request):
         try:
             # Usar el servicio para crear el evento
             evento = EventoService.crear_evento(
-                user=request.user,
-                perfil=perfil,
-                data=request.POST
+                user=request.user, perfil=perfil, data=request.POST
             )
 
             if JurisdictionSelector.es_rector(perfil):
@@ -1394,7 +1615,9 @@ def crear_evento(request):
                 )
                 return redirect("admin_eventos")
             else:
-                tipo_msg = "de club" if evento.tipo_evento == "club" else "institucional"
+                tipo_msg = (
+                    "de club" if evento.tipo_evento == "club" else "institucional"
+                )
                 messages.success(
                     request,
                     f"✅ Evento {tipo_msg} '{evento.nombre}' creado en BORRADOR. "
@@ -1409,8 +1632,15 @@ def crear_evento(request):
                 perfil=perfil,
                 valores_previos=request.POST,
             )
-        except Exception as e:
-            messages.error(request, f"❌ Error al crear el evento: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error creando evento. user_id=%s",
+                request.user.id,
+            )
+            messages.error(
+                request,
+                "❌ Ocurrió un error interno al crear el evento. Intenta nuevamente.",
+            )
             return _render_formulario_evento(
                 request,
                 perfil=perfil,
@@ -1431,9 +1661,11 @@ def crear_evento(request):
             # Validar que el club_id sea válido y esté en clubes_disponibles
             if clubes_disponibles.filter(id=club_id_get).exists():
                 valores_iniciales["club_organizador"] = club_id_get
-                valores_iniciales["tipo_evento"] = "club" # Si se preselecciona un club, el tipo de evento es "club"
+                valores_iniciales["tipo_evento"] = (
+                    "club"  # Si se preselecciona un club, el tipo de evento es "club"
+                )
         except ValueError:
-            pass # Ignorar si club_id_get no es un entero válido
+            pass  # Ignorar si club_id_get no es un entero válido
 
     return _render_formulario_evento(
         request,
@@ -1466,7 +1698,9 @@ def eventos_disponibles(request):
     # `estado_geo` queda reservado para el estado geográfico y evita mezclar semánticas.
     query = request.GET.get("q", "").strip()
     estado_evento_filtro = request.GET.get("estado_evento") or request.GET.get("estado")
-    estado_geografico_filtro = request.GET.get("estado_geo") or request.GET.get("estado_id")
+    estado_geografico_filtro = request.GET.get("estado_geo") or request.GET.get(
+        "estado_id"
+    )
     tipo_filtro = request.GET.get("tipo")
     modalidad_filtro = request.GET.get("modalidad")
     audiencia_filtro = request.GET.get("audiencia")
@@ -1597,16 +1831,23 @@ def gestionar_eventos_institucion(request):
     # === VISIBILIDAD ADMINISTRATIVA MEDIANTE SELECTOR ===
     # Mantener en listado los eventos activos y los cancelados (para trazabilidad). Eliminados siguen ocultos.
     # Regla: Los eventos de instituciones en estado "borrador" no son visibles para fed_central hasta que se envíen a revisión
-    eventos = Evento.objects.select_related(
-        "estado", "municipio", "parroquia", "institucion", "club_organizador", "club_organizador__institucion_creadora"
-    ).filter(
-        Q(activo=True) | Q(cancelado=True)
-    ).exclude(
-        # Ocultar borradores de instituciones y clubes hasta que sean enviados a revisión
-        Q(estado_evento=EstadoEvento.BORRADOR) &
-        (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
+    eventos = (
+        Evento.objects.select_related(
+            "estado",
+            "municipio",
+            "parroquia",
+            "institucion",
+            "club_organizador",
+            "club_organizador__institucion_creadora",
+        )
+        .filter(Q(activo=True) | Q(cancelado=True))
+        .exclude(
+            # Ocultar borradores de instituciones y clubes hasta que sean enviados a revisión
+            Q(estado_evento=EstadoEvento.BORRADOR)
+            & (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
+        )
     )
-    
+
     eventos = JurisdictionSelector.filtrar_por_territorio(eventos, perfil)
     es_fed_central = JurisdictionSelector.es_rector(perfil)
     institution = getattr(perfil, "institution", None)
@@ -1628,15 +1869,19 @@ def gestionar_eventos_institucion(request):
     if tipo_filtro:
         eventos = eventos.filter(tipo=tipo_filtro)
     if tipo_evento_filtro:
-        if tipo_evento_filtro == 'federacion':
-            eventos = eventos.filter(institucion__isnull=True, club_organizador__isnull=True)
+        if tipo_evento_filtro == "federacion":
+            eventos = eventos.filter(
+                institucion__isnull=True, club_organizador__isnull=True
+            )
         else:
             eventos = eventos.filter(tipo_evento=tipo_evento_filtro)
     if estado_evento_filtro:
-        if estado_evento_filtro == 'cancelado':
+        if estado_evento_filtro == "cancelado":
             eventos = eventos.filter(cancelado=True)
         else:
-            eventos = eventos.filter(estado_evento=estado_evento_filtro, cancelado=False)
+            eventos = eventos.filter(
+                estado_evento=estado_evento_filtro, cancelado=False
+            )
 
     # Filtro por estado geográfico (ubicación del evento)
     if estado_nacional_filtro:
@@ -1659,7 +1904,9 @@ def gestionar_eventos_institucion(request):
         rechazados=Count("id", filter=Q(estado_evento=EstadoEvento.RECHAZADO)),
         activos=Count(
             "id",
-            filter=Q(estado_evento=EstadoEvento.ABIERTO, fecha__gt=hoy, cancelado=False),
+            filter=Q(
+                estado_evento=EstadoEvento.ABIERTO, fecha__gt=hoy, cancelado=False
+            ),
         ),
         en_proceso=Count("id", filter=Q(estado_evento=EstadoEvento.EN_PROCESO)),
         finalizados=Count("id", filter=Q(estado_evento=EstadoEvento.FINALIZADO)),
@@ -1668,12 +1915,15 @@ def gestionar_eventos_institucion(request):
     )
 
     # Métricas de dashboard administrativo
-    total_inscripciones = eventos.aggregate(
-        total_inscripciones=Count(
-            "inscripciones_grupo",
-            filter=Q(inscripciones_grupo__activo=True),
-        )
-    )["total_inscripciones"] or 0
+    total_inscripciones = (
+        eventos.aggregate(
+            total_inscripciones=Count(
+                "inscripciones_grupo",
+                filter=Q(inscripciones_grupo__activo=True),
+            )
+        )["total_inscripciones"]
+        or 0
+    )
 
     eventos_activos = eventos.filter(
         Q(fecha_hasta__gte=hoy) | Q(fecha_hasta__isnull=True, fecha__gte=hoy),
@@ -1686,7 +1936,9 @@ def gestionar_eventos_institucion(request):
         evento.puede_pausar_usuario = evento.puede_pausar(request.user)
         evento.puede_cancelar_usuario = evento.puede_cancelar(request.user)
 
-    stats["pausados_cancelados"] = (stats.get("pausados") or 0) + (stats.get("cancelados") or 0)
+    stats["pausados_cancelados"] = (stats.get("pausados") or 0) + (
+        stats.get("cancelados") or 0
+    )
 
     context = {
         "eventos": eventos,
@@ -1698,11 +1950,12 @@ def gestionar_eventos_institucion(request):
         "tipos": Evento.TIPO_CHOICES,
         "estados_evento": EstadoEvento.choices,
         "es_fed_central": es_fed_central,
-        "es_institucional": False, # En esta vista administrativa
+        "es_institucional": False,  # En esta vista administrativa
         "institution": institution,
     }
 
     return render(request, "users/gestionar_eventos.html", context)
+
 
 @login_required
 def aprobar_evento(request, evento_id):
@@ -1713,21 +1966,26 @@ def aprobar_evento(request, evento_id):
     if not JurisdictionSelector.es_rector(perfil):
         messages.error(request, "No tienes permiso para aprobar eventos.")
         return redirect("admin_eventos")
-    
-    evento = get_object_or_404(Evento, id=evento_id, estado_evento=EstadoEvento.REVISION)
-    
+
+    evento = get_object_or_404(
+        Evento, id=evento_id, estado_evento=EstadoEvento.REVISION
+    )
+
     if request.method == "POST":
         observaciones = request.POST.get("observaciones", "").strip()
 
         with transaction.atomic():
             if not evento.aprobar(request.user, observaciones):
-                messages.error(request, "No se puede aprobar el evento en su estado actual.")
+                messages.error(
+                    request, "No se puede aprobar el evento en su estado actual."
+                )
                 return redirect("admin_eventos")
 
         messages.success(request, f"Evento '{evento.nombre}' aprobado exitosamente.")
         return redirect("admin_eventos")
-    
+
     return render(request, "users/aprobar_evento.html", {"evento": evento})
+
 
 @login_required
 def rechazar_evento(request, evento_id):
@@ -1738,24 +1996,31 @@ def rechazar_evento(request, evento_id):
     if not JurisdictionSelector.es_rector(perfil):
         messages.error(request, "No tienes permiso para rechazar eventos.")
         return redirect("admin_eventos")
-    
-    evento = get_object_or_404(Evento, id=evento_id, estado_evento=EstadoEvento.REVISION)
-    
+
+    evento = get_object_or_404(
+        Evento, id=evento_id, estado_evento=EstadoEvento.REVISION
+    )
+
     if request.method == "POST":
         observacion = request.POST.get("observacion", "").strip()
         if not observacion:
-            messages.error(request, "Debes proporcionar una observación para el rechazo.")
+            messages.error(
+                request, "Debes proporcionar una observación para el rechazo."
+            )
             return redirect("admin_eventos")
-        
+
         with transaction.atomic():
             if not evento.rechazar(observaciones=observacion):
-                messages.error(request, "No se puede rechazar el evento en su estado actual.")
+                messages.error(
+                    request, "No se puede rechazar el evento en su estado actual."
+                )
                 return redirect("admin_eventos")
 
         messages.success(request, f"Evento '{evento.nombre}' rechazado.")
         return redirect("admin_eventos")
-    
+
     return render(request, "users/rechazar_evento.html", {"evento": evento})
+
 
 @login_required
 @institucional_required
@@ -1779,10 +2044,10 @@ def seguimiento_eventos_institucion(request):
 
     # Obtener IDs de clubes donde la institución es miembro activo
     from registry.models.club import MembresiaClu
+
     clubes_miembro_ids = list(
         MembresiaClu.objects.filter(
-            institucion=institution,
-            estado="miembro_activo"
+            institucion=institution, estado="miembro_activo"
         ).values_list("club_id", flat=True)
     )
     # Cachear en perfil para que el templatetag lo use sin N+1
@@ -1792,18 +2057,29 @@ def seguimiento_eventos_institucion(request):
     # 1. Eventos institucionales propios
     # 2. Eventos de club creados por un usuario de esta institución (cubre tanto propietario como miembro)
     # Los eventos de club creados por OTRA institución se ven en /eventos/, no aquí.
-    base_qs = Evento.objects.filter(
-        Q(institucion=institution)
-        | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institution)
-    ).select_related(
-        "estado", "municipio", "institucion", "institucion__estado",
-        "club_organizador", "club_organizador__institucion_creadora",
-        "club_organizador__institucion_creadora__estado",
-    ).annotate(
-        total_inscritos=Count(
-            "inscripciones_grupo",
-            filter=Q(inscripciones_grupo__activo=True),
-            distinct=True,
+    base_qs = (
+        Evento.objects.filter(
+            Q(institucion=institution)
+            | Q(
+                club_organizador__isnull=False,
+                creado_por__userprofile__institution=institution,
+            )
+        )
+        .select_related(
+            "estado",
+            "municipio",
+            "institucion",
+            "institucion__estado",
+            "club_organizador",
+            "club_organizador__institucion_creadora",
+            "club_organizador__institucion_creadora__estado",
+        )
+        .annotate(
+            total_inscritos=Count(
+                "inscripciones_grupo",
+                filter=Q(inscripciones_grupo__activo=True),
+                distinct=True,
+            )
         )
     )
     if q:
@@ -1811,21 +2087,56 @@ def seguimiento_eventos_institucion(request):
     if filtro_tipo:
         base_qs = base_qs.filter(tipo_evento=filtro_tipo)
 
-    ESTADOS_OTROS = [EstadoEvento.PAUSADO, EstadoEvento.CANCELADO, EstadoEvento.EN_PROCESO, EstadoEvento.FINALIZADO]
+    ESTADOS_OTROS = [
+        EstadoEvento.PAUSADO,
+        EstadoEvento.CANCELADO,
+        EstadoEvento.EN_PROCESO,
+        EstadoEvento.FINALIZADO,
+    ]
 
     if filtro_estado:
         # Mostrar solo el estado solicitado en su grupo correspondiente
-        eventos_borrador   = base_qs.filter(estado_evento=EstadoEvento.BORRADOR)   if filtro_estado == EstadoEvento.BORRADOR   else Evento.objects.none()
-        eventos_revision   = base_qs.filter(estado_evento=EstadoEvento.REVISION)   if filtro_estado == EstadoEvento.REVISION   else Evento.objects.none()
-        eventos_abiertos   = base_qs.filter(estado_evento=EstadoEvento.ABIERTO)    if filtro_estado == EstadoEvento.ABIERTO    else Evento.objects.none()
-        eventos_rechazados = base_qs.filter(estado_evento=EstadoEvento.RECHAZADO)  if filtro_estado == EstadoEvento.RECHAZADO  else Evento.objects.none()
-        eventos_otros      = base_qs.filter(estado_evento=filtro_estado)            if filtro_estado in ESTADOS_OTROS           else Evento.objects.none()
+        eventos_borrador = (
+            base_qs.filter(estado_evento=EstadoEvento.BORRADOR)
+            if filtro_estado == EstadoEvento.BORRADOR
+            else Evento.objects.none()
+        )
+        eventos_revision = (
+            base_qs.filter(estado_evento=EstadoEvento.REVISION)
+            if filtro_estado == EstadoEvento.REVISION
+            else Evento.objects.none()
+        )
+        eventos_abiertos = (
+            base_qs.filter(estado_evento=EstadoEvento.ABIERTO)
+            if filtro_estado == EstadoEvento.ABIERTO
+            else Evento.objects.none()
+        )
+        eventos_rechazados = (
+            base_qs.filter(estado_evento=EstadoEvento.RECHAZADO)
+            if filtro_estado == EstadoEvento.RECHAZADO
+            else Evento.objects.none()
+        )
+        eventos_otros = (
+            base_qs.filter(estado_evento=filtro_estado)
+            if filtro_estado in ESTADOS_OTROS
+            else Evento.objects.none()
+        )
     else:
-        eventos_borrador   = base_qs.filter(estado_evento=EstadoEvento.BORRADOR).order_by("-fecha_creacion")
-        eventos_revision   = base_qs.filter(estado_evento=EstadoEvento.REVISION).order_by("-fecha_creacion")
-        eventos_abiertos   = base_qs.filter(estado_evento=EstadoEvento.ABIERTO).order_by("-fecha")
-        eventos_rechazados = base_qs.filter(estado_evento=EstadoEvento.RECHAZADO).order_by("-fecha_creacion")
-        eventos_otros      = base_qs.filter(estado_evento__in=ESTADOS_OTROS).order_by("-fecha")
+        eventos_borrador = base_qs.filter(estado_evento=EstadoEvento.BORRADOR).order_by(
+            "-fecha_creacion"
+        )
+        eventos_revision = base_qs.filter(estado_evento=EstadoEvento.REVISION).order_by(
+            "-fecha_creacion"
+        )
+        eventos_abiertos = base_qs.filter(estado_evento=EstadoEvento.ABIERTO).order_by(
+            "-fecha"
+        )
+        eventos_rechazados = base_qs.filter(
+            estado_evento=EstadoEvento.RECHAZADO
+        ).order_by("-fecha_creacion")
+        eventos_otros = base_qs.filter(estado_evento__in=ESTADOS_OTROS).order_by(
+            "-fecha"
+        )
 
     grupos_disponibles = (
         Grupo.objects.filter(usuario_creador=request.user, activo=True)
@@ -1841,13 +2152,18 @@ def seguimiento_eventos_institucion(request):
         "total_otros": eventos_otros.count(),
         "total": Evento.objects.filter(
             Q(institucion=institution)
-            | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institution)
+            | Q(
+                club_organizador__isnull=False,
+                creado_por__userprofile__institution=institution,
+            )
         ).count(),
     }
 
     # Queryset unificado para el template (una sola tabla)
     if filtro_estado:
-        eventos = base_qs.filter(estado_evento=filtro_estado).order_by("-fecha_creacion")
+        eventos = base_qs.filter(estado_evento=filtro_estado).order_by(
+            "-fecha_creacion"
+        )
     else:
         eventos = base_qs.order_by("-fecha_creacion")
 
@@ -1905,11 +2221,25 @@ def enviar_evento_revision(request, evento_id):
 
     except Evento.DoesNotExist:
         return JsonResponse(
-            {"success": False, "error": "Evento no encontrado o no está disponible para envío."},
+            {
+                "success": False,
+                "error": "Evento no encontrado o no está disponible para envío.",
+            },
             status=404,
         )
-    except Exception as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
+    except Exception:
+        logger.exception(
+            "Error enviando evento a revision. user_id=%s evento_id=%s",
+            request.user.id,
+            evento_id,
+        )
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Ocurrió un error interno al enviar el evento a revisión.",
+            },
+            status=500,
+        )
 
 
 @login_required
@@ -1931,7 +2261,9 @@ def editar_evento(request, evento_id):
             return redirect("admin_eventos")
         redirect_destino = "admin_eventos"
     elif user_type == "institucional":
-        evento = _get_evento_institucional(evento_id, request.user.userprofile.institution)
+        evento = _get_evento_institucional(
+            evento_id, request.user.userprofile.institution
+        )
         if not evento.puede_ser_editado():
             messages.error(
                 request,
@@ -1947,11 +2279,11 @@ def editar_evento(request, evento_id):
     if request.method == "POST":
         try:
             EventoService.actualizar_evento(
-                evento=evento,
-                perfil=perfil,
-                data=request.POST
+                evento=evento, perfil=perfil, data=request.POST
             )
-            messages.success(request, f"✅ Evento '{evento.nombre}' actualizado correctamente.")
+            messages.success(
+                request, f"✅ Evento '{evento.nombre}' actualizado correctamente."
+            )
             return redirect(redirect_destino)
         except ValueError as ve:
             messages.error(request, f"❌ {str(ve)}")
@@ -1961,8 +2293,16 @@ def editar_evento(request, evento_id):
                 evento=evento,
                 valores_previos=request.POST,
             )
-        except Exception as e:
-            messages.error(request, f"❌ Error al actualizar el evento: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error actualizando evento. user_id=%s evento_id=%s",
+                request.user.id,
+                evento_id,
+            )
+            messages.error(
+                request,
+                "❌ Ocurrió un error interno al actualizar el evento.",
+            )
 
     return _render_formulario_evento(request, perfil=perfil, evento=evento)
 
@@ -1974,22 +2314,29 @@ def cambiar_estado_evento(request, evento_id):
     Vista institucional para cancelar un evento propio segun la maquina de estados.
     """
     if request.method == "POST":
-        evento = _get_evento_institucional(evento_id, request.user.userprofile.institution)
+        evento = _get_evento_institucional(
+            evento_id, request.user.userprofile.institution
+        )
 
         nuevo_estado = request.POST.get("estado_evento")
         motivo = request.POST.get("motivo", "").strip()
 
-        if nuevo_estado == EstadoEvento.CANCELADO and evento.puede_cancelar(request.user):
-            if evento.cancelar(motivo):
+        if nuevo_estado == EstadoEvento.CANCELADO and evento.puede_cancelar(
+            request.user
+        ):
+            try:
+                EventoService.gestionar_estado(
+                    evento=evento,
+                    user=request.user,
+                    nuevo_estado=EstadoEvento.CANCELADO,
+                    observacion=motivo,
+                )
                 messages.warning(
                     request,
                     f"Evento '{evento.nombre}' cancelado correctamente.",
                 )
-            else:
-                messages.error(
-                    request,
-                    "El evento no puede cancelarse desde su estado actual.",
-                )
+            except ValueError as ve:
+                messages.error(request, f"❌ {str(ve)}")
         elif nuevo_estado == EstadoEvento.CANCELADO:
             messages.error(request, "No tienes permiso para cancelar este evento.")
         else:
@@ -2009,16 +2356,20 @@ def gestionar_estado_evento(request, evento_id):
     """
     perfil = request.user.userprofile
     if not EventoSelector.es_rector_eventos(perfil):
-        messages.error(request, "No tienes permiso para gestionar el estado de este evento.")
+        messages.error(
+            request, "No tienes permiso para gestionar el estado de este evento."
+        )
         return redirect("admin_eventos")
 
     evento = get_object_or_404(Evento, id=evento_id)
-    
+
     # Procesar fechas si existen
     nueva_fecha = None
     if request.POST.get("nueva_fecha"):
         try:
-            nueva_fecha = datetime.strptime(request.POST.get("nueva_fecha"), "%Y-%m-%d").date()
+            nueva_fecha = datetime.strptime(
+                request.POST.get("nueva_fecha"), "%Y-%m-%d"
+            ).date()
         except ValueError:
             messages.error(request, "Fecha desde no válida.")
             return redirect("admin_eventos")
@@ -2026,7 +2377,9 @@ def gestionar_estado_evento(request, evento_id):
     nueva_fecha_hasta = None
     if request.POST.get("nueva_fecha_hasta"):
         try:
-            nueva_fecha_hasta = datetime.strptime(request.POST.get("nueva_fecha_hasta"), "%Y-%m-%d").date()
+            nueva_fecha_hasta = datetime.strptime(
+                request.POST.get("nueva_fecha_hasta"), "%Y-%m-%d"
+            ).date()
         except ValueError:
             messages.error(request, "Fecha hasta no válida.")
             return redirect("admin_eventos")
@@ -2038,13 +2391,21 @@ def gestionar_estado_evento(request, evento_id):
             nuevo_estado=request.POST.get("estado_evento"),
             observacion=request.POST.get("observacion", "").strip(),
             nueva_fecha=nueva_fecha,
-            nueva_fecha_hasta=nueva_fecha_hasta
+            nueva_fecha_hasta=nueva_fecha_hasta,
         )
         messages.success(request, f"✅ Estado de '{evento.nombre}' actualizado.")
     except ValueError as ve:
         messages.error(request, f"❌ {str(ve)}")
-    except Exception as e:
-        messages.error(request, f"❌ Error: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error gestionando estado de evento. user_id=%s evento_id=%s",
+            request.user.id,
+            evento_id,
+        )
+        messages.error(
+            request,
+            "❌ Ocurrió un error interno al gestionar el estado del evento.",
+        )
 
     return redirect("admin_eventos")
 
@@ -2064,13 +2425,21 @@ def cancelar_evento(request, evento_id):
             evento=evento,
             user=request.user,
             nuevo_estado=EstadoEvento.CANCELADO,
-            observacion=motivo
+            observacion=motivo,
         )
         messages.warning(request, f"⚠️ Evento '{evento.nombre}' ha sido cancelado.")
     except ValueError as ve:
         messages.error(request, f"❌ {str(ve)}")
-    except Exception as e:
-        messages.error(request, f"❌ Error: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error cancelando evento. user_id=%s evento_id=%s",
+            request.user.id,
+            evento_id,
+        )
+        messages.error(
+            request,
+            "❌ Ocurrió un error interno al cancelar el evento.",
+        )
 
     return redirect("admin_eventos")
 
@@ -2085,15 +2454,23 @@ def eliminar_evento(request, evento_id):
     try:
         perfil = request.user.userprofile
         evento = get_object_or_404(Evento, id=evento_id, institucion=perfil.institution)
-        
+
         EventoService.eliminar_evento(evento, request.user)
         messages.success(request, "✅ Evento eliminado correctamente.")
     except ValueError as ve:
         messages.error(request, f"❌ {str(ve)}")
-    except Exception as e:
-        messages.error(request, f"❌ Error al eliminar: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error eliminando evento. user_id=%s evento_id=%s",
+            request.user.id,
+            evento_id,
+        )
+        messages.error(
+            request,
+            "❌ Ocurrió un error interno al eliminar el evento.",
+        )
 
-    return redirect("admin_eventos")
+    return redirect("mis_eventos")
 
 
 @login_required
@@ -2114,7 +2491,7 @@ def detalle_evento(request, evento_id):
     )
 
     # Validar permisos según el tipo de usuario
-    if user_type not in ["fed_central", "superuser"]:
+    if user_type not in ["fed_central", "tecnologico"]:
         # fed_regional: solo eventos de su estado
         if user_type == "fed_regional":
             if evento.estado != perfil.estado:
@@ -2122,9 +2499,11 @@ def detalle_evento(request, evento_id):
                 return redirect("dashboard")
         # institucional: solo eventos públicos o de su institución
         elif user_type == "institucional":
-            evento_visible = EventoSelector.get_eventos_visibles(perfil).filter(
-                id=evento.id
-            ).exists()
+            evento_visible = (
+                EventoSelector.get_eventos_visibles(perfil)
+                .filter(id=evento.id)
+                .exists()
+            )
             if not evento_visible:
                 messages.error(request, "No tienes permiso para ver este evento.")
                 return redirect("eventos_disponibles")
@@ -2147,6 +2526,7 @@ def detalle_evento(request, evento_id):
 # ============================================
 # VISTAS AJAX PARA CARGAR UBICACIONES (UNIFICADO)
 # ============================================
+
 
 @login_required
 def ajax_municipios(request):
@@ -2189,7 +2569,6 @@ def ajax_parroquias(request):
         except (ValueError, TypeError):
             pass
     return JsonResponse([], safe=False)
-
 
 
 @login_required
@@ -2329,8 +2708,15 @@ def agregar_grupo(request):
                 )
                 return redirect("mis_grupos")
 
-        except Exception as e:
-            messages.error(request, f"❌ Error al crear el equipo: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error creando grupo legacy. user_id=%s",
+                request.user.id,
+            )
+            messages.error(
+                request,
+                "❌ Ocurrió un error interno al crear el equipo.",
+            )
             return render(
                 request,
                 "users/agregar_grupo.html",
@@ -2374,14 +2760,20 @@ def aprobar_institucion(request, institucion_id):
     institucion = get_object_or_404(Institucion, id=institucion_id)
 
     # Validación de Jurisdicción Regional
-    if perfil_admin.user_type == "fed_regional" and institucion.estado != perfil_admin.estado:
+    if (
+        perfil_admin.user_type == "fed_regional"
+        and institucion.estado != perfil_admin.estado
+    ):
         return JsonResponse(
-            {"status": "error", "message": f"No tienes permiso sobre sedes fuera de {perfil_admin.estado.nombre}."},
+            {
+                "status": "error",
+                "message": f"No tienes permiso sobre sedes fuera de {perfil_admin.estado.nombre}.",
+            },
             status=403,
         )
 
     try:
-        if institucion.estatus == 'pendiente':
+        if institucion.estatus == "pendiente":
             if InstitutionService.aprobar_primera_vez(institucion, request.user):
                 return JsonResponse(
                     {
@@ -2389,9 +2781,11 @@ def aprobar_institucion(request, institucion_id):
                         "message": f"Institución {institucion.nombre} aprobada con éxito. Código RNR: {institucion.codigo}",
                     }
                 )
-        
-        elif institucion.estatus == 'aprobado':
-            InstitutionService.toggle_status(institucion, is_active=True, admin_user=request.user)
+
+        elif institucion.estatus == "aprobado":
+            InstitutionService.toggle_status(
+                institucion, is_active=True, admin_user=request.user
+            )
             return JsonResponse(
                 {
                     "status": "success",
@@ -2400,15 +2794,26 @@ def aprobar_institucion(request, institucion_id):
             )
 
         return JsonResponse(
-            {"status": "error", "message": f"Estado no válido ({institucion.estatus})."},
-            status=400
+            {
+                "status": "error",
+                "message": f"Estado no válido ({institucion.estatus}).",
+            },
+            status=400,
         )
 
-    except PermissionDenied as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=403)
-    except Exception as e:
-        logger.error(f"Error en aprobar_institucion: {str(e)}")
-        return JsonResponse({"status": "error", "message": "Ocurrió un error interno."}, status=500)
+    except PermissionDenied:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "No tienes permisos para aprobar esta institución.",
+            },
+            status=403,
+        )
+    except Exception:
+        logger.exception("Error en aprobar_institucion")
+        return JsonResponse(
+            {"status": "error", "message": "Ocurrió un error interno."}, status=500
+        )
 
 
 @login_required
@@ -2428,86 +2833,108 @@ def desactivar_institucion(request, institucion_id):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"status": "success"})
         messages.warning(request, f"Acceso suspendido para: {inst.nombre}")
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    except Exception:
+        logger.exception(
+            "Error desactivando institucion. user_id=%s institucion_id=%s",
+            request.user.id,
+            institucion_id,
+        )
+        return JsonResponse(
+            {"status": "error", "message": "Ocurrió un error interno."},
+            status=500,
+        )
 
     return redirect("lista_instituciones")
 
 
 # 3. GESTIONAR CREDENCIALES (Cambio de contraseña)
 @admin_required
+@require_http_methods(["POST"])
 def gestionar_credenciales(request, institucion_id):
     inst = get_object_or_404(Institucion, id=institucion_id)
-    usuario = inst.usuarios.first()  # Suponiendo relación inversa
-    if request.method == "POST":
-        nueva_pass = request.POST.get("password")
-        usuario.set_password(nueva_pass)
-        usuario.save()
-        messages.success(request, "Contraseña actualizada correctamente.")
+    usuario = inst.usuario
+
+    if not usuario:
+        messages.error(
+            request,
+            "No se pudo actualizar las credenciales de esta institucion.",
+        )
         return redirect("lista_instituciones")
-    return render(
-        request,
-        "users/gestionar_credenciales.html",
-        {"institucion": inst, "usuario": usuario},
-    )
+
+    form = InstitucionCredentialAdminForm(request.POST, target_user=usuario)
+    if not form.is_valid():
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+        return redirect("lista_instituciones")
+
+    try:
+        usuario.set_password(form.cleaned_data["password"])
+        usuario.save(update_fields=["password"])
+        logger.info(
+            "Cambio administrativo de credenciales de institucion",
+            extra={
+                "actor_user_id": request.user.id,
+                "target_user_id": usuario.id,
+                "institucion_id": inst.id,
+            },
+        )
+        messages.success(request, "Credenciales actualizadas correctamente.")
+    except Exception:
+        logger.exception(
+            "Error al actualizar credenciales administrativas",
+            extra={"actor_user_id": request.user.id, "institucion_id": inst.id},
+        )
+        messages.error(
+            request,
+            "No se pudo actualizar las credenciales de esta institucion.",
+        )
+
+    return redirect("lista_instituciones")
 
 
 @admin_or_owner_required
+@require_http_methods(["POST"])
 def editar_institucion_modal(request, institucion_id):
     Institucion = apps.get_model("registry", "Institucion")
     inst = get_object_or_404(Institucion, id=institucion_id)
+    user_vinculado = inst.usuario
+    form = InstitucionModalEditForm(
+        request.POST,
+        instance=inst,
+        target_user=user_vinculado,
+    )
 
-    if request.method == "POST":
-        try:
-            # 1. Actualización de datos de la Institución
-            # Usamos or inst.nombre por si el campo llega vacío en el formulario
-            inst.nombre = (request.POST.get("nombre") or inst.nombre).upper()
-            inst.email = (request.POST.get("email") or inst.email).lower()
-            inst.direccion = request.POST.get("direccion") or inst.direccion
+    if not form.is_valid():
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+        return redirect("lista_instituciones")
 
-            # RIF (Letra + Número)
-            rif_letra = request.POST.get("rif_letra")
-            rif_num = request.POST.get("rif_numero")
-            if rif_letra and rif_num:
-                inst.rif = f"{rif_letra}-{rif_num}"
+    try:
+        form.save()
 
-            # Teléfono (Código + Número)
-            cod_area = request.POST.get("modal_cod_area")
-            num_puro = request.POST.get("modal_num_puro")
-            if cod_area and num_puro:
-                inst.telefono = f"{cod_area}{num_puro}"
+        if user_vinculado:
+            user_vinculado.email = inst.email
+            nueva_clave = form.cleaned_data.get("new_password")
+            if nueva_clave:
+                user_vinculado.set_password(nueva_clave)
+                messages.info(
+                    request,
+                    f"Credenciales de {user_vinculado.username} actualizadas correctamente.",
+                )
+            user_vinculado.save()
 
-            inst.save()
-            print(f"[VISTA] Institución {inst.id} guardada exitosamente.")
-
-            # 2. Sincronización con el Usuario de Django
-            user_vinculado = User.objects.filter(username=inst.codigo).first()
-            if user_vinculado:
-                user_vinculado.email = inst.email
-
-                nueva_clave = request.POST.get("new_password")
-                confirm_clave = request.POST.get("confirm_password")
-
-                if nueva_clave:
-                    if nueva_clave == confirm_clave:
-                        user_vinculado.set_password(nueva_clave)
-                        messages.info(
-                            request,
-                            f"Contraseña de {user_vinculado.username} actualizada.",
-                        )
-                    else:
-                        messages.warning(
-                            request, "Sede guardada, pero las claves no coinciden."
-                        )
-
-                user_vinculado.save()
-
-            messages.success(request, f"Sede {inst.nombre} actualizada correctamente.")
-
-        except Exception as e:
-            print(f"[ERROR EN VISTA] {str(e)}")
-            messages.error(request, f"Error al guardar: {str(e)}")
-
+        messages.success(request, f"Sede {inst.nombre} actualizada correctamente.")
+    except Exception:
+        logger.exception(
+            "Error al editar institucion desde modal",
+            extra={"institucion_id": institucion_id, "actor_user_id": request.user.id},
+        )
+        messages.error(
+            request,
+            "No se pudo actualizar la institucion. Intenta nuevamente.",
+        )
     return redirect("lista_instituciones")
 
 
@@ -2633,25 +3060,36 @@ def detalle_evento_institucion(request, evento_id):
     # Evento propio: institucional de esta institución, o de club creado por esta institución
     es_propio = Evento.objects.filter(
         Q(institucion=institucion)
-        | Q(club_organizador__isnull=False, creado_por__userprofile__institution=institucion),
+        | Q(
+            club_organizador__isnull=False,
+            creado_por__userprofile__institution=institucion,
+        ),
         id=evento_id,
     ).exists()
 
-    es_visible = EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).exists()
+    es_visible = (
+        EventoSelector.get_eventos_visibles(user_profile).filter(id=evento_id).exists()
+    )
 
     if not es_propio and not es_visible:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
         return redirect("eventos_disponibles")
 
     evento = get_object_or_404(
-        Evento.objects.select_related("estado", "municipio", "parroquia", "institucion"),
+        Evento.objects.select_related(
+            "estado", "municipio", "parroquia", "institucion"
+        ),
         id=evento_id,
     )
 
     # Solo mostrar inscripciones de la propia institución
-    inscripciones = evento.inscripciones_grupo.filter(
-        grupo__usuario_creador__userprofile__institution=institucion
-    ).select_related("grupo").prefetch_related("grupo__tutores")
+    inscripciones = (
+        evento.inscripciones_grupo.filter(
+            grupo__usuario_creador__userprofile__institution=institucion
+        )
+        .select_related("grupo")
+        .prefetch_related("grupo__tutores")
+    )
 
     context = {
         "evento": evento,
@@ -2676,9 +3114,9 @@ def ajax_dependencias(request):
 def mi_perfil(request):
     """Redirige al perfil adecuado segun el rol del usuario"""
     perfil = request.user.userprofile
-    if perfil.user_type == 'institucional':
-        return redirect('mi_perfil_institucional')
-    return redirect('mi_perfil_federacion')
+    if perfil.user_type == "institucional":
+        return redirect("mi_perfil_institucional")
+    return redirect("mi_perfil_federacion")
 
 
 @login_required
@@ -2705,17 +3143,25 @@ def mi_perfil_institucional(request):
             )
         elif form_type == "editar_perfil":
             try:
-                institucion = Institucion.objects.filter(userprofile__user=usuario).first()
+                institucion = Institucion.objects.filter(
+                    userprofile__user=usuario
+                ).first()
                 if institucion:
                     InstitutionService.actualizar_institucion(
-                        institucion=institucion,
-                        data=request.POST
+                        institucion=institucion, data=request.POST
                     )
                     messages.success(request, "Perfil actualizado correctamente.")
                 else:
                     messages.error(request, "No se encontró la institución asociada.")
-            except Exception as e:
-                messages.error(request, f"Error al actualizar: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error actualizando perfil institucional. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "No se pudo actualizar el perfil institucional. Intenta nuevamente.",
+                )
             return redirect("mi_perfil_institucional")
 
     institucion = Institucion.objects.filter(userprofile__user=usuario).first()
@@ -2731,7 +3177,6 @@ def mi_perfil_institucional(request):
         "estados": Estado.objects.all().order_by("nombre"),
     }
     return render(request, "users/mi_perfil.html", context)
-
 
 
 @login_required
@@ -2752,25 +3197,38 @@ def mis_grupos(request):
                     usuario=usuario,
                     nuevo_nombre=request.POST.get("nombre_grupo"),
                     eliminar_indices=request.POST.getlist("eliminar_participante"),
-                    nuevas_cedulas=request.POST.getlist("nuevo_participante_cedula[]")
+                    nuevas_cedulas=request.POST.getlist("nuevo_participante_cedula[]"),
                 )
-                messages.success(request, f"El equipo ha sido actualizado correctamente.")
+                messages.success(
+                    request, "El equipo ha sido actualizado correctamente."
+                )
             else:
                 GrupoService.crear_grupo(
                     usuario=usuario,
                     nombre_grupo=request.POST.get("nombre_grupo"),
                     tutor_id=request.POST.get("tutores[]"),
-                    cedulas_participantes=request.POST.getlist("participante_cedulas[]")
+                    cedulas_participantes=request.POST.getlist(
+                        "participante_cedulas[]"
+                    ),
                 )
-                messages.success(request, f"¡El equipo ha sido registrado!")
-            
+                messages.success(request, "¡El equipo ha sido registrado!")
+
             return redirect("mis_grupos")
 
         except ValueError as ve:
             messages.error(request, str(ve))
             return redirect("mis_grupos")
-        except Exception as e:
-            messages.error(request, f"Error en la operación: {str(e)}")
+        except Exception:
+            logger.exception(
+                "Error operando sobre mis_grupos. user_id=%s accion=%s grupo_id=%s",
+                request.user.id,
+                accion,
+                grupo_id,
+            )
+            messages.error(
+                request,
+                "No se pudo completar la operación sobre el equipo. Intenta nuevamente.",
+            )
             return redirect("mis_grupos")
 
     # LÓGICA GET
@@ -2787,15 +3245,30 @@ def mis_grupos(request):
     return render(request, "users/mis_grupos.html", context)
 
 
+@login_required
+@require_http_methods(["GET"])
 def api_buscar_participante(request, cedula):
     """
     API para buscar personas por cédula.
     Busca primero en Participantes, luego en Tutores.
     Retorna los datos encontrados para autocompletar formularios.
     """
-    # 1. Buscar en el modelo Participante
+    perfil = request.user.userprofile
+    user_type = getattr(perfil, "user_type", None)
+    cedula_limpia = "".join(filter(str.isdigit, cedula or ""))
+
+    if user_type not in ["institucional", "fed_central", "fed_regional", "tecnologico"]:
+        return JsonResponse({"encontrado": False}, status=403)
+
+    if len(cedula_limpia) < 5:
+        return JsonResponse({"encontrado": False})
+
+    participantes = ParticipanteSelector.get_participantes_para_perfil(perfil).filter(
+        cedula=cedula_limpia
+    )
+
     try:
-        p = Participante.objects.get(cedula=cedula)
+        p = participantes.get()
         return JsonResponse(
             {
                 "encontrado": True,
@@ -2813,7 +3286,22 @@ def api_buscar_participante(request, cedula):
     try:
         from registry.models import Tutor
 
-        t = Tutor.objects.get(cedula=cedula, status="activo")
+        tutor_query = Tutor.objects.filter(cedula=cedula_limpia)
+        if user_type == "institucional" and perfil.institution:
+            tutor_query = tutor_query.filter(
+                vinculaciones__institucion=perfil.institution,
+                vinculaciones__status="activo",
+            )
+        elif user_type == "fed_regional" and perfil.estado:
+            tutor_query = tutor_query.filter(
+                Q(vinculaciones__estado=perfil.estado)
+                | Q(vinculaciones__institucion__estado=perfil.estado),
+                vinculaciones__status="activo",
+            )
+        else:
+            tutor_query = tutor_query.filter(vinculaciones__status="activo")
+
+        t = tutor_query.distinct().get()
         return JsonResponse(
             {
                 "encontrado": True,
@@ -2822,9 +3310,6 @@ def api_buscar_participante(request, cedula):
                 "nombre": t.nombres,
                 "apellido": t.apellidos,
                 "edad": None,
-                "telefono": t.telefono,
-                "email": t.email,
-                "institucion": t.institucion.nombre if t.institucion else None,
             }
         )
     except (Tutor.DoesNotExist, ImportError):
@@ -2897,16 +3382,28 @@ def dashboard_central(request):
     return render(request, "users/dashboard_central.html", context)
 
 
+@login_required
 def registrar_club(request):
-    if request.method == "POST":
-        form = ClubRegistrationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("lista_clubes")
-    else:
-        form = ClubRegistrationForm()
+    """
+    Ruta legacy conservada por compatibilidad.
+    Redirige al flujo oficial de creacion de clubes dentro del modulo registry.
+    """
+    perfil = getattr(request.user, "userprofile", None)
+    if not perfil:
+        messages.error(request, "No tienes un perfil configurado.")
+        return redirect("dashboard")
 
-    return render(request, "registrar_club.html", {"form": form})
+    if perfil.user_type not in ["institucional", "fed_central", "fed_regional"]:
+        messages.error(request, "No tienes permiso para crear clubes.")
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        messages.info(
+            request,
+            "La ruta anterior de registro fue reemplazada por el flujo oficial de clubes.",
+        )
+
+    return redirect("crear_club")
 
 
 @login_required
@@ -2915,9 +3412,7 @@ def registrar_sede(request):
     perfil_usuario = request.user.userprofile
 
     # Verificamos permisos de forma estricta
-    is_admin_central = (
-        perfil_usuario.user_type == "fed_central" or request.user.is_superuser
-    )
+    is_admin_central = perfil_usuario.user_type == "fed_central"
 
     if not is_admin_central:
         messages.error(
@@ -2937,14 +3432,14 @@ def registrar_sede(request):
                     user_type="fed_regional",
                     estado=form.cleaned_data["estado"],
                     phone=f"{form.cleaned_data['codigo_area']}{form.cleaned_data['numero_telefono']}",
-                    cedula=form.cleaned_data["cedula"]
+                    cedula=form.cleaned_data["cedula"],
                 )
-                
+
                 # Guardar nombres y apellidos en el objeto User de Django
                 user.first_name = form.cleaned_data["nombres"].upper()
                 user.last_name = form.cleaned_data["apellidos"].upper()
-                user.save(update_fields=['first_name', 'last_name'])
-                
+                user.save(update_fields=["first_name", "last_name"])
+
                 # Activar usuario inmediatamente
                 IdentityService.toggle_user_status(user, is_active=True)
 
@@ -2953,8 +3448,15 @@ def registrar_sede(request):
                     f"✅ ¡Éxito! Nodo Regional {profile.estado.nombre} activado correctamente.",
                 )
                 return redirect("gestionar_sedes")
-            except Exception as e:
-                messages.error(request, f"❌ Error al crear la sede: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando sede regional. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "❌ Ocurrió un error interno al crear la sede regional.",
+                )
         else:
             # Mostrar errores de validación
             for field, errors in form.errors.items():
@@ -2978,21 +3480,33 @@ def registrar_sede(request):
 
 @login_required
 def gestionar_usuarios_sedes(request):
-    if (
-        not request.user.is_superuser
-        and request.user.userprofile.user_type != "fed_central"
-    ):
+    if request.user.userprofile.user_type != "fed_central":
         return redirect("dashboard")
 
-    sedes = UserProfile.objects.filter(user_type="fed_regional").select_related(
+    estados = Estado.objects.all()
+
+    todas_sedes = UserProfile.objects.filter(user_type="fed_regional").select_related(
         "user", "estado"
     )
-    estados = Estado.objects.all()
+
+    total_sedes = todas_sedes.count()
+    sedes_activas = todas_sedes.filter(user__is_active=True).count()
+
+    disponibilidad_sistema = (
+        round((sedes_activas / total_sedes * 100), 1) if total_sedes > 0 else 100.0
+    )
 
     return render(
         request,
         "users/gestionar_sedes.html",
-        {"sedes": sedes, "estados": estados, "es_central": True},
+        {
+            "sedes": todas_sedes,
+            "estados": estados,
+            "es_central": True,
+            "disponibilidad_sistema": disponibilidad_sistema,
+            "sedes_activas": sedes_activas,
+            "total_sedes": total_sedes,
+        },
     )
 
 
@@ -3008,7 +3522,9 @@ def editar_sede_regional(request, user_id):
 
     # Preparar datos base para re-renderizar en caso de error
     def render_with_errors(error_msg):
-        sedes = UserProfile.objects.filter(user_type="fed_regional").select_related("user", "estado")
+        sedes = UserProfile.objects.filter(user_type="fed_regional").select_related(
+            "user", "estado"
+        )
         estados = Estado.objects.all()
         return render(
             request,
@@ -3019,7 +3535,7 @@ def editar_sede_regional(request, user_id):
                 "es_central": True,
                 "modal_error": error_msg,
                 "edit_user_id": user_id,
-                "edit_data": request.POST
+                "edit_data": request.POST,
             },
         )
 
@@ -3031,20 +3547,31 @@ def editar_sede_regional(request, user_id):
         if new_password:
             # A. Coincidencia
             if new_password != confirm_password:
-                return render_with_errors("❌ Las contraseñas no coinciden. No se ha realizado ningún cambio.")
-            
+                return render_with_errors(
+                    "❌ Las contraseñas no coinciden. No se ha realizado ningún cambio."
+                )
+
             # B. Longitud mínima
             if len(new_password) < 8:
-                return render_with_errors("❌ La contraseña es demasiado corta. Debe tener al menos 8 caracteres.")
-            
+                return render_with_errors(
+                    "❌ La contraseña es demasiado corta. Debe tener al menos 8 caracteres."
+                )
+
             # C. Complejidad (Mayúsculas, Minúsculas, Especiales)
             import re
+
             if not re.search(r"[A-Z]", new_password):
-                return render_with_errors("❌ La contraseña debe contener al menos una letra mayúscula.")
+                return render_with_errors(
+                    "❌ La contraseña debe contener al menos una letra mayúscula."
+                )
             if not re.search(r"[a-z]", new_password):
-                return render_with_errors("❌ La contraseña debe contener al menos una letra minúscula.")
+                return render_with_errors(
+                    "❌ La contraseña debe contener al menos una letra minúscula."
+                )
             if not re.search(r"[!@#$%^&*(),.?\":{}|<>\-_]", new_password):
-                return render_with_errors("❌ La contraseña debe contener al menos un caracter especial o un guión.")
+                return render_with_errors(
+                    "❌ La contraseña debe contener al menos un caracter especial o un guión."
+                )
 
         # 2. Si las contraseñas coinciden y cumplen requisitos (o están vacías), proceder
         first_name = request.POST.get("first_name")
@@ -3055,19 +3582,21 @@ def editar_sede_regional(request, user_id):
 
         # Validar campos obligatorios
         if not first_name or not last_name or not email:
-            return render_with_errors("❌ Los campos Nombres, Apellidos y Correo son obligatorios.")
+            return render_with_errors(
+                "❌ Los campos Nombres, Apellidos y Correo son obligatorios."
+            )
 
         # Actualizar datos de User
         user_to_edit.first_name = first_name.upper()
         user_to_edit.last_name = last_name.upper()
         user_to_edit.email = email.lower()
-        
+
         # Aplicar contraseña si fue proporcionada
         msg_password = ""
         if new_password:
             user_to_edit.set_password(new_password)
             msg_password = " y contraseña"
-            
+
         user_to_edit.save()
 
         # Actualizar datos de Profile
@@ -3075,9 +3604,19 @@ def editar_sede_regional(request, user_id):
             profile.phone = f"{cod_area}{phone_num}"
         profile.save()
 
-        messages.success(request, f"✅ Datos{msg_password} de {user_to_edit.get_full_name() or user_to_edit.username} actualizados.")
-    except Exception as e:
-        return render_with_errors(f"❌ Error al actualizar: {str(e)}")
+        messages.success(
+            request,
+            f"✅ Datos{msg_password} de {user_to_edit.get_full_name() or user_to_edit.username} actualizados.",
+        )
+    except Exception:
+        logger.exception(
+            "Error editando sede regional. user_id=%s target_user_id=%s",
+            request.user.id,
+            user_id,
+        )
+        return render_with_errors(
+            "❌ Ocurrió un error interno al actualizar la sede regional."
+        )
 
     return redirect("gestionar_sedes")
 
@@ -3115,7 +3654,7 @@ def mi_perfil_federacion(request):
             perfil.phone = request.POST.get("telefono")
 
             # Solo el superusuario o central puede cambiarse de estado
-            if perfil.user_type in ["fed_central", "superuser"]:
+            if perfil.user_type == "fed_central":
                 nuevo_estado_id = request.POST.get("estado")
                 if nuevo_estado_id:
                     perfil.estado = Estado.objects.get(id=nuevo_estado_id)
@@ -3133,7 +3672,7 @@ def mi_perfil_federacion(request):
         "password_form": password_form,
         "open_password_modal": open_password_modal,
         # Para el menú lateral
-        "es_central": perfil.user_type in ["fed_central", "superuser"],
+        "es_central": perfil.user_type == "fed_central",
         "es_regional": perfil.user_type == "fed_regional",
     }
     return render(request, "users/perfil_federacion.html", context)
@@ -3141,26 +3680,68 @@ def mi_perfil_federacion(request):
 
 # Vista para eliminar (AJAX o POST directo)
 @login_required
+@fed_central_required
+@require_POST
 def eliminar_sede(request, user_id):
-    if request.user.is_superuser or request.user.userprofile.user_type == "fed_central":
-        user_to_delete = get_object_or_404(User, id=user_id)
-        nombre = user_to_delete.get_full_name()
-        user_to_delete.delete()
-        messages.success(
-            request, f"La sede de {nombre} ha sido eliminada permanentemente."
+    profile_to_delete = get_object_or_404(
+        UserProfile.objects.select_related("user", "estado"),
+        user_id=user_id,
+        user_type="fed_regional",
+    )
+    user_to_delete = profile_to_delete.user
+
+    if request.user.id == user_to_delete.id:
+        messages.error(
+            request, "No puedes eliminar tu propia sede desde esta pantalla."
         )
+        return redirect("gestionar_sedes")
+
+    nombre = user_to_delete.get_full_name() or user_to_delete.username
+    estado_nombre = (
+        profile_to_delete.estado.nombre if profile_to_delete.estado else "Sin estado"
+    )
+
+    LogEntry.objects.log_action(
+        user_id=request.user.id,
+        content_type_id=ContentType.objects.get_for_model(User).pk,
+        object_id=str(user_to_delete.pk),
+        object_repr=user_to_delete.get_username(),
+        action_flag=DELETION,
+        change_message=(
+            f"Sede regional eliminada: {nombre} ({user_to_delete.username}) - {estado_nombre}"
+        ),
+    )
+    logger.info(
+        "Sede regional eliminada",
+        extra={
+            "actor_user_id": request.user.id,
+            "target_user_id": user_to_delete.id,
+            "target_username": user_to_delete.username,
+            "target_estado": estado_nombre,
+        },
+    )
+
+    user_to_delete.delete()
+    messages.success(request, f"La sede de {nombre} ha sido eliminada permanentemente.")
     return redirect("gestionar_sedes")
 
 
+@login_required
 def participante_detail(request, pk):
     """Muestra una vista compacta del participante (legacy)."""
-    participante = get_object_or_404(Participante, pk=pk)
+    participante = get_object_or_404(
+        ParticipanteSelector.get_participantes_visibles_para_usuario(request.user),
+        pk=pk,
+    )
     return render(request, "users/participante_detail.html", {"p": participante})
 
 
 @login_required
 def participante_edit(request, pk):
-    participante = get_object_or_404(Participante, pk=pk)
+    participante = get_object_or_404(
+        ParticipanteSelector.get_participantes_visibles_para_usuario(request.user),
+        pk=pk,
+    )
     if request.method == "POST":
         form = ParticipanteModalEditForm(request.POST, instance=participante)
         if form.is_valid():
@@ -3174,13 +3755,65 @@ def participante_edit(request, pk):
     return redirect("lista_participantes")
 
 
+@login_required
+@require_http_methods(["POST"])
+def cambiar_estado_participante(request, pk):
+    """
+    Cambia el status de la vinculación ParticipanteInstitucion para la institución
+    del usuario autenticado. Solo accesible por usuarios institucionales.
+    """
+    perfil = request.user.userprofile
+    if perfil.user_type != "institucional" or not perfil.institution:
+        return JsonResponse({"success": False, "error": "Sin permiso."}, status=403)
+
+    vinculacion = get_object_or_404(
+        ParticipanteInstitucion,
+        participante_id=pk,
+        institucion=perfil.institution,
+    )
+
+    nuevo_status = request.POST.get("status")
+    if nuevo_status not in ["activo", "inactivo", "suspendido"]:
+        return JsonResponse({"success": False, "error": "Estado no válido."}, status=400)
+
+    try:
+        vinculacion.status = nuevo_status
+        if nuevo_status != "activo":
+            from django.utils import timezone
+            vinculacion.fecha_desvinculacion = timezone.now()
+        else:
+            vinculacion.fecha_desvinculacion = None
+        vinculacion.save(update_fields=["status", "fecha_desvinculacion"])
+        return JsonResponse({
+            "success": True,
+            "nuevo_status": nuevo_status,
+            "message": f"Participante {'habilitado' if nuevo_status == 'activo' else 'suspendido'} correctamente.",
+        })
+    except Exception:
+        logger.exception(
+            "Error cambiando estado de participante. user_id=%s participante_id=%s",
+            request.user.id, pk,
+        )
+        return JsonResponse({"success": False, "error": "Error interno."}, status=500)
+
+
+@login_required
+@require_POST
 def participante_delete(request, pk):
-    """Elimina el registro mediante POST"""
-    if request.method == "POST":
-        participante = get_object_or_404(Participante, pk=pk)
-        nombre = f"{participante.nombres} {participante.apellidos}"
-        participante.delete()
-        messages.success(request, f"El registro de {nombre} ha sido eliminado.")
+    """Elimina el registro del padrón. Exclusivo para fed_central."""
+    perfil = request.user.userprofile
+    if perfil.user_type not in ["fed_central", "tecnologico"]:
+        logger.warning(
+            "Intento de eliminación de participante sin permiso. user_id=%s user_type=%s participante_id=%s",
+            request.user.id, perfil.user_type, pk,
+        )
+        messages.error(request, "❌ No tienes permiso para eliminar participantes del padrón.")
+        return redirect("lista_participantes")
+
+    participante = get_object_or_404(Participante, pk=pk)
+    nombre = f"{participante.nombres} {participante.apellidos}"
+    participante.delete()
+    messages.success(request, f"El registro de {nombre} ha sido eliminado.")
     return redirect("lista_participantes")
 
 
@@ -3192,21 +3825,29 @@ def detalle_evento_gestion(request, evento_id):
     try:
         # Obtener el perfil del usuario para verificar permisos
         user_profile = request.user.userprofile
-        
+
         # fed_central puede ver todos los eventos
-        if user_profile.user_type == 'fed_central':
+        if user_profile.user_type == "fed_central":
             evento = get_object_or_404(Evento, id=evento_id)
         else:
             # Usuarios institucionales: pueden ver eventos propios (institucionales o de club)
             institution = user_profile.institution
-            evento = Evento.objects.filter(
-                Q(institucion=institution) |
-                Q(club_organizador__institucion_creadora=institution)
-            ).filter(id=evento_id).first()
+            evento = (
+                Evento.objects.filter(
+                    Q(institucion=institution)
+                    | Q(club_organizador__institucion_creadora=institution)
+                )
+                .filter(id=evento_id)
+                .first()
+            )
             if not evento:
                 raise Evento.DoesNotExist
-        
-        inscripciones = evento.inscripciones_grupo.all().select_related("grupo").prefetch_related("grupo__tutores")
+
+        inscripciones = (
+            evento.inscripciones_grupo.all()
+            .select_related("grupo", "grupo__institucion")
+            .prefetch_related("grupo__tutores")
+        )
 
         context = {
             "evento": evento,
@@ -3218,12 +3859,17 @@ def detalle_evento_gestion(request, evento_id):
 
     except Evento.DoesNotExist:
         messages.error(request, "El evento no existe o no tienes permiso para verlo.")
-        return redirect("admin_eventos" if EventoSelector.es_rector_eventos(user_profile) else "mis_eventos")
+        return redirect(
+            "admin_eventos"
+            if EventoSelector.es_rector_eventos(user_profile)
+            else "mis_eventos"
+        )
 
 
 # ============================================
 # API ENDPOINTS
 # ============================================
+
 
 @login_required
 def api_participantes_grupo(request, grupo_id):
@@ -3233,62 +3879,83 @@ def api_participantes_grupo(request, grupo_id):
     try:
         # Obtener el perfil del usuario para verificar permisos
         user_profile = request.user.userprofile
-        
+
         # fed_central puede ver todos los grupos
-        if user_profile.user_type == 'fed_central':
+        if user_profile.user_type == "fed_central":
             grupo = get_object_or_404(Grupo, id=grupo_id)
         else:
             # Para usuarios institucionales, verificar si tienen acceso al grupo
             # a través de un evento que pueden ver (según reglas de audiencia)
             grupo = Grupo.objects.filter(id=grupo_id).first()
             if not grupo:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'El grupo no existe.'
-                }, status=404)
-            
+                return JsonResponse(
+                    {"success": False, "error": "El grupo no existe."}, status=404
+                )
+
             institucion = user_profile.institution
             # RESTRICCIÓN DE SEGURIDAD: Solo permitir ver participantes si el grupo pertenece a la institución del usuario
             if grupo.usuario_creador.userprofile.institution != institucion:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'No tienes permiso para ver los participantes de este grupo.'
-                }, status=403)
-        
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "No tienes permiso para ver los participantes de este grupo.",
+                    },
+                    status=403,
+                )
+
         # Obtener participantes con sus datos
-        participantes = grupo.participantes.all().order_by('apellidos', 'nombres')
-        
+        participantes = grupo.participantes.all().order_by("apellidos", "nombres")
+
         # Construir respuesta JSON
         participantes_data = []
         for participante in participantes:
-            participantes_data.append({
-                'id': str(participante.id),
-                'nombre': participante.nombres,
-                'apellido': participante.apellidos,
-                'cedula': f"{participante.nacionalidad}-{participante.cedula}" if participante.cedula else (participante.cedula_escolar or '-'),
-                'edad': participante.edad,
-                'sexo': participante.get_sexo_display() if participante.sexo else '-',
-                'grado': participante.get_grado_escolar_display(),
-                'telefono': participante.telefono_completo,
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'participantes': participantes_data,
-            'total': len(participantes_data),
-            'grupo_nombre': grupo.nombre
-        })
-        
+            participantes_data.append(
+                {
+                    "id": str(participante.id),
+                    "nombre": participante.nombres,
+                    "apellido": participante.apellidos,
+                    "cedula": f"{participante.nacionalidad}-{participante.cedula}"
+                    if participante.cedula
+                    else (participante.cedula_escolar or "-"),
+                    "edad": participante.edad,
+                    "sexo": participante.get_sexo_display()
+                    if participante.sexo
+                    else "-",
+                    "grado": participante.get_grado_escolar_display(),
+                    "telefono": participante.telefono_completo,
+                }
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "participantes": participantes_data,
+                "total": len(participantes_data),
+                "grupo_nombre": grupo.nombre,
+            }
+        )
+
     except Grupo.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'El grupo no existe o no tienes permiso para verlo.'
-        }, status=404)
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error interno del servidor: {str(e)}'
-        }, status=500)
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "El grupo no existe o no tienes permiso para verlo.",
+            },
+            status=404,
+        )
+    except Exception:
+        logger.exception(
+            "Error obteniendo participantes de grupo. user_id=%s grupo_id=%s",
+            request.user.id,
+            grupo_id,
+        )
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Ocurrió un error interno al consultar los participantes del grupo.",
+            },
+            status=500,
+        )
 
 
 @login_required
@@ -3309,7 +3976,9 @@ def detalle_institucion_api(request, institucion_id):
 
         # Verificar territorio mediante Selector
         if user_type == "fed_regional" and institucion.estado != perfil.estado:
-            return JsonResponse({"error": "No tienes permiso sobre esta región"}, status=403)
+            return JsonResponse(
+                {"error": "No tienes permiso sobre esta región"}, status=403
+            )
 
         # Construir respuesta
         # Para particulares, usar cédula en lugar de RIF
@@ -3330,13 +3999,19 @@ def detalle_institucion_api(request, institucion_id):
 
         # Obtener usuario vinculado
         usuario_username = institucion.usuario.username if institucion.usuario else None
-        
+
         # Obtener dependencia_rel
-        dependencia_rel_nombre = institucion.dependencia_rel.nombre if institucion.dependencia_rel else None
-        
+        dependencia_rel_nombre = (
+            institucion.dependencia_rel.nombre if institucion.dependencia_rel else None
+        )
+
         # Obtener fecha de eliminación si aplica
-        fecha_elim = institucion.fecha_eliminacion.strftime("%d/%m/%Y %H:%M") if institucion.fecha_eliminacion else None
-        
+        fecha_elim = (
+            institucion.fecha_eliminacion.strftime("%d/%m/%Y %H:%M")
+            if institucion.fecha_eliminacion
+            else None
+        )
+
         data = {
             "nombre": nombre_completo,
             "codigo": institucion.codigo or "N/A",
@@ -3391,11 +4066,17 @@ def detalle_institucion_api(request, institucion_id):
 
     except Institucion.DoesNotExist:
         return JsonResponse({"error": "Institución no encontrada"}, status=404)
-    except Exception as e:
-        import traceback
-
+    except Exception:
+        logger.exception(
+            "Error obteniendo detalle de institucion via API. user_id=%s institucion_id=%s",
+            request.user.id,
+            institucion_id,
+        )
         return JsonResponse(
-            {"error": str(e), "traceback": traceback.format_exc()}, status=500
+            {
+                "error": "Ocurrió un error interno al obtener el detalle de la institución."
+            },
+            status=500,
         )
 
 
@@ -3412,7 +4093,15 @@ def toggle_submenu(request):
         return HttpResponse(status=400)
 
     # Generar slug del label (mismo método que en context_processor)
-    slug = label.lower().replace(" ", "-").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+    slug = (
+        label.lower()
+        .replace(" ", "-")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
 
     # Toggle en sesión
     expanded = request.session.get("expanded_submenus", [])
@@ -3425,6 +4114,7 @@ def toggle_submenu(request):
 
     # Re-renderizar el sidebar con el nuevo estado
     from users.context_processors import sidebar_menu
+
     context = sidebar_menu(request)
     html = render_to_string("users/partials/_sidebar.html", context, request=request)
     return HttpResponse(html)
@@ -3433,6 +4123,7 @@ def toggle_submenu(request):
 # ============================================
 # ASISTENCIA A EVENTOS
 # ============================================
+
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -3452,16 +4143,28 @@ def registro_asistencia(request, evento_id):
         institucion = perfil.institution
         es_organizador = (
             evento.institucion == institucion
-            or (evento.club_organizador and evento.club_organizador.institucion_creadora == institucion)
-            or (evento.creado_por and evento.creado_por.userprofile.institution == institucion)
+            or (
+                evento.club_organizador
+                and evento.club_organizador.institucion_creadora == institucion
+            )
+            or (
+                evento.creado_por
+                and evento.creado_por.userprofile.institution == institucion
+            )
         )
         if not es_organizador:
-            messages.error(request, "No tienes permiso para gestionar la asistencia de este evento.")
+            messages.error(
+                request,
+                "No tienes permiso para gestionar la asistencia de este evento.",
+            )
             return redirect("mis_eventos")
 
     # Solo disponible en en_proceso o finalizado
     if evento.estado_evento not in [EstadoEvento.EN_PROCESO, EstadoEvento.FINALIZADO]:
-        messages.warning(request, "La asistencia solo puede registrarse cuando el evento está En Proceso o Finalizado.")
+        messages.warning(
+            request,
+            "La asistencia solo puede registrarse cuando el evento está En Proceso o Finalizado.",
+        )
         return redirect("detalle_evento_gestion", evento_id=evento_id)
 
     if request.method == "POST":
@@ -3504,5 +4207,3 @@ def registro_asistencia(request, evento_id):
         "puede_editar": evento.estado_evento == EstadoEvento.EN_PROCESO,
     }
     return render(request, "users/registro_asistencia.html", context)
-
-

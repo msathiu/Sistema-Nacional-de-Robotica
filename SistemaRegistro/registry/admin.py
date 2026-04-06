@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from django.utils import timezone
 import openpyxl
 from django.contrib import admin
 from django.contrib.admin.exceptions import NotRegistered
@@ -364,7 +363,7 @@ class InstitucionAdmin(admin.ModelAdmin):
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         response["Content-Disposition"] = (
-            f'attachment; filename="instituciones_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+            f'attachment; filename="instituciones_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
         )
         wb.save(response)
         return response

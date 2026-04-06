@@ -1,8 +1,9 @@
 import logging
-from datetime import datetime
+from django.utils import timezone
 from django.db.models import Count, F, Q
 from django.db.models.functions import Coalesce, ExtractMonth
 from registry.models import (
+    EstadoEvento,
     Participante,
     Institucion,
     Club,
@@ -92,7 +93,7 @@ class ReportService:
         total_tutores = tutor_inst_qs.values("tutor_id").distinct().count()
 
         # 5. Curva de Inscripción Mensual (Año Actual)
-        year_actual = datetime.now().year
+        year_actual = timezone.now().year
         registros_por_mes = (
             Institucion.objects.filter(filtros_inst, fecha_registro__year=year_actual)
             .annotate(mes=ExtractMonth("fecha_registro"))
@@ -268,7 +269,7 @@ class ReportService:
         """
         Calcula métricas específicas para una institución.
         """
-        hoy = datetime.now().date()
+        hoy = timezone.now().date()
         
         # Agregaciones para institución
         mis_grupos = Grupo.objects.filter(usuario_creador=user, activo=True)
@@ -324,6 +325,44 @@ class ReportService:
             Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
         ).distinct().count()
 
+        # =============================================================================
+        # PRÓXIMOS EVENTOS - Lógica robusta según requerimientos funcionales
+        # =============================================================================
+        # Estados que permiten ejecución futura (excluye finales y en curso)
+        ESTADOS_PROXIMOS_EVENTOS = {
+            EstadoEvento.ABIERTO,
+            EstadoEvento.PAUSADO,
+        }
+        
+        # Query optimizada: eventos futuros accesibles para la institución
+        proximos_eventos = (
+            Evento.objects.filter(
+                activo=True,
+                cancelado=False,
+                fecha__gte=hoy,  # Fecha de inicio >= hoy
+                estado_evento__in=ESTADOS_PROXIMOS_EVENTOS,
+            )
+            .filter(eventos_accesibles_q)  # Reutilizar lógica de accesibilidad
+            .select_related("estado")  # Optimización ORM
+            .order_by("fecha", "nombre")  # Orden ascendente por fecha
+            [:5]  # Limitar a 5 eventos próximos
+        )
+        
+        # =============================================================================
+        # EQUIPOS RECIENTES - Completar contexto del dashboard
+        # =============================================================================
+        grupos_recientes = (
+            mis_grupos
+            .select_related("institucion")
+            .prefetch_related("participantes", "tutores")
+            .order_by("-fecha_registro")[:5]
+        )
+        
+        # Enriquecer grupos con nombre del tutor para el template
+        for grupo in grupos_recientes:
+            tutor = grupo.tutores.first()
+            grupo.tutor_nombre = tutor.get_nombre_completo() if tutor else "Sin tutor"
+        
         return {
             "total_mis_grupos": mis_grupos.count(),
             "total_mis_participantes": total_mis_participantes,
@@ -332,4 +371,6 @@ class ReportService:
             "total_mis_clubes": mis_clubes_agg['total'],
             "mis_clubes_aprobados": mis_clubes_agg['aprobados'],
             "eventos_club_disponibles": eventos_club_disponibles,
+            "proximos_eventos": proximos_eventos,
+            "grupos_recientes": grupos_recientes,
         }

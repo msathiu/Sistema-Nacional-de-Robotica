@@ -267,6 +267,7 @@
                                         <div class="x-small text-muted">
                                             {{ ct.tutor.get_nacionalidad_display }}-{{ ct.tutor.cedula }}
                                             {% if ct.tutor.email %} · {{ ct.tutor.email }}{% endif %}
+                                            {% if ct.tutor.get_telefono_completo %} · {{ ct.tutor.get_telefono_completo }}{% endif %}
                                             {% if ct.tutor.profesion %} · {{ ct.tutor.profesion }}{% endif %}
                                         </div>
                                     </div>

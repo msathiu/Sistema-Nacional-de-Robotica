@@ -4,8 +4,10 @@ Tests para el modelo Tutor y TutorService alineados al modelo vigente.
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
+from registry.forms import TutorForm
 from registry.models import (
     Estado,
     Evento,
@@ -98,6 +100,63 @@ class TutorModelTest(TutorBaseTestCase):
 
         self.assertIsNotNone(tutor.id)
         self.assertEqual(type(tutor.id).__name__, "UUID")
+
+
+class TutorFormValidationTest(TutorBaseTestCase):
+    def get_valid_form_data(self):
+        return {
+            "tipo_vinculacion": "institucional",
+            "institucion": self.institucion.id,
+            "estado": "",
+            "rol": "colaborador",
+            "nacionalidad": "V",
+            "nombres": "Juan",
+            "apellidos": "Perez",
+            "sexo": "M",
+            "cedula": "12345678",
+            "telefono_codigo": "0412",
+            "telefono": "1234567",
+            "email": "juan.form@example.com",
+            "profesion": "Ingeniero",
+            "experiencia": "Experiencia relevante",
+        }
+
+    def test_form_rechaza_telefono_con_letras(self):
+        data = self.get_valid_form_data()
+        data["telefono"] = "12AB567"
+
+        form = TutorForm(data=data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("telefono", form.errors)
+        self.assertIn("solo dígitos", form.errors["telefono"][0])
+
+    def test_form_acepta_telefono_numerico_de_siete_digitos(self):
+        form = TutorForm(data=self.get_valid_form_data())
+
+        self.assertTrue(form.is_valid(), msg=form.errors)
+        self.assertEqual(form.cleaned_data["telefono"], "1234567")
+
+
+class TutorCreateViewTemplateTest(TutorBaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.usuario.userprofile.user_type = "institucional"
+        self.usuario.userprofile.institution = self.institucion
+        self.usuario.userprofile.estado = self.estado
+        self.usuario.userprofile.save()
+
+    def test_crear_tutor_renderiza_input_telefono_reforzado(self):
+        self.client.force_login(self.usuario)
+
+        response = self.client.get(reverse("crear_tutor"))
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('id="id_telefono"', content)
+        self.assertIn('inputmode="numeric"', content)
+        self.assertIn('pattern="[0-9]{7}"', content)
 
 
 class TutorServiceTest(TutorBaseTestCase):

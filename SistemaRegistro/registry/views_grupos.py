@@ -8,6 +8,8 @@ Incluye:
 - APIs de búsqueda
 """
 
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -20,6 +22,8 @@ from users.decorators import fed_central_cannot_create
 from .forms_grupos import GrupoForm
 from .models import Grupo, Participante, Tutor
 
+logger = logging.getLogger(__name__)
+
 
 def _usuario_puede_ver_grupo(user, grupo) -> bool:
     """Determina si el usuario puede ver el detalle del grupo."""
@@ -28,7 +32,7 @@ def _usuario_puede_ver_grupo(user, grupo) -> bool:
 
     user_type = user.userprofile.user_type
 
-    if user.is_superuser or user_type in ["fed_central", "superuser"]:
+    if user_type == "fed_central":
         return True
 
     if user_type != "institucional":
@@ -42,9 +46,6 @@ def _usuario_puede_modificar_grupo(user, grupo) -> bool:
     """Determina si el usuario puede editar o eliminar el grupo."""
     if not hasattr(user, "userprofile"):
         return False
-
-    if user.is_superuser:
-        return True
 
     if user.userprofile.user_type != "institucional":
         return False
@@ -67,8 +68,8 @@ def crear_equipo(request):
 
     user_type = request.user.userprofile.user_type
 
-    # Solo institucionales y superuser pueden crear equipos
-    if user_type not in ["institucional", "superuser"]:
+    # Solo institucionales pueden crear equipos
+    if user_type != "institucional":
         messages.error(
             request, "Solo instituciones pueden crear equipos."
         )
@@ -80,11 +81,6 @@ def crear_equipo(request):
             messages.error(request, "No tienes una institución asignada.")
             return redirect("dashboard")
         institucion = request.user.userprofile.institution
-    else:
-        # fed_central y superuser pueden no tener institución específica
-        # Usamos None para indicar que es un equipo de la federación
-        institucion = getattr(request.user.userprofile, "institution", None)
-
     if request.method == "POST":
         form = GrupoForm(request.POST, institucion=institucion, usuario=request.user)
 
@@ -188,8 +184,15 @@ def crear_equipo(request):
 
             except ValueError as e:
                 messages.error(request, f"Error: {str(e)}")
-            except Exception as e:
-                messages.error(request, f"Error al crear el equipo: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error creando equipo en registry.views_grupos. user_id=%s",
+                    request.user.id,
+                )
+                messages.error(
+                    request,
+                    "Error interno al crear el equipo. Intenta nuevamente.",
+                )
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -291,8 +294,16 @@ def editar_equipo(request, grupo_id):
 
             except ValueError as e:
                 messages.error(request, f"Error: {str(e)}")
-            except Exception as e:
-                messages.error(request, f"Error al actualizar: {str(e)}")
+            except Exception:
+                logger.exception(
+                    "Error actualizando equipo en registry.views_grupos. user_id=%s grupo_id=%s",
+                    request.user.id,
+                    grupo_id,
+                )
+                messages.error(
+                    request,
+                    "Error interno al actualizar el equipo. Intenta nuevamente.",
+                )
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -438,8 +449,14 @@ def api_buscar_tutor(request):
         )
     except Tutor.DoesNotExist:
         return JsonResponse({"found": False})
-    except Exception as e:
-        return JsonResponse({"found": False, "error": str(e)})
+    except Exception:
+        logger.exception(
+            "Error buscando tutor por cedula para equipo. user_id=%s",
+            request.user.id,
+        )
+        return JsonResponse(
+            {"found": False, "error": "Ocurrió un error interno al buscar el tutor."}
+        )
 
 
 @login_required
@@ -507,8 +524,17 @@ def api_buscar_participante_equipo(request):
                 "email": participante.email,
             }
         )
-    except Exception as e:
-        return JsonResponse({"found": False, "error": str(e)})
+    except Exception:
+        logger.exception(
+            "Error buscando participante para equipo. user_id=%s",
+            request.user.id,
+        )
+        return JsonResponse(
+            {
+                "found": False,
+                "error": "Ocurrió un error interno al buscar el participante.",
+            }
+        )
 
 
 @login_required
@@ -521,7 +547,7 @@ def mis_grupos(request):
     user_type = request.user.userprofile.user_type
 
     # fed_central puede ver todos los grupos (pero no crear)
-    if user_type not in ["institucional", "fed_central", "superuser"]:
+    if user_type not in ["institucional", "fed_central"]:
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
 
@@ -539,13 +565,13 @@ def mis_grupos(request):
         )
         puede_crear = True  # Institucionales pueden crear
     else:
-        # fed_central y superuser ven todos los grupos
+        # fed_central ve todos los grupos
         grupos = (
             Grupo.objects.filter(activo=True)
             .select_related("institucion", "usuario_creador", "evento")
             .prefetch_related("tutores", "participantes")
         )
-        puede_crear = user_type == "superuser"  # Solo superuser puede crear, fed_central NO
+        puede_crear = False
 
     # Obtener grupos con anotaciones
     grupos = grupos.annotate(

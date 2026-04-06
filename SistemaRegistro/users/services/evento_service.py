@@ -2,7 +2,8 @@ import logging
 from datetime import date, datetime
 from django.db import transaction
 from django.db.models import Q
-from registry.models import Evento, Club, EstadoEvento, AsistenciaEvento
+from registry.models import Evento, Club, EstadoEvento, AsistenciaEvento, InscripcionGrupoEvento
+from ..forms import EventoContactDataForm
 from ..utils import LocationUtils
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,19 @@ class EventoService:
         direccion = data.get("direccion", "")
         
         estado_obj, municipio_obj, parroquia_obj = LocationUtils.resolve_location(estado_id, municipio_id, parroquia_id)
+        contacto_form = EventoContactDataForm(
+            data={
+                "telefono_codigo": data.get("telefono_codigo", ""),
+                "telefono_numero": data.get("telefono_numero", ""),
+                "email_contacto": data.get("email_contacto", ""),
+            }
+        )
+        if not contacto_form.is_valid():
+            first_error = next(iter(contacto_form.errors.values()))[0]
+            raise ValueError(first_error)
+
+        telefono_codigo = contacto_form.cleaned_data.get("telefono_codigo", "")
+        telefono_numero = contacto_form.cleaned_data.get("telefono_numero", "")
         
         # 3. Validar Club y Audiencia
         tipo_evento = data.get("tipo_evento", instance.tipo_evento if instance else "institucional")
@@ -125,9 +139,9 @@ class EventoService:
             "institucion": institution if (user_type == "institucional" and tipo_evento == "institucional") else (instance.institucion if instance else None),
             "club_organizador": club_obj if tipo_evento == "club" else None,
             "audiencia": audiencia,
-            "telefono_codigo": data.get("telefono_codigo", ""),
-            "telefono_numero": data.get("telefono_numero", ""),
-            "email_contacto": data.get("email_contacto", ""),
+            "telefono_codigo": telefono_codigo,
+            "telefono_numero": telefono_numero,
+            "email_contacto": contacto_form.cleaned_data.get("email_contacto", ""),
         }
 
     @staticmethod
@@ -241,9 +255,32 @@ class EventoService:
         elif nuevo_estado == EstadoEvento.CANCELADO:
             if not observacion:
                 raise ValueError("Debes indicar el motivo de cancelación.")
-            if not evento.cancelar(observacion):
-                raise ValueError("Este evento no puede cancelarse desde su estado actual o no tienes permisos.")
-        
+
+            with transaction.atomic():
+                # Si el evento ya estaba cancelado, hacemos una limpieza idempotente:
+                # liberar equipos que pudieran haber quedado vinculados.
+                if evento.estado_evento != EstadoEvento.CANCELADO:
+                    if not evento.cancelar(observacion):
+                        raise ValueError(
+                            "Este evento no puede cancelarse desde su estado actual o no tienes permisos."
+                        )
+
+                inscripciones = (
+                    InscripcionGrupoEvento.objects.filter(evento=evento, activo=True)
+                    .select_related("grupo")
+                )
+
+                for inscripcion in inscripciones:
+                    grupo = inscripcion.grupo
+
+                    # Al cancelar el evento, la cancelación prima sobre restricciones
+                    # de grupo bloqueado: el equipo debe quedar libre.
+                    grupo.estado_grupo = "editable"
+                    grupo.evento = None
+                    grupo.save(update_fields=["estado_grupo", "evento"])
+
+                    inscripcion.delete()
+
         elif nuevo_estado == EstadoEvento.FINALIZADO:
             if evento.estado_evento not in [EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO, EstadoEvento.PAUSADO]:
                 raise ValueError("Solo se pueden finalizar eventos que estén abiertos, en proceso o pausados.")

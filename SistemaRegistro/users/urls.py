@@ -105,6 +105,11 @@ urlpatterns = [
         name="participante_delete",
     ),
     path(
+        "participantes/<uuid:pk>/cambiar-estado/",
+        views.cambiar_estado_participante,
+        name="cambiar_estado_participante",
+    ),
+    path(
         "api/participante/<str:cedula>/",
         views.api_buscar_participante,
         name="api_buscar_participante",

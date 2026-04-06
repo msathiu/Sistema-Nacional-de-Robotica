@@ -23,6 +23,7 @@ class EstadoEvento(models.TextChoices):
     """
     Estados definitivos para el flujo de vida de un evento.
     """
+
     BORRADOR = "borrador", "Borrador"
     REVISION = "revision", "En Revisión"
     ABIERTO = "abierto", "Abierto para Inscripción"
@@ -197,9 +198,7 @@ class Evento(models.Model):
         db_index=True,
     )
     observacion_estado = models.TextField(
-        blank=True, 
-        default="",
-        help_text="Motivo de pausa, rechazo o cancelación"
+        blank=True, default="", help_text="Motivo de pausa, rechazo o cancelación"
     )
     # -----------------------
     estado = models.ForeignKey(Estado, on_delete=models.SET_NULL, null=True, blank=True)
@@ -344,7 +343,6 @@ class Evento(models.Model):
             self.save(update_fields=["estado_evento"])
             # Bloquear grupos inscritos cuando el evento finaliza
             if nuevo_estado == EstadoEvento.FINALIZADO:
-                from django.db.models import Q as _Q
                 self.grupos_inscritos.filter(
                     estado_grupo__in=["editable", "inscrito"]
                 ).update(estado_grupo="bloqueado")
@@ -373,19 +371,19 @@ class Evento(models.Model):
         """
         if self.estado_evento in ESTADOS_FINALES:
             return False
-            
-        perfil = getattr(usuario, 'userprofile', None)
+
+        perfil = getattr(usuario, "userprofile", None)
         if not perfil:
             return False
-            
+
         # Ente rector (fed_central, superuser, tecnologico)
         if perfil.user_type in ["fed_central", "superuser", "tecnologico"]:
             return True
-            
+
         # Institución (solo el suyo)
         if perfil.user_type == "institucional":
             return self.institucion == perfil.institution
-            
+
         return False
 
     def puede_pausar(self, usuario):
@@ -394,18 +392,18 @@ class Evento(models.Model):
         """
         if self.estado_evento not in [EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO]:
             return False
-            
-        perfil = getattr(usuario, 'userprofile', None)
+
+        perfil = getattr(usuario, "userprofile", None)
         if not perfil:
             return False
-            
+
         return perfil.user_type in ["fed_central", "superuser", "tecnologico"]
 
     def solicitar_revision(self):
         """Envía el evento a revisión por parte del ente rector."""
         if self.puede_transicionar(EstadoEvento.REVISION):
             self.estado_evento = EstadoEvento.REVISION
-            self.save(update_fields=['estado_evento'])
+            self.save(update_fields=["estado_evento"])
             return True
         return False
 
@@ -417,9 +415,9 @@ class Evento(models.Model):
             self.fecha_aprobacion = timezone.now()
             self.observaciones_aprobacion = observaciones
             # Al aprobar, si es institucional, se hace público para inscripciones
-            if self.tipo_evento == 'institucional':
+            if self.tipo_evento == "institucional":
                 self.es_publico = True
-                self.audiencia = 'publica'
+                self.audiencia = "publica"
             self.save()
             return True
         return False
@@ -466,7 +464,8 @@ class Evento(models.Model):
     def es_visible_para_todos(self):
         """Evento visible para todos: abierto, en proceso o si es publicacion especial."""
         return (
-            self.estado_evento in [EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO, EstadoEvento.PAUSADO]
+            self.estado_evento
+            in [EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO, EstadoEvento.PAUSADO]
             and self.es_publico
         )
 
@@ -555,6 +554,40 @@ class Evento(models.Model):
         return self.club_organizador if self.es_evento_club else self.institucion
 
     @property
+    def organizador_display(self):
+        """
+        Nombre visible del organizador para UI.
+        Conserva institución o club cuando existan y resuelve el caso histórico
+        de eventos institucionales creados por Federación sin institución ligada.
+        """
+        if self.es_evento_club and self.club_organizador:
+            club = self.club_organizador
+            tipo_creador = getattr(club, "tipo_creador", None)
+            if tipo_creador == "fed_central":
+                return "Federación Venezolana de Robótica Creativa"
+            if tipo_creador == "fed_regional":
+                return "Sede Regional"
+
+            institucion_creadora = getattr(club, "institucion_creadora", None)
+            if institucion_creadora:
+                return (
+                    getattr(institucion_creadora, "nombre_publico", None)
+                    or institucion_creadora.nombre
+                )
+            return club.nombre
+
+        if self.institucion:
+            return (
+                getattr(self.institucion, "nombre_publico", None)
+                or self.institucion.nombre
+            )
+
+        if self.creado_por_fed_central:
+            return "Federación Venezolana de Robótica Creativa"
+
+        return ""
+
+    @property
     def requiere_aprobacion(self):
         if self.es_publico:
             return False
@@ -591,7 +624,11 @@ class Evento(models.Model):
 
     @property
     def esta_vigente(self):
-        return self.activo and not self.cancelado and self.fecha_fin_efectiva >= date.today()
+        return (
+            self.activo
+            and not self.cancelado
+            and self.fecha_fin_efectiva >= date.today()
+        )
 
     @property
     def telefono_completo(self):
@@ -618,7 +655,9 @@ class Evento(models.Model):
 
         if self.fecha and self.fecha_hasta and self.fecha_hasta < self.fecha:
             raise ValidationError(
-                {"fecha_hasta": "La fecha hasta no puede ser anterior a la fecha desde."}
+                {
+                    "fecha_hasta": "La fecha hasta no puede ser anterior a la fecha desde."
+                }
             )
 
         # Validar solo si el tipo_evento es explícitamente "institucional" Y hay una institución
@@ -626,7 +665,10 @@ class Evento(models.Model):
         # si así fueron creados originalmente
         if self.tipo_evento == "institucional" and not self.institucion:
             # Permitir si el evento ya existe y fue creado sin institución (caso de fed_central)
-            if self.pk and Evento.objects.filter(pk=self.pk, institucion__isnull=True).exists():
+            if (
+                self.pk
+                and Evento.objects.filter(pk=self.pk, institucion__isnull=True).exists()
+            ):
                 pass  # Permitir edición sin institución si ya existía así
             else:
                 raise ValidationError(
@@ -639,14 +681,14 @@ class Evento(models.Model):
 
     # --- Configuración centralizada de estados para UI ---
     ESTADO_UI_CONFIG = {
-        "borrador":    {"label": "Borrador",     "badge_class": "bg-secondary opacity-75"},
-        "revision":    {"label": "En revisión",   "badge_class": "bg-warning text-dark"},
-        "abierto":     {"label": "Abierto",       "badge_class": "bg-success"},
-        "rechazado":   {"label": "Rechazado",     "badge_class": "bg-danger"},
-        "pausado":     {"label": "Pausado",       "badge_class": "bg-warning"},
-        "cancelado":   {"label": "Cancelado",     "badge_class": "bg-danger"},
-        "en_proceso":  {"label": "En Proceso",    "badge_class": "bg-primary"},
-        "finalizado":  {"label": "Finalizado",    "badge_class": "bg-dark"},
+        "borrador": {"label": "Borrador", "badge_class": "bg-secondary opacity-75"},
+        "revision": {"label": "En revisión", "badge_class": "bg-warning text-dark"},
+        "abierto": {"label": "Abierto", "badge_class": "bg-success"},
+        "rechazado": {"label": "Rechazado", "badge_class": "bg-danger"},
+        "pausado": {"label": "Pausado", "badge_class": "bg-warning"},
+        "cancelado": {"label": "Cancelado", "badge_class": "bg-danger"},
+        "en_proceso": {"label": "En Proceso", "badge_class": "bg-primary"},
+        "finalizado": {"label": "Finalizado", "badge_class": "bg-dark"},
     }
 
     @property
@@ -670,17 +712,37 @@ class Evento(models.Model):
     def tipo_evento_ui(self):
         """Retorna dict con label, icono y clase CSS para tipo de evento."""
         if self.tipo_evento == "club":
-            return {"label": "Club", "icon": "bi-people", "class": "badge-tipo bg-purple"}
-        return {"label": "Institucional", "icon": "bi-building", "class": "badge-tipo bg-blue"}
+            return {
+                "label": "Club",
+                "icon": "bi-people",
+                "class": "badge-tipo bg-purple",
+            }
+        return {
+            "label": "Institucional",
+            "icon": "bi-building",
+            "class": "badge-tipo bg-blue",
+        }
 
     @property
     def modalidad_ui(self):
         """Retorna dict con label, icono y clase CSS para modalidad."""
         if self.modalidad == "presencial":
-            return {"label": "Presencial", "icon": "bi-geo-alt", "class": "badge-tipo-generic bg-success text-white"}
+            return {
+                "label": "Presencial",
+                "icon": "bi-geo-alt",
+                "class": "badge-tipo-generic bg-success text-white",
+            }
         if self.modalidad == "virtual":
-            return {"label": "Virtual", "icon": "bi bi-display", "class": "badge-tipo-generic bg-info text-white"}
-        return {"label": "Híbrido", "icon": "bi-diagram-3", "class": "badge-tipo-generic bg-warning text-dark"}
+            return {
+                "label": "Virtual",
+                "icon": "bi bi-display",
+                "class": "badge-tipo-generic bg-info text-white",
+            }
+        return {
+            "label": "Híbrido",
+            "icon": "bi-diagram-3",
+            "class": "badge-tipo-generic bg-warning text-dark",
+        }
 
 
 class Inscripcion(models.Model):
@@ -740,7 +802,12 @@ class InscripcionGrupoEvento(models.Model):
     class Meta:
         verbose_name = "Inscripción Grupo-Evento"
         verbose_name_plural = "Inscripciones Grupo-Evento"
-        unique_together = ["evento", "grupo"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["evento", "grupo"],
+                name="unique_inscripcion_evento_grupo",
+            )
+        ]
         ordering = ["-fecha_inscripcion"]
 
     def __str__(self):
@@ -786,7 +853,12 @@ class ClubEvento(models.Model):
     class Meta:
         verbose_name = "Club-Evento"
         verbose_name_plural = "Clubes-Eventos"
-        unique_together = ["club", "evento"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["club", "evento"],
+                name="unique_clubevento_club_evento",
+            )
+        ]
         ordering = ["-fecha_vinculacion"]
         indexes = [
             models.Index(fields=["evento", "activo"], name="idx_clubevt_evt_act"),

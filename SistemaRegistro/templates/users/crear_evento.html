@@ -357,10 +357,17 @@
                                             </select>
                                         </div>
                                         <input type="text" class="form-control custom-input" 
+                                               id="telefono_numero"
                                                name="telefono_numero" value="{{ valores_previos.telefono_numero|default:'' }}"
-                                               placeholder="1234567" maxlength="7" style="border-radius: 0 12px 12px 0 !important;">
+                                               placeholder="1234567" maxlength="7" minlength="7"
+                                               inputmode="numeric" pattern="[0-9]{7}" autocomplete="tel-national"
+                                               oninput="this.value=this.value.replace(/\D/g,'').slice(0,7)"
+                                               style="border-radius: 0 12px 12px 0 !important;">
                                     </div>
                                     <div class="form-text mt-2">Código de área + número (7 dígitos)</div>
+                                    {% if errores.telefono_numero %}
+                                        <div class="text-danger small mt-1">{{ errores.telefono_numero }}</div>
+                                    {% endif %}
                                 </div>
 
                                 <!-- Email de Contacto -->
