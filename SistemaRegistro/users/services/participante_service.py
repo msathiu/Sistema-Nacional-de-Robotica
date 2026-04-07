@@ -3,6 +3,7 @@ import string
 import logging
 from django.db import transaction
 from django.contrib.auth.models import User
+from django.utils import timezone
 from registry.models import Participante, ParticipanteInstitucion, Institucion, Estado, Municipio, Parroquia
 from .identity_service import IdentityService
 from ..utils import StringUtils, LocationUtils
@@ -25,7 +26,10 @@ class ParticipanteService:
     ):
         """
         Crea un Participante, su Usuario (Django User) y vinculación institucional.
-        Recibe cleaned_data de un formulario validado.
+
+        En este sistema cada participante con acceso al portal tiene cuenta Django
+        (usuario = nacionalidad-cédula o E-cédula escolar). Si la cédula ya está
+        registrada, no se crea duplicado: se indica buscar en el padrón.
         """
         # 1. Obtener datos limpios del form
         nombres = cleaned_data.get("nombres")
@@ -34,49 +38,102 @@ class ParticipanteService:
         cedula_personal = cleaned_data.get("cedula_personal")
         cedula_escolar = cleaned_data.get("cedula_escolar_input")
         email = cleaned_data.get("email")
-        
-        # 2. Determinar el username
-        if cedula_personal:
-            username = StringUtils.format_username_from_id(nacionalidad, cedula_personal)
-        elif cedula_escolar:
-            username = StringUtils.format_username_from_id("E", cedula_escolar)
+
+        ced_digitos = (
+            StringUtils.clean_numeric_id(cedula_personal) if cedula_personal else None
+        )
+        esc_digitos = (
+            StringUtils.clean_numeric_id(cedula_escolar) if cedula_escolar else None
+        )
+
+        # 2. Determinar el username (misma regla que el login del participante)
+        if ced_digitos:
+            username = StringUtils.format_username_from_id(nacionalidad, ced_digitos)
+        elif esc_digitos:
+            username = StringUtils.format_username_from_id("E", esc_digitos)
         else:
             raise ValueError("Debe proporcionar al menos una cédula.")
 
         # 3. Iniciar Transacción
         with transaction.atomic():
-            if User.objects.filter(username=username).exists():
-                raise ValueError(f"Ya existe un usuario con el identificador {username}")
+            if ced_digitos and Participante.objects.filter(cedula=ced_digitos).exists():
+                raise ValueError(
+                    "Ya existe un participante registrado con esta cédula personal. "
+                    "Busque a la persona en el padrón de participantes; allí puede "
+                    "revisar la ficha o la vinculación con su institución. "
+                    f"(Usuario de acceso del sistema: {username})"
+                )
+            if esc_digitos and Participante.objects.filter(cedula_escolar=esc_digitos).exists():
+                raise ValueError(
+                    "Ya existe un participante registrado con esta cédula escolar. "
+                    "Busque a la persona en el padrón de participantes."
+                )
 
-            # Crear usuario
-            password_aleatoria = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
-            user, profile = IdentityService.create_user_with_profile(
-                username=username,
-                email=email,
-                password=password_aleatoria,
-                user_type="participante"
-            )
+            existing_user = User.objects.filter(username=username).first()
+            if existing_user:
+                perfil = getattr(existing_user, "userprofile", None)
+                if perfil and perfil.user_type != "participante":
+                    raise ValueError(
+                        f"El identificador {username} ya está en uso por otra cuenta del sistema "
+                        "(no es un participante). Si cree que es un error, contacte al administrador."
+                    )
+                if Participante.objects.filter(user=existing_user).exists():
+                    raise ValueError(
+                        "Esta persona ya tiene usuario y ficha de participante en el sistema. "
+                        "Busque en el padrón de participantes en lugar de crear un registro nuevo."
+                    )
+                user = existing_user
+                if email and user.email != email:
+                    user.email = email
+                    user.save(update_fields=["email"])
+                logger.info(
+                    "Participante: reutilizando usuario existente sin ficha %s",
+                    username,
+                )
+            else:
+                password_aleatoria = "".join(
+                    secrets.choice(string.ascii_letters + string.digits)
+                    for _ in range(12)
+                )
+                user, profile = IdentityService.create_user_with_profile(
+                    username=username,
+                    email=email,
+                    password=password_aleatoria,
+                    user_type="participante",
+                )
 
             # Crear Participante (usando el resto de cleaned_data)
-            # Removemos campos que no pertenecen al modelo Participante o que manejamos manualmente
             model_data = cleaned_data.copy()
-            for key in ['cedula_personal', 'cedula_escolar_input', 'edad', 'profesion', 'institucion', 'grupo', 'tipo_vinculacion', 'vinculacion_institucion', 'vinculacion_estado']:
+            for key in [
+                "cedula_personal",
+                "cedula_escolar_input",
+                "edad",
+                "profesion",
+                "institucion",
+                "grupo",
+                "tipo_vinculacion",
+                "vinculacion_institucion",
+                "vinculacion_estado",
+            ]:
                 model_data.pop(key, None)
 
-            # Asignar campos manuales
-            model_data['user'] = user
-            model_data['cedula'] = cedula_personal if cedula_personal else None
-            model_data['cedula_escolar'] = cedula_escolar if cedula_escolar else None
+            model_data["user"] = user
+            model_data["cedula"] = ced_digitos if ced_digitos else None
+            model_data["cedula_escolar"] = esc_digitos if esc_digitos else None
 
-            creado_por_federacion = user_type_registrador in ['fed_central', 'fed_regional']
-            model_data['creado_por_federacion'] = creado_por_federacion
+            creado_por_federacion = user_type_registrador in [
+                "fed_central",
+                "fed_regional",
+            ]
+            model_data["creado_por_federacion"] = creado_por_federacion
 
             participante = Participante.objects.create(**model_data)
 
-            # Vincular según tipo de vinculación
-            tipo_vinculacion = cleaned_data.get('tipo_vinculacion', 'institucional')
-            estado_vinculacion = cleaned_data.get('vinculacion_estado')
-            institucion_vinculacion = cleaned_data.get('vinculacion_institucion') or institucion
+            tipo_vinculacion = cleaned_data.get("tipo_vinculacion", "institucional")
+            estado_vinculacion = cleaned_data.get("vinculacion_estado")
+            institucion_vinculacion = (
+                cleaned_data.get("vinculacion_institucion") or institucion
+            )
 
             if tipo_vinculacion or institucion_vinculacion or estado_vinculacion:
                 ParticipanteService.vincular_participante(
@@ -84,10 +141,10 @@ class ParticipanteService:
                     tipo_vinculacion=tipo_vinculacion,
                     institucion=institucion_vinculacion,
                     estado=estado_vinculacion,
-                    usuario=registrado_por if registrado_por else user
+                    usuario=registrado_por if registrado_por else user,
                 )
 
-            logger.info(f"Participante {nombres} {apellidos} ({username}) creado.")
+            logger.info("Participante %s %s (%s) creado.", nombres, apellidos, username)
             return participante
 
     @staticmethod

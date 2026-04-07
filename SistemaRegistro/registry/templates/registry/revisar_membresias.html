@@ -170,6 +170,7 @@
                                                             title="Ver Detalles">
                                                         <i class="bi bi-eye"></i>
                                                     </button>
+                                                    {% if not es_fed_central %}
                                                     <a href="{% url 'aprobar_membresia_club' membresia.id %}"
                                                        class="btn btn-outline-success btn-sm rounded-circle p-2"
                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dar Visto Bueno">
@@ -181,6 +182,7 @@
                                                             title="Rechazar">
                                                         <i class="bi bi-x-circle"></i>
                                                     </button>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

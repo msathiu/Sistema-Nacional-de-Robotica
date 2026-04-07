@@ -43,6 +43,50 @@ class UserProfile(models.Model):
     def es_federacion_regional(self):
         return self.user_type == 'fed_regional'
 
+    @property
+    def es_institucional(self):
+        return self.user_type == 'institucional'
+
+    @property
+    def es_central(self):
+        """Alias para compatibilidad con templates legacy."""
+        return self.user_type in ['fed_central', 'superuser', 'tecnologico']
+
+    @property
+    def can_export_participantes(self):
+        """Verifica si el usuario puede exportar participantes a Excel."""
+        return self.user_type in ['institucional', 'fed_regional', 'fed_central', 'superuser', 'tecnologico']
+
+    @property
+    def can_create_participante(self):
+        """Verifica si el usuario puede crear nuevos participantes."""
+        return self.user_type != 'fed_central'
+
+    @property
+    def can_delete_participantes(self):
+        """Solo federación central y superusuarios pueden eliminar del padrón nacional."""
+        return self.user_type in ['fed_central', 'superuser', 'tecnologico']
+
+    @property
+    def show_status_column(self):
+        """Muestra columna de status para usuarios institucionales."""
+        return self.es_institucional
+
+    @property
+    def show_status_filter(self):
+        """Muestra filtro de status para usuarios institucionales."""
+        return self.es_institucional
+
+    @property
+    def can_create_evento(self):
+        """Verifica si el usuario puede crear eventos. Todos excepto fed_central pueden crear."""
+        return self.user_type != 'fed_central'
+
+    @property
+    def can_create_grupo(self):
+        """Verifica si el usuario puede crear equipos/grupos. Todos excepto fed_central pueden crear."""
+        return self.user_type != 'fed_central'
+
 
 @receiver(post_save, sender=UserProfile)
 def sync_user_permissions(sender, instance, **kwargs):

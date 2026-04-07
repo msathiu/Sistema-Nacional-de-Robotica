@@ -1,5 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 
@@ -122,9 +123,15 @@ urlpatterns = [
     ),
     path("dashboard/mapa/", views.mapa_interactivo, name="mapa_interactivo"),
     path(
-        "exportar/excel/",
+        "exportar/participantes/",
         views.exportar_participantes_excel,
         name="exportar_participantes_excel",
+    ),
+    path(
+        "exportar/excel/",
+        RedirectView.as_view(
+            pattern_name="exportar_participantes_excel", permanent=False
+        ),
     ),
     path("sistema/logs/", views.ver_logs_sistema, name="ver_logs_sistema"),
     # --- Gestión de Eventos (Módulo Eventos 2026) ---
@@ -257,6 +264,11 @@ urlpatterns = [
         "api/grupos/<int:grupo_id>/participantes/",
         views.api_participantes_grupo,
         name="api_participantes_grupo",
+    ),
+    path(
+        "api/form-config/<str:tipo>/",
+        views.form_config_api,
+        name="form_config_api",
     ),
     # --- HTMX endpoints ---
     path("htmx/toggle-submenu/", views.toggle_submenu, name="toggle_submenu"),

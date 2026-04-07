@@ -61,9 +61,7 @@
                                 <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Estado <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Fecha Creación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                                 <th class="py-3 text-center sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Cupos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                                {% if es_fed_central %}
                                 <th class="py-3 text-center sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Solicitudes Pendientes <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                                {% endif %}
                                 <th class="py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -95,17 +93,17 @@
                                         {{ club.cupos_disponibles }}/{{ club.cupo_maximo }}
                                     </span>
                                 </td>
-                                {% if es_fed_central %}
-                                <td class="text-center" data-sort-value="{{ club.num_solicitudes_pendientes }}">
+                                <td class="text-center" data-sort-value="{{ club.num_solicitudes_pendientes|default:0 }}">
                                     {% if club.num_solicitudes_pendientes > 0 %}
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-hourglass-split me-1"></i>{{ club.num_solicitudes_pendientes }}
-                                        </span>
+                                        <a href="{% url 'gestionar_membresias_club' club.id %}" class="text-decoration-none">
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-split me-1"></i>{{ club.num_solicitudes_pendientes }}
+                                            </span>
+                                        </a>
                                     {% else %}
                                         <span class="badge bg-light text-muted">0</span>
                                     {% endif %}
                                 </td>
-                                {% endif %}
                                 <td class="text-center px-4">
                                     {% if es_fed_central %}
                                         <div class="d-flex justify-content-center gap-1">
@@ -147,11 +145,12 @@
                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
-                                            <a href="{% url 'enviar_club_revision' club.id %}"
+                                            <button type="button"
                                                class="btn btn-outline-success btn-sm rounded-circle p-2"
-                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Enviar a Revisión">
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Enviar a Revisión"
+                                               onclick="mostrarModalEnviarRevision({{ club.id }}, '{{ club.nombre|escapejs }}', '{{ club.status }}')">
                                                 <i class="bi bi-send"></i>
-                                            </a>
+                                            </button>
                                             <button type="button"
                                                class="btn btn-outline-danger btn-sm rounded-circle p-2"
                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
@@ -171,6 +170,12 @@
                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Corregir">
                                                 <i class="bi bi-arrow-repeat"></i>
                                             </a>
+                                            <button type="button"
+                                               class="btn btn-outline-success btn-sm rounded-circle p-2"
+                                               data-bs-toggle="tooltip" data-bs-placement="top" title="Reenviar a Revisión"
+                                               onclick="mostrarModalEnviarRevision({{ club.id }}, '{{ club.nombre|escapejs }}', '{{ club.status }}')">
+                                                <i class="bi bi-send"></i>
+                                            </button>
                                             <button type="button"
                                                class="btn btn-outline-danger btn-sm rounded-circle p-2"
                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
@@ -371,6 +376,43 @@
     </div>
 </div>
 
+<!-- Modal Enviar a Revisión -->
+<div class="modal fade" id="modalEnviarRevision" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header text-white" style="background: linear-gradient(145deg, #059669, #047857); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold" id="modalEnviarTitulo">
+                    <i class="bi bi-send me-2"></i>Enviar a Revisión
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEnviarRevision" method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" id="modalEnviarClubId" value="">
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-question-circle" style="font-size: 3rem; color: #059669;"></i>
+                    </div>
+                    <p class="text-center">
+                        ¿Estás seguro de que deseas enviar el club <strong id="modalEnviarNombre"></strong> a revisión?
+                    </p>
+                    <p class="text-center text-muted small mb-0">
+                        Una vez enviado, el club será evaluado por la federación y no podrás editarlo hasta recibir una respuesta.
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" id="modalEnviarBtn" class="btn rounded-pill px-4 text-white" style="background: #059669;">
+                        <i class="bi bi-send me-2"></i>Confirmar Envío
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar tooltips de Bootstrap 5
@@ -494,6 +536,27 @@ document.getElementById('formEliminarClub').addEventListener('submit', function(
     }
     document.getElementById('formMotivoHidden').value = document.getElementById('modalMotivo').value.trim();
 });
+
+// Modal Enviar a Revisión
+function mostrarModalEnviarRevision(clubId, clubNombre, clubStatus) {
+    document.getElementById('modalEnviarClubId').value = clubId;
+    document.getElementById('modalEnviarNombre').textContent = clubNombre;
+    document.getElementById('formEnviarRevision').action = `/registry/clubes/${clubId}/enviar-revision/`;
+    
+    // Actualizar título según estado
+    const titulo = document.getElementById('modalEnviarTitulo');
+    const btnConfirmar = document.getElementById('modalEnviarBtn');
+    
+    if (clubStatus === 'rechazado') {
+        titulo.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Reenviar a Revisión';
+        btnConfirmar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Confirmar Reenvío';
+    } else {
+        titulo.innerHTML = '<i class="bi bi-send me-2"></i>Enviar a Revisión';
+        btnConfirmar.innerHTML = '<i class="bi bi-send me-2"></i>Confirmar Envío';
+    }
+    
+    new bootstrap.Modal(document.getElementById('modalEnviarRevision')).show();
+}
 </script>
 
 {% endblock %}

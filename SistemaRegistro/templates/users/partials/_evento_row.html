@@ -3,47 +3,47 @@
 
 <tr class="evento-row" data-estado="{{ evento.estado_evento }}" data-tipo="{{ evento.tipo_evento }}" data-audiencia="{{ evento.audiencia }}">
     {# Columna 1: Nombre / Descripción #}
-    <td class="px-4">
+    <td class="px-4" data-sort-value="{{ evento.nombre|lower }}">
         <div class="fw-bold text-dark small evento-nombre">{{ evento.nombre }}</div>
         <div class="text-muted x-small">{{ evento.descripcion|truncatechars:45 }}</div>
     </td>
 
     {# Columna 2: Tipo Evento (Club/Institucional) #}
-    <td class="text-center">
+    <td class="text-center" data-sort-value="{{ evento.tipo_evento }}">
         {% with tipo=evento.tipo_evento_ui %}
         <span class="{{ tipo.class }}"><i class="bi {{ tipo.icon }} me-1"></i>{{ tipo.label }}</span>
         {% endwith %}
     </td>
 
     {# Columna 3: Tipo (Competencia, etc) #}
-    <td><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
+    <td data-sort-value="{{ evento.tipo }}"><span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span></td>
 
     {# Columna 4: Modalidad #}
-    <td class="text-center">
+    <td class="text-center" data-sort-value="{{ evento.modalidad }}">
         {% with mod=evento.modalidad_ui %}
         <span class="{{ mod.class }}"><i class="bi {{ mod.icon }} me-1"></i>{{ mod.label }}</span>
         {% endwith %}
     </td>
 
     {# Columna 5: Inscritos #}
-    <td class="text-center">
+    <td class="text-center" data-sort-value="{{ evento.total_inscritos }}">
         <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
         <div class="x-small text-muted text-uppercase">Equipos</div>
     </td>
 
     {# Columna 6: Fecha y Sede #}
-    <td>
+    <td data-sort-value="{{ evento.fecha_inicio|date:'Y-m-d' }}">
         <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
         <div class="x-small text-muted"><i class="bi bi-geo-alt-fill text-danger"></i> {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}{% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}</div>
     </td>
 
     {# Columna 7: Teléfono #}
-    <td>
+    <td data-sort-value="{{ evento.telefono_completo|default:'' }}">
         {% if evento.telefono_completo %}<span class="text-muted small"><i class="bi bi-telephone me-1"></i>{{ evento.telefono_completo }}</span>{% else %}<span class="text-muted small">-</span>{% endif %}
     </td>
 
     {# Columna 8: Institución / Club organizador #}
-    <td>
+    <td data-sort-value="{% if evento.tipo_evento == 'club' and evento.club_organizador %}{{ evento.club_organizador.nombre|lower }}{% else %}{{ evento.institucion.nombre|default:''|lower }}{% endif %}">
         {% if evento.tipo_evento == 'club' and evento.club_organizador %}
             <div class="small fw-bold"><i class="bi bi-people-fill me-1 text-primary" style="font-size:0.7rem;"></i>{{ evento.club_organizador.nombre }}</div>
             <div class="x-small text-muted">{{ evento.club_organizador.institucion_creadora.estado.nombre|default:"" }}</div>
@@ -54,7 +54,7 @@
     </td>
 
     {# Columna 9: Estatus #}
-    <td class="text-center">
+    <td class="text-center" data-sort-value="{{ evento.estado_evento }}">
         {% with est=evento.estado_ui %}
         <span class="badge {{ est.badge_class }}" {% if evento.estado_evento == 'rechazado' %}data-bs-toggle="tooltip" data-bs-placement="top" title="{{ evento.observaciones_aprobacion|default:'Sin observaciones' }}"{% endif %}>{{ est.label }}</span>
         {% endwith %}

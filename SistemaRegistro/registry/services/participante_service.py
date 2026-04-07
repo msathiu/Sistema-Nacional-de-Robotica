@@ -34,6 +34,27 @@ class ParticipanteService:
     """
 
     @staticmethod
+    def sync_historial_miembros_grupo(grupo: Grupo) -> None:
+        """
+        Alinea ParticipanteGrupo con la membresía M2M actual (grupo.participantes).
+
+        Debe invocarse tras cualquier add/remove/set/clear sobre integrantes del equipo,
+        para que el historial y las reglas de negocio no se desincronicen.
+        """
+        ids_actuales = set(grupo.participantes.values_list("pk", flat=True))
+        ahora = timezone.now()
+        with transaction.atomic():
+            ParticipanteGrupo.objects.filter(grupo=grupo, activo=True).exclude(
+                participante_id__in=ids_actuales
+            ).update(activo=False, fecha_salida=ahora)
+            for pid in ids_actuales:
+                ParticipanteGrupo.objects.update_or_create(
+                    participante_id=pid,
+                    grupo=grupo,
+                    defaults={"activo": True, "fecha_salida": None},
+                )
+
+    @staticmethod
     def onboard_participante(username, email, password, datos_personales, institucion_inicial=None):
         """
         Crea un usuario del sistema y su registro de Participante asociado.

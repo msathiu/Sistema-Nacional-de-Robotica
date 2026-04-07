@@ -1,4 +1,5 @@
 {% extends 'users/base_dashboard.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -10,15 +11,15 @@
                 </div>
                 <div>
                     <h2 class="fw-bold mb-0 text-dark" style="font-family: 'Space Grotesk', sans-serif;">
-                        {% if es_central %}Panel de Administración Central{% else %}Sede Regional: {{ perfil.estado.nombre }}{% endif %}
+                        {% if perfil.es_central %}Panel de Administración Central{% else %}Sede Regional: {{ perfil.estado.nombre }}{% endif %}
                     </h2>
-                    <p class="text-muted mb-0 small">Federación Venezolana de Robótica Creativa | {% if es_central %}Registro Nacional{% else %}Registro Regional{% endif %}</p>
+                    <p class="text-muted mb-0 small">Federación Venezolana de Robótica Creativa | {% if perfil.es_central %}Registro Nacional{% else %}Registro Regional{% endif %}</p>
                 </div>
             </div>
         </div>
         
         <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
-            {% if perfil.user_type != 'fed_central' %}
+            {% if perfil.can_create_evento %}
             <div class="dropdown">
                 <button class="btn shadow-sm px-4 fw-bold dropdown-toggle" 
                         style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;"
@@ -41,7 +42,7 @@
                     <span>Exportar</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px;min-width:200px;">
-                    <li><h6 class="dropdown-header x-small">Excel</h6></li>
+                    <li><h6 class="dropdown-header x-small">Excel o CSV</h6></li>
                     <li><a class="dropdown-item py-2" href="{% url 'exportar_participantes_excel' %}"><i class="bi bi-people me-2 text-primary"></i>Participantes</a></li>
                     <li><a class="dropdown-item py-2" href="{% url 'exportar_equipos_excel' %}"><i class="bi bi-microsoft-teams me-2 text-success"></i>Equipos</a></li>
                     <li><a class="dropdown-item py-2" href="{% url 'exportar_tutores_excel' %}"><i class="bi bi-person-workspace me-2 text-info"></i>Tutores</a></li>
@@ -54,7 +55,7 @@
 
     <hr class="mt-2 mb-4 opacity-10">
 
-    {% if pendientes_aprobacion > 0 and es_central %}
+    {% if pendientes_aprobacion > 0 and perfil.es_central %}
         <div class="row mb-4">
             <div class="col-12">
                 <div class="alert d-flex align-items-center border-0 shadow-sm p-3" style="background: #fff5f5; border-left: 5px solid #f87171 !important; border-radius: 15px;">
@@ -130,7 +131,7 @@
             <div class="card border-0 shadow-lg h-100 overflow-hidden text-white card-stat-tech" style="background: linear-gradient(145deg, #0b2c6d, #051636); border-radius: 15px;">
                 <div class="card-body p-3 position-relative z-1">
                     <div class="text-white-50 x-small fw-bold text-uppercase mb-2">Cobertura</div>
-                    <h3 class="fw-bold mb-0"><span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-6 text-white-50">/{% if es_central %}24{% else %}1{% endif %}</span></h3>
+                    <h3 class="fw-bold mb-0"><span class="counter" data-target="{{ cobertura_nacional|default:0 }}">0</span><span class="fs-6 text-white-50">/{% if perfil.es_central %}24{% else %}1{% endif %}</span></h3>
                     <i class="bi bi-geo-alt position-absolute opacity-10" style="font-size: 3rem; right: 10px; bottom: 5px;"></i>
                 </div>
                 <div style="height: 4px; background: #ef4444;"></div>
@@ -290,7 +291,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'chart.js/chart.umd.js' %}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const counters = document.querySelectorAll('.counter');

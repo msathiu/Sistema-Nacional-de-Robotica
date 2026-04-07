@@ -147,3 +147,72 @@ def admin_or_owner_required(view_func):
         messages.error(request, 'No tienes permiso para realizar esta acción.')
         return redirect('dashboard')
     return wrapper
+
+
+def can_export_participantes_required(view_func):
+    """
+    Decorador específico para exportación de participantes.
+    Requiere: institucional, fed_regional, fed_central, superuser o tecnologico.
+    """
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not hasattr(request.user, 'userprofile'):
+            messages.error(request, 'No tienes un perfil de usuario configurado.')
+            return redirect('dashboard')
+        
+        if request.user.userprofile.can_export_participantes:
+            return view_func(request, *args, **kwargs)
+        
+        messages.error(
+            request,
+            f'No tienes permiso para exportar participantes. Tu rol: {request.user.userprofile.get_user_type_display()}'
+        )
+        return redirect('lista_participantes')
+    return wrapper
+
+
+def can_delete_participantes_required(view_func):
+    """
+    Decorador específico para eliminar participantes del padrón.
+    Solo fed_central, superuser y tecnologico pueden eliminar.
+    """
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not hasattr(request.user, 'userprofile'):
+            messages.error(request, 'No tienes un perfil de usuario configurado.')
+            return redirect('dashboard')
+        
+        if request.user.userprofile.can_delete_participantes:
+            return view_func(request, *args, **kwargs)
+        
+        messages.error(
+            request,
+            'Solo la Federación Central puede eliminar participantes del padrón nacional.'
+        )
+        return redirect('lista_participantes')
+    return wrapper
+
+
+def can_create_participante_required(view_func):
+    """
+    Decorador específico para creación de participantes.
+    Todos excepto fed_central pueden crear.
+    """
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not hasattr(request.user, 'userprofile'):
+            messages.error(request, 'No tienes un perfil de usuario configurado.')
+            return redirect('dashboard')
+        
+        if request.user.userprofile.can_create_participante:
+            return view_func(request, *args, **kwargs)
+        
+        messages.warning(
+            request,
+            'Como Federación Central no puedes crear nuevos participantes, solo supervisarlos.'
+        )
+        return redirect('lista_participantes')
+    return wrapper

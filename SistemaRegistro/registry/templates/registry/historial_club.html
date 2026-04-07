@@ -105,11 +105,26 @@
     
     .x-small { font-size: 0.72rem; }
     
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
-    .delay-1 { animation-delay: 0.05s; }
-    .delay-2 { animation-delay: 0.1s; }
-    .delay-3 { animation-delay: 0.15s; }
+    /* Animaciones optimizadas */
+    .animate-fade-in {
+        opacity: 0;
+        animation: fadeIn 0.6s ease-out forwards;
+        will-change: opacity;
+        transform: translateZ(0); /* Fuerza aceleración por hardware */
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    
+    @keyframes fadeIn {
+        to { opacity: 1; }
+    }
+    
+    /* Prevenir movimientos inesperados */
+    .section-card {
+        contain: layout style paint;
+        backface-visibility: hidden;
+    }
 </style>
 {% endblock %}
 
@@ -232,8 +247,8 @@
                 <div class="card-body p-4">
                     {% if club.status == 'borrador' %}
                         <p class="mb-3">El club está en estado borrador. ¿Desea enviarlo a revisión?</p>
-                        <a href="{% url 'enviar_club_revision' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #059669; color: white;">
-                            <i class="bi bi-send me-2"></i>Enviar a Revisión
+                        <a href="{% url 'editar_club' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #059669; color: white;">
+                            <i class="bi bi-send me-2"></i>Ir a Enviar Revisión
                         </a>
                     {% elif club.status == 'rechazado' %}
                         <p class="mb-3">El club fue rechazado. Revise los motivos y corríjalo.</p>

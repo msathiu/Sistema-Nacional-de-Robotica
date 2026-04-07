@@ -1,5 +1,11 @@
 {% extends 'users/base_dashboard.html' %}
 
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/eventos-tablas.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -93,35 +99,37 @@
     </div>
 
     <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+        <div class="card-header eventos-card-header">
             <div class="d-flex align-items-center">
-                <i class="bi bi-list-stars text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white">LISTADO DE EVENTOS</h5>
+                <i class="bi bi-list-stars header-icon"></i>
+                <h5 class="header-title">LISTADO DE EVENTOS</h5>
             </div>
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ eventos|length }} Convocatorias</span>
         </div>
+        <div class="eventos-header-divider"></div>
+        
         <div class="card-body p-0">
             {% if eventos %}
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="eventosTable">
                     <thead class="bg-light">
-                        <tr class="text-uppercase small fw-bold text-muted">
-                            <th class="px-4 py-3">Evento / Descripción</th>
-                            <th class="py-3 text-center">Tipo Evento</th>
-                            <th class="py-3">Tipo</th>
-                            <th class="py-3 text-center">Modalidad</th>
-                            <th class="py-3 text-center">Inscritos</th>
-                            <th class="py-3">Fecha y Sede</th>
-                            <th class="py-3">Teléfono</th>
-                            <th class="py-3">Institución</th>
-                            <th class="py-3 text-center">Estatus</th>
+                        <tr class="text-uppercase x-small fw-bold text-muted eventos-table-header">
+                            <th class="px-4 py-3 sortable-th" data-sort="0">Evento / Descripción <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="1">Tipo Evento <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="3">Modalidad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="4">Inscritos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="5">Fecha y Sede <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="6">Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="7">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="8">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for evento in eventos %}
                         <tr>
-                            <td class="px-4">
+                            <td class="px-4" data-sort-value="{{ evento.nombre|lower }}">
                                 <div class="d-flex align-items-center">
                                     <div class="avatar-circle-event me-3">
                                         <i class="bi bi-robot"></i>
@@ -138,31 +146,17 @@
                                 </div>
                             </td>
                             <td class="text-center">
-                                {% if evento.tipo_evento == 'club' %}
-                                <span class="badge-tipo bg-purple">
-                                    <i class="bi bi-people me-1"></i>Club
-                                </span>
-                                {% elif evento.es_publico_audiencia and evento.creado_por and evento.creado_por.userprofile.user_type == 'fed_central' %}
-                                <span class="badge-tipo bg-cyan">
-                                    <i class="bi bi-shield-check me-1"></i>Federativo
-                                </span>
-                                {% else %}
-                                <span class="badge-tipo bg-blue">
-                                    <i class="bi bi-building me-1"></i>Institucional
-                                </span>
-                                {% endif %}
+                                {% with tipo=evento.tipo_evento_ui %}
+                                <span class="{{ tipo.class }}"><i class="bi {{ tipo.icon }} me-1"></i>{{ tipo.label }}</span>
+                                {% endwith %}
                             </td>
                             <td>
                                 <span class="badge-tipo-generic bg-light text-dark">{{ evento.get_tipo_display }}</span>
                             </td>
                             <td class="text-center">
-                                {% if evento.modalidad == 'presencial' %}
-                                <span class="badge-tipo-generic bg-success text-white"><i class="bi bi-geo-alt me-1"></i>Presencial</span>
-                                {% elif evento.modalidad == 'virtual' %}
-                                <span class="badge-tipo-generic bg-info text-white"><i class="bi bi-display me-1"></i>Virtual</span>
-                                {% else %}
-                                <span class="badge-tipo-generic bg-warning text-dark"><i class="bi bi-diagram-3 me-1"></i>Híbrido</span>
-                                {% endif %}
+                                {% with mod=evento.modalidad_ui %}
+                                <span class="{{ mod.class }}"><i class="bi {{ mod.icon }} me-1"></i>{{ mod.label }}</span>
+                                {% endwith %}
                             </td>
                             <td class="text-center">
                                 <div class="fw-bold text-primary">{{ evento.total_inscritos }}</div>
@@ -196,20 +190,12 @@
                                 {% endif %}
                             </td>
                             <td class="text-center">
-                                {% if evento.estado_evento == 'abierto' %}
-                                <span class="status-pill-mini bg-blue">Abierto</span>
-                                {% elif evento.estado_evento == 'pausado' %}
-                                <span class="status-pill-mini bg-warning">Pausado</span>
-                                {% elif evento.estado_evento == 'en_proceso' %}
-                                <span class="status-pill-mini bg-success">En proceso</span>
-                                {% elif evento.estado_evento == 'finalizado' %}
-                                <span class="status-pill-mini bg-gray">Finalizado</span>
-                                {% else %}
-                                <span class="status-pill-mini bg-secondary">{{ evento.estado_evento }}</span>
-                                {% endif %}
+                                {% with est=evento.estado_ui %}
+                                <span class="badge {{ est.badge_class }}">{{ est.label }}</span>
+                                {% endwith %}
                             </td>
                             <td class="text-center px-2">
-                                {% if perfil.user_type == 'institucional' and perfil.institution %}
+                                {% if perfil.es_institucional and perfil.institution %}
                                     <div class="d-flex justify-content-center gap-1">
                                         <a href="{% url 'detalle_evento_gestion' evento.id %}" class="btn btn-outline-info btn-sm rounded-circle p-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                             <i class="bi bi-eye"></i>
@@ -222,9 +208,9 @@
                                         </a>
                                         {% endif %}
                                     </div>
-                                {% elif perfil.user_type == 'fed_central' or perfil.user_type == 'superuser' or perfil.user_type == 'tecnologico' %}
+                                {% elif perfil.es_central %}
                                 <span class="badge bg-info">Admin</span>
-                                {% elif perfil.user_type == 'fed_regional' %}
+                                {% elif perfil.es_federacion_regional %}
                                 <span class="badge bg-secondary">Regional</span>
                                 {% else %}
                                 <span class="text-muted small">-</span>
@@ -245,64 +231,6 @@
     </div>
 </div>
 
-<style>
-    :root {
-        --blue-main: #0b2c6d;
-        --accent-cyan: #00d4ff;
-    }
-
-    .avatar-circle-event {
-        width: 45px;
-        height: 45px;
-        background: rgba(11, 44, 109, 0.05);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--blue-main);
-        font-size: 1.2rem;
-        border: 1px solid rgba(11, 44, 109, 0.1);
-    }
-
-    .status-pill-mini {
-        padding: 0.25rem 0.75rem;
-        border-radius: 8px;
-        font-size: 0.65rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        display: inline-block;
-    }
-
-    .badge-tipo {
-        padding: 0.35rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .badge-tipo-generic {
-        padding: 0.25rem 0.5rem;
-        border-radius: 6px;
-        font-size: 0.65rem;
-        font-weight: 600;
-    }
-
-    .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-    .bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-    .bg-warning { background: #fef3c7 !important; color: #92400e !important; border: 1px solid #fcd34d; }
-    .bg-success { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac; }
-    .bg-info { background: #e0f2fe !important; color: #075985 !important; border: 1px solid #7dd3fc; }
-    .bg-secondary { background: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1; }
-    .bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
-    .bg-cyan { background: #cffafe !important; color: #155e75 !important; border: 1px solid #a5f3fc; }
-
-    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
-    .btn.rounded-circle.p-2:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); transition: all 0.2s; }
-    .x-small { font-size: 0.72rem; }
-    .tracking-wider { letter-spacing: 0.05em; }
-</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -322,6 +250,64 @@
             };
             updateCount();
         });
+
+        // Ordenamiento de columnas
+        (function initSortableTable() {
+            const table = document.getElementById('eventosTable');
+            if (!table) return;
+            const headers = table.querySelectorAll('th.sortable-th');
+            let currentSortCol = null;
+            let currentSortDir = 'asc';
+
+            headers.forEach(th => {
+                th.addEventListener('click', function() {
+                    const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                    headers.forEach(h => {
+                        if (h !== this) {
+                            h.classList.remove('sort-asc', 'sort-desc');
+                            h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                        }
+                    });
+
+                    if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                        currentSortDir = 'desc';
+                        this.classList.remove('sort-asc');
+                        this.classList.add('sort-desc');
+                        this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                    } else {
+                        currentSortDir = 'asc';
+                        currentSortCol = colIndex;
+                        this.classList.remove('sort-desc');
+                        this.classList.add('sort-asc');
+                        this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                    }
+
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                    rows.sort((a, b) => {
+                        const cellA = a.querySelectorAll('td')[colIndex];
+                        const cellB = b.querySelectorAll('td')[colIndex];
+                        if (!cellA || !cellB) return 0;
+
+                        let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                        let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                        const numA = parseFloat(valA);
+                        const numB = parseFloat(valB);
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                        }
+
+                        const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                        return currentSortDir === 'asc' ? comparison : -comparison;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        })();
     });
 </script>
 {% endblock %}

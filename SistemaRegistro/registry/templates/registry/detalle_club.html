@@ -51,19 +51,14 @@
     
     .info-item:hover {
         background: white;
-        transform: translateX(5px);
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
     
-    .info-item:last-child { margin-bottom: 0; }
-    .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-item strong { color: #1e293b; }
+    .member-item { transition: none; }
+    .member-item:hover { transform: none; }
     
-    .member-item { transition: all 0.3s ease; }
-    .member-item:hover { transform: translateX(5px); }
-    
-    .linea-item { transition: all 0.3s ease; }
-    .linea-item:hover { transform: scale(1.02); }
+    .linea-item { transition: none; }
+    .linea-item:hover { transform: none; }
     
     .status-badge {
         padding: 0.35rem 0.75rem;
@@ -74,12 +69,11 @@
     
     .x-small { font-size: 0.72rem; }
     
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-    .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
-    .delay-1 { animation-delay: 0.05s; }
-    .delay-2 { animation-delay: 0.1s; }
-    .delay-3 { animation-delay: 0.15s; }
-    .delay-4 { animation-delay: 0.2s; }
+    .info-item:last-child { margin-bottom: 0; }
+    .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-item strong { color: #1e293b; }
+    
+    /* Animaciones removidas para consistencia con el resto del proyecto */
 </style>
 {% endblock %}
 
@@ -115,7 +109,7 @@
     <hr class="mt-2 mb-4 opacity-10">
 
     <!-- Estado del Club -->
-    <div class="card border-0 shadow-sm mb-4 animate-fade-in" style="border-radius: 20px; overflow: hidden;">
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
         <div class="card-header border-0 py-3 px-4" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
             <div class="row align-items-center">
                 <div class="col-md-8 d-flex align-items-center">
@@ -151,7 +145,7 @@
         <!-- Columna Principal -->
         <div class="col-lg-8">
             <!-- Descripción -->
-            <div class="section-card mb-4 animate-fade-in delay-1">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-info-circle"></i>
@@ -164,7 +158,7 @@
             </div>
 
             <!-- Líneas de Investigación -->
-            <div class="section-card mb-4 animate-fade-in delay-1">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-lightbulb"></i>
@@ -187,7 +181,7 @@
 
             <!-- Requisitos -->
             {% if club.requisitos %}
-            <div class="section-card mb-4 animate-fade-in delay-1">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-list-check"></i>
@@ -201,7 +195,7 @@
             {% endif %}
 
             <!-- Instituciones Miembro -->
-            <div class="section-card animate-fade-in delay-2">
+            <div class="section-card">
                 <div class="card-header text-white d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, #059669, #047857);">
                     <div class="d-flex align-items-center">
                         <div class="section-icon bg-white bg-opacity-25 me-3">
@@ -242,7 +236,7 @@
             </div>
 
             <!-- Responsables del Club -->
-            <div class="section-card animate-fade-in delay-2">
+            <div class="section-card">
                 <div class="card-header text-white d-flex align-items-center justify-content-between" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
                     <div class="d-flex align-items-center">
                         <div class="section-icon bg-white bg-opacity-25 me-3">
@@ -300,7 +294,7 @@
         <div class="col-lg-4">
             <!-- Acciones de Revisión -->
             {% if club.status == 'pendiente' or club.status == 'en_revision' %}
-            <div class="section-card mb-4 animate-fade-in delay-2">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #7c3aed, #5b21b6);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-gear"></i>
@@ -317,7 +311,8 @@
                         <a href="{% url 'aprobar_club' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #059669; color: white;">
                             <i class="bi bi-check-circle me-2"></i> Aprobar Club
                         </a>
-                        <button onclick="rechazarClub()" class="btn fw-bold rounded-pill px-4" style="background: #dc2626; color: white;">
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub" 
+                                class="btn fw-bold rounded-pill px-4" style="background: #dc2626; color: white;">
                             <i class="bi bi-x-circle me-2"></i> Rechazar Club
                         </button>
                     </div>
@@ -326,7 +321,7 @@
             {% endif %}
 
             <!-- Información Rápida -->
-            <div class="section-card mb-4 animate-fade-in delay-2">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-info-square"></i>
@@ -375,7 +370,7 @@
 
             <!-- Acción de Postulación -->
             {% if user_type == "institucional" %}
-            <div class="section-card mb-4 animate-fade-in delay-3">
+            <div class="section-card mb-4">
                 <div class="card-body text-center p-4">
                     {% if es_propietario %}
                         <div class="section-icon mx-auto mb-3" style="background: rgba(234, 179, 8, 0.15);">
@@ -426,7 +421,7 @@
             
             <!-- Eventos del Club -->
             {% if es_propietario or es_miembro %}
-            <div class="section-card mb-4 animate-fade-in delay-3">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #059669, #047857);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-calendar-event"></i>
@@ -449,7 +444,7 @@
             
             <!-- Calificaciones -->
             {% if es_miembro %}
-            <div class="section-card mb-4 animate-fade-in delay-3">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-star-fill"></i>
@@ -506,7 +501,7 @@
             </div>
             {% else %}
             {% if total_calificaciones > 0 %}
-            <div class="section-card mb-4 animate-fade-in delay-3">
+            <div class="section-card mb-4">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #f59e0b, #d97706);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-star-fill"></i>
@@ -532,7 +527,7 @@
             
             <!-- Eventos Vinculados -->
             {% if eventos_vinculados %}
-            <div class="section-card animate-fade-in delay-4">
+            <div class="section-card">
                 <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, #0891b2, #0e7490);">
                     <div class="section-icon bg-white bg-opacity-25 me-3">
                         <i class="bi bi-link-45deg"></i>
@@ -556,11 +551,44 @@
     </div>
 </div>
 
-<script>
-function rechazarClub() {
-    if(confirm('¿Está seguro de que desea rechazar este club?')) {
-        window.location.href = '/clubes/rechazar/{{ club.id }}/';
-    }
-}
-</script>
+<!-- Modal Rechazar Club -->
+<div class="modal fade" id="modalRechazarClub" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header text-white" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-x-circle me-2"></i>Rechazar Club
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'rechazar_club' club.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-center">Está a punto de <strong class="text-danger">RECHAZAR</strong> el club:</p>
+                    <h5 class="text-center text-dark fw-bold mb-1">{{ club.nombre }}</h5>
+                    {% if club.siglas %}
+                    <p class="text-center text-muted small mb-3">{{ club.siglas }}</p>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo del rechazo <span class="text-danger">*</span></label>
+                        <textarea name="observaciones" class="form-control" rows="3" required
+                                  placeholder="Indique las razones del rechazo y las correcciones necesarias..."></textarea>
+                        <small class="text-muted">Este comentario será visible para la institución creadora.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="bi bi-x-circle-fill me-2"></i>Confirmar Rechazo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

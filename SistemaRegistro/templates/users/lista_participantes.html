@@ -14,12 +14,12 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                {% if perfil.user_type == 'institucional' or perfil.user_type == 'fed_regional' or perfil.user_type == 'fed_central' or perfil.user_type == 'superuser' or perfil.user_type == 'tecnologico' %}
-                <a href="{% url 'exportar_participantes_excel' %}" class="btn btn-outline-dark shadow-sm px-3 fw-bold" style="border-radius: 12px;" title="Exportar participantes a Excel">
+                {% if perfil.can_export_participantes %}
+                <a href="{% url 'exportar_participantes_excel' %}" class="btn btn-outline-dark shadow-sm px-3 fw-bold" style="border-radius: 12px;" title="Exportar participantes (elegir Excel o CSV)">
                     <i class="bi bi-download me-2"></i> Exportar
                 </a>
                 {% endif %}
-                {% if perfil.user_type != 'fed_central' %}
+                {% if perfil.can_create_participante %}
                 <a href="{% url 'crear_participante' %}" class="btn shadow-sm px-4 fw-bold" 
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-person-plus-fill me-2"></i> Agregar Participante
@@ -96,7 +96,7 @@
                         <option value="F" {% if request.GET.sexo == 'F' %}selected{% endif %}>Femenino</option>
                     </select>
                 </div>
-                {% if es_institucional %}
+                {% if perfil.show_status_filter %}
                 <div class="col-md-2">
                     <select name="status" class="form-select border-0 bg-light">
                         <option value="">Status (Todos)</option>
@@ -137,7 +137,7 @@
                             <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Estado (Región) <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none;">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            {% if es_institucional %}<th class="py-3 text-center">Status</th>{% endif %}
+                            {% if perfil.show_status_column %}<th class="py-3 text-center">Status</th>{% endif %}
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -177,7 +177,7 @@
                                 <div class="small text-dark">{{ p.estado.nombre|default:"N/A" }}</div>
                             </td>
                             <td data-sort-value="{{ p.institucion.nombre }}">
-                                {% if es_central %}
+                                {% if perfil.es_central %}
                                     {% if p.todas_vinculaciones|length > 1 %}
                                         <button class="btn btn-sm btn-outline-primary px-2 py-1 fw-bold"
                                                 style="border-radius: 8px; font-size: 0.72rem;"
@@ -208,7 +208,7 @@
                                     {% endif %}
                                 {% endif %}
                             </td>
-                            {% if es_institucional %}
+                            {% if perfil.show_status_column %}
                             <td class="text-center align-middle status-cell-part" onclick="event.stopPropagation();">
                                 <div class="form-check form-switch m-0 toggle-wrap-part">
                                     <input
@@ -238,10 +238,13 @@
                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    {% if es_central %}
-                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-2"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar del padrón"
-                                            onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')">
+                                    {% if perfil.can_delete_participantes %}
+                                    <button type="button" 
+                                            class="btn btn-outline-danger btn-sm rounded-circle p-2 {% if p.tiene_grupos_activos %}disabled opacity-50{% endif %}"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="{% if p.tiene_grupos_activos %}No se puede eliminar: participante está en {{ p.count_grupos_activos }} grupo(s){% else %}Eliminar del padrón{% endif %}"
+                                            {% if not p.tiene_grupos_activos %}onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')"{% endif %}>
                                         <i class="bi bi-trash3-fill"></i>
                                     </button>
                                     {% endif %}

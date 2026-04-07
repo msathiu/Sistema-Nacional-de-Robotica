@@ -201,11 +201,35 @@ urlpatterns = [
         views_reportes.exportar_clubes_json,
         name="exportar_clubes_json",
     ),
-    # Exportaciones de reportes
-    path("reportes/equipos/excel/",        views_reportes.exportar_equipos_excel,       name="exportar_equipos_excel"),
-    path("reportes/tutores/excel/",        views_reportes.exportar_tutores_excel,        name="exportar_tutores_excel"),
-    path("reportes/instituciones/excel/",  views_reportes.exportar_instituciones_excel,  name="exportar_instituciones_excel"),
-    path("reportes/inscripciones/excel/",  views_reportes.exportar_inscripciones_excel,  name="exportar_inscripciones_excel"),
+    # Exportaciones de reportes (Excel o CSV vía ?format=xlsx|csv)
+    path("reportes/equipos/export/", views_reportes.exportar_equipos_excel, name="exportar_equipos_excel"),
+    path("reportes/tutores/export/", views_reportes.exportar_tutores_excel, name="exportar_tutores_excel"),
+    path(
+        "reportes/instituciones/export/",
+        views_reportes.exportar_instituciones_excel,
+        name="exportar_instituciones_excel",
+    ),
+    path(
+        "reportes/inscripciones/export/",
+        views_reportes.exportar_inscripciones_excel,
+        name="exportar_inscripciones_excel",
+    ),
+    path(
+        "reportes/equipos/excel/",
+        RedirectView.as_view(pattern_name="exportar_equipos_excel", permanent=False),
+    ),
+    path(
+        "reportes/tutores/excel/",
+        RedirectView.as_view(pattern_name="exportar_tutores_excel", permanent=False),
+    ),
+    path(
+        "reportes/instituciones/excel/",
+        RedirectView.as_view(pattern_name="exportar_instituciones_excel", permanent=False),
+    ),
+    path(
+        "reportes/inscripciones/excel/",
+        RedirectView.as_view(pattern_name="exportar_inscripciones_excel", permanent=False),
+    ),
     # Fase 4: Calificaciones
     path(
         "clubes/<int:club_id>/calificar/",

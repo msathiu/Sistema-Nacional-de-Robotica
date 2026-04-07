@@ -333,7 +333,9 @@
                                     <i class="bi bi-search"></i> Buscar Tutor por Cédula
                                 </label>
                                 <input type="text" id="buscarTutorCedula" class="form-control form-control-custom" 
-                                       placeholder="12345678">
+                                       placeholder="12345678" inputmode="numeric" pattern="[0-9]*"
+                                       onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                                       onpaste="return /\\d+/.test((event.clipboardData || window.clipboardData).getData('text'))">
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
                                 <button type="button" class="btn btn-search-custom w-100" id="btnBuscarTutor">
@@ -442,7 +444,10 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Cédula *</label>
-                    <input type="text" class="form-control cedula-participante" placeholder="12345678" required>
+                    <input type="text" class="form-control cedula-participante" placeholder="12345678" required
+                           inputmode="numeric" pattern="[0-9]*"
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                           onpaste="return /\\d+/.test((event.clipboardData || window.clipboardData).getData('text'))">
                     <button type="button" class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="buscarParticipante(this)">
                         <i class="bi bi-search"></i> Buscar
                     </button>
@@ -496,7 +501,7 @@ document.getElementById('btnBuscarTutor')?.addEventListener('click', function() 
                 this.disabled = false;
                 this.innerHTML = '<i class="bi bi-search"></i> Buscar';
             } else {
-                alert('Tutor no encontrado');
+                mostrarModalTutorNoEncontrado();
                 this.disabled = false;
                 this.innerHTML = '<i class="bi bi-search"></i> Buscar';
             }
@@ -559,7 +564,7 @@ function buscarParticipante(btn) {
                 btn.classList.remove('btn-outline-primary');
                 btn.classList.add('btn-success');
             } else {
-                alert('Participante no encontrado. Debe registrarlo primero.');
+                mostrarModalParticipanteNoEncontrado();
                 card.remove();
             }
         })
@@ -598,6 +603,76 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
     }
 });
 </script>
+
+<!-- Modal: Participante no encontrado -->
+<div class="modal fade" id="modalParticipanteNoEncontrado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:44px;height:44px;background:#fff3cd;">
+                        <i class="bi bi-exclamation-triangle text-warning fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0 text-dark">Participante no encontrado</h5>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-muted mb-0" style="font-size:0.93rem;">
+                    El participante no está registrado en el sistema. Debe registrarlo primero en el módulo de participantes antes de poder agregarlo al equipo.
+                </p>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 gap-2">
+                <button type="button" class="btn btn-light fw-semibold px-4" style="border-radius:10px;"
+                        data-bs-dismiss="modal">Cerrar</button>
+                <a href="{% url 'crear_participante' %}" class="btn btn-primary fw-semibold px-4" style="border-radius:10px;">
+                    <i class="bi bi-person-plus me-1"></i>Registrar participante
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarModalParticipanteNoEncontrado() {
+    const modal = new bootstrap.Modal(document.getElementById('modalParticipanteNoEncontrado'));
+    modal.show();
+}
+
+function mostrarModalTutorNoEncontrado() {
+    const modal = new bootstrap.Modal(document.getElementById('modalTutorNoEncontrado'));
+    modal.show();
+}
+</script>
+
+<!-- Modal: Tutor no encontrado -->
+<div class="modal fade" id="modalTutorNoEncontrado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:44px;height:44px;background:#fff3cd;">
+                        <i class="bi bi-exclamation-triangle text-warning fs-5"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0 text-dark">Tutor no encontrado</h5>
+                </div>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <p class="text-muted mb-0" style="font-size:0.93rem;">
+                    El tutor no está registrado en el sistema. Debe registrarlo primero en el módulo de tutores antes de poder asignarlo al equipo.
+                </p>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 gap-2">
+                <button type="button" class="btn btn-light fw-semibold px-4" style="border-radius:10px;"
+                        data-bs-dismiss="modal">Cerrar</button>
+                <a href="{% url 'crear_tutor' %}" class="btn btn-primary fw-semibold px-4" style="border-radius:10px;">
+                    <i class="bi bi-person-plus me-1"></i>Registrar tutor
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal: Confirmar eliminación de participante -->
 <div class="modal fade" id="modalEliminarParticipante" tabindex="-1" aria-hidden="true">

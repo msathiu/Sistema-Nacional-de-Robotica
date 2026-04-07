@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Tablas de Eventos - Estilos Compartidos
+   Usado en: eventos_disponibles.html, seguimiento_eventos.html
+   ========================================================================== */
+
+:root {
+    --blue-main: #0b2c6d;
+    --accent-cyan: #00d4ff;
+}
+
+/* ===== Header del Card ===== */
+.eventos-card-header {
+    background: var(--blue-main);
+    border: none;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.eventos-card-header .header-title {
+    font-weight: 700;
+    margin-bottom: 0;
+    color: white;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.eventos-card-header .header-icon {
+    color: white;
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+}
+
+/* Línea divisoria debajo del header */
+.eventos-header-divider {
+    height: 3px;
+    background: var(--accent-cyan);
+    width: 100%;
+}
+
+/* ===== Tabla ===== */
+.eventos-table thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* ===== Ordenamiento de columnas ===== */
+.sortable-th {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.sortable-th:hover {
+    color: var(--blue-main) !important;
+}
+
+.sortable-th .sort-icon {
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+.sortable-th:hover .sort-icon {
+    opacity: 0.7;
+}
+
+.sortable-th.sort-asc .sort-icon,
+.sortable-th.sort-desc .sort-icon {
+    opacity: 1;
+    color: var(--accent-cyan);
+}
+
+/* ===== Badges ===== */
+.badge-tipo {
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-tipo-generic {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.status-pill-mini {
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+/* ===== Backgrounds ===== */
+.bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.bg-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.bg-warning { background: #fef3c7 !important; color: #92400e !important; border: 1px solid #fcd34d; }
+.bg-success { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac; }
+.bg-info { background: #e0f2fe !important; color: #075985 !important; border: 1px solid #7dd3fc; }
+.bg-secondary { background: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1; }
+.bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
+.bg-cyan { background: #cffafe !important; color: #155e75 !important; border: 1px solid #a5f3fc; }
+
+/* ===== Utilidades ===== */
+.x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
+.tracking-wider { letter-spacing: 0.05em; }
+
+/* Botones redondeados de acciones */
+.btn.rounded-circle.p-2 {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn.rounded-circle.p-2:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    transition: all 0.2s;
+}
+
+/* Avatar en eventos */
+.avatar-circle-event {
+    width: 45px;
+    height: 45px;
+    background: rgba(11, 44, 109, 0.05);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue-main);
+    font-size: 1.2rem;
+    border: 1px solid rgba(11, 44, 109, 0.1);
+}

@@ -21,6 +21,7 @@ from users.decorators import fed_central_cannot_create
 
 from .forms_grupos import GrupoForm
 from .models import Grupo, Participante, Tutor
+from .services.participante_service import ParticipanteService
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +176,7 @@ def crear_equipo(request):
                         )
 
                     grupo.participantes.set(participantes)
+                    ParticipanteService.sync_historial_miembros_grupo(grupo)
 
                     messages.success(
                         request,
@@ -286,6 +288,7 @@ def editar_equipo(request, grupo_id):
                         vinculaciones__status="activo",
                     ).distinct()
                     grupo.participantes.set(participantes)
+                    ParticipanteService.sync_historial_miembros_grupo(grupo)
 
                     messages.success(
                         request, f'✅ Equipo "{grupo.nombre}" actualizado exitosamente'

@@ -11,10 +11,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -43,6 +43,8 @@ from registry.models import (
 from .decorators import (
     admin_or_owner_required,
     admin_required,
+    can_delete_participantes_required,
+    can_export_participantes_required,
     fed_central_cannot_create,
     fed_central_required,
     institucional_required,
@@ -57,12 +59,14 @@ from .forms import (
     SedeRegionalForm,
 )
 from .models import UserProfile
+from .report_export_utils import dataframe_to_response, parse_export_format
 from .selectors import (
     EventoSelector,
     InstitucionSelector,
     JurisdictionSelector,
     ParticipanteSelector,
 )
+from .utils import StringUtils
 
 
 def _get_evento_institucional(evento_id, institution):
@@ -95,6 +99,12 @@ def _get_evento_institucional(evento_id, institution):
     raise Http404
 
 
+from registry.services.participante_service import (
+    ParticipanteService as RegistroParticipanteService,
+)
+
+# Importar configuración de formulario
+from .configs.institucion_form_config import get_form_config
 from .services.evento_service import EventoService
 from .services.grupo_service import GrupoService
 from .services.identity_service import IdentityService
@@ -105,6 +115,71 @@ from .services.report_service import ReportService
 logger = logging.getLogger(__name__)
 
 
+def get_password_rules():
+    """
+    Extrae las reglas de validación de contraseña desde AUTH_PASSWORD_VALIDATORS
+    para mostrarlas en el template de forma sincronizada con el backend.
+    """
+    from django.conf import settings
+
+    rules = []
+    for validator in settings.AUTH_PASSWORD_VALIDATORS:
+        name = validator["NAME"].split(".")[-1]
+        options = validator.get("OPTIONS", {})
+
+        if name == "MinimumLengthValidator":
+            min_length = options.get("min_length", 8)
+            rules.append(
+                {
+                    "id": "ruleLength",
+                    "text": f"Mínimo {min_length} caracteres",
+                    "icon": "bi-x-circle",
+                }
+            )
+        elif name == "UserAttributeSimilarityValidator":
+            pass  # No mostrar en UI
+        elif name == "NumericPasswordValidator":
+            pass  # Este validador prohíbe passwords puramente numéricos
+        elif name == "UppercaseValidator":
+            rules.append(
+                {
+                    "id": "ruleUpper",
+                    "text": "Al menos 1 letra mayúscula",
+                    "icon": "bi-x-circle",
+                }
+            )
+        elif name == "LowercaseValidator":
+            rules.append(
+                {
+                    "id": "ruleLower",
+                    "text": "Al menos 1 letra minúscula",
+                    "icon": "bi-x-circle",
+                }
+            )
+        elif name == "SymbolValidator":
+            rules.append(
+                {
+                    "id": "ruleSpecial",
+                    "text": "Al menos 1 carácter especial (!@#$...)",
+                    "icon": "bi-x-circle",
+                }
+            )
+
+    return rules
+
+
+def form_config_api(request, tipo):
+    """
+    API endpoint para obtener la configuración de campos del formulario
+    según el tipo de institución seleccionada.
+
+    Esto permite que el frontend JS aplique la lógica de visibilidad de campos
+    basándose en configuración del backend, no en lógica hardcodeada.
+    """
+    config = get_form_config(tipo)
+    return JsonResponse(config)
+
+
 def _mask_identifier_tail(value, visible_digits=4, prefix=""):
     numeric_value = "".join(filter(str.isdigit, str(value or "")))
     if not numeric_value:
@@ -112,6 +187,24 @@ def _mask_identifier_tail(value, visible_digits=4, prefix=""):
     masked_length = max(len(numeric_value) - visible_digits, 0)
     masked = ("*" * masked_length) + numeric_value[-visible_digits:]
     return f"{prefix}{masked}" if prefix else masked
+
+
+def _nombre_vinculacion_participante_export(vinculacion):
+    if not vinculacion:
+        return "Federación Central"
+
+    if vinculacion.tipo_vinculacion == "institucional" and vinculacion.institucion:
+        return vinculacion.institucion.nombre
+
+    if vinculacion.tipo_vinculacion == "regional":
+        estado_nombre = (
+            vinculacion.estado.nombre
+            if getattr(vinculacion, "estado", None)
+            else "Sin estado"
+        )
+        return f"Federación Regional ({estado_nombre})"
+
+    return "Federación Central"
 
 
 def _render_formulario_evento(
@@ -281,7 +374,7 @@ def inscribir_grupo_evento(request, evento_id):
     rol = request.POST.get("rol_participacion", "participante") or "participante"
 
     if not grupo_id:
-        messages.error(request, "❌ Debes seleccionar un grupo para inscribir.")
+        messages.error(request, "❌ Debes seleccionar un equipo para inscribir.")
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
     try:
@@ -296,7 +389,7 @@ def inscribir_grupo_evento(request, evento_id):
         messages.error(
             request,
             f"❌ El grupo '{grupo.nombre}' no puede inscribirse porque está en estado "
-            f"'{grupo.get_estado_grupo_display()}'. Solo grupos en estado Editable pueden inscribirse.",
+            f"'{grupo.get_estado_grupo_display()}'. Solo equipo en estado Editable pueden inscribirse.",
         )
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
@@ -313,7 +406,7 @@ def inscribir_grupo_evento(request, evento_id):
 
     if InscripcionGrupoEvento.objects.filter(evento=evento, grupo=grupo).exists():
         messages.warning(
-            request, f"⚠️ El grupo '{grupo.nombre}' ya está inscrito en este evento."
+            request, f"⚠️ El Equipo '{grupo.nombre}' ya está inscrito en este evento."
         )
         return redirect("detalle_evento_inscripcion", evento_id=evento_id)
 
@@ -1025,12 +1118,55 @@ def dashboard_institucional(request):
     return render(request, "users/dashboard_institucional.html", context)
 
 
-@login_required
+@can_export_participantes_required
 def exportar_participantes_excel(request):
-    """Exporta datos de participantes a Excel según permisos del usuario"""
+    """Exporta datos de participantes a Excel o CSV según permisos y ?format=."""
+
+    try:
+        fmt = parse_export_format(request)
+    except ValueError:
+        return HttpResponseBadRequest(
+            "Formato no válido. Use format=xlsx o format=csv.",
+            content_type="text/plain; charset=utf-8",
+        )
+
+    if fmt is None:
+        return render(
+            request,
+            "users/report_export_format.html",
+            {
+                "report_title": "Exportar participantes",
+                "export_base_path": request.path,
+            },
+        )
 
     perfil = request.user.userprofile
     user_type = perfil.user_type
+
+    columnas_export = [
+        "Nombres",
+        "Apellidos",
+        "Cédula",
+        "Edad",
+        "Sexo",
+        "Nacionalidad",
+        "Email",
+        "Teléfono",
+        "Condición TEA",
+        "Estado",
+        "Municipio",
+        "Parroquia",
+        "Dirección",
+        "Nivel Educativo",
+        "Institución",
+    ]
+    if user_type == "fed_central":
+        columnas_export.extend(
+            ["Instituciones Vinculadas", "Total Vinculaciones Activas"]
+        )
+    columnas_export.extend(
+        ["Representante Legal", "Teléfono Representante", "Fecha Registro"]
+    )
 
     # 1. Obtener participantes según permisos mediante Selector
     participantes = ParticipanteSelector.get_participantes_para_perfil(perfil)
@@ -1052,10 +1188,21 @@ def exportar_participantes_excel(request):
     if estado_f and user_type != "fed_regional":
         participantes = participantes.filter(estado_id=estado_f)
 
-    # Optimizar consulta
-    participantes = participantes.select_related("estado", "municipio", "parroquia")
+    # Optimizar consulta y pre-cargar vinculaciones activas para evitar N+1
+    from django.db.models import Prefetch
 
-    # Preparar datos para Excel
+    vinculaciones_activas_prefetch = Prefetch(
+        "vinculaciones",
+        queryset=ParticipanteInstitucion.objects.filter(status="activo")
+        .select_related("institucion", "estado")
+        .order_by("-fecha_vinculacion"),
+        to_attr="vinculaciones_activas_export",
+    )
+    participantes = participantes.select_related(
+        "estado", "municipio", "parroquia"
+    ).prefetch_related(vinculaciones_activas_prefetch)
+
+    # Preparar datos
     data = []
     for p in participantes:
         # Cédula: personal o escolar
@@ -1065,63 +1212,61 @@ def exportar_participantes_excel(request):
             else (f"E-{p.cedula_escolar}" if p.cedula_escolar else "Sin cédula")
         )
 
-        # Obtener institución desde vinculación activa
-        vinculacion = (
-            p.vinculaciones.filter(status="activo")
-            .select_related("institucion")
-            .first()
+        # Obtener y normalizar vinculaciones activas (multi-institución)
+        vinculaciones_activas = getattr(p, "vinculaciones_activas_export", [])
+        nombres_vinculaciones = [
+            _nombre_vinculacion_participante_export(v) for v in vinculaciones_activas
+        ]
+        # Dedupe preservando orden
+        nombres_vinculaciones = list(dict.fromkeys(nombres_vinculaciones))
+        institucion_principal = (
+            nombres_vinculaciones[0] if nombres_vinculaciones else "Federación Central"
         )
-        institucion_nombre = (
-            vinculacion.institucion.nombre if vinculacion else "Federación"
-        )
-
-        data.append(
-            {
-                "Nombres": p.nombres,
-                "Apellidos": p.apellidos,
-                "Cédula": cedula,
-                "Edad": p.edad,
-                "Sexo": p.get_sexo_display(),
-                "Nacionalidad": p.get_nacionalidad_display(),
-                "Email": p.email,
-                "Teléfono": f"{p.codigo_area}-{p.numero_telefono}"
-                if p.numero_telefono
-                else "",
-                "Condición TEA": "Sí" if p.condicion_tea else "No",
-                "Estado": p.estado.nombre if p.estado else "",
-                "Municipio": p.municipio.nombre if p.municipio else "",
-                "Parroquia": p.parroquia.nombre if p.parroquia else "",
-                "Dirección": p.direccion,
-                "Nivel Educativo": p.get_grado_escolar_display()
-                if p.grado_escolar
-                else "",
-                "Institución": institucion_nombre,
-                "Representante Legal": p.nombre_representante or "",
-                "Teléfono Representante": f"{p.codigo_area_representante}-{p.numero_telefono_representante}"
-                if p.numero_telefono_representante
-                else "",
-                "Fecha Registro": p.fecha_registro.strftime("%Y-%m-%d %H:%M")
-                if hasattr(p, "fecha_registro") and p.fecha_registro
-                else "",
-            }
+        instituciones_vinculadas = (
+            " | ".join(nombres_vinculaciones)
+            if nombres_vinculaciones
+            else "Federación Central"
         )
 
-    # Crear DataFrame
-    df = pd.DataFrame(data)
+        row = {
+            "Nombres": p.nombres,
+            "Apellidos": p.apellidos,
+            "Cédula": cedula,
+            "Edad": p.edad,
+            "Sexo": p.get_sexo_display(),
+            "Nacionalidad": p.get_nacionalidad_display(),
+            "Email": p.email,
+            "Teléfono": f"{p.codigo_area}-{p.numero_telefono}"
+            if p.numero_telefono
+            else "",
+            "Condición TEA": "Sí" if p.condicion_tea else "No",
+            "Estado": p.estado.nombre if p.estado else "",
+            "Municipio": p.municipio.nombre if p.municipio else "",
+            "Parroquia": p.parroquia.nombre if p.parroquia else "",
+            "Dirección": p.direccion,
+            "Nivel Educativo": p.get_grado_escolar_display() if p.grado_escolar else "",
+            "Institución": institucion_principal,
+            "Representante Legal": p.nombre_representante or "",
+            "Teléfono Representante": f"{p.codigo_area_representante}-{p.numero_telefono_representante}"
+            if p.numero_telefono_representante
+            else "",
+            "Fecha Registro": p.fecha_registro.strftime("%Y-%m-%d %H:%M")
+            if hasattr(p, "fecha_registro") and p.fecha_registro
+            else "",
+        }
 
-    # Crear respuesta HTTP con nombre dinámico mediante Selector
-    filename = f"Participantes_{ParticipanteSelector.get_nombre_sede(perfil) or 'Padron_Nacional'}.xlsx".replace(
-        " ", "_"
-    )
+        if user_type == "fed_central":
+            row["Instituciones Vinculadas"] = instituciones_vinculadas
+            row["Total Vinculaciones Activas"] = len(nombres_vinculaciones)
 
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        data.append(row)
 
-    # Escribir a Excel
-    df.to_excel(response, index=False, engine="openpyxl")
-    return response
+    if not data:
+        df = pd.DataFrame(columns=columnas_export)
+    else:
+        df = pd.DataFrame(data, columns=columnas_export)
+    filename_base = f"Participantes_{ParticipanteSelector.get_nombre_sede(perfil) or 'Padron_Nacional'}"
+    return dataframe_to_response(df, filename_base, fmt)
 
 
 @admin_required
@@ -1265,6 +1410,7 @@ def registrar_institucion(request):
         "estado_fijo_id": perfil_admin.estado.id
         if es_regional and perfil_admin.estado
         else None,
+        "password_rules": get_password_rules(),  # Reglas de validación sincronizadas con backend
     }
 
     return render(request, "users/registrar_institucion.html", context)
@@ -1284,9 +1430,17 @@ def lista_participantes(request):
     # Para institucional con filtro de status: ampliar el queryset base para incluir
     # vinculaciones no activas (el prefetch filtrará por el status solicitado)
     status_f = request.GET.get("status") if user_type == "institucional" else None
-    vinc_status_filter = status_f if status_f in ["activo", "inactivo", "suspendido", "egresado"] else "activo"
+    vinc_status_filter = (
+        status_f
+        if status_f in ["activo", "inactivo", "suspendido", "egresado"]
+        else "activo"
+    )
 
-    if user_type == "institucional" and perfil.institution and vinc_status_filter != "activo":
+    if (
+        user_type == "institucional"
+        and perfil.institution
+        and vinc_status_filter != "activo"
+    ):
         # Reemplazar el queryset base para incluir el status solicitado
         participantes = Participante.objects.filter(
             vinculaciones__institucion=perfil.institution,
@@ -2654,11 +2808,11 @@ def agregar_grupo(request):
 
         # 1. Validar nombre del grupo
         if not nombre_grupo:
-            errores.append("❌ El nombre del grupo es obligatorio")
+            errores.append("❌ El nombre del equipo es obligatorio")
         elif len(nombre_grupo) < 3:
-            errores.append("❌ El nombre del grupo debe tener al menos 3 caracteres")
+            errores.append("❌ El nombre del equipo debe tener al menos 3 caracteres")
         elif len(nombre_grupo) > 150:
-            errores.append("❌ El nombre del grupo no puede exceder 150 caracteres")
+            errores.append("❌ El nombre del equipo no puede exceder 150 caracteres")
 
         # 2. Validar selección de miembros
         if not miembros_ids or len(miembros_ids) == 0:
@@ -2702,6 +2856,8 @@ def agregar_grupo(request):
                     except Participante.DoesNotExist:
                         pass
 
+                RegistroParticipanteService.sync_historial_miembros_grupo(nuevo_grupo)
+
                 messages.success(
                     request,
                     f"✅ ¡Equipo '{nombre_grupo}' creado exitosamente con {len(miembros_ids)} miembro(s)!",
@@ -2710,7 +2866,7 @@ def agregar_grupo(request):
 
         except Exception:
             logger.exception(
-                "Error creando grupo legacy. user_id=%s",
+                "Error creando equipo legacy. user_id=%s",
                 request.user.id,
             )
             messages.error(
@@ -2732,7 +2888,7 @@ def agregar_grupo(request):
 
 @login_required
 def ver_grupo(request, nombre_grupo):
-    """Vista para mostrar un grupo con miembros, representante y eventos (prototipo)"""
+    """Vista para mostrar un equipo con miembros, representante y eventos (prototipo)"""
     # Tomamos los grupos guardados en sesión
     grupos = request.session.get("grupos", [])
     grupo = next((g for g in grupos if g["nombre"] == nombre_grupo), None)
@@ -3774,46 +3930,56 @@ def cambiar_estado_participante(request, pk):
 
     nuevo_status = request.POST.get("status")
     if nuevo_status not in ["activo", "inactivo", "suspendido"]:
-        return JsonResponse({"success": False, "error": "Estado no válido."}, status=400)
+        return JsonResponse(
+            {"success": False, "error": "Estado no válido."}, status=400
+        )
 
     try:
         vinculacion.status = nuevo_status
         if nuevo_status != "activo":
             from django.utils import timezone
+
             vinculacion.fecha_desvinculacion = timezone.now()
         else:
             vinculacion.fecha_desvinculacion = None
         vinculacion.save(update_fields=["status", "fecha_desvinculacion"])
-        return JsonResponse({
-            "success": True,
-            "nuevo_status": nuevo_status,
-            "message": f"Participante {'habilitado' if nuevo_status == 'activo' else 'suspendido'} correctamente.",
-        })
+        return JsonResponse(
+            {
+                "success": True,
+                "nuevo_status": nuevo_status,
+                "message": f"Participante {'habilitado' if nuevo_status == 'activo' else 'suspendido'} correctamente.",
+            }
+        )
     except Exception:
         logger.exception(
             "Error cambiando estado de participante. user_id=%s participante_id=%s",
-            request.user.id, pk,
+            request.user.id,
+            pk,
         )
         return JsonResponse({"success": False, "error": "Error interno."}, status=500)
 
 
-@login_required
+@can_delete_participantes_required
 @require_POST
 def participante_delete(request, pk):
-    """Elimina el registro del padrón. Exclusivo para fed_central."""
-    perfil = request.user.userprofile
-    if perfil.user_type not in ["fed_central", "tecnologico"]:
-        logger.warning(
-            "Intento de eliminación de participante sin permiso. user_id=%s user_type=%s participante_id=%s",
-            request.user.id, perfil.user_type, pk,
-        )
-        messages.error(request, "❌ No tienes permiso para eliminar participantes del padrón.")
-        return redirect("lista_participantes")
-
+    """Elimina el registro del padrón. Exclusivo para fed_central, superuser y tecnologico."""
     participante = get_object_or_404(Participante, pk=pk)
     nombre = f"{participante.nombres} {participante.apellidos}"
-    participante.delete()
-    messages.success(request, f"El registro de {nombre} ha sido eliminado.")
+
+    try:
+        with transaction.atomic():
+            participante.delete()
+    except ValidationError as exc:
+        msg = " ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
+        messages.error(request, StringUtils.flash_plain(msg))
+        return redirect("lista_participantes")
+
+    messages.success(
+        request,
+        StringUtils.flash_plain(
+            f"El registro de {nombre} ha sido eliminado permanentemente."
+        ),
+    )
     return redirect("lista_participantes")
 
 
@@ -3898,7 +4064,7 @@ def api_participantes_grupo(request, grupo_id):
                 return JsonResponse(
                     {
                         "success": False,
-                        "error": "No tienes permiso para ver los participantes de este grupo.",
+                        "error": "No tienes permiso para ver los participantes de este equipo.",
                     },
                     status=403,
                 )
@@ -3939,20 +4105,20 @@ def api_participantes_grupo(request, grupo_id):
         return JsonResponse(
             {
                 "success": False,
-                "error": "El grupo no existe o no tienes permiso para verlo.",
+                "error": "El equipo no existe o no tienes permiso para verlo.",
             },
             status=404,
         )
     except Exception:
         logger.exception(
-            "Error obteniendo participantes de grupo. user_id=%s grupo_id=%s",
+            "Error obteniendo participantes de equipo. user_id=%s grupo_id=%s",
             request.user.id,
             grupo_id,
         )
         return JsonResponse(
             {
                 "success": False,
-                "error": "Ocurrió un error interno al consultar los participantes del grupo.",
+                "error": "Ocurrió un error interno al consultar los participantes del equipo.",
             },
             status=500,
         )

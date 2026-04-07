@@ -1,5 +1,11 @@
 {% extends 'users/base_dashboard.html' %}
 
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/eventos-tablas.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -124,29 +130,29 @@
     </div>
     <!-- Tabla de Eventos -->
     <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-        <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" style="background: var(--blue-main);">
+        <div class="card-header eventos-card-header">
             <div class="d-flex align-items-center">
-                <i class="bi bi-list-task text-white me-3 fs-5"></i>
-                <h5 class="fw-bold mb-0 text-white x-small tracking-wider text-uppercase">GESTIÓN DE MIS EVENTOS</h5>
+                <i class="bi bi-list-task header-icon"></i>
+                <h5 class="header-title">GESTIÓN DE MIS EVENTOS</h5>
             </div>
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ stats.total }} Registros</span>
         </div>
-        <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
+        <div class="eventos-header-divider"></div>
         
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="eventosTable">
                     <thead class="bg-light">
-                        <tr class="text-uppercase x-small fw-bold text-muted">
-                            <th class="px-4 py-3">Evento / Descripción</th>
-                            <th class="py-3 text-center">Tipo Evento</th>
-                            <th class="py-3">Tipo</th>
-                            <th class="py-3 text-center">Modalidad</th>
-                            <th class="py-3 text-center">Inscritos</th>
-                            <th class="py-3">Fecha y Sede</th>
-                            <th class="py-3">Teléfono</th>
-                            <th class="py-3">Institución</th>
-                            <th class="py-3 text-center">Estatus</th>
+                        <tr class="text-uppercase x-small fw-bold text-muted eventos-table-header">
+                            <th class="px-4 py-3 sortable-th" data-sort="0">Evento / Descripción <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="1">Tipo Evento <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="3">Modalidad <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="4">Inscritos <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="5">Fecha y Sede <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="6">Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="7">Institución <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="8">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -284,10 +290,6 @@
 </div>
 
 <style>
-    :root { --blue-main: #0b2c6d; --accent-cyan: #00d4ff; }
-    .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
-    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
-    .btn.rounded-circle.p-2:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); transition: all 0.2s; }
     .kpi-card {
         background: linear-gradient(145deg, #0b2c6d, #051636);
         border-radius: 15px;
@@ -296,22 +298,6 @@
     .kpi-card .card-body { padding: 1.25rem !important; }
     .kpi-card h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
     .kpi-card .kpi-icon { font-size: clamp(2.5rem, 5vw, 3.5rem); right: 12px; bottom: 8px; }
-    .badge-tipo {
-        padding: 0.35rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-    }
-    .badge-tipo-generic {
-        padding: 0.25rem 0.5rem;
-        border-radius: 6px;
-        font-size: 0.65rem;
-        font-weight: 600;
-    }
-    .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-    .bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
     .btn-filter-clear {
         background: rgba(11, 44, 109, 0.08);
         color: var(--blue-main);
@@ -325,7 +311,6 @@
         border-color: var(--blue-main);
         transform: translateY(-1px);
     }
-    .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
     .text-purple { color: #7c3aed; }
 </style>
 
@@ -426,6 +411,64 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         update();
     });
+
+    // Ordenamiento de columnas
+    (function initSortableTable() {
+        const table = document.getElementById('eventosTable');
+        if (!table) return;
+        const headers = table.querySelectorAll('th.sortable-th');
+        let currentSortCol = null;
+        let currentSortDir = 'asc';
+
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const colIndex = parseInt(this.getAttribute('data-sort'));
+
+                headers.forEach(h => {
+                    if (h !== this) {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                        h.querySelector('.sort-icon').className = 'bi bi-arrow-down-up sort-icon ms-1 x-small';
+                    }
+                });
+
+                if (currentSortCol === colIndex && currentSortDir === 'asc') {
+                    currentSortDir = 'desc';
+                    this.classList.remove('sort-asc');
+                    this.classList.add('sort-desc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-down-fill sort-icon ms-1 x-small';
+                } else {
+                    currentSortDir = 'asc';
+                    currentSortCol = colIndex;
+                    this.classList.remove('sort-desc');
+                    this.classList.add('sort-asc');
+                    this.querySelector('.sort-icon').className = 'bi bi-caret-up-fill sort-icon ms-1 x-small';
+                }
+
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                rows.sort((a, b) => {
+                    const cellA = a.querySelectorAll('td')[colIndex];
+                    const cellB = b.querySelectorAll('td')[colIndex];
+                    if (!cellA || !cellB) return 0;
+
+                    let valA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+                    let valB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return currentSortDir === 'asc' ? numA - numB : numB - numA;
+                    }
+
+                    const comparison = valA.localeCompare(valB, 'es', { sensitivity: 'base' });
+                    return currentSortDir === 'asc' ? comparison : -comparison;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    })();
 
     // Confirmar envío a revisión
     document.getElementById('btnConfirmarRevision').addEventListener('click', function() {

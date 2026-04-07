@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from users.decorators import fed_central_required
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.core.cache import cache
 from django.db import models, transaction
 from django.db.models import Count, Q
@@ -34,7 +35,7 @@ from .notificaciones import (
     notificar_salida_club,
     notificar_club_rechazado,
 )
-from .services import AdmissionService
+from .services import AdmissionService, ParticipanteService
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ def editar_grupo(request, grupo_id):
                 if pid and pid.strip() and pid.strip().isdigit()
             ]
             grupo.participantes.set(participantes_ids_validos)
+            ParticipanteService.sync_historial_miembros_grupo(grupo)
 
             messages.success(request, "Grupo actualizado exitosamente.")
             return redirect("grupos_institucion")
@@ -198,10 +200,19 @@ def clubes_lista(request):
     institucion = request.user.userprofile.institution
 
     # 1. MIS CLUBES CREADOS (solo NO eliminados)
-    mis_clubes_creados = Club.objects.filter(
-        institucion_creadora=institucion,
-        eliminado=False  # ✅ FASE 1: Filtrar clubes eliminados
-    ).order_by("-fecha_creacion")
+    mis_clubes_creados = (
+        Club.objects.filter(
+            institucion_creadora=institucion,
+            eliminado=False  # ✅ FASE 1: Filtrar clubes eliminados
+        )
+        .annotate(
+            num_solicitudes_pendientes=Count(
+                "membresias",
+                filter=Q(membresias__estado__in=["pendiente_filtro", "visto_bueno_fundadora"])
+            )
+        )
+        .order_by("-fecha_creacion")
+    )
 
     # 2. CLUBES DISPONIBLES (aprobados de OTRAS instituciones para postular)
     from django.db.models import Subquery, OuterRef
@@ -360,8 +371,16 @@ def crear_club(request):
 
 
 @login_required
+@require_POST
 def enviar_club_revision(request, club_id):
-    """Envía un club de borrador/rechazado a pendiente de revisión con límite de intentos."""
+    """
+    Envía un club de borrador/rechazado a pendiente de revisión (POST only).
+    
+    Método simplificado profesional:
+    - Solo POST (no GET)
+    - Sin checklist obligatorio
+    - Confirmación vía modal en el template de edición
+    """
     if not hasattr(request.user, "userprofile"):
         messages.error(request, "No tienes acceso a esta sección.")
         return redirect("dashboard")
@@ -373,7 +392,7 @@ def enviar_club_revision(request, club_id):
 
     club = get_object_or_404(Club, id=club_id)
 
-    # Verificar que el club pertenece al usuario
+    # Verificar permisos
     if user_type == "institucional":
         institucion = request.user.userprofile.institution
         if club.institucion_creadora != institucion:
@@ -389,15 +408,12 @@ def enviar_club_revision(request, club_id):
             club.status = "aprobado"
             club.fecha_aprobacion = timezone.now()
             club.save(update_fields=["status", "fecha_aprobacion"])
-            messages.success(request, f'Club "{club.nombre}" aprobado automáticamente.')
+            messages.success(request, f'✅ Club "{club.nombre}" aprobado automáticamente.')
             return redirect("clubes_lista")
     
-    # ✅ FASE 2: Validar que el club no esté eliminado
+    # Validar que el club no esté eliminado
     if club.eliminado:
-        messages.error(
-            request,
-            "No puedes enviar a revisión un club eliminado. Contacta a la federación si necesitas asistencia."
-        )
+        messages.error(request, "No puedes enviar a revisión un club eliminado.")
         return redirect("clubes_lista")
 
     # Permitir envío desde borrador O rechazado
@@ -408,73 +424,58 @@ def enviar_club_revision(request, club_id):
         )
         return redirect("clubes_lista")
 
-    # FASE 2.1: Límite de intentos de reenvío (3 máximo)
+    # Límite de intentos de reenvío
     MAX_REENVIOS = 3
     num_reenvios = club.contar_reenvios()
     
     if club.status == "rechazado" and num_reenvios >= MAX_REENVIOS:
         messages.error(
             request,
-            f"Has alcanzado el límite de {MAX_REENVIOS} reenvíos para este club. "
-            "Por favor, contacta a la federación para asistencia adicional."
+            f"Has alcanzado el límite de {MAX_REENVIOS} reenvíos. Contacta a la federación."
         )
         return redirect("clubes_lista")
 
-    if request.method == "POST":
-        # FASE 2.2: Validar checklist si es reenvío
-        if club.status == "rechazado":
-            checklist_items = [
-                'correccion_documentacion',
-                'correccion_lineas',
-                'correccion_descripcion'
-            ]
+    # Procesar envío (sin checklist obligatorio)
+    try:
+        with transaction.atomic():
+            estado_anterior = club.status
+            club.status = "pendiente"
+            club.save(update_fields=["status"])
             
-            for item in checklist_items:
-                if not request.POST.get(item):
-                    messages.error(
-                        request,
-                        "Debes confirmar que has realizado todas las correcciones antes de reenviar."
-                    )
-                    return redirect(request.path)
-        
-        estado_anterior = club.status
-        club.status = "pendiente"
-        club.save(update_fields=["status"])
-        
-        # Invalidar caché de clubes pendientes
-        cache.delete('clubes_pendientes_count')
-        
-        # Registrar en historial si venía de rechazado
-        if estado_anterior == "rechazado":
-            HistorialClub.objects.create(
-                club=club,
-                usuario=request.user,
-                estado_anterior=estado_anterior,
-                estado_nuevo="pendiente",
-                observaciones=f"Club corregido y reenviado a revisión (Intento {num_reenvios + 1}/{MAX_REENVIOS})"
+            # Invalidar caché
+            cache.delete('clubes_pendientes_count')
+            
+            # Registrar en historial si venía de rechazado
+            if estado_anterior == "rechazado":
+                HistorialClub.objects.create(
+                    club=club,
+                    usuario=request.user,
+                    estado_anterior=estado_anterior,
+                    estado_nuevo="pendiente",
+                    observaciones=f"Reenvío #{num_reenvios + 1}/{MAX_REENVIOS}"
+                )
+                
+                # Notificar a federación sobre reenvío
+                from .notificaciones import notificar_reenvio_club
+                notificar_reenvio_club(club, num_reenvios + 1)
+            
+            messages.success(
+                request, 
+                f'🚀 Club "{club.nombre}" enviado a revisión correctamente.'
             )
             
-            # FASE 2.3: Notificar a federación sobre reenvío
-            from .notificaciones import notificar_reenvio_club
-            notificar_reenvio_club(club, num_reenvios + 1)
-        
-        messages.success(
-            request, f'Club "{club.nombre}" enviado a revisión correctamente.'
+    except Exception:
+        logger.exception(
+            "Error enviando club a revisión. user_id=%s club_id=%s",
+            request.user.id,
+            club_id,
         )
-        return redirect("clubes_lista")
-
-    # Obtener último rechazo para mostrar observaciones
-    ultimo_rechazo = club.obtener_ultimo_rechazo() if club.status == "rechazado" else None
-
-    context = {
-        "club": club,
-        "es_reenvio": club.status == "rechazado",
-        "num_reenvios": num_reenvios,
-        "max_reenvios": MAX_REENVIOS,
-        "intentos_restantes": MAX_REENVIOS - num_reenvios,
-        "ultimo_rechazo": ultimo_rechazo,
-    }
-    return render(request, "registry/club_enviar_revision.html", context)
+        messages.error(
+            request,
+            "Ocurrió un error interno al enviar el club a revisión.",
+        )
+    
+    return redirect("clubes_lista")
 
 
 @login_required
@@ -552,8 +553,21 @@ def editar_club(request, club_id):
                         except Tutor.DoesNotExist:
                             pass
                 
-                messages.success(request, f'Club "{club.nombre}" actualizado exitosamente.')
-                return redirect("clubes_lista")
+                messages.success(request, f'✅ Club "{club.nombre}" actualizado exitosamente.')
+                
+                # Recargar el formulario con la instancia actualizada
+                form = ClubForm(instance=club)
+                
+                # Actualizar contexto para renderizar de nuevo
+                context = {
+                    "club": club,
+                    "form": form,
+                    "estados_vinculacion": Club.ESTADO_VINCULACION_CHOICES,
+                    "es_fed_central": user_type == "fed_central",
+                    "tutores_club": club.tutores.filter(status="activo").select_related("tutor"),
+                    "rol_choices": ClubTutor.ROL_CHOICES,
+                }
+                return render(request, "registry/club_editar.html", context)
             except Exception:
                 logger.exception(
                     "Error actualizando club. user_id=%s club_id=%s",
@@ -753,41 +767,93 @@ def aprobar_club(request, club_id):
 
 
 @staff_member_required
+@require_POST
 def rechazar_club(request, club_id):
-    """Rechaza un club con motivo obligatorio."""
+    """
+    Rechaza un club con motivo obligatorio.
+    
+    Método seguro profesional:
+    - Solo POST (no GET)
+    - Transacción atómica
+    - Validación de estado permitido
+    - Manejo de excepciones con rollback automático
+    - Logging completo para auditoría
+    """
+    from django.db import transaction
+    
     club = get_object_or_404(Club, id=club_id)
-
-    if request.method == "POST":
-        observaciones = request.POST.get("observaciones", "").strip()
-        
-        if not observaciones:
-            messages.error(request, "Debes especificar el motivo del rechazo.")
-            return render(request, "registry/rechazar_club.html", {"club": club})
-
-        estado_anterior = club.status
-        club.status = "rechazado"
-        club.save(update_fields=["status"])
-        
-        # Invalidar caché de clubes pendientes
-        cache.delete('clubes_pendientes_count')
-        
-        # Registrar en historial
-        HistorialClub.objects.create(
-            club=club,
-            usuario=request.user,
-            estado_anterior=estado_anterior,
-            estado_nuevo="rechazado",
-            observaciones=observaciones
+    
+    # Validación de estado: solo se pueden rechazar clubes pendientes o en revisión
+    if club.status not in ["pendiente", "en_revision"]:
+        messages.error(
+            request, 
+            f"No se puede rechazar el club '{club.nombre}'. "
+            f"Estado actual: {club.get_status_display()}. "
+            f"Solo se pueden rechazar clubes pendientes o en revisión."
         )
-
-        # Notificar al coordinador del club sobre el rechazo
-        notificar_club_rechazado(club, observaciones)
-
-        messages.success(request, f'Club "{club.nombre}" ha sido RECHAZADO.')
         return redirect("revisar_clubes")
-
-    context = {"club": club}
-    return render(request, "registry/rechazar_club.html", context)
+    
+    observaciones = request.POST.get("observaciones", "").strip()
+    
+    # Validación de campo obligatorio
+    if not observaciones:
+        messages.error(request, "Debes especificar el motivo del rechazo.")
+        # Redirigir a la lista en lugar de renderizar template (evita problemas de contexto)
+        return redirect("revisar_clubes")
+    
+    try:
+        with transaction.atomic():
+            # Guardar estado anterior para historial
+            estado_anterior = club.status
+            
+            # Actualizar estado del club
+            club.status = "rechazado"
+            club.save(update_fields=["status"])
+            
+            # Invalidar caché
+            cache.delete('clubes_pendientes_count')
+            
+            # Registrar en historial
+            HistorialClub.objects.create(
+                club=club,
+                usuario=request.user,
+                estado_anterior=estado_anterior,
+                estado_nuevo="rechazado",
+                observaciones=observaciones
+            )
+            
+            # Notificar al coordinador
+            notificar_club_rechazado(club, observaciones)
+            
+            logger.info(
+                "Club rechazado exitosamente. user_id=%s club_id=%s club_nombre=%s estado_anterior=%s",
+                request.user.id,
+                club_id,
+                club.nombre,
+                estado_anterior
+            )
+            
+            messages.success(
+                request, 
+                f'🚫 Club "{club.nombre}" ha sido RECHAZADO. '
+                f'Se ha notificado al coordinador con las observaciones proporcionadas.'
+            )
+            
+    except Exception as e:
+        logger.exception(
+            "Error crítico al rechazar club. user_id=%s club_id=%s error=%s",
+            request.user.id,
+            club_id,
+            str(e)
+        )
+        messages.error(
+            request,
+            "Ocurrió un error interno al procesar el rechazo. "
+            "El sistema ha mantenido la integridad de los datos. "
+            "Por favor, intente nuevamente o contacte al administrador."
+        )
+    
+    return redirect("revisar_clubes")
 
 
 @staff_member_required
@@ -891,6 +957,8 @@ def revisar_membresias(request):
         "total_activas": total_activas,
         "total_rechazadas": total_rechazadas,
         "total_pendientes_filtro": total_pendientes,
+        # Flag para control de permisos en template
+        "es_fed_central": True,  # Esta vista solo es accesible por fed_central (staff_member_required)
     }
     return render(request, "registry/revisar_membresias.html", context)
 

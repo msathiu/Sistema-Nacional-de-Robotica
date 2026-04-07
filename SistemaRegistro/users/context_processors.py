@@ -106,11 +106,11 @@ def _menu_central(is_active, is_expanded, request=None):
     menu.append({"label": "Eventos y Actividades", "url_name": "admin_eventos", "icon": "bi-calendar-event", "active": is_active("admin_eventos", "admin_todos_eventos")})
     # Submenu Reportes (federación central)
     reportes_items = [
-        {"label": "Participantes",   "url_name": "exportar_participantes_excel",  "icon": "bi-people",            "active": False},
-        {"label": "Equipos",         "url_name": "exportar_equipos_excel",         "icon": "bi-microsoft-teams",   "active": False},
-        {"label": "Tutores",         "url_name": "exportar_tutores_excel",         "icon": "bi-person-workspace",  "active": False},
-        {"label": "Instituciones",   "url_name": "exportar_instituciones_excel",   "icon": "bi-building",          "active": False},
-        {"label": "Inscripciones",   "url_name": "exportar_inscripciones_excel",   "icon": "bi-calendar-check",    "active": False},
+        {"label": "Participantes",   "url_name": "exportar_participantes_excel",  "icon": "bi-people",            "active": is_active("exportar_participantes_excel")},
+        {"label": "Equipos",         "url_name": "exportar_equipos_excel",         "icon": "bi-microsoft-teams",   "active": is_active("exportar_equipos_excel")},
+        {"label": "Tutores",         "url_name": "exportar_tutores_excel",         "icon": "bi-person-workspace",  "active": is_active("exportar_tutores_excel")},
+        {"label": "Instituciones",   "url_name": "exportar_instituciones_excel",   "icon": "bi-building",          "active": is_active("exportar_instituciones_excel")},
+        {"label": "Inscripciones",   "url_name": "exportar_inscripciones_excel",   "icon": "bi-calendar-check",    "active": is_active("exportar_inscripciones_excel")},
     ]
     menu.append({"label": "Reportes", "icon": "bi-file-earmark-spreadsheet", "type": "submenu", "items": reportes_items, "expanded": is_expanded("Reportes", reportes_items)})
     return menu
@@ -119,11 +119,11 @@ def _menu_central(is_active, is_expanded, request=None):
 def _menu_regional(is_active, is_expanded):
     """Menú para Federación Regional (solo visualización)."""
     reportes_items = [
-        {"label": "Participantes",  "url_name": "exportar_participantes_excel", "icon": "bi-people",           "active": False},
-        {"label": "Equipos",        "url_name": "exportar_equipos_excel",        "icon": "bi-microsoft-teams",  "active": False},
-        {"label": "Tutores",        "url_name": "exportar_tutores_excel",        "icon": "bi-person-workspace", "active": False},
-        {"label": "Instituciones",  "url_name": "exportar_instituciones_excel",  "icon": "bi-building",         "active": False},
-        {"label": "Inscripciones",  "url_name": "exportar_inscripciones_excel",  "icon": "bi-calendar-check",   "active": False},
+        {"label": "Participantes",  "url_name": "exportar_participantes_excel", "icon": "bi-people",           "active": is_active("exportar_participantes_excel")},
+        {"label": "Equipos",        "url_name": "exportar_equipos_excel",        "icon": "bi-microsoft-teams",  "active": is_active("exportar_equipos_excel")},
+        {"label": "Tutores",        "url_name": "exportar_tutores_excel",        "icon": "bi-person-workspace", "active": is_active("exportar_tutores_excel")},
+        {"label": "Instituciones",  "url_name": "exportar_instituciones_excel",  "icon": "bi-building",         "active": is_active("exportar_instituciones_excel")},
+        {"label": "Inscripciones",  "url_name": "exportar_inscripciones_excel",  "icon": "bi-calendar-check",   "active": is_active("exportar_inscripciones_excel")},
     ]
     return [
         {"label": "Inicio",        "url_name": "dashboard",                  "icon": "bi-speedometer2", "active": is_active("dashboard")},
@@ -163,9 +163,9 @@ def _menu_institucional(is_active, is_expanded, request=None):
     menu.append({"label": "Notificaciones", "url_name": "mis_notificaciones", "icon": "bi-bell", "active": is_active("mis_notificaciones"), "badge": notif_count or None})
     # Reportes institucionales
     reportes_inst = [
-        {"label": "Participantes",  "url_name": "exportar_participantes_excel", "icon": "bi-people",          "active": False},
-        {"label": "Equipos",        "url_name": "exportar_equipos_excel",        "icon": "bi-microsoft-teams", "active": False},
-        {"label": "Inscripciones",  "url_name": "exportar_inscripciones_excel",  "icon": "bi-calendar-check",  "active": False},
+        {"label": "Participantes",  "url_name": "exportar_participantes_excel", "icon": "bi-people",          "active": is_active("exportar_participantes_excel")},
+        {"label": "Equipos",        "url_name": "exportar_equipos_excel",        "icon": "bi-microsoft-teams", "active": is_active("exportar_equipos_excel")},
+        {"label": "Inscripciones",  "url_name": "exportar_inscripciones_excel",  "icon": "bi-calendar-check",  "active": is_active("exportar_inscripciones_excel")},
     ]
     menu.append({"label": "Reportes", "icon": "bi-file-earmark-spreadsheet", "type": "submenu", "items": reportes_inst, "expanded": is_expanded("Reportes", reportes_inst)})
     return menu

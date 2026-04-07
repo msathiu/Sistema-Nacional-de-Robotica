@@ -106,13 +106,20 @@ WSGI_APPLICATION = "SistemaRegistro.wsgi.application"
 
 # --- BASE DE DATOS ---
 # Combinación profesional: DATABASE_URL para prod, SQLite para desarrollo rápido
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL no está definida. PostgreSQL es obligatorio."
+    )
+
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/db.sqlite3"),
+    "default": dj_database_url.parse(
+        DATABASE_URL,
         conn_max_age=600,
         conn_health_checks=True,
-        # Esto obliga a usar ssl si la URL lo pide (importante en prod)
-        ssl_require=not DEBUG if os.getenv("DATABASE_URL", "").startswith("postgres") else False,
+        ssl_require=not DEBUG,
     )
 }
 

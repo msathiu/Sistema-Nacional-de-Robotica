@@ -205,6 +205,24 @@ class Participante(models.Model):
     def cedula_completa(self):
         return f"{self.nacionalidad}-{self.cedula}"
 
+    @property
+    def tiene_grupos_activos(self):
+        """Equipo activo vía M2M o vía ParticipanteGrupo activo (misma regla que delete())."""
+        if self.grupos.filter(activo=True).exists():
+            return True
+        return self.historial_grupos.filter(activo=True, grupo__activo=True).exists()
+
+    @property
+    def count_grupos_activos(self):
+        """Cantidad distinta de equipos activos (M2M ∪ historial activo en grupo activo)."""
+        ids_m2m = set(self.grupos.filter(activo=True).values_list("pk", flat=True))
+        ids_hist = set(
+            self.historial_grupos.filter(activo=True, grupo__activo=True).values_list(
+                "grupo_id", flat=True
+            )
+        )
+        return len(ids_m2m | ids_hist)
+
     def get_instituciones_activas(self):
         return Institucion.objects.filter(
             participantes_vinculados__participante=self,
@@ -259,6 +277,53 @@ class Participante(models.Model):
                 if valor != nuevo_valor:
                     setattr(self, campo, nuevo_valor)
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Impide eliminar del padrón si integra equipos (M2M), si el historial ParticipanteGrupo
+        indica membresía activa en equipos activos (defensa ante desincronización), o si tiene
+        grupo_actual en una vinculación.
+        """
+        # 1) Membresía en roster: ManyToMany Grupo.participantes (related_name=grupos)
+        grupos_qs = self.grupos.filter(activo=True)
+        if grupos_qs.exists():
+            muestra = list(grupos_qs.values_list("nombre", flat=True)[:3])
+            nombres_grupos = ", ".join(muestra)
+            total = grupos_qs.count()
+            if total > 3:
+                nombres_grupos += f" y {total - 3} equipo(s) más"
+            raise ValidationError(
+                f"No se puede eliminar a {self.nombre_completo} porque está inscrito en "
+                f"equipo(s) activo(s): {nombres_grupos}. "
+                "Primero debe retirarlo de todos los equipos."
+            )
+
+        # 2) ParticipanteGrupo: bloquea si aún hay filas activas ligadas a grupos activos
+        #    (cubre datos viejos sin fila M2M; con sync_historial_miembros_grupo no debería pasar)
+        hist_qs = self.historial_grupos.filter(activo=True, grupo__activo=True).select_related(
+            "grupo"
+        )
+        if hist_qs.exists():
+            muestra_pg = list(hist_qs[:3])
+            nombres_h = ", ".join(pg.grupo.nombre for pg in muestra_pg)
+            total_h = hist_qs.count()
+            if total_h > 3:
+                nombres_h += f" y {total_h - 3} equipo(s) más"
+            raise ValidationError(
+                f"No se puede eliminar a {self.nombre_completo} porque figura con membresía activa "
+                f"en el historial de equipo(s): {nombres_h}. "
+                "Actualice los integrantes del equipo o contacte al administrador para alinear el historial."
+            )
+
+        # Asignación explícita en la vinculación institucional
+        tiene_grupo_actual = self.vinculaciones.filter(grupo_actual__isnull=False).exists()
+        if tiene_grupo_actual:
+            raise ValidationError(
+                f"No se puede eliminar a {self.nombre_completo} porque tiene un grupo asignado en su vinculación institucional. "
+                "Primero debe remover el grupo asignado."
+            )
+
+        super().delete(*args, **kwargs)
 
 
 class ParticipanteInstitucion(models.Model):
@@ -426,7 +491,7 @@ class AsistenciaEvento(models.Model):
         "Evento", on_delete=models.CASCADE, related_name="asistencias"
     )
     participante = models.ForeignKey(
-        "Participante", on_delete=models.CASCADE, related_name="asistencias"
+        "Participante", on_delete=models.PROTECT, related_name="asistencias"
     )
     grupo = models.ForeignKey(
         "Grupo",

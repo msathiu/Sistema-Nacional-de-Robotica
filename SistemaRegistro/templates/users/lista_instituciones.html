@@ -114,7 +114,7 @@
                             <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Ubicación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            {% if es_central %}
+                            {% if perfil.es_central %}
                             <th class="py-3 text-center sortable-th" data-sort="5" style="cursor:pointer; user-select:none; min-width: 100px;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             {% else %}
                             <th class="d-none" data-sort="5"><i class="bi bi-arrow-down-up sort-icon d-none"></i></th>
@@ -151,7 +151,7 @@
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
                             
-                            {% if es_central %}
+                            {% if perfil.es_central %}
                             <td class="text-center" onclick="event.stopPropagation();" data-sort-value="{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}">
                                 <div class="mt-2">
                                     <div class="form-check form-switch d-inline-block">
@@ -170,7 +170,7 @@
 
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-1">
-                                    {% if es_central %}
+                                    {% if perfil.es_central %}
                                     <button class="btn btn-outline-info btn-sm rounded-circle p-2" 
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles"
                                             onclick="verDetallesCompletos('{{ item.institucion.id }}')">
@@ -183,7 +183,7 @@
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
                                     
-                                    {% if es_central %}
+                                    {% if perfil.es_central %}
                                     <button class="btn btn-outline-danger btn-sm rounded-circle p-2" 
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
                                             onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">

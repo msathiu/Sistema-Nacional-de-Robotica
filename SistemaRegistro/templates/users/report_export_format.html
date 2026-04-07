@@ -1,0 +1,28 @@
+{% extends 'users/base_dashboard.html' %}
+{% load static %}
+{% block title %}Formato de exportación — RNR{% endblock %}
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 560px;">
+    <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h4 fw-bold mb-2" style="font-family: 'Space Grotesk', sans-serif;">{{ report_title }}</h1>
+            <p class="text-muted small mb-4">Elija el formato de descarga. Los datos son los mismos; solo cambia el archivo generado.</p>
+            <div class="d-grid gap-3">
+                <a href="{{ export_base_path }}?format=xlsx" class="btn btn-lg fw-bold d-flex align-items-center justify-content-center gap-2 py-3"
+                   style="background: var(--blue-main, #0b2c6d); color: white; border-radius: 12px;">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Descargar Excel (.xlsx)
+                </a>
+                <a href="{{ export_base_path }}?format=csv" class="btn btn-lg fw-bold d-flex align-items-center justify-content-center gap-2 py-3 btn-outline-dark"
+                   style="border-radius: 12px;">
+                    <i class="bi bi-filetype-csv"></i>
+                    Descargar CSV (.csv)
+                </a>
+            </div>
+            <p class="text-muted x-small mt-4 mb-0">
+                El acceso a esta exportación queda sujeto a su rol y permisos. No comparta archivos con datos personales fuera de los canales autorizados.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

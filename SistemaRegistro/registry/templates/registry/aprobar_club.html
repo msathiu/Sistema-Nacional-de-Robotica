@@ -57,6 +57,27 @@
     .delay-1 { animation-delay: 0.05s; }
     .delay-2 { animation-delay: 0.1s; }
     .delay-3 { animation-delay: 0.15s; }
+    
+    /* Animaciones optimizadas */
+    .animate-fade-in {
+        opacity: 0;
+        animation: fadeIn 0.6s ease-out forwards;
+        will-change: opacity;
+        transform: translateZ(0); /* Fuerza aceleración por hardware */
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    
+    @keyframes fadeIn {
+        to { opacity: 1; }
+    }
+    
+    /* Prevenir movimientos inesperados */
+    .section-card {
+        contain: layout style paint;
+        backface-visibility: hidden;
+    }
 </style>
 {% endblock %}
 
@@ -203,7 +224,7 @@
                         <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary rounded-pill fw-bold text-start">
                             <i class="bi bi-eye me-2"></i>Ver Detalles Completos
                         </a>
-                        <button onclick="if(confirm('¿Está seguro de que desea rechazar este club?')) window.location.href='/clubes/rechazar/{{ club.id }}/';" 
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub" 
                                 class="btn fw-bold rounded-pill text-white text-start" style="background: #dc2626;">
                             <i class="bi bi-x-circle me-2"></i>Rechazar en lugar de aprobar
                         </button>
@@ -250,4 +271,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Rechazar Club -->
+<div class="modal fade" id="modalRechazarClub" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 pt-4 px-4 text-white" style="background: linear-gradient(145deg, #dc2626, #b91c1c); border-radius: 20px 20px 0 0;">
+                <h5 class="fw-bold mb-0"><i class="bi bi-x-circle me-2"></i>Rechazar Club</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center bg-light">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <p class="fs-5 text-dark">¿Está seguro de que desea rechazar este club?</p>
+                <h4 class="text-dark fw-bold">{{ club.nombre }}</h4>
+                <p class="text-muted small mt-3">El club será devuelto a la institución para correcciones.</p>
+                <form id="formRechazar" method="post" action="{% url 'rechazar_club' club.id %}">
+                    {% csrf_token %}
+                    <div class="mt-4">
+                        <label for="observaciones" class="form-label fw-bold text-start d-block">Motivo del rechazo <span class="text-danger">*</span></label>
+                        <textarea name="observaciones" id="observaciones" class="form-control" rows="3" required
+                                  placeholder="Especifique las razones del rechazo y las correcciones necesarias..."></textarea>
+                        <small class="text-muted mt-1 d-block">Este comentario será visible para la institución.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 bg-light pb-4 px-4 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-bold w-100" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="formRechazar" class="btn text-white rounded-pill px-4 fw-bold w-100 shadow-sm" style="background: #dc2626;">
+                    <i class="bi bi-x-circle me-2"></i>Confirmar Rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

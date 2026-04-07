@@ -1,6 +1,7 @@
 import logging
 from django.db import transaction
 from registry.models import Grupo, Participante, Tutor
+from registry.services.participante_service import ParticipanteService
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class GrupoService:
                         except Participante.DoesNotExist:
                             logger.warning(f"Participante con cédula {cedula} no encontrado.")
 
+            ParticipanteService.sync_historial_miembros_grupo(nuevo_grupo)
             return nuevo_grupo
 
     @staticmethod
@@ -75,7 +77,8 @@ class GrupoService:
                             grupo.participantes.add(participante)
                         except Participante.DoesNotExist:
                             logger.warning(f"Participante con cédula {cedula} no encontrado.")
-            
+
+            ParticipanteService.sync_historial_miembros_grupo(grupo)
             return grupo
 
     @staticmethod
@@ -90,4 +93,5 @@ class GrupoService:
 
         with transaction.atomic():
             grupo.participantes.clear()
+            ParticipanteService.sync_historial_miembros_grupo(grupo)
             grupo.delete()

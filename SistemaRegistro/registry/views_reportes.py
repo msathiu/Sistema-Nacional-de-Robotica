@@ -3,12 +3,14 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Q, Avg, F, ExpressionWrapper, DurationField
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import csv
+
+from users.report_export_utils import parse_export_format, rows_to_response
 
 from .models import Club, MembresiaClu, HistorialClub, Grupo, InscripcionGrupoEvento
 from .models.tutor import Tutor, TutorInstitucion
@@ -274,19 +276,31 @@ def _filtro_territorial(qs, perfil, campo_estado):
     return qs
 
 
-def _csv_response(filename, headers, rows):
-    """Helper: devuelve HttpResponse CSV con cabecera y filas."""
-    response = HttpResponse(content_type="text/csv; charset=utf-8-sig")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
-    writer = csv.writer(response)
-    writer.writerow(headers)
-    writer.writerows(rows)
-    return response
+def _report_format_or_chooser(request, title: str):
+    try:
+        fmt = parse_export_format(request)
+    except ValueError:
+        return None, HttpResponseBadRequest(
+            "Formato no válido. Use format=xlsx o format=csv.",
+            content_type="text/plain; charset=utf-8",
+        )
+    if fmt is None:
+        return None, render(
+            request,
+            "users/report_export_format.html",
+            {"report_title": title, "export_base_path": request.path},
+        )
+    return fmt, None
 
 
 @login_required
 def exportar_equipos_excel(request):
-    """Exporta equipos (grupos) a CSV según permisos del usuario."""
+    """Exporta equipos (grupos) a Excel o CSV según permisos del usuario."""
+    out = _report_format_or_chooser(request, "Exportar equipos")
+    if out[1] is not None:
+        return out[1]
+    fmt = out[0]
+
     perfil = request.user.userprofile
     if not (_es_federacion(perfil) or _es_institucional(perfil)):
         messages.error(request, "No tienes permisos para exportar equipos.")
@@ -325,12 +339,17 @@ def exportar_equipos_excel(request):
             g.fecha_registro.strftime("%d/%m/%Y") if g.fecha_registro else "",
         ])
 
-    return _csv_response("equipos_export.csv", headers, rows)
+    return rows_to_response(headers, rows, "equipos_export", fmt)
 
 
 @login_required
 def exportar_tutores_excel(request):
-    """Exporta tutores a CSV según permisos del usuario."""
+    """Exporta tutores a Excel o CSV según permisos del usuario."""
+    out = _report_format_or_chooser(request, "Exportar tutores")
+    if out[1] is not None:
+        return out[1]
+    fmt = out[0]
+
     perfil = request.user.userprofile
     if not (_es_federacion(perfil) or _es_institucional(perfil)):
         messages.error(request, "No tienes permisos para exportar tutores.")
@@ -366,12 +385,17 @@ def exportar_tutores_excel(request):
             vi.get_status_display(),
         ])
 
-    return _csv_response("tutores_export.csv", headers, rows)
+    return rows_to_response(headers, rows, "tutores_export", fmt)
 
 
 @login_required
 def exportar_instituciones_excel(request):
-    """Exporta instituciones a CSV. Solo federación."""
+    """Exporta instituciones a Excel o CSV. Solo federación."""
+    out = _report_format_or_chooser(request, "Exportar instituciones")
+    if out[1] is not None:
+        return out[1]
+    fmt = out[0]
+
     perfil = request.user.userprofile
     if not _es_federacion(perfil):
         messages.error(request, "No tienes permisos para exportar instituciones.")
@@ -404,12 +428,17 @@ def exportar_instituciones_excel(request):
             inst.fecha_registro.strftime("%d/%m/%Y") if inst.fecha_registro else "",
         ])
 
-    return _csv_response("instituciones_export.csv", headers, rows)
+    return rows_to_response(headers, rows, "instituciones_export", fmt)
 
 
 @login_required
 def exportar_inscripciones_excel(request):
-    """Exporta inscripciones de equipos a eventos a CSV."""
+    """Exporta inscripciones de equipos a eventos a Excel o CSV."""
+    out = _report_format_or_chooser(request, "Exportar inscripciones")
+    if out[1] is not None:
+        return out[1]
+    fmt = out[0]
+
     perfil = request.user.userprofile
     if not (_es_federacion(perfil) or _es_institucional(perfil)):
         messages.error(request, "No tienes permisos para exportar inscripciones.")
@@ -447,4 +476,4 @@ def exportar_inscripciones_excel(request):
             ins.fecha_inscripcion.strftime("%d/%m/%Y") if hasattr(ins, "fecha_inscripcion") and ins.fecha_inscripcion else "",
         ])
 
-    return _csv_response("inscripciones_export.csv", headers, rows)
+    return rows_to_response(headers, rows, "inscripciones_export", fmt)

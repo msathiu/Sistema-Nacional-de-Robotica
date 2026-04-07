@@ -58,6 +58,40 @@ class ServiceIntegrationTests(TestCase):
         self.assertEqual(participante.user.username, "V-12345678")
         self.assertTrue(participante.vinculaciones.filter(institucion=self.institucion).exists())
 
+    def test_participante_reusa_usuario_huerfano_sin_ficha(self):
+        """Usuario Django participante existente sin fila Participante: se crea solo la ficha."""
+        orphan = User.objects.create_user(
+            username="V-55555555",
+            password="secret123",
+            email="orphan@test.com",
+        )
+        prof = orphan.userprofile
+        prof.user_type = "participante"
+        prof.save(update_fields=["user_type"])
+
+        cleaned_data = {
+            "nombres": "Ana",
+            "apellidos": "Huérfana",
+            "nacionalidad": "V",
+            "cedula_personal": "55555555",
+            "email": "orphan@test.com",
+            "fecha_nacimiento": date(2002, 2, 2),
+            "sexo": "F",
+            "estado": self.estado,
+            "municipio": self.municipio,
+            "parroquia": self.parroquia,
+            "direccion": "Dir",
+            "numero_telefono": "1234567",
+            "codigo_area": "0412",
+        }
+        participante = ParticipanteService.crear_participante_con_usuario(
+            cleaned_data=cleaned_data,
+            institucion=self.institucion,
+            registrado_por=self.admin_user,
+        )
+        self.assertEqual(participante.user_id, orphan.id)
+        self.assertEqual(participante.cedula, "55555555")
+
     def test_institution_service_creation(self):
         data = {
             "nombre": "Nueva Inst",

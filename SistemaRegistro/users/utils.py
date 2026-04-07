@@ -83,6 +83,16 @@ class StringUtils:
         return cleaned.strip()
 
     @staticmethod
+    def flash_plain(text: Optional[str]) -> str:
+        """
+        Texto para django.contrib.messages (success/error/warning/info).
+
+        Elimina cualquier HTML para que en plantillas baste con {{ message }} sin |safe,
+        manteniendo el escape automático de Django como última capa.
+        """
+        return StringUtils.clean_html(text)
+
+    @staticmethod
     def format_username_from_id(nacionalidad: str, numeric_id: str) -> str:
         """
         Genera un username estándar a partir de la nacionalidad y la cédula limpia.

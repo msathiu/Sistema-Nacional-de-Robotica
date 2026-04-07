@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from registry.models import (
     Estado,
+    Grupo,
     Institucion,
     Municipio,
     Parroquia,
@@ -307,7 +308,11 @@ class ParticipanteAccessControlTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_participante_delete_requires_post(self):
-        self.client.force_login(self.inst_user)
+        central = User.objects.create_user(username="fedc_post_chk", password="testpass123")
+        cp = central.userprofile
+        cp.user_type = "fed_central"
+        cp.save()
+        self.client.force_login(central)
         response = self.client.get(
             reverse("participante_delete", args=[self.participante_inst_1.pk])
         )
@@ -320,14 +325,37 @@ class ParticipanteAccessControlTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_institucional_can_delete_own_participant(self):
+    def test_institucional_cannot_delete_participant_without_permission(self):
         self.client.force_login(self.inst_user)
         response = self.client.post(
             reverse("participante_delete", args=[self.participante_inst_1.pk]),
             follow=True,
         )
         self.assertRedirects(response, reverse("lista_participantes"))
-        self.assertFalse(
+        self.assertTrue(
+            Participante.objects.filter(pk=self.participante_inst_1.pk).exists()
+        )
+
+    def test_fed_central_cannot_delete_participant_in_active_grupo(self):
+        central = User.objects.create_user(username="fedc_grupo", password="testpass123")
+        cp = central.userprofile
+        cp.user_type = "fed_central"
+        cp.save()
+        grupo = Grupo.objects.create(
+            nombre="Equipo Test Bloqueo",
+            usuario_creador=central,
+            criterio="proyecto",
+            activo=True,
+        )
+        grupo.participantes.add(self.participante_inst_1)
+
+        self.client.force_login(central)
+        response = self.client.post(
+            reverse("participante_delete", args=[self.participante_inst_1.pk]),
+            follow=True,
+        )
+        self.assertRedirects(response, reverse("lista_participantes"))
+        self.assertTrue(
             Participante.objects.filter(pk=self.participante_inst_1.pk).exists()
         )
 
