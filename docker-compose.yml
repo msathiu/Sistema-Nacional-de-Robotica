@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:17-alpine
     container_name: postgres_db_v17
+    shm_size: '256mb'
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
