@@ -1,177 +1,329 @@
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
-{% block content %}
-<div class="container-fluid py-4">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'leaflet-1.9.4/css/leaflet.css' %}">
+<style>
+    #mapaFull { height: calc(100vh - 220px); min-height: 500px; border-radius: 16px; }
+    .leaflet-container { background: #f0f4f8; }
+    .capa-btn.active { background: #0b2c6d !important; color: white !important; border-color: #0b2c6d !important; }
+    .municipio-item:hover { background: #f0f9ff; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; }
+    .capa-btn[data-capa="clubes"],
+    .capa-btn[data-capa="tutores"],
+    .capa-btn[data-capa="participantes"] { display: none !important; }
+</style>
+{% endblock %}
 
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="fw-bold">
-                <i class="bi bi-map text-danger me-2"></i>
-                Despliegue Territorial RNR
-            </h2>
-            <p class="text-muted">
-                Distribución de instituciones por entidad federal.
-            </p>
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0"><i class="bi bi-map-fill text-danger me-2"></i>Mapa Interactivo Nacional</h4>
+            <p class="text-muted small mb-0">Distribución territorial — haz clic en un estado para ver el desglose por municipio</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center" id="capaSelector">
+            <!-- Toggle activas/todas — solo aplica a capa Instituciones -->
+            <div class="d-flex align-items-center gap-2 me-2 px-3 py-1 rounded-pill border" style="background:#f8fafc;" id="toggleFiltro">
+                <span class="small fw-bold text-muted">Instituciones:</span>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="switchActivas" checked style="cursor:pointer;">
+                    <label class="form-check-label small fw-bold" for="switchActivas" id="switchLabel" style="color:#0b2c6d;">Aprobadas</label>
+                </div>
+            </div>
+            <button class="btn btn-sm fw-bold capa-btn active" data-capa="instituciones" style="border-radius:20px;border:2px solid #0b2c6d;">
+                <i class="bi bi-building me-1"></i>Instituciones
+            </button>
+            <button class="btn btn-sm fw-bold capa-btn" data-capa="clubes" style="border-radius:20px;border:2px solid #059669;color:#059669;">
+                <i class="bi bi-check-circle me-1"></i>Clubes
+            </button>
+            <button class="btn btn-sm fw-bold capa-btn" data-capa="eventos" style="border-radius:20px;border:2px solid #f59e0b;color:#d97706;">
+                <i class="bi bi-calendar-event me-1"></i>Eventos
+            </button>
+            <button class="btn btn-sm fw-bold capa-btn" data-capa="tutores" style="border-radius:20px;border:2px solid #8b5cf6;color:#7c3aed;">
+                <i class="bi bi-person-workspace me-1"></i>Tutores
+            </button>
+            <button class="btn btn-sm fw-bold capa-btn" data-capa="participantes" style="border-radius:20px;border:2px solid #00d4ff;color:#0891b2;">
+                <i class="bi bi-people me-1"></i>Participantes
+            </button>
         </div>
     </div>
 
-    <div class="row">
-
-        <!-- MAPA -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm p-3">
-                <div class="position-relative" style="height: 600px;">
-                    <div id="map"
-                         class="position-absolute top-0 start-0 end-0 bottom-0"
-                         style="border-radius: 15px;"></div>
+    <div class="row g-3">
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm p-2" style="border-radius:16px;">
+                <div class="position-relative">
+                    <div id="mapaSpinner" class="position-absolute top-50 start-50 translate-middle d-none" style="z-index:1000;">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                    <div id="mapaFull"></div>
                 </div>
             </div>
         </div>
-
-        <!-- PANEL -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-lg text-white p-4"
-                 style="background: linear-gradient(145deg, #0b2c6d, #051636);">
-
-                <h5 class="fw-bold mb-3">Información General</h5>
-
-                <div class="d-flex justify-content-between">
-                    <span>Total instituciones:</span>
-                    <span class="fw-bold" id="total-inst">0</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Estado con más registros:</span>
-                    <span class="fw-bold" id="top-state">—</span>
-                </div>
-                <div class="d-flex justify-content-between mb-3">
-                    <span>Promedio por estado:</span>
-                    <span class="fw-bold" id="avg-inst">0</span>
-                </div>
-
-                <hr class="border-white border-opacity-25">
-
-                <h6 class="fw-bold" id="state-name">Selecciona un estado</h6>
-                <div class="d-flex justify-content-between">
-                    <span>Instituciones:</span>
-                    <span class="fw-bold" id="inst-count">—</span>
-                </div>
-
+        <div class="col-lg-3 d-flex flex-column gap-3">
+            <div class="card border-0 shadow-sm p-3 text-white" style="border-radius:16px;background:linear-gradient(145deg,#0b2c6d,#051636);">
+                <div class="small text-white-50 fw-bold text-uppercase mb-1">Total Nacional</div>
+                <h2 class="fw-bold mb-0" id="totalNacional">—</h2>
+                <div class="small text-white-50 mt-1" id="capaLabel">Instituciones registradas</div>
+            </div>
+            <div class="card border-0 shadow-sm p-3 flex-grow-1" style="border-radius:16px;">
+                <h6 class="fw-bold mb-3" id="estadoNombre">
+                    <i class="bi bi-cursor-fill text-muted me-1"></i>Selecciona un estado
+                </h6>
+                <div id="estadoDetalle" class="text-muted small">Haz clic en cualquier estado del mapa para ver su detalle y desglose por municipio.</div>
             </div>
         </div>
-
     </div>
 </div>
 {% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'leaflet-1.9.4/css/leaflet.css' %}" />
-<style>
-    #map {
-        width: 100%;
-        height: 100%;
-        min-height: 600px;
-    }
-    .leaflet-container {
-        background: #f8f9fa;
-    }
-</style>
-{% endblock %}
+
 {% block extra_js %}
 <script src="{% static 'leaflet-1.9.4/js/leaflet.js' %}"></script>
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function() {
+    const GEOJSON_URL = "{% static 'geo/venezuela_estados.geojson' %}";
+    const API_URL = "{% url 'api_mapa_datos' %}";
+    const RESUMEN_URL = "{% url 'api_mapa_resumen' %}";
+    const COLORES = ['#e5e7eb','#bfdbfe','#60a5fa','#2563eb','#1e3a8a'];
+    const CAPA_LABELS = {
+        instituciones: 'Instituciones aprobadas',
+        clubes: 'Clubes aprobados',
+        eventos: 'Eventos activos',
+        tutores: 'Tutores vinculados',
+        participantes: 'Participantes registrados'
+    };
 
-    const dataReal = {{ mapa_data|safe|default:"{}" }};
+    let mapa, geojsonLayer, datosActuales = {}, resumenGlobal = {}, maxActual = 0,
+        capaActual = 'instituciones', soloActivas = true, estadoSeleccionado = null;
 
-    /* ===============================
-       NORMALIZAR CLAVES
-       =============================== */
-    const normalizar = (t) =>
-        t.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-    const dataNormalizada = {};
-    Object.keys(dataReal).forEach(k => {
-        dataNormalizada[normalizar(k)] = dataReal[k];
-    });
-
-    /* ===============================
-       MÉTRICAS GENERALES
-       =============================== */
-    const valores = Object.values(dataReal);
-    const total = valores.reduce((a,b)=>a+b,0);
-    const max = valores.length ? Math.max(...valores) : 0;
-    const estadoTop = Object.keys(dataReal).find(e => dataReal[e] === max);
-    const promedio = valores.length ? (total / valores.length).toFixed(1) : 0;
-
-    document.getElementById('total-inst').innerText = total;
-    document.getElementById('top-state').innerText = estadoTop || '—';
-    document.getElementById('avg-inst').innerText = promedio;
-
-    /* ===============================
-       MAPA BASE
-       =============================== */
-    const map = L.map('map').setView([7.5, -66.5], 6);
-
-    L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { maxZoom: 18 }
-    ).addTo(map);
-
-    setTimeout(() => map.invalidateSize(), 300);
-
-    /* ===============================
-       COLORES DE CALOR
-       =============================== */
-    function getColor(v) {
-        return v > 30 ? '#08306b' :
-               v > 15 ? '#2171b5' :
-               v > 5  ? '#4292c6' :
-               v > 0  ? '#9ecae1' :
-                        '#e5e7eb';
+    function activasParam() {
+        return capaActual === 'instituciones' ? '&activas=' + (soloActivas ? 1 : 0) : '';
     }
 
-    /* ===============================
-       GEOJSON
-       =============================== */
-    fetch('https://raw.githubusercontent.com/yisus82/venezuela-geojson/master/venezuela.json')
-        .then(r => r.json())
-        .then(geojson => {
+    function getColor(v) {
+        if (!maxActual || !v) return COLORES[0];
+        const p = v / maxActual;
+        return p > 0.75 ? COLORES[4] : p > 0.50 ? COLORES[3] : p > 0.25 ? COLORES[2] : COLORES[1];
+    }
 
-            const layer = L.geoJSON(geojson, {
-                style: feature => {
-                    const estado = feature.properties.ESTADO;
-                    const valor = dataNormalizada[normalizar(estado)] || 0;
+    // flag reclamado por nombre (leído del GeoJSON una sola vez)
+    var feature_reclamado = {};
 
-                    return {
-                        fillColor: getColor(valor),
-                        weight: 1.5,
-                        color: '#ffffff',
-                        fillOpacity: 0.85
-                    };
-                },
+    function esReclamadoActivo(nombre) {
+        // Deja de tratarse como reclamado en cuanto tiene datos registrados
+        return feature_reclamado[nombre] && !(datosActuales[nombre] > 0);
+    }
 
-                onEachFeature: (feature, layer) => {
-                    const estado = feature.properties.ESTADO;
-                    const valor = dataNormalizada[normalizar(estado)] || 0;
+    function estilo(f) {
+        var nombre = f.properties.estado;
+        if (esReclamadoActivo(nombre)) {
+            return { fillColor: '#ffffff', weight: 2, color: '#94a3b8', fillOpacity: 0.6, dashArray: '6,4' };
+        }
+        return { fillColor: getColor(datosActuales[nombre] || 0), weight: 1.5, color: '#fff', fillOpacity: 0.85 };
+    }
 
-                    layer.bindTooltip(
-                        `<strong>${estado}</strong><br>${valor} instituciones`,
-                        { sticky: true }
-                    );
-
-                    layer.on({
-                        mouseover: e => e.target.setStyle({weight:3}),
-                        mouseout: e => layer.resetStyle(e.target),
-                        click: e => {
-                            document.getElementById('state-name').innerText = estado;
-                            document.getElementById('inst-count').innerText = valor;
-                            map.fitBounds(e.target.getBounds(), {padding:[20,20]});
-                        }
-                    });
-                }
-            }).addTo(map);
+    function onEachFeature(feature, layer) {
+        var nombre = feature.properties.estado;
+        if (feature.properties.reclamado) feature_reclamado[nombre] = true;
+        layer.on({
+            mouseover: function(e) {
+                var reclamado = esReclamadoActivo(nombre);
+                if (!reclamado) e.target.setStyle({weight: 3, color: '#00d4ff'});
+                var r = resumenGlobal[nombre] || {};
+                layer.setTooltipContent(reclamado
+                    ? '<strong style="font-size:13px;">\uD83D\uDDFA\uFE0F ' + nombre + '</strong><br><span style="color:#64748b;font-size:11px;font-style:italic;">Territorio reclamado por Venezuela<br>Sin datos registrados a\xFAn</span>'
+                    : '<strong style="font-size:13px;">' + nombre + '</strong><br>' +
+                      '<span style="color:#374151;font-size:12px;line-height:1.8;">' +
+                      '\uD83C\uDFEB Instituciones: <b>' + (r.instituciones||0).toLocaleString() + '</b><br>' +
+                      '\uD83E\uDD16 Clubes: <b>' + (r.clubes||0).toLocaleString() + '</b><br>' +
+                      '\uD83D\uDCC5 Eventos: <b>' + (r.eventos||0).toLocaleString() + '</b><br>' +
+                      '\uD83D\uDC68\u200D\uD83C\uDFEB Tutores: <b>' + (r.tutores||0).toLocaleString() + '</b><br>' +
+                      '\uD83D\uDC65 Participantes: <b>' + (r.participantes||0).toLocaleString() + '</b>' +
+                      '</span>'
+                );
+            },
+            mouseout: function(e) { geojsonLayer.resetStyle(e.target); },
+            click: function(e) {
+                if (esReclamadoActivo(nombre)) return;
+                mapa.fitBounds(e.target.getBounds(), {padding: [30, 30]});
+                estadoSeleccionado = nombre;
+                cargarDetalle(nombre);
+            }
         });
-});
+        layer.bindTooltip('', {sticky: true, opacity: 0.95});
+    }
+
+    function cargarDetalle(nombre) {
+        document.getElementById('estadoNombre').innerHTML = '<i class="bi bi-geo-alt-fill text-danger me-1"></i>' + nombre;
+        const total = datosActuales[nombre] || 0;
+        const totalNac = Object.values(datosActuales).reduce(function(a,b){return a+b;}, 0);
+        const pct = totalNac ? Math.round((total/totalNac)*100) : 0;
+        fetch(API_URL + '?capa=' + capaActual + '&estado=' + encodeURIComponent(nombre) + activasParam())
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var html = '<div class="d-flex align-items-center justify-content-between mb-3">' +
+                    '<span class="fw-bold" style="color:#0b2c6d;font-size:1.6rem;">' + total.toLocaleString() + '</span>' +
+                    '<span class="badge rounded-pill px-3" style="background:#e0f2fe;color:#0369a1;font-size:0.85rem;">' + pct + '% del total</span>' +
+                    '</div>';
+                if (data.municipios && data.municipios.length) {
+                    var maxM = data.municipios[0].total;
+                    html += '<div class="small fw-bold text-uppercase text-muted mb-2">' +
+                        '<i class="bi bi-building-fill-geo me-1"></i>Municipios' +
+                        '<span class="fw-normal ms-1" style="font-size:10px;color:#94a3b8;">(clic para ver parroquias)</span>' +
+                        '</div>';
+                    data.municipios.forEach(function(m) {
+                        var w = maxM ? Math.round((m.total/maxM)*100) : 0;
+                        html += '<div class="mb-2 municipio-item" style="cursor:pointer;"' +
+                            ' data-estado="' + nombre + '" data-municipio="' + m.nombre + '" data-total="' + m.total + '">' +
+                            '<div class="d-flex justify-content-between small mb-1 align-items-center">' +
+                            '<span><i class="bi bi-chevron-right" style="font-size:9px;color:#94a3b8;"></i> ' + m.nombre + '</span>' +
+                            '<span class="fw-bold">' + m.total + '</span></div>' +
+                            '<div class="progress" style="height:5px;border-radius:3px;">' +
+                            '<div class="progress-bar" style="width:' + w + '%;background:#0b2c6d;border-radius:3px;"></div></div></div>';
+                    });
+                } else {
+                    html += '<p class="text-muted small">Sin datos de municipios para esta capa.</p>';
+                }
+                document.getElementById('estadoDetalle').innerHTML = html;
+            });
+    }
+
+    function cargarParroquias(estado, municipio, totalMun) {
+        document.getElementById('estadoNombre').innerHTML =
+            '<span class="btn-volver" data-estado="' + estado + '" style="cursor:pointer;color:#94a3b8;font-size:0.85rem;">' +
+            '<i class="bi bi-arrow-left me-1"></i>' + estado + '</span><br>' +
+            '<i class="bi bi-geo-alt-fill text-danger me-1"></i>' + municipio;
+        fetch(API_URL + '?capa=' + capaActual + '&estado=' + encodeURIComponent(estado) + '&municipio=' + encodeURIComponent(municipio) + activasParam())
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var html = '<div class="d-flex align-items-center justify-content-between mb-3">' +
+                    '<span class="fw-bold" style="color:#0b2c6d;font-size:1.6rem;">' + totalMun.toLocaleString() + '</span>' +
+                    '<span class="badge rounded-pill px-2" style="background:#f0fdf4;color:#166534;font-size:0.8rem;">Municipio</span></div>';
+                if (data.parroquias && data.parroquias.length) {
+                    var maxP = data.parroquias[0].total;
+                    html += '<div class="small fw-bold text-uppercase text-muted mb-2"><i class="bi bi-pin-map me-1"></i>Parroquias</div>';
+                    data.parroquias.forEach(function(p) {
+                        var w = maxP ? Math.round((p.total/maxP)*100) : 0;
+                        html += '<div class="mb-2"><div class="d-flex justify-content-between small mb-1">' +
+                            '<span>' + p.nombre + '</span><span class="fw-bold">' + p.total + '</span></div>' +
+                            '<div class="progress" style="height:4px;border-radius:3px;">' +
+                            '<div class="progress-bar" style="width:' + w + '%;background:#059669;border-radius:3px;"></div></div></div>';
+                    });
+                } else {
+                    html += '<p class="text-muted small">Sin datos de parroquias para esta capa.</p>';
+                }
+                document.getElementById('estadoDetalle').innerHTML = html;
+            });
+    }
+
+    document.addEventListener('click', function(e) {
+        var mItem = e.target.closest('.municipio-item');
+        if (mItem) {
+            cargarParroquias(mItem.dataset.estado, mItem.dataset.municipio, parseInt(mItem.dataset.total));
+            return;
+        }
+        var volver = e.target.closest('.btn-volver');
+        if (volver) {
+            estadoSeleccionado = volver.dataset.estado;
+            cargarDetalle(volver.dataset.estado);
+        }
+    });
+
+    function cargarResumen() {
+        return fetch(RESUMEN_URL + '?activas=' + (soloActivas ? 1 : 0))
+            .then(function(r) { return r.json(); })
+            .then(function(data) { resumenGlobal = data; });
+    }
+
+    function cargarDatos(capa) {
+        document.getElementById('mapaSpinner').classList.remove('d-none');
+        fetch(API_URL + '?capa=' + capa + activasParam())
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                datosActuales = data.datos;
+                maxActual = data.max;
+                document.getElementById('totalNacional').textContent = data.total.toLocaleString();
+                document.getElementById('capaLabel').textContent = CAPA_LABELS[capa];
+                if (geojsonLayer) geojsonLayer.setStyle(estilo);
+                // Refrescar panel lateral si hay un estado seleccionado
+                if (estadoSeleccionado) cargarDetalle(estadoSeleccionado);
+                document.getElementById('mapaSpinner').classList.add('d-none');
+            })
+            .catch(function() { document.getElementById('mapaSpinner').classList.add('d-none'); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        mapa = L.map('mapaFull').setView([7.5, -66.5], 6);
+
+        fetch(GEOJSON_URL)
+            .then(function(r) { return r.json(); })
+            .then(function(geojson) {
+                geojsonLayer = L.geoJSON(geojson, {style: estilo, onEachFeature: onEachFeature}).addTo(mapa);
+                // Cargar datos iniciales y resumen en paralelo con activas=1 explícito
+                Promise.all([
+                    fetch(API_URL + '?capa=instituciones&activas=1').then(function(r) { return r.json(); }),
+                    fetch(RESUMEN_URL + '?activas=1').then(function(r) { return r.json(); })
+                ]).then(function(results) {
+                    var capaDatos = results[0], resumen = results[1];
+                    datosActuales = capaDatos.datos;
+                    maxActual = capaDatos.max;
+                    resumenGlobal = resumen;
+                    document.getElementById('totalNacional').textContent = capaDatos.total.toLocaleString();
+                    document.getElementById('capaLabel').textContent = CAPA_LABELS['instituciones'];
+                    geojsonLayer.setStyle(estilo);
+                    document.getElementById('mapaSpinner').classList.add('d-none');
+                });
+                mapa.fitBounds(geojsonLayer.getBounds(), {padding: [10, 10]});
+            });
+
+        // Leyenda
+        var leyenda = L.control({position: 'bottomright'});
+        leyenda.onAdd = function() {
+            var div = L.DomUtil.create('div');
+            div.style.cssText = 'background:white;padding:10px 14px;border-radius:10px;font-size:12px;line-height:2;box-shadow:0 2px 8px rgba(0,0,0,0.15);';
+            div.innerHTML = ['Sin datos','Bajo','Medio','Alto','M\xE1ximo']
+                .map(function(l,i) {
+                    return '<div><span style="display:inline-block;width:14px;height:14px;background:' + COLORES[i] + ';border-radius:3px;margin-right:8px;vertical-align:middle;border:1px solid #ddd;"></span>' + l + '</div>';
+                }).join('');
+            return div;
+        };
+        leyenda.addTo(mapa);
+
+        // Toggle aprobadas/registradas
+        var switchEl = document.getElementById('switchActivas');
+        if (switchEl) {
+            switchEl.addEventListener('change', function() {
+                soloActivas = this.checked;
+                document.getElementById('switchLabel').textContent = soloActivas ? 'Aprobadas' : 'Registradas';
+                // Recargar resumen del tooltip con el nuevo filtro, luego recargar mapa
+                cargarResumen().then(function() {
+                    if (capaActual === 'instituciones') cargarDatos('instituciones');
+                });
+            });
+        }
+
+        // Selector de capas
+        document.querySelectorAll('.capa-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.capa-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                    b.style.background = '';
+                    b.style.color = b.style.borderColor ? b.style.borderColor.replace('solid ','') : '';
+                });
+                this.classList.add('active');
+                this.style.background = '#0b2c6d';
+                this.style.color = 'white';
+                capaActual = this.dataset.capa;
+                document.getElementById('toggleFiltro').style.display = capaActual === 'instituciones' ? '' : 'none';
+                // Limpiar estado seleccionado al cambiar capa para evitar detalle desactualizado
+                estadoSeleccionado = null;
+                document.getElementById('estadoNombre').innerHTML = '<i class="bi bi-cursor-fill text-muted me-1"></i>Selecciona un estado';
+                document.getElementById('estadoDetalle').textContent = 'Haz clic en cualquier estado del mapa para ver su detalle y desglose por municipio.';
+                cargarDatos(capaActual);
+            });
+        });
+
+        setTimeout(function() { mapa.invalidateSize(); }, 300);
+    });
+})();
 </script>
 {% endblock %}

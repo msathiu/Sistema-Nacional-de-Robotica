@@ -56,13 +56,30 @@ redis_data/
 docker-data/
 volumes/
 
-# Archivos Docker (si están generados automáticamente)
-docker-compose.override.yml
-docker-compose.*.yml
+# ============================================
+# DJANGO ESPECÍFICO
+# =========================================>
+# Traducciones compiladas
+*.mo
+*.pot
 
-# Logs y archivos temporales de Docker
-*.docker.log
-docker-log*.txt
+# Base de datos SQLite (journal)
+db.sqlite3-journal
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Sesiones
+sessions/
+
+# ============================================
+# REPORTES Y EXPORTADOS
+# ============================================
+export_*.csv
+export_*.xlsx
+exports/
+reportes/
 
 # ============================================
 # ARCHIVOS TEMPORALES Y DE SISTEMA
@@ -215,3 +232,9 @@ SISTEMA DOC
 .amazonq
 md
 /md
+.aider*
+PLAN_ESCALABILIDAD.md
+SESION_2026-04-10.md
+SESION_2026-04-11.md
+PLAN_MAPA_GEOREFERENCIA.md
+INFRAESTRUCTURA_PRODUCCION.md

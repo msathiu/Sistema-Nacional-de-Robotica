@@ -1,20 +1,41 @@
 repos:
--   repo: https://github.com
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-    -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
 
-# --- AQUÍ AGREGASTE BLACK ---
--   repo: https://github.com
+  - repo: https://github.com/psf/black
     rev: 23.12.1
     hooks:
-    -   id: black
+      - id: black
         language_version: python3
 
--   repo: https://github.com
-    rev: v1.4.0
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
-    -   id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+      - id: detect-secrets
+        # Hemos quitado el --baseline para evitar el error 'Unable to read' en Windows
+        exclude: package-lock.json
+
+# --- SECCIÓN: AUDITORÍA DE SEGURIDAD LOCAL (vía Docker) ---
+  - repo: local
+    hooks:
+      - id: bandit-docker
+        name: Bandit (Seguridad de Código)
+        entry: docker compose exec -T web bandit -r . -x ./venv,./tests
+        language: system
+        pass_filenames: false
+
+      - id: pip-audit-docker
+        name: Pip-audit (Seguridad de Librerías)
+        entry: docker compose exec -T web pip-audit
+        language: system
+        pass_filenames: false
+
+      - id: django-check-deploy
+        name: Django Check Deploy
+        entry: docker compose exec -T web python manage.py check --deploy
+        language: system
+        pass_filenames: false

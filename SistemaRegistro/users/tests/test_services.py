@@ -185,7 +185,8 @@ class ServiceIntegrationTests(TestCase):
             "estado": self.estado.id,
             "tipo_evento": "institucional",
             "audiencia": "publica",
-            "requisitos": "Traer robot"
+            "requisitos": "Traer robot",
+            "email_contacto": "evento@test.com",
         }
         
         evento = EventoService.crear_evento(

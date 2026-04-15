@@ -209,6 +209,7 @@ class InstitucionAdmin(admin.ModelAdmin):
         "estado",
         "activa",
         "federado",
+        "eliminado",
     )
     readonly_fields = ("codigo", "fecha_registro")
     exclude = ("tipo_federado",)
@@ -216,6 +217,7 @@ class InstitucionAdmin(admin.ModelAdmin):
         "estatus",
         "activa",
         "federado",
+        "eliminado",
         "estado",
         "tipo_institucion",
         "naturaleza",

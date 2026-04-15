@@ -337,7 +337,11 @@ class InstitucionCredentialAdminForm(forms.Form):
             self.add_error("confirm_password", "Las contrasenas no coinciden.")
             return cleaned_data
 
-        validate_password(password, self.target_user)
+        try:
+            validate_password(password, self.target_user)
+        except ValidationError as e:
+            for msg in e.messages:
+                self.add_error("password", msg)
         return cleaned_data
 
 

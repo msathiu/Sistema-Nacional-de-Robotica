@@ -10,7 +10,7 @@ from users.models import UserProfile
 class EliminarSedeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.estado = Estado.objects.create(nombre="Miranda", codigo="MI")
+        cls.estado, _ = Estado.objects.get_or_create(nombre="Miranda", defaults={"codigo": "MI"})
 
         cls.central_user = User.objects.create_user(
             username="central",

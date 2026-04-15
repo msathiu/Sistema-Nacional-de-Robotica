@@ -3131,77 +3131,66 @@ def eliminar_institucion(request, institucion_id):
     return redirect("lista_instituciones")
 
 
-def estadisticas_demografia(request):
-    # Cálculos para las tarjetas KPI
-    context = {
-        "total_participantes": Participante.objects.count(),
-        "total_instituciones": Institucion.objects.count(),
-        "total_eventos": Evento.objects.count(),
-        # Calculando porcentaje de mujeres
-        "mujeres_count": Participante.objects.filter(genero="F").count(),
-        # Datos para el gráfico de barras (Estados)
-        "datos_estados": Institucion.objects.values("estado")
-        .annotate(total=Count("id"))
-        .order_by("-total"),
-    }
-    return render(request, "tu_app/estadisticas.html", context)
 
-
+@login_required
+@fed_central_required
 def mapa_interactivo(request):
-    # 1. Creamos un diccionario de mapeo (Nombre en DB -> Código del Mapa)
-    mapeo_codigos = {
-        "Amazonas": "ve-am",
-        "Anzoátegui": "ve-an",
-        "Apure": "ve-ap",
-        "Aragua": "ve-ar",
-        "Barinas": "ve-ba",
-        "Bolívar": "ve-bo",
-        "Carabobo": "ve-ca",
-        "Cojedes": "ve-co",
-        "Delta Amacuro": "ve-da",
-        "Distrito Capital": "ve-dc",
-        "Falcón": "ve-fa",
-        "Guárico": "ve-gu",
-        "Lara": "ve-la",
-        "Mérida": "ve-me",
-        "Miranda": "ve-mi",
-        "Monagas": "ve-mo",
-        "Nueva Esparta": "ve-ne",
-        "Portuguesa": "ve-po",
-        "Sucre": "ve-su",
-        "Táchira": "ve-ta",
-        "Trujillo": "ve-tr",
-        "Vargas": "ve-va",
-        "Yaracuy": "ve-ya",
-        "Zulia": "ve-zu",
-    }
-
-    # 2. Consultamos la base de datos agrupando por estado
-    # Esto cuenta las instituciones por cada estado de una sola vez
-    conteo_db = Institucion.objects.values("estado__nombre").annotate(total=Count("id"))
-
-    # 3. Construimos el JSON que entiende el JavaScript
-    mapa_data = {}
-    for registro in conteo_db:
-        nombre_estado = registro["estado__nombre"]
-        if nombre_estado in mapeo_codigos:
-            codigo_mapa = mapeo_codigos[nombre_estado]
-            mapa_data[codigo_mapa] = registro["total"]
-
+    conteo_db = Institucion.objects.filter(eliminado=False).values("estado__nombre").annotate(total=Count("id"))
+    mapa_data = {r["estado__nombre"]: r["total"] for r in conteo_db if r["estado__nombre"]}
     return render(request, "users/mapa_interactivo.html", {"mapa_data": mapa_data})
 
 
-def dashboard_mapa(request):
-    # Ejemplo de cómo agrupar instituciones por estado
-    from django.db.models import Count
+@login_required
+@fed_central_required
+def api_mapa_datos(request):
+    """Datos por estado para una capa del mapa. Soporta drill-down a municipio y parroquia."""
+    from django.core.cache import cache
+    from .services.mapa_service import (
+        _slug, datos_por_estado, municipios_por_estado, parroquias_por_municipio
+    )
 
-    # Asumiendo que tu modelo Institucion tiene un campo 'estado'
-    conteo = Institucion.objects.values("estado").annotate(total=Count("id"))
+    capa       = request.GET.get("capa", "instituciones")
+    estado     = request.GET.get("estado", "")
+    municipio  = request.GET.get("municipio", "")
+    solo_activas = request.GET.get("activas", "1") == "1"
 
-    # Crear el diccionario: {'Miranda': 10, 'Zulia': 5...}
-    mapa_data = {item["estado"]: item["total"] for item in conteo}
+    cache_key = f"mapa_{capa}_{_slug(estado)}_{_slug(municipio)}_{'a' if solo_activas else 't'}"
+    resultado = cache.get(cache_key)
 
-    return render(request, "tu_template.html", {"mapa_data": mapa_data})
+    if resultado is None:
+        datos = datos_por_estado(capa, solo_activas)
+        total = sum(datos.values())
+        max_val = max(datos.values(), default=0)
+
+        municipios = []
+        parroquias = []
+        if estado and municipio:
+            parroquias = parroquias_por_municipio(capa, estado, municipio, solo_activas)
+        elif estado:
+            municipios = municipios_por_estado(capa, estado, solo_activas)
+
+        resultado = {"datos": datos, "total": total, "max": max_val,
+                     "municipios": municipios, "parroquias": parroquias}
+        cache.set(cache_key, resultado, 60)
+
+    return JsonResponse(resultado)
+
+
+@login_required
+@fed_central_required
+def api_mapa_resumen(request):
+    """Resumen de todas las capas por estado para el tooltip del mapa."""
+    from django.core.cache import cache
+    from .services.mapa_service import resumen_todas_capas
+
+    solo_activas = request.GET.get("activas", "1") == "1"
+    cache_key = f"mapa_resumen_{'a' if solo_activas else 't'}"
+    resumen = cache.get(cache_key)
+    if resumen is None:
+        resumen = resumen_todas_capas(solo_activas)
+        cache.set(cache_key, resumen, 60)
+
+    return JsonResponse(resumen)
 
 
 @institucional_required
@@ -3479,63 +3468,6 @@ def obtener_datos_persona(request):
     # data = { 'nombres': 'Juan', 'apellidos': 'Perez', ... }
     return JsonResponse({"status": "success", "data": {}})
 
-
-@login_required
-def dashboard_central(request):
-    hoy = timezone.now().date()
-
-    # KPIs Básicos
-    total_participantes = Participante.objects.count()
-    total_instituciones = Institucion.objects.count()  # Usando el nombre corregido
-    total_eventos = Evento.objects.filter(fecha__gte=hoy).count()
-
-    # Cobertura: Ajustado al nombre del campo que vimos en errores anteriores
-    cobertura_nacional = Institucion.objects.values("estado").distinct().count()
-
-    # 1. Gráfica de Barras: Distribución de Instituciones por Estado
-    stats_estados = (
-        Institucion.objects.values("estado")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:8]
-    )
-
-    labels_estados = [item["estado"] for item in stats_estados]
-    data_estados = [item["total"] for item in stats_estados]
-
-    # 2. Gráfica de Línea: Crecimiento por mes
-    # Usamos 'fecha_registro' si existe, si no, puedes usar 'id' para probar
-    crecimiento_inst = (
-        Institucion.objects.filter(fecha_registro__year=hoy.year)
-        .values("fecha_registro__month")
-        .annotate(total=Count("id"))
-        .order_by("fecha_registro__month")
-    )
-
-    data_crecimiento = [0] * 12
-    for item in crecimiento_inst:
-        # Django a veces devuelve el mes en una llave diferente según la DB
-        mes_num = item.get("fecha_registro__month")
-        if mes_num:
-            data_crecimiento[mes_num - 1] = item["total"]
-
-    # 3. Género
-    porcentaje_mujeres = 0
-    if total_participantes > 0:
-        mujeres = Participante.objects.filter(genero="Femenino").count()
-        porcentaje_mujeres = round((mujeres / total_participantes) * 100)
-
-    context = {
-        "total_participantes": total_participantes,
-        "total_instituciones": total_instituciones,
-        "total_eventos": total_eventos,
-        "cobertura_nacional": cobertura_nacional,
-        "labels_estados": labels_estados,
-        "data_estados": data_estados,
-        "data_crecimiento": data_crecimiento,
-        "porcentaje_mujeres": porcentaje_mujeres,
-        "pendientes_aprobacion": 0,
-    }
-    return render(request, "users/dashboard_central.html", context)
 
 
 @login_required

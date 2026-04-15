@@ -100,6 +100,7 @@ def _menu_central(is_active, is_expanded, request=None):
         ]),
     ]
     menu = [{"label": "Inicio", "url_name": "dashboard", "icon": "bi-speedometer2", "active": is_active("dashboard")}]
+    menu.append({"label": "Mapa Interactivo", "url_name": "mapa_interactivo", "icon": "bi-map-fill", "active": is_active("mapa_interactivo")})
     for label, icon, children in submenus:
         items = [{"label": c[0], "url_name": c[1], "icon": c[2], "active": is_active(c[1]), "badge": c[3]} for c in children]
         menu.append({"label": label, "icon": icon, "type": "submenu", "items": items, "expanded": is_expanded(label, items)})

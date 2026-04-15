@@ -323,7 +323,8 @@ class ParticipanteAccessControlTests(TestCase):
         response = self.client.post(
             reverse("participante_delete", args=[self.participante_inst_2.pk])
         )
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Participante.objects.filter(pk=self.participante_inst_2.pk).exists())
 
     def test_institucional_cannot_delete_participant_without_permission(self):
         self.client.force_login(self.inst_user)

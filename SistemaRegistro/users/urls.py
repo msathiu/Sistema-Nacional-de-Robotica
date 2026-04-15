@@ -122,6 +122,8 @@ urlpatterns = [
         name="estadisticas_por_estado",
     ),
     path("dashboard/mapa/", views.mapa_interactivo, name="mapa_interactivo"),
+    path("api/mapa/datos/", views.api_mapa_datos, name="api_mapa_datos"),
+    path("api/mapa/resumen/", views.api_mapa_resumen, name="api_mapa_resumen"),
     path(
         "exportar/participantes/",
         views.exportar_participantes_excel,

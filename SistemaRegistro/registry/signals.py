@@ -4,10 +4,22 @@ Señales para el modelo Institucion.
 
 import logging
 
+from django.core.cache import cache
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from .models import Institucion
+from .models import Club, Evento, Institucion
+
+_MAPA_PREFIJOS = {
+    "instituciones": ["mapa_instituciones____a", "mapa_instituciones____t"],
+    "clubes":        ["mapa_clubes____a"],
+    "eventos":       ["mapa_eventos____a"],
+}
+
+def _invalidar_cache_mapa(*prefijos):
+    keys = list({k for p in prefijos for k in _MAPA_PREFIJOS.get(p, [])} | {"mapa_resumen_all"})
+    cache.delete_many(keys)
+    logger.debug(f"Cache mapa invalidada: {keys}")
 
 logger = logging.getLogger(__name__)
 
@@ -88,3 +100,20 @@ def enviar_correo_activacion_institucion(sender, instance, created, **kwargs):
 
     if hasattr(instance, "_estado_anterior"):
         delattr(instance, "_estado_anterior")
+
+    # Invalidar caché del mapa cuando cambia estatus o activa
+    if estado_anterior and (
+        estado_anterior.estatus != instance.estatus or
+        estado_anterior.activa != instance.activa
+    ):
+        _invalidar_cache_mapa("instituciones")
+
+
+@receiver(post_save, sender=Club)
+def invalidar_cache_mapa_club(sender, instance, **kwargs):
+    _invalidar_cache_mapa("clubes")
+
+
+@receiver(post_save, sender=Evento)
+def invalidar_cache_mapa_evento(sender, instance, **kwargs):
+    _invalidar_cache_mapa("eventos")

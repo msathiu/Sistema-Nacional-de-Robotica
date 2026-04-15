@@ -1,6 +1,8 @@
 {% extends 'users/base_dashboard.html' %}
 {% load static %}
 
+{% block extra_css %}{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -178,6 +180,34 @@
             </a>
         </div>
     </div>
+
+    {% if perfil.es_central %}
+    <!-- ACCESO RÁPIDO: MAPA TERRITORIAL -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <a href="{% url 'mapa_interactivo' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm overflow-hidden" style="border-radius:16px;background:linear-gradient(135deg,#0b2c6d 0%,#1a4ca8 60%,#051636 100%);">
+                    <div class="card-body p-4 d-flex align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-3 rounded-3" style="background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.3);">
+                                <i class="bi bi-map-fill text-white fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-white mb-1">Mapa de Distribución Territorial Nacional</h5>
+                                <p class="text-white-50 small mb-0">Geo-referencia interactiva por estado — instituciones, clubes, eventos, tutores y participantes</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-white flex-shrink-0">
+                            <span class="small fw-bold" style="color:var(--accent-cyan);">Ver mapa</span>
+                            <i class="bi bi-arrow-right-circle-fill fs-4" style="color:var(--accent-cyan);"></i>
+                        </div>
+                    </div>
+                    <div style="height:3px;background:linear-gradient(90deg,var(--accent-cyan),transparent);"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
@@ -428,7 +458,23 @@
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'right', labels: { usePointStyle: true, font: { size: 11 }, padding: 12 } } }
+                plugins: { 
+                    legend: { position: 'right', labels: { usePointStyle: true, font: { size: 11 }, padding: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                let value = context.raw;
+                                let total = context.chart._metasets[context.datasetIndex].total;
+                                let percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                                return label + percentage + ' (' + value + ')';
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -473,4 +519,5 @@
         });
     });
 </script>
+<script src="{% static 'js/chart-actions.js' %}"></script>
 {% endblock %}

@@ -44,3 +44,48 @@ db.sqlite3
 !docker-compose-prod.yml
 .dockerignore
 
+# --- Datos de contenedores (CRÍTICO) ---
+data/
+pgdata/
+postgres_data/
+redis_data/
+docker-data/
+volumes/
+
+# --- Logs ---
+logs/
+log/
+*.log
+django.log
+
+# --- Python builds ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Test coverage ---
+.coverage.*
+htmlcov/
+
+# --- Node.js (si aplica en futuro) ---
+node_modules/
+package-lock.json
+yarn.lock
+
+# --- SQL temporales ---
+*.sql
+
+# --- Temporales ---
+temp/
+tmp/
+
+# --- Documentación y planes locales ---
+docs/
+plan/
+SIN_USO/
+old/
+backup/
+backups/
+*.md
+
