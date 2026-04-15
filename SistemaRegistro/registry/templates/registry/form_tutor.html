@@ -23,7 +23,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4" 
+                <div class="card-header border-0 py-3 px-4"
                      style="background: linear-gradient(145deg, #0b2c6d, #051636);">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-file-earmark-text text-white me-3 fs-5"></i>
@@ -33,7 +33,7 @@
                 <div class="card-body p-4">
                     <form method="POST" novalidate>
                         {% csrf_token %}
-                        
+
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
                                 {% for error in form.non_field_errors %}
@@ -53,7 +53,7 @@
                                     <span class="text-danger small">{{ form.tipo_vinculacion.errors.0 }}</span>
                                 {% endif %}
                             </div>
-                            
+
                             <!-- Rol -->
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">
@@ -205,7 +205,7 @@
                             <a href="{% url 'lista_tutores' %}" class="btn btn-outline-secondary px-4">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn px-4 fw-bold" 
+                            <button type="submit" class="btn px-4 fw-bold"
                                     style="background: var(--accent-cyan); color: var(--blue-main);">
                                 <i class="bi bi-check-circle me-1"></i> {{ boton_texto }}
                             </button>
@@ -234,22 +234,22 @@ document.addEventListener('DOMContentLoaded', function() {
     var telefonoFeedback = document.getElementById('telefono-feedback');
     let verificacionTimeout;
     const verificarCedulaUrl = "{% url 'verificar_tutor_cedula' %}";
-    
+
     if (cedulaInput) {
         // Solo permitir números en el campo de cédula
         cedulaInput.addEventListener('input', function(e) {
             var value = e.target.value;
             var soloNumeros = value.replace(/[^0-9]/g, '');
-            
+
             if (value !== soloNumeros) {
                 e.target.value = soloNumeros;
-                
+
                 if (feedback) {
                     feedback.style.display = 'block';
                     feedback.textContent = 'Solo se permiten números.';
                     cedulaInput.classList.add('is-invalid');
                 }
-                
+
                 setTimeout(function() {
                     if (feedback) {
                         feedback.style.display = 'none';
@@ -263,17 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        
+
         // Verificar cédula al perder el foco
         cedulaInput.addEventListener('blur', function() {
             const cedula = this.value.trim();
-            
+
             if (cedula.length < 5) return;
-            
+
             clearTimeout(verificacionTimeout);
             verificacionTimeout = setTimeout(() => verificarCedula(cedula), 300);
         });
-        
+
         // Validar al perder el foco
         cedulaInput.addEventListener('blur', function(e) {
             var value = e.target.value;
@@ -313,20 +313,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     async function verificarCedula(cedula) {
         try {
             const response = await fetch(`${verificarCedulaUrl}?cedula=${cedula}`);
             const data = await response.json();
-            
+
             if (!data.existe) return;
-            
+
             if (data.vinculado) {
                 Swal.fire({
                     icon: 'info',
                     title: 'Tutor Ya Vinculado',
                     html: `
-                        <p>El tutor <strong>${data.tutor.nombres} ${data.tutor.apellidos}</strong> 
+                        <p>El tutor <strong>${data.tutor.nombres} ${data.tutor.apellidos}</strong>
                         ya está vinculado a esta institución.</p>
                         <p>Estado: <span class="badge bg-${data.vinculacion.status === 'activo' ? 'success' : 'warning'}">
                             ${data.vinculacion.status}
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmButtonText: 'Sí, vincular',
                     cancelButtonText: 'No',
                 });
-                
+
                 if (result.isConfirmed) {
                     autocompletarFormulario(data.tutor);
                 }
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
         }
     }
-    
+
     function autocompletarFormulario(tutor) {
         document.getElementById('id_nacionalidad').value = tutor.nacionalidad;
         document.getElementById('id_nombres').value = tutor.nombres;
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('id_email').value = tutor.email;
         document.getElementById('id_profesion').value = tutor.profesion;
         document.getElementById('id_experiencia').value = tutor.experiencia;
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Datos Cargados',

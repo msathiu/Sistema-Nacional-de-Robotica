@@ -4,15 +4,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0040_agregar_campos_persona_natural'),
+        ("registry", "0040_agregar_campos_persona_natural"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='evento',
-            name='tipo',
-            field=models.CharField(choices=[('Competencia', 'Competencia'), ('Taller', 'Taller'), ('Seminario', 'Seminario'), ('Conferencia', 'Conferencia'), ('Exhibición', 'Exhibición'), ('Hackathon', 'Hackathon'), ('Feria', 'Feria'), ('Encuentro', 'Encuentro'), ('Capacitación', 'Capacitación'), ('Otro', 'Otro')], db_index=True, default='Competencia', max_length=100),
+            model_name="evento",
+            name="tipo",
+            field=models.CharField(
+                choices=[
+                    ("Competencia", "Competencia"),
+                    ("Taller", "Taller"),
+                    ("Seminario", "Seminario"),
+                    ("Conferencia", "Conferencia"),
+                    ("Exhibición", "Exhibición"),
+                    ("Hackathon", "Hackathon"),
+                    ("Feria", "Feria"),
+                    ("Encuentro", "Encuentro"),
+                    ("Capacitación", "Capacitación"),
+                    ("Otro", "Otro"),
+                ],
+                db_index=True,
+                default="Competencia",
+                max_length=100,
+            ),
         ),
     ]

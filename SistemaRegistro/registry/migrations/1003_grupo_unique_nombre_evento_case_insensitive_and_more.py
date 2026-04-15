@@ -6,19 +6,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1002_alter_participante_cedula_and_more'),
+        ("registry", "1002_alter_participante_cedula_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='grupo',
-            constraint=models.UniqueConstraint(django.db.models.functions.text.Lower('nombre'), models.F('evento'), name='unique_nombre_evento_case_insensitive'),
+            model_name="grupo",
+            constraint=models.UniqueConstraint(
+                django.db.models.functions.text.Lower("nombre"),
+                models.F("evento"),
+                name="unique_nombre_evento_case_insensitive",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='participante',
-            constraint=models.UniqueConstraint(fields=('nombres', 'apellidos', 'fecha_nacimiento'), name='unique_participante_datos_personales', violation_error_message='Ya existe un participante con estos nombres, apellidos y fecha de nacimiento.'),
+            model_name="participante",
+            constraint=models.UniqueConstraint(
+                fields=("nombres", "apellidos", "fecha_nacimiento"),
+                name="unique_participante_datos_personales",
+                violation_error_message="Ya existe un participante con estos nombres, apellidos y fecha de nacimiento.",
+            ),
         ),
     ]

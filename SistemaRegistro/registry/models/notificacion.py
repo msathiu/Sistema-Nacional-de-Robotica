@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from .club import Club
 
+
 class Notificacion(models.Model):
     """Modelo para sistema de notificaciones internas (buzón de mensajes)."""
 

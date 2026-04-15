@@ -196,8 +196,13 @@ class EventoSelector:
             return (
                 eventos_base.filter(
                     Q(estado=estado_perfil)
-                    | Q(estado__isnull=True, institucion__isnull=True, club_organizador__isnull=True)
-                ) | eventos_fed_central_cancelados
+                    | Q(
+                        estado__isnull=True,
+                        institucion__isnull=True,
+                        club_organizador__isnull=True,
+                    )
+                )
+                | eventos_fed_central_cancelados
             ).distinct()
 
         # Instituciones: audiencia estricta + membresía + exclusión de eventos propios.

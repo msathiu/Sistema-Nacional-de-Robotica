@@ -5,20 +5,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0034_alter_participante_cedula_and_more'),
+        ("registry", "0034_alter_participante_cedula_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='participante',
-            name='registrado_por_federacion',
-            field=models.BooleanField(default=False, verbose_name='Registrado por Federación'),
+            model_name="participante",
+            name="registrado_por_federacion",
+            field=models.BooleanField(
+                default=False, verbose_name="Registrado por Federación"
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='institucion',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='participantes', to='registry.institucion'),
+            model_name="participante",
+            name="institucion",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="participantes",
+                to="registry.institucion",
+            ),
         ),
     ]

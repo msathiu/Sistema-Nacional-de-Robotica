@@ -5,40 +5,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0053_alter_evento_telefono_codigo_and_more'),
+        ("registry", "0053_alter_evento_telefono_codigo_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='evento',
-            name='estado_evento',
-            field=models.CharField(choices=[('borrador', 'Borrador'), ('pendiente', 'Pendiente Aprobación'), ('en_revision', 'En Revisión'), ('aprobado', 'Aprobado'), ('publicado', 'Publicado'), ('en_proceso', 'En Proceso'), ('finalizado', 'Finalizado'), ('rechazado', 'Rechazado'), ('cancelado', 'Cancelado')], db_index=True, default='borrador', max_length=20),
+            model_name="evento",
+            name="estado_evento",
+            field=models.CharField(
+                choices=[
+                    ("borrador", "Borrador"),
+                    ("pendiente", "Pendiente Aprobación"),
+                    ("en_revision", "En Revisión"),
+                    ("aprobado", "Aprobado"),
+                    ("publicado", "Publicado"),
+                    ("en_proceso", "En Proceso"),
+                    ("finalizado", "Finalizado"),
+                    ("rechazado", "Rechazado"),
+                    ("cancelado", "Cancelado"),
+                ],
+                db_index=True,
+                default="borrador",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='id',
-            field=models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False),
+            model_name="participante",
+            name="id",
+            field=models.UUIDField(
+                default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+            ),
         ),
         migrations.AlterField(
-            model_name='participantegrupo',
-            name='id',
-            field=models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False),
+            model_name="participantegrupo",
+            name="id",
+            field=models.UUIDField(
+                default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+            ),
         ),
         migrations.AlterField(
-            model_name='participanteinstitucion',
-            name='id',
-            field=models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False),
+            model_name="participanteinstitucion",
+            name="id",
+            field=models.UUIDField(
+                default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+            ),
         ),
         migrations.AlterField(
-            model_name='tutor',
-            name='id',
-            field=models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False, verbose_name='ID'),
+            model_name="tutor",
+            name="id",
+            field=models.UUIDField(
+                default=uuid6.uuid7,
+                editable=False,
+                primary_key=True,
+                serialize=False,
+                verbose_name="ID",
+            ),
         ),
         migrations.AlterField(
-            model_name='tutorinstitucion',
-            name='id',
-            field=models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False),
+            model_name="tutorinstitucion",
+            name="id",
+            field=models.UUIDField(
+                default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+            ),
         ),
     ]

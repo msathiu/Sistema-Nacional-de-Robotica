@@ -6,9 +6,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1001_evento_workflow_reconciliation'),
+        ("registry", "1001_evento_workflow_reconciliation"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -17,17 +16,46 @@ class Migration(migrations.Migration):
         # Las restricciones (UniqueConstraint) ya están en los modelos
         # Esta migración solo asegura que la base de datos tenga los campos correctos
         migrations.AlterField(
-            model_name='participante',
-            name='cedula',
-            field=models.CharField(blank=True, db_index=True, help_text='Solo números (ej: 19122516)', max_length=20, null=True, unique=True, validators=[django.core.validators.RegexValidator(message='Cédula debe contener solo números', regex='^[0-9]+$')]),
+            model_name="participante",
+            name="cedula",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="Solo números (ej: 19122516)",
+                max_length=20,
+                null=True,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="Cédula debe contener solo números", regex="^[0-9]+$"
+                    )
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='cedula_escolar',
-            field=models.CharField(blank=True, db_index=True, help_text='Cédula escolar del participante (solo números)', max_length=20, null=True, unique=True, validators=[django.core.validators.RegexValidator(message='La cédula escolar debe contener solo números', regex='^[0-9]*$')], verbose_name='Cédula Escolar'),
+            model_name="participante",
+            name="cedula_escolar",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="Cédula escolar del participante (solo números)",
+                max_length=20,
+                null=True,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="La cédula escolar debe contener solo números",
+                        regex="^[0-9]*$",
+                    )
+                ],
+                verbose_name="Cédula Escolar",
+            ),
         ),
         migrations.AddIndex(
-            model_name='participante',
-            index=models.Index(fields=['nombres', 'apellidos', 'fecha_nacimiento'], name='idx_part_nombre_fn'),
+            model_name="participante",
+            index=models.Index(
+                fields=["nombres", "apellidos", "fecha_nacimiento"],
+                name="idx_part_nombre_fn",
+            ),
         ),
     ]

@@ -5,15 +5,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1013_alter_asistenciaevento_unique_together_and_more'),
+        ("registry", "1013_alter_asistenciaevento_unique_together_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='asistenciaevento',
-            name='participante',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='asistencias', to='registry.participante'),
+            model_name="asistenciaevento",
+            name="participante",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="asistencias",
+                to="registry.participante",
+            ),
         ),
     ]

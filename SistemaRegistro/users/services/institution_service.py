@@ -8,6 +8,7 @@ from ..utils import LocationUtils, StringUtils
 
 logger = logging.getLogger(__name__)
 
+
 class InstitutionService:
     """
     Servicio centralizado para la gestión de Instituciones.
@@ -19,7 +20,7 @@ class InstitutionService:
         data: dict,
         es_central: bool = False,
         es_regional: bool = False,
-        perfil_admin=None
+        perfil_admin=None,
     ):
         """
         Crea una institución, su usuario de Django y perfil asociado en una transacción.
@@ -35,16 +36,25 @@ class InstitutionService:
             if len(rif_num_limpio) <= 8:
                 rif_completo = f"{rif_letra}-{rif_num_limpio}"
             else:
-                rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                rif_completo = (
+                    f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                )
 
         nombre = data.get("nombre")
         estado_id = data.get("estado")
         municipio_id = data.get("municipio")
         parroquia_id = data.get("parroquia")
 
-        if data.get("tipo_institucion") != "particular" and nombre and rif_completo and estado_id:
+        if (
+            data.get("tipo_institucion") != "particular"
+            and nombre
+            and rif_completo
+            and estado_id
+        ):
             # Resolver objetos para validación precisa
-            estado, municipio, parroquia = LocationUtils.resolve_location(estado_id, municipio_id, parroquia_id)
+            estado, municipio, parroquia = LocationUtils.resolve_location(
+                estado_id, municipio_id, parroquia_id
+            )
 
             rif_num_limpio = rif_num[:10]
             rif_base = f"{rif_letra}-{rif_num_limpio[:8]}"
@@ -58,14 +68,16 @@ class InstitutionService:
                 estado=estado,
                 municipio=municipio,
                 parroquia=parroquia,
-                eliminado=False
+                eliminado=False,
             ).exists():
-                raise ValueError(f"Ya existe una institución registrada con el nombre '{nombre}' y RIF '{rif_completo}' en esta ubicación.")
+                raise ValueError(
+                    f"Ya existe una institución registrada con el nombre '{nombre}' y RIF '{rif_completo}' en esta ubicación."
+                )
 
         with transaction.atomic():
             # 1. Preparar objeto Institución
             # Asumimos que data ya viene validado por el formulario
-            
+
             # Reconstruir el teléfono y RIF si vienen por partes desde el form
             codigo_area = data.get("codigo_area")
             numero_telefono = data.get("numero_telefono")
@@ -82,7 +94,9 @@ class InstitutionService:
                 if len(rif_num_limpio) <= 8:
                     rif_completo = f"{rif_letra}-{rif_num_limpio}"
                 else:
-                    rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                    rif_completo = (
+                        f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                    )
 
             institucion = Institucion(
                 nombre=data.get("nombre"),
@@ -94,14 +108,12 @@ class InstitutionService:
                 direccion=data.get("direccion"),
                 tipo_institucion=data.get("tipo_institucion"),
                 dependencia=data.get("dependencia"),
-                codigo=data.get("codigo"), # Si viene del form
-                
+                codigo=data.get("codigo"),  # Si viene del form
                 # Datos de persona natural
                 particular_nombres=data.get("particular_nombres"),
                 particular_apellidos=data.get("particular_apellidos"),
                 particular_nacionalidad=data.get("particular_nacionalidad"),
                 particular_cedula=data.get("particular_cedula"),
-                
                 # Otros campos del modelo
                 naturaleza=data.get("naturaleza"),
                 subcategoria=data.get("subcategoria"),
@@ -112,13 +124,15 @@ class InstitutionService:
             estado_id = data.get("estado")
             municipio_id = data.get("municipio")
             parroquia_id = data.get("parroquia")
-            
-            estado, municipio, parroquia = LocationUtils.resolve_location(estado_id, municipio_id, parroquia_id)
-            
+
+            estado, municipio, parroquia = LocationUtils.resolve_location(
+                estado_id, municipio_id, parroquia_id
+            )
+
             # Forzar estado si es Regional
             if es_regional and perfil_admin and perfil_admin.estado:
                 estado = perfil_admin.estado
-                
+
             institucion.estado = estado
             institucion.municipio = municipio
             institucion.parroquia = parroquia
@@ -136,7 +150,7 @@ class InstitutionService:
                 nueva_dependencia = nueva_dependencia.strip()
                 dependencia_obj, created = Dependencia.objects.get_or_create(
                     nombre__iexact=nueva_dependencia,
-                    defaults={"nombre": nueva_dependencia, "activa": True}
+                    defaults={"nombre": nueva_dependencia, "activa": True},
                 )
                 institucion.dependencia_rel = dependencia_obj
                 institucion.dependencia = dependencia_obj.nombre
@@ -165,19 +179,19 @@ class InstitutionService:
                 # Fallback por si acaso, aunque el modelo debería generarlo
                 username = data.get("codigo") or institucion.email
             password = data.get("password")
-            
+
             # Si es central, el usuario puede nacer activo
             is_user_active = es_central
-            
+
             user, profile = IdentityService.create_user_with_profile(
                 username=username,
                 email=institucion.email,
                 password=password,
                 user_type="institucional",
                 institution=institucion,
-                estado=institucion.estado
+                estado=institucion.estado,
             )
-            
+
             # Sincronizar estado de activación del usuario
             if user.is_active != is_user_active:
                 IdentityService.toggle_user_status(user, is_user_active)
@@ -186,7 +200,9 @@ class InstitutionService:
             institucion.usuario = user
             institucion.save(update_fields=["usuario"])
 
-            logger.info(f"Institución '{institucion.nombre}' creada con éxito (ID: {institucion.id})")
+            logger.info(
+                f"Institución '{institucion.nombre}' creada con éxito (ID: {institucion.id})"
+            )
             return institucion
 
     @staticmethod
@@ -204,14 +220,19 @@ class InstitutionService:
             estado_id = data.get("estado")
             municipio_id = data.get("municipio")
             parroquia_id = data.get("parroquia")
-            
-            estado, municipio, parroquia = LocationUtils.resolve_location(estado_id, municipio_id, parroquia_id)
-            if estado: institucion.estado = estado
-            if municipio: institucion.municipio = municipio
-            if parroquia: institucion.parroquia = parroquia
+
+            estado, municipio, parroquia = LocationUtils.resolve_location(
+                estado_id, municipio_id, parroquia_id
+            )
+            if estado:
+                institucion.estado = estado
+            if municipio:
+                institucion.municipio = municipio
+            if parroquia:
+                institucion.parroquia = parroquia
 
             institucion.save()
-            
+
             # Sincronizar email con el usuario si existe
             if institucion.usuario and "email" in data:
                 user = institucion.usuario
@@ -233,9 +254,11 @@ class InstitutionService:
             # Si no hay usuario, manejarlo directamente
             institucion.activa = is_active
             institucion._identity_service_handled = True
-            institucion.save(update_fields=['activa'])
-            
-        logger.info(f"Estado de institución '{institucion.nombre}' cambiado a: {is_active} por {admin_user.username}")
+            institucion.save(update_fields=["activa"])
+
+        logger.info(
+            f"Estado de institución '{institucion.nombre}' cambiado a: {is_active} por {admin_user.username}"
+        )
 
     @staticmethod
     def aprobar_primera_vez(institucion: Institucion, admin_user):

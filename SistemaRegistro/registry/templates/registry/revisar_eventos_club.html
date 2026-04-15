@@ -60,7 +60,7 @@
                                             <a href="{% url 'aprobar_evento_club' evento.id %}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" title="Aprobar">
                                                 <i class="bi bi-check-circle me-1"></i>Aprobar
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle"
                                                     onclick="rechazarEvento('{{ evento.id }}', '{{ evento.nombre|escapejs }}')" title="Rechazar">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>

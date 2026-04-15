@@ -5,41 +5,75 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1007_tutor_creado_por_federacion_and_more'),
+        ("registry", "1007_tutor_creado_por_federacion_and_more"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='tutorinstitucion',
+            name="tutorinstitucion",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='tutorinstitucion',
-            name='estado',
-            field=models.ForeignKey(blank=True, help_text='Solo requerido para vinculaciones de sede regional.', null=True, on_delete=django.db.models.deletion.SET_NULL, to='registry.estado', verbose_name='Estado/Sede Regional'),
+            model_name="tutorinstitucion",
+            name="estado",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Solo requerido para vinculaciones de sede regional.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="registry.estado",
+                verbose_name="Estado/Sede Regional",
+            ),
         ),
         migrations.AddField(
-            model_name='tutorinstitucion',
-            name='tipo_vinculacion',
-            field=models.CharField(choices=[('institucional', 'Institucional (Sede Educativa/Club)'), ('regional', 'Sede Regional (Federación Estado)'), ('central', 'Sede Central (Federación Nacional)')], default='institucional', max_length=20, verbose_name='Tipo de Vinculación'),
+            model_name="tutorinstitucion",
+            name="tipo_vinculacion",
+            field=models.CharField(
+                choices=[
+                    ("institucional", "Institucional (Sede Educativa/Club)"),
+                    ("regional", "Sede Regional (Federación Estado)"),
+                    ("central", "Sede Central (Federación Nacional)"),
+                ],
+                default="institucional",
+                max_length=20,
+                verbose_name="Tipo de Vinculación",
+            ),
         ),
         migrations.AlterField(
-            model_name='tutorinstitucion',
-            name='institucion',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='tutores_vinculados', to='registry.institucion', verbose_name='Institución'),
+            model_name="tutorinstitucion",
+            name="institucion",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tutores_vinculados",
+                to="registry.institucion",
+                verbose_name="Institución",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='tutorinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'institucional')), fields=('tutor', 'institucion'), name='unique_tutor_institucion'),
+            model_name="tutorinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "institucional")),
+                fields=("tutor", "institucion"),
+                name="unique_tutor_institucion",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='tutorinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'regional')), fields=('tutor', 'estado'), name='unique_tutor_regional'),
+            model_name="tutorinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "regional")),
+                fields=("tutor", "estado"),
+                name="unique_tutor_regional",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='tutorinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'central')), fields=('tutor',), name='unique_tutor_central'),
+            model_name="tutorinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "central")),
+                fields=("tutor",),
+                name="unique_tutor_central",
+            ),
         ),
     ]

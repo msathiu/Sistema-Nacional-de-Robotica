@@ -21,10 +21,10 @@
                 <div class="card-body p-4">
                     <!-- Contenedor de alertas dinámicas -->
                     <div id="alertContainer"></div>
-                    
+
                     <form method="POST" id="formCrearGrupo" novalidate>
                         {% csrf_token %}
-                        
+
                         <div class="mb-4">
                             <label class="form-label fw-bold text-dark">Nombre del Grupo <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -34,7 +34,7 @@
                             <small class="text-muted">Asigna un nombre único y representativo para el equipo.</small>
                             <div class="invalid-feedback" id="error_nombre_grupo"></div>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label class="form-label fw-bold text-dark d-flex justify-content-between">
                                 Seleccionar Miembros <span class="text-danger">*</span>
@@ -57,7 +57,7 @@
                             </div>
                             <div class="invalid-feedback d-block" id="error_miembros"></div>
                         </div>
-                        
+
                         <hr class="my-4 opacity-10">
 
                         <div class="d-flex gap-3">
@@ -71,7 +71,7 @@
                     </form>
                 </div>
             </div>
-            
+
             <div class="mt-4 p-3 rounded-3 border-start border-4 border-warning bg-warning-subtle">
                 <p class="mb-0 small text-dark">
                     <strong>Importante:</strong> Solo puedes asignar participantes que ya estén registrados en el sistema bajo tu institución. Si te falta alguien, regístralo primero en la sección de <a href="{% url 'lista_participantes' %}" class="fw-bold text-dark">Participantes</a>.
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const nombreGrupo = document.getElementById('nombre_grupo');
     const miembros = document.getElementById('miembros');
     const alertContainer = document.getElementById('alertContainer');
-    
+
     // Función para mostrar alerta estilo sistema
     function mostrarAlerta(mensaje, tipo = 'danger') {
         const iconos = {
@@ -120,14 +120,14 @@ document.addEventListener('DOMContentLoaded', function() {
             'success': 'bi-check-circle-fill',
             'info': 'bi-info-circle-fill'
         };
-        
+
         const colores = {
             'danger': 'danger',
             'warning': 'warning',
             'success': 'success',
             'info': 'info'
         };
-        
+
         const alerta = document.createElement('div');
         alerta.className = `alert alert-${colores[tipo]} alert-dismissible fade show d-flex align-items-center shadow-sm mb-3`;
         alerta.style.borderRadius = '12px';
@@ -140,20 +140,20 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-        
+
         alertContainer.innerHTML = '';
         alertContainer.appendChild(alerta);
-        
+
         // Scroll suave hacia la alerta
         alerta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
+
         // Auto-cerrar después de 5 segundos
         setTimeout(() => {
             alerta.classList.remove('show');
             setTimeout(() => alerta.remove(), 150);
         }, 5000);
     }
-    
+
     // Función para limpiar errores
     function limpiarErrores() {
         nombreGrupo.classList.remove('is-invalid');
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('error_nombre_grupo').classList.remove('d-block');
         document.getElementById('error_miembros').classList.remove('d-block');
     }
-    
+
     // Función para marcar campo con error
     function marcarError(campo, mensaje) {
         campo.classList.add('is-invalid');
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.classList.add('d-block');
         }
     }
-    
+
     // Validación en tiempo real
     nombreGrupo.addEventListener('input', function() {
         if (this.value.trim()) {
@@ -181,22 +181,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('error_nombre_grupo').classList.remove('d-block');
         }
     });
-    
+
     miembros.addEventListener('change', function() {
         if (this.selectedOptions.length > 0) {
             this.classList.remove('is-invalid');
             document.getElementById('error_miembros').classList.remove('d-block');
         }
     });
-    
+
     // Validación al enviar formulario
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         limpiarErrores();
-        
+
         let errores = [];
         let primerCampoError = null;
-        
+
         // Validar nombre del grupo
         if (!nombreGrupo.value.trim()) {
             errores.push('El nombre del grupo es obligatorio');
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
             marcarError(nombreGrupo, 'Máximo 150 caracteres');
             if (!primerCampoError) primerCampoError = nombreGrupo;
         }
-        
+
         // Validar selección de miembros
         const miembrosSeleccionados = Array.from(miembros.selectedOptions);
         if (miembrosSeleccionados.length === 0) {
@@ -219,22 +219,22 @@ document.addEventListener('DOMContentLoaded', function() {
             marcarError(miembros, 'Selecciona al menos un participante');
             if (!primerCampoError) primerCampoError = miembros;
         }
-        
+
         // Si hay errores, mostrar alerta y enfocar primer campo
         if (errores.length > 0) {
-            const mensajeError = errores.length === 1 
-                ? errores[0] 
+            const mensajeError = errores.length === 1
+                ? errores[0]
                 : `Se encontraron ${errores.length} errores:<br>• ${errores.join('<br>• ')}`;
-            
+
             mostrarAlerta(mensajeError, 'danger');
-            
+
             if (primerCampoError) {
                 primerCampoError.focus();
             }
-            
+
             return false;
         }
-        
+
         // Si todo está bien, enviar formulario
         form.submit();
     });

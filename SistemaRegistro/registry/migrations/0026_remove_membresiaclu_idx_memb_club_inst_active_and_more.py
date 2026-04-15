@@ -6,64 +6,105 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0025_remove_membresiaclu_idx_memb_club_inst_active_and_more'),
+        ("registry", "0025_remove_membresiaclu_idx_memb_club_inst_active_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='membresiaclu',
-            name='idx_memb_club_inst_active',
+            model_name="membresiaclu",
+            name="idx_memb_club_inst_active",
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector',
-            field=models.BooleanField(default=False, verbose_name='Aprobación Ente Rector'),
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector",
+            field=models.BooleanField(
+                default=False, verbose_name="Aprobación Ente Rector"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector_fecha',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Fecha aprobación Ente Rector'),
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector_fecha",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Fecha aprobación Ente Rector"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector_por',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='membresias_aprobadas_rector', to=settings.AUTH_USER_MODEL, verbose_name='Aprobado por (Ente Rector)'),
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector_por",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="membresias_aprobadas_rector",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Aprobado por (Ente Rector)",
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='observaciones_fundadora',
-            field=models.TextField(blank=True, verbose_name='Observaciones de la Fundadora'),
+            model_name="membresiaclu",
+            name="observaciones_fundadora",
+            field=models.TextField(
+                blank=True, verbose_name="Observaciones de la Fundadora"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='observaciones_rector',
-            field=models.TextField(blank=True, verbose_name='Observaciones del Ente Rector'),
+            model_name="membresiaclu",
+            name="observaciones_rector",
+            field=models.TextField(
+                blank=True, verbose_name="Observaciones del Ente Rector"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora',
-            field=models.BooleanField(default=False, verbose_name='Visto Bueno Fundadora'),
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora",
+            field=models.BooleanField(
+                default=False, verbose_name="Visto Bueno Fundadora"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora_fecha',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Fecha visto bueno'),
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora_fecha",
+            field=models.DateTimeField(
+                blank=True, null=True, verbose_name="Fecha visto bueno"
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora_por',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='membresias_visto_bueno', to=settings.AUTH_USER_MODEL, verbose_name='Visto bueno dado por'),
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora_por",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="membresias_visto_bueno",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Visto bueno dado por",
+            ),
         ),
         migrations.AlterField(
-            model_name='membresiaclu',
-            name='estado',
-            field=models.CharField(choices=[('pendiente_filtro', 'Pendiente de Filtro (Fundadora)'), ('visto_bueno_fundadora', 'Visto Bueno Fundadora'), ('miembro_activo', 'Miembro Activo'), ('rechazada', 'Rechazada')], db_index=True, default='pendiente_filtro', max_length=25),
+            model_name="membresiaclu",
+            name="estado",
+            field=models.CharField(
+                choices=[
+                    ("pendiente_filtro", "Pendiente de Filtro (Fundadora)"),
+                    ("visto_bueno_fundadora", "Visto Bueno Fundadora"),
+                    ("miembro_activo", "Miembro Activo"),
+                    ("rechazada", "Rechazada"),
+                ],
+                db_index=True,
+                default="pendiente_filtro",
+                max_length=25,
+            ),
         ),
         migrations.AddIndex(
-            model_name='membresiaclu',
-            index=models.Index(condition=models.Q(('estado__in', ['pendiente_filtro', 'visto_bueno_fundadora'])), fields=['club', 'institucion'], name='idx_memb_club_inst_active'),
+            model_name="membresiaclu",
+            index=models.Index(
+                condition=models.Q(
+                    ("estado__in", ["pendiente_filtro", "visto_bueno_fundadora"])
+                ),
+                fields=["club", "institucion"],
+                name="idx_memb_club_inst_active",
+            ),
         ),
     ]

@@ -14,6 +14,7 @@ from .base import normalizar_texto_titulo, Estado, Municipio, Parroquia, Depende
 
 logger = logging.getLogger(__name__)
 
+
 class Institucion(models.Model):
     ESTATUS_CHOICES = [
         ("pendiente", "Pendiente"),
@@ -47,9 +48,7 @@ class Institucion(models.Model):
         blank=True,
     )
     nombre = models.CharField(max_length=255)
-    rif = models.CharField(
-        max_length=20, null=True, blank=True
-    )
+    rif = models.CharField(max_length=20, null=True, blank=True)
 
     particular_nombres = models.CharField(
         max_length=100, null=True, blank=True, verbose_name="Nombres"
@@ -203,6 +202,7 @@ class Institucion(models.Model):
         # Generación de Código Temporal para nuevos registros
         if not self.codigo:
             import uuid
+
             self.codigo = f"TEMP-{uuid.uuid4().hex[:8].upper()}"
 
         if not self.usuario_id and self.pk:

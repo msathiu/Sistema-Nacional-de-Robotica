@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registry", "1003_grupo_unique_nombre_evento_case_insensitive_and_more"),
     ]

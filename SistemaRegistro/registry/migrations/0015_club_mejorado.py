@@ -6,52 +6,91 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0014_evento_categoria'),
+        ("registry", "0014_evento_categoria"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='club',
-            options={'ordering': ['-fecha_creacion'], 'verbose_name': 'Club', 'verbose_name_plural': 'Clubes'},
+            name="club",
+            options={
+                "ordering": ["-fecha_creacion"],
+                "verbose_name": "Club",
+                "verbose_name_plural": "Clubes",
+            },
         ),
         migrations.RemoveIndex(
-            model_name='club',
-            name='idx_club_activo_nombre',
+            model_name="club",
+            name="idx_club_activo_nombre",
         ),
         migrations.AddField(
-            model_name='club',
-            name='coordinador',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='clubes_coordinados', to=settings.AUTH_USER_MODEL, verbose_name='Coordinador del Club'),
+            model_name="club",
+            name="coordinador",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="clubes_coordinados",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Coordinador del Club",
+            ),
         ),
         migrations.AddField(
-            model_name='club',
-            name='documento_legal',
-            field=models.CharField(blank=True, max_length=255, verbose_name='Documento Legal / Aval Institucional'),
+            model_name="club",
+            name="documento_legal",
+            field=models.CharField(
+                blank=True,
+                max_length=255,
+                verbose_name="Documento Legal / Aval Institucional",
+            ),
         ),
         migrations.AddField(
-            model_name='club',
-            name='fecha_aprobacion',
+            model_name="club",
+            name="fecha_aprobacion",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='club',
-            name='status',
-            field=models.CharField(choices=[('borrador', 'Borrador'), ('pendiente', 'Pendiente de Revisión'), ('en_revision', 'En Revisión'), ('aprobado', 'Aprobado'), ('rechazado', 'Rechazado')], db_index=True, default='borrador', max_length=20, verbose_name='Estado del Club'),
+            model_name="club",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("borrador", "Borrador"),
+                    ("pendiente", "Pendiente de Revisión"),
+                    ("en_revision", "En Revisión"),
+                    ("aprobado", "Aprobado"),
+                    ("rechazado", "Rechazado"),
+                ],
+                db_index=True,
+                default="borrador",
+                max_length=20,
+                verbose_name="Estado del Club",
+            ),
         ),
         migrations.AddField(
-            model_name='membresiaclu',
-            name='tipo_linea',
-            field=models.CharField(choices=[('soporte', 'Soporte'), ('afines', 'Afines'), ('vinculantes', 'Vinculantes')], default='soporte', max_length=20, verbose_name='Tipo de Línea de Investigación'),
+            model_name="membresiaclu",
+            name="tipo_linea",
+            field=models.CharField(
+                choices=[
+                    ("soporte", "Soporte"),
+                    ("afines", "Afines"),
+                    ("vinculantes", "Vinculantes"),
+                ],
+                default="soporte",
+                max_length=20,
+                verbose_name="Tipo de Línea de Investigación",
+            ),
         ),
         migrations.AddIndex(
-            model_name='club',
-            index=models.Index(fields=['activo', 'status'], name='idx_club_activo_status'),
+            model_name="club",
+            index=models.Index(
+                fields=["activo", "status"], name="idx_club_activo_status"
+            ),
         ),
         migrations.AddIndex(
-            model_name='club',
-            index=models.Index(fields=['status', 'nombre'], name='idx_club_status_nombre'),
+            model_name="club",
+            index=models.Index(
+                fields=["status", "nombre"], name="idx_club_status_nombre"
+            ),
         ),
     ]

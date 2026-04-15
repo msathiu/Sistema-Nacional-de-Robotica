@@ -8,4 +8,3 @@ class UsersConfig(AppConfig):
     def ready(self):
         # Ahora importamos las señales que están dentro de esta misma app
         import users.signals  # noqa
-

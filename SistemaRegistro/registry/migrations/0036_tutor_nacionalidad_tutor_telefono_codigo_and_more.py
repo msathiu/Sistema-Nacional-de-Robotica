@@ -4,25 +4,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0035_participante_registrado_por_federacion_and_more'),
+        ("registry", "0035_participante_registrado_por_federacion_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tutor',
-            name='nacionalidad',
-            field=models.CharField(choices=[('V', 'Venezolano'), ('E', 'Extranjero')], default='V', max_length=1, verbose_name='Nacionalidad'),
+            model_name="tutor",
+            name="nacionalidad",
+            field=models.CharField(
+                choices=[("V", "Venezolano"), ("E", "Extranjero")],
+                default="V",
+                max_length=1,
+                verbose_name="Nacionalidad",
+            ),
         ),
         migrations.AddField(
-            model_name='tutor',
-            name='telefono_codigo',
-            field=models.CharField(blank=True, choices=[('0424', '0424'), ('0414', '0414'), ('0422', '0422'), ('0412', '0412'), ('0426', '0426'), ('0416', '0416')], help_text='Código de área del teléfono de contacto', max_length=4, verbose_name='Código de Área'),
+            model_name="tutor",
+            name="telefono_codigo",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("0424", "0424"),
+                    ("0414", "0414"),
+                    ("0422", "0422"),
+                    ("0412", "0412"),
+                    ("0426", "0426"),
+                    ("0416", "0416"),
+                ],
+                help_text="Código de área del teléfono de contacto",
+                max_length=4,
+                verbose_name="Código de Área",
+            ),
         ),
         migrations.AlterField(
-            model_name='tutor',
-            name='telefono',
-            field=models.CharField(blank=True, help_text='Número de teléfono de contacto (7 dígitos)', max_length=7, verbose_name='Número de Teléfono'),
+            model_name="tutor",
+            name="telefono",
+            field=models.CharField(
+                blank=True,
+                help_text="Número de teléfono de contacto (7 dígitos)",
+                max_length=7,
+                verbose_name="Número de Teléfono",
+            ),
         ),
     ]

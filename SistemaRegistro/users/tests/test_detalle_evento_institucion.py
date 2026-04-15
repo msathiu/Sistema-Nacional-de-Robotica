@@ -5,15 +5,26 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from registry.models import Estado, EstadoEvento, Evento, Institucion, Municipio, Parroquia
+from registry.models import (
+    Estado,
+    EstadoEvento,
+    Evento,
+    Institucion,
+    Municipio,
+    Parroquia,
+)
 
 
 class DetalleEventoInstitucionTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.estado = Estado.objects.create(nombre="Estado Evento Detalle", codigo="EVD")
-        cls.municipio = Municipio.objects.create(nombre="Municipio Evento Detalle", estado=cls.estado)
-        cls.parroquia = Parroquia.objects.create(nombre="Parroquia Evento Detalle", municipio=cls.municipio)
+        cls.municipio = Municipio.objects.create(
+            nombre="Municipio Evento Detalle", estado=cls.estado
+        )
+        cls.parroquia = Parroquia.objects.create(
+            nombre="Parroquia Evento Detalle", municipio=cls.municipio
+        )
 
         cls.institucion = Institucion.objects.create(
             nombre="Unidad Educativa Petare",

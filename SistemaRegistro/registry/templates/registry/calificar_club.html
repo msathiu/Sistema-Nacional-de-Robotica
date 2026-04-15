@@ -49,10 +49,10 @@
                         </div>
                     </div>
                     {% endif %}
-                    
+
                     <form method="post">
                         {% csrf_token %}
-                        
+
                         <!-- Club Info -->
                         <div class="mb-4 p-3 rounded" style="background: linear-gradient(145deg, #f8fafc, #f1f5f9);">
                             <div class="d-flex align-items-center">
@@ -67,7 +67,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Sistema de Estrellas Moderno -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">
@@ -76,11 +76,11 @@
                             <div class="rating-container">
                                 <div class="rating-stars" id="ratingStars" role="radiogroup" aria-label="Sistema de calificación">
                                     {% for i in "12345" %}
-                                    <input type="radio" name="puntuacion" value="{{ forloop.counter }}" 
-                                           id="star{{ forloop.counter }}" 
+                                    <input type="radio" name="puntuacion" value="{{ forloop.counter }}"
+                                           id="star{{ forloop.counter }}"
                                            {% if calificacion_existente.puntuacion == forloop.counter %}checked{% endif %}
                                            required>
-                                    <label for="star{{ forloop.counter }}" class="star-label" data-value="{{ forloop.counter }}" 
+                                    <label for="star{{ forloop.counter }}" class="star-label" data-value="{{ forloop.counter }}"
                                            role="radio" aria-checked="false" tabindex="0">
                                         <i class="bi bi-star-fill"></i>
                                     </label>
@@ -102,22 +102,22 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Reseña -->
                         <div class="mb-4">
                             <label for="resena" class="form-label fw-bold">
                                 <i class="bi bi-chat-quote me-2" style="color: #0b2c6d;"></i>Reseña (Opcional)
                             </label>
-                            <textarea name="resena" id="resena" class="form-control" rows="5" 
+                            <textarea name="resena" id="resena" class="form-control" rows="5"
                                       placeholder="Comparte tu experiencia con este club. ¿Qué te gustó? ¿Qué podría mejorar?"
                                       style="border-radius: 12px; border: 2px solid #e2e8f0; resize: vertical;">{% if calificacion_existente %}{{ calificacion_existente.resena }}{% endif %}</textarea>
                             <small class="text-muted mt-1 d-block">Tu opinión ayuda a otros miembros de la comunidad</small>
                         </div>
-                        
+
                         <!-- Botones -->
                         <div class="d-flex gap-3">
                             <button type="submit" class="btn btn-lg px-4 fw-bold" style="background: linear-gradient(135deg, #d97706, #b45309); color: white; border-radius: 12px;">
-                                <i class="bi bi-check-circle me-2"></i> 
+                                <i class="bi bi-check-circle me-2"></i>
                                 {% if calificacion_existente %}Actualizar{% else %}Enviar{% endif %} Calificación
                             </button>
                         </div>
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const labels = starsContainer.querySelectorAll('.star-label');
     const inputs = starsContainer.querySelectorAll('input');
     const description = document.getElementById('rating-description');
-    
+
     const descriptions = {
         1: 'Muy Malo',
         2: 'Malo',
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         4: 'Bueno',
         5: 'Excelente'
     };
-    
+
     const colors = {
         1: '#dc2626',  // Rojo - Muy Malo
         2: '#ea580c',  // Naranja - Malo
@@ -269,15 +269,15 @@ document.addEventListener('DOMContentLoaded', function() {
         4: '#0891b2',  // Cyan - Bueno
         5: '#059669'   // Verde - Excelente
     };
-    
+
     // Función para actualizar el estado visual de las estrellas
     function updateStars(value, isHover = false) {
         labels.forEach(label => {
             const starValue = parseInt(label.getAttribute('data-value'));
-            
+
             // Remover clases anteriores
             label.classList.remove('active', 'hover', 'selected');
-            
+
             // Iluminar estrellas desde la izquierda hasta el valor seleccionado
             if (starValue <= value) {
                 if (isHover) {
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Función para actualizar la descripción
     function updateDescription(value) {
         if (value >= 1 && value <= 5) {
@@ -303,14 +303,14 @@ document.addEventListener('DOMContentLoaded', function() {
             description.style.color = '#64748b';
         }
     }
-    
+
     // Evento: Cambio de selección (clic)
     inputs.forEach(input => {
         input.addEventListener('change', function() {
             const value = parseInt(this.value);
             updateStars(value, false);
             updateDescription(value);
-            
+
             // Actualizar ARIA
             labels.forEach(label => {
                 const labelValue = parseInt(label.getAttribute('data-value'));
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-    
+
     // Evento: Hover (mouseenter)
     labels.forEach(label => {
         label.addEventListener('mouseenter', function() {
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateStars(value, true);
             updateDescription(value);
         });
-        
+
         // Evento: Clic en label también actualiza
         label.addEventListener('click', function() {
             const value = parseInt(this.getAttribute('data-value'));
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Evento: Fin del hover (mouseleave)
     starsContainer.addEventListener('mouseleave', function() {
         // Restaurar al estado del input seleccionado
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateDescription(0);
         }
     });
-    
+
     // Inicializar estado si hay calificación existente
     const initialChecked = starsContainer.querySelector('input:checked');
     if (initialChecked) {
@@ -365,4 +365,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-

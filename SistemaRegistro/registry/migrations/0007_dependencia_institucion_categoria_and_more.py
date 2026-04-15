@@ -5,73 +5,108 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0006_load_parroquias_venezuela'),
+        ("registry", "0006_load_parroquias_venezuela"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Dependencia',
+            name="Dependencia",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=255, unique=True)),
-                ('activa', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=255, unique=True)),
+                ("activa", models.BooleanField(default=True)),
             ],
             options={
-                'verbose_name': 'Dependencia',
-                'verbose_name_plural': 'Dependencias',
-                'ordering': ['nombre'],
+                "verbose_name": "Dependencia",
+                "verbose_name_plural": "Dependencias",
+                "ordering": ["nombre"],
             },
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='categoria',
+            model_name="institucion",
+            name="categoria",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='codigo_mppe',
+            model_name="institucion",
+            name="codigo_mppe",
             field=models.CharField(blank=True, max_length=30, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='estatus',
-            field=models.CharField(choices=[('pendiente', 'Pendiente'), ('aprobado', 'Aprobado'), ('rechazado', 'Rechazado')], default='pendiente', max_length=20),
+            model_name="institucion",
+            name="estatus",
+            field=models.CharField(
+                choices=[
+                    ("pendiente", "Pendiente"),
+                    ("aprobado", "Aprobado"),
+                    ("rechazado", "Rechazado"),
+                ],
+                default="pendiente",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='institucion_procedencia',
+            model_name="institucion",
+            name="institucion_procedencia",
             field=models.CharField(blank=True, max_length=120, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='naturaleza',
-            field=models.CharField(blank=True, choices=[('publica', 'Publica'), ('privada', 'Privada')], max_length=20, null=True),
+            model_name="institucion",
+            name="naturaleza",
+            field=models.CharField(
+                blank=True,
+                choices=[("publica", "Publica"), ("privada", "Privada")],
+                max_length=20,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='subcategoria',
+            model_name="institucion",
+            name="subcategoria",
             field=models.CharField(blank=True, max_length=120, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='telefono_codigo',
+            model_name="institucion",
+            name="telefono_codigo",
             field=models.CharField(blank=True, max_length=4, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='telefono_numero',
+            model_name="institucion",
+            name="telefono_numero",
             field=models.CharField(blank=True, max_length=7, null=True),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='tipo_institucion',
-            field=models.CharField(choices=[('educativa', 'Institucion educativa (Adscrita a MPPE)'), ('publica', 'Publica'), ('privada', 'Privada'), ('otra', 'Otras Instituciones'), ('particular', 'Particular (Persona Natural)')], default='educativa', max_length=20),
+            model_name="institucion",
+            name="tipo_institucion",
+            field=models.CharField(
+                choices=[
+                    ("educativa", "Institucion educativa (Adscrita a MPPE)"),
+                    ("publica", "Publica"),
+                    ("privada", "Privada"),
+                    ("otra", "Otras Instituciones"),
+                    ("particular", "Particular (Persona Natural)"),
+                ],
+                default="educativa",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='institucion',
-            name='dependencia_rel',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='registry.dependencia'),
+            model_name="institucion",
+            name="dependencia_rel",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="registry.dependencia",
+            ),
         ),
     ]

@@ -10,7 +10,7 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .modern-card {
         border-radius: 20px;
         border: none;
@@ -25,7 +25,7 @@
         border: none;
         position: relative;
     }
-    
+
     .card-header-modern::before {
         content: '';
         position: absolute;
@@ -35,7 +35,7 @@
         height: 4px;
         background: var(--accent-cyan);
     }
-    
+
     .card-header-info {
         background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
         border-radius: 20px 20px 0 0 !important;
@@ -72,13 +72,13 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 15px rgba(11, 44, 109, 0.3);
     }
-    
+
     .btn-outline-modern {
         border: 2px solid #e2e8f0;
         color: #64748b;
         background: transparent;
     }
-    
+
     .btn-outline-modern:hover {
         background: #f1f5f9;
         color: #334155;
@@ -101,7 +101,7 @@
         border-color: var(--accent-cyan);
         box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.1);
     }
-    
+
     .badge-modern {
         padding: 0.4rem 0.8rem;
         border-radius: 50px;
@@ -110,7 +110,7 @@
         color: #0891b2;
         border: 1px solid rgba(8, 145, 178, 0.2);
     }
-    
+
     .x-small { font-size: 0.72rem; }
 </style>
 {% endblock %}
@@ -158,21 +158,21 @@
 
                         <div class="mb-4">
                             <label for="carta_intencion" class="form-label fw-bold">Carta de Intención *</label>
-                            <textarea class="form-control" id="carta_intencion" name="carta_intencion" 
+                            <textarea class="form-control" id="carta_intencion" name="carta_intencion"
                                       rows="5" placeholder="Explique por qué su institución desea formar parte de este club..." required></textarea>
                             <small class="text-muted d-block mt-1">Describa los objetivos y motivaciones de su institución.</small>
                         </div>
 
                         <div class="mb-4">
                             <label for="propuesta_tecnica" class="form-label fw-bold">Propuesta Técnica *</label>
-                            <textarea class="form-control" id="propuesta_tecnica" name="propuesta_tecnica" 
+                            <textarea class="form-control" id="propuesta_tecnica" name="propuesta_tecnica"
                                       rows="5" placeholder="Describa las capacidades técnicas y recursos que aportará..." required></textarea>
                             <small class="text-muted d-block mt-1">Detalle el equipamiento, experiencia y recursos disponibles.</small>
                         </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Representante Legal *</label>
-                            
+
                             <!-- Buscador por cédula -->
                             <div class="input-group mb-2">
                                 <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0; border-right: none; background: #f8fafc;"><i class="bi bi-search"></i></span>
@@ -181,7 +181,7 @@
                                     Buscar
                                 </button>
                             </div>
-                            
+
                             <!-- Resultado de búsqueda -->
                             <div id="resultadoRep" class="d-none mb-2">
                                 <div class="alert alert-light border d-flex align-items-center justify-content-between mb-0" style="border-radius: 12px; padding: 0.5rem 1rem;">
@@ -194,7 +194,7 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div id="errorRep" class="alert alert-warning d-none mb-2" style="border-radius: 12px; padding: 0.5rem 1rem;">
                                 <i class="bi bi-exclamation-triangle me-1"></i><span id="errorRepMsg"></span>
                                 <div class="form-check mt-1">
@@ -202,12 +202,12 @@
                                     <label class="form-check-label small" for="permitirManual">No está registrado, escribir nombre manualmente</label>
                                 </div>
                             </div>
-                            
+
                             <!-- Campo nombre (autocompletado o manual) -->
                             <div class="input-group">
                                 <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0; border-right: none; background: #f8fafc;"><i class="bi bi-person"></i></span>
-                                <input type="text" class="form-control" id="representante_legal" name="representante_legal" 
-                                       placeholder="Nombre completo del representante legal" required 
+                                <input type="text" class="form-control" id="representante_legal" name="representante_legal"
+                                       placeholder="Nombre completo del representante legal" required
                                        style="border-radius: 0 12px 12px 0;" readonly>
                             </div>
                             <input type="hidden" id="representante_tutor_id" name="representante_tutor_id" value="">

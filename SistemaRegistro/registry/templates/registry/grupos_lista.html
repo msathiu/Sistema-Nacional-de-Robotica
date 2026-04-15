@@ -18,7 +18,7 @@
             </div>
             <div class="d-flex gap-2">
                 {% if puede_crear %}
-                <a href="{% url 'crear_grupo' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'crear_grupo' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Crear Equipo
                 </a>
@@ -43,7 +43,7 @@
             <div class="row g-3">
                 <div class="col-md-5">
                     <label class="form-label small fw-bold">Buscar</label>
-                    <input type="text" id="buscarGrupo" class="form-control" 
+                    <input type="text" id="buscarGrupo" class="form-control"
                            placeholder="Nombre o código del equipo...">
                 </div>
                 <div class="col-md-3">
@@ -148,13 +148,13 @@
                                 </td>
                                 <td class="text-center px-4">
                                     <div class="d-flex justify-content-center gap-1">
-                                        <a href="{% url 'ver_grupo' grupo.id %}" 
+                                        <a href="{% url 'ver_grupo' grupo.id %}"
                                            class="btn btn-outline-info btn-sm rounded-circle p-2"
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         {% if grupo.puede_editar %}
-                                        <a href="{% url 'editar_grupo' grupo.id %}" 
+                                        <a href="{% url 'editar_grupo' grupo.id %}"
                                            class="btn btn-outline-primary btn-sm rounded-circle p-2"
                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                             <i class="bi bi-pencil-square"></i>
@@ -269,19 +269,19 @@
         background-color: #ffffff;
         border-bottom: 1px solid #edf2f7;
     }
-    
+
     .equipo-row {
         transition: all 0.2s ease;
     }
-    
+
     .equipo-row:hover {
         background-color: rgba(0, 212, 255, 0.04) !important;
     }
-    
+
     .toast.show {
         animation: slideIn 0.3s ease-out;
     }
-    
+
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -373,7 +373,7 @@ function confirmarEliminar(grupoId, nombreGrupo) {
 document.getElementById('buscarGrupo').addEventListener('keyup', function() {
     const value = this.value.toLowerCase();
     const rows = document.querySelectorAll('.equipo-row');
-    
+
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(value) ? '' : 'none';
@@ -394,14 +394,14 @@ function aplicarFiltros() {
     const estatus = document.getElementById('filtroEstatus').value;
     const criterio = document.getElementById('filtroCriterio').value;
     const rows = document.querySelectorAll('.equipo-row');
-    
+
     rows.forEach(row => {
         const estatusRow = row.dataset.estado;
         const criterioRow = row.dataset.criterio;
-        
+
         const cumpleEstatus = !estatus || estatusRow === estatus;
         const cumpleCriterio = !criterio || criterioRow === criterio;
-        
+
         row.style.display = (cumpleEstatus && cumpleCriterio) ? '' : 'none';
     });
 }

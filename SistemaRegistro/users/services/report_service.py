@@ -17,6 +17,7 @@ from registry.models import (
 
 logger = logging.getLogger(__name__)
 
+
 class ReportService:
     """
     Servicio especializado para la generación de reportes, métricas y estadísticas.
@@ -41,42 +42,44 @@ class ReportService:
 
         # 2. Métricas de Participantes (Optimizado con aggregate)
         part_agg = Participante.objects.filter(filtros_part).aggregate(
-            total=Count('id'),
-            mujeres=Count('id', filter=Q(sexo='F')),
-            hombres=Count('id', filter=Q(sexo='M'))
+            total=Count("id"),
+            mujeres=Count("id", filter=Q(sexo="F")),
+            hombres=Count("id", filter=Q(sexo="M")),
         )
-        total_participantes = part_agg['total']
+        total_participantes = part_agg["total"]
         total_p_safe = total_participantes or 1
-        porcentaje_mujeres = round((part_agg['mujeres'] / total_p_safe) * 100)
-        porcentaje_hombres = round((part_agg['hombres'] / total_p_safe) * 100)
+        porcentaje_mujeres = round((part_agg["mujeres"] / total_p_safe) * 100)
+        porcentaje_hombres = round((part_agg["hombres"] / total_p_safe) * 100)
 
         # 3. Métricas de Instituciones y Clubes (Optimizado)
         inst_agg = Institucion.objects.filter(filtros_inst).aggregate(
-            total=Count('id'),
-            pendientes=Count('id', filter=~Q(estatus="aprobado", activa=True)),
-            cobertura=Count('estado', distinct=True)
+            total=Count("id"),
+            pendientes=Count("id", filter=~Q(estatus="aprobado", activa=True)),
+            cobertura=Count("estado", distinct=True),
         )
-        
+
         club_agg = Club.objects.filter(filtros_club).aggregate(
-            aprobados=Count('id', filter=Q(status="aprobado")),
-            pendientes=Count('id', filter=Q(status="pendiente"))
+            aprobados=Count("id", filter=Q(status="aprobado")),
+            pendientes=Count("id", filter=Q(status="pendiente")),
         )
 
         try:
-            membresias_pendientes = MembresiaClu.objects.filter(estado="pendiente").count()
+            membresias_pendientes = MembresiaClu.objects.filter(
+                estado="pendiente"
+            ).count()
         except Exception:
             membresias_pendientes = 0
 
         total_eventos = Evento.objects.exclude(
-            Q(estado_evento="borrador") &
-            (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
+            Q(estado_evento="borrador")
+            & (Q(institucion__isnull=False) | Q(club_organizador__isnull=False))
         ).count()
 
         # 4. Equipos y Tutores (Optimizado)
         filtros_equipo = Q()
         if user_type == "fed_regional" and user_estado:
             filtros_equipo = Q(institucion__estado=user_estado)
-        
+
         total_equipos = Grupo.objects.filter(filtros_equipo).count()
 
         # Contar tutores "creados"/vinculados (aunque aún no estén asignados a grupos)
@@ -88,7 +91,9 @@ class ReportService:
             # Equivalente a la lógica usada en `lista_tutores` para fed_regional:
             # - vinculaciones regionales por `estado`
             # - vinculaciones institucionales por `institucion.estado`
-            tutor_inst_qs = tutor_inst_qs.filter(Q(estado=user_estado) | Q(institucion__estado=user_estado))
+            tutor_inst_qs = tutor_inst_qs.filter(
+                Q(estado=user_estado) | Q(institucion__estado=user_estado)
+            )
 
         total_tutores = tutor_inst_qs.values("tutor_id").distinct().count()
 
@@ -108,7 +113,9 @@ class ReportService:
 
         # 6. Especialidades de Clubes (Radar Chart)
         clubes_stats = (
-            ClubLineaInvestigacion.objects.filter(club__in=Club.objects.filter(filtros_club))
+            ClubLineaInvestigacion.objects.filter(
+                club__in=Club.objects.filter(filtros_club)
+            )
             .values("linea__nombre")
             .annotate(total=Count("id"))
             .order_by("-total")
@@ -136,12 +143,22 @@ class ReportService:
             .order_by("-total")[:5]
         )
 
-        tutores_labels = [t["estado_nombre"] for t in tutores_stats if t["estado_nombre"]]
+        tutores_labels = [
+            t["estado_nombre"] for t in tutores_stats if t["estado_nombre"]
+        ]
         tutores_data = [t["total"] for t in tutores_stats if t["estado_nombre"]]
 
         # 8. Datos del Mapa
-        conteo_db = Institucion.objects.filter(filtros_inst).values("estado__nombre").annotate(total=Count("id"))
-        mapa_data = {registro["estado__nombre"]: registro["total"] for registro in conteo_db if registro["estado__nombre"]}
+        conteo_db = (
+            Institucion.objects.filter(filtros_inst)
+            .values("estado__nombre")
+            .annotate(total=Count("id"))
+        )
+        mapa_data = {
+            registro["estado__nombre"]: registro["total"]
+            for registro in conteo_db
+            if registro["estado__nombre"]
+        }
 
         # 9. Instituciones activas y aprobadas por estado
         inst_por_estado_qs = (
@@ -154,25 +171,36 @@ class ReportService:
             .exclude(estado__nombre__isnull=True)
             .order_by("-aprobadas")[:10]
         )
-        inst_estados_labels    = [r["estado__nombre"] for r in inst_por_estado_qs]
-        inst_estados_total     = [r["total"] for r in inst_por_estado_qs]
+        inst_estados_labels = [r["estado__nombre"] for r in inst_por_estado_qs]
+        inst_estados_total = [r["total"] for r in inst_por_estado_qs]
         inst_estados_aprobadas = [r["aprobadas"] for r in inst_por_estado_qs]
 
         # 10. Eventos por estado_evento y tipo_evento
-        ESTADOS_EVENTO = ["borrador", "revision", "abierto", "en_proceso", "finalizado", "rechazado", "cancelado"]
+        ESTADOS_EVENTO = [
+            "borrador",
+            "revision",
+            "abierto",
+            "en_proceso",
+            "finalizado",
+            "rechazado",
+            "cancelado",
+        ]
         eventos_qs = Evento.objects.filter(activo=True)
         if user_type == "fed_regional" and user_estado:
             eventos_qs = eventos_qs.filter(estado=user_estado)
-        eventos_tipo_estado = (
-            eventos_qs
-            .values("tipo_evento", "estado_evento")
-            .annotate(total=Count("id"))
-        )
+        eventos_tipo_estado = eventos_qs.values(
+            "tipo_evento", "estado_evento"
+        ).annotate(total=Count("id"))
         # Construir matrices separadas para institucional y club
-        _ev_map = {(r["tipo_evento"], r["estado_evento"]): r["total"] for r in eventos_tipo_estado}
-        eventos_estados_labels       = ESTADOS_EVENTO
-        eventos_institucional_data   = [_ev_map.get(("institucional", s), 0) for s in ESTADOS_EVENTO]
-        eventos_club_data            = [_ev_map.get(("club", s), 0) for s in ESTADOS_EVENTO]
+        _ev_map = {
+            (r["tipo_evento"], r["estado_evento"]): r["total"]
+            for r in eventos_tipo_estado
+        }
+        eventos_estados_labels = ESTADOS_EVENTO
+        eventos_institucional_data = [
+            _ev_map.get(("institucional", s), 0) for s in ESTADOS_EVENTO
+        ]
+        eventos_club_data = [_ev_map.get(("club", s), 0) for s in ESTADOS_EVENTO]
 
         # 11. Instituciones por tipo
         inst_tipo_qs = (
@@ -182,7 +210,7 @@ class ReportService:
             .order_by("-total")
         )
         inst_tipo_labels = [r["tipo_institucion"] or "Otro" for r in inst_tipo_qs]
-        inst_tipo_data   = [r["total"] for r in inst_tipo_qs]
+        inst_tipo_data = [r["total"] for r in inst_tipo_qs]
 
         # 12. Participantes por grado escolar
         grado_qs = (
@@ -194,22 +222,24 @@ class ReportService:
             .order_by("grado_escolar")
         )
         grado_labels = [r["grado_escolar"] for r in grado_qs]
-        grado_data   = [r["total"] for r in grado_qs]
+        grado_data = [r["total"] for r in grado_qs]
 
         # 13. Equipos por estado_grupo y criterio
         equipos_qs = Grupo.objects.filter(filtros_equipo)
-        equipos_estado_qs = (
-            equipos_qs
-            .values("criterio", "estado_grupo")
-            .annotate(total=Count("id"))
+        equipos_estado_qs = equipos_qs.values("criterio", "estado_grupo").annotate(
+            total=Count("id")
         )
         CRITERIOS = ["edad", "nivel_educativo", "mixto"]
         ESTADOS_GRUPO = ["editable", "inscrito", "finalizado"]
-        _eq_map = {(r["criterio"], r["estado_grupo"]): r["total"] for r in equipos_estado_qs}
+        _eq_map = {
+            (r["criterio"], r["estado_grupo"]): r["total"] for r in equipos_estado_qs
+        }
         equipos_criterio_labels = ESTADOS_GRUPO
-        equipos_edad_data       = [_eq_map.get(("edad", s), 0) for s in ESTADOS_GRUPO]
-        equipos_nivel_data      = [_eq_map.get(("nivel_educativo", s), 0) for s in ESTADOS_GRUPO]
-        equipos_mixto_data      = [_eq_map.get(("mixto", s), 0) for s in ESTADOS_GRUPO]
+        equipos_edad_data = [_eq_map.get(("edad", s), 0) for s in ESTADOS_GRUPO]
+        equipos_nivel_data = [
+            _eq_map.get(("nivel_educativo", s), 0) for s in ESTADOS_GRUPO
+        ]
+        equipos_mixto_data = [_eq_map.get(("mixto", s), 0) for s in ESTADOS_GRUPO]
 
         # 14. Top 10 eventos con más inscripciones
         inscripciones_qs = (
@@ -219,20 +249,20 @@ class ReportService:
             .order_by("-total")[:10]
         )
         inscripciones_labels = [r["evento__nombre"] for r in inscripciones_qs]
-        inscripciones_data   = [r["total"] for r in inscripciones_qs]
+        inscripciones_data = [r["total"] for r in inscripciones_qs]
 
         return {
             "total_participantes": total_participantes,
-            "total_instituciones": inst_agg['total'],
-            "total_clubes": club_agg['aprobados'],
-            "clubes_aprobados": club_agg['aprobados'],
-            "clubes_pendientes": club_agg['pendientes'],
+            "total_instituciones": inst_agg["total"],
+            "total_clubes": club_agg["aprobados"],
+            "clubes_aprobados": club_agg["aprobados"],
+            "clubes_pendientes": club_agg["pendientes"],
             "membresias_pendientes": membresias_pendientes,
             "total_tutores": total_tutores,
             "total_equipos": total_equipos,
             "total_eventos": total_eventos,
-            "pendientes_aprobacion": inst_agg['pendientes'],
-            "cobertura_nacional": inst_agg['cobertura'],
+            "pendientes_aprobacion": inst_agg["pendientes"],
+            "cobertura_nacional": inst_agg["cobertura"],
             "data_crecimiento": data_crecimiento,
             "porcentaje_mujeres": porcentaje_mujeres,
             "porcentaje_hombres": porcentaje_hombres,
@@ -270,14 +300,13 @@ class ReportService:
         Calcula métricas específicas para una institución.
         """
         hoy = timezone.now().date()
-        
+
         # Agregaciones para institución
         mis_grupos = Grupo.objects.filter(usuario_creador=user, activo=True)
-        
+
         total_mis_participantes = (
             Participante.objects.filter(
-                vinculaciones__institucion=institution, 
-                vinculaciones__status="activo"
+                vinculaciones__institucion=institution, vinculaciones__status="activo"
             )
             .distinct()
             .count()
@@ -292,38 +321,60 @@ class ReportService:
         # Eventos disponibles: solo los accesibles para esta institución
         eventos_accesibles_q = (
             # Eventos institucionales públicos
-            Q(tipo_evento="institucional", audiencia="publica") |
+            Q(tipo_evento="institucional", audiencia="publica")
+            |
             # Eventos institucionales privados propios
-            Q(tipo_evento="institucional", audiencia="institucional_privado", institucion=institution) |
+            Q(
+                tipo_evento="institucional",
+                audiencia="institucional_privado",
+                institucion=institution,
+            )
+            |
             # Eventos de club públicos
-            Q(tipo_evento="club", audiencia="publica") |
+            Q(tipo_evento="club", audiencia="publica")
+            |
             # Eventos de club exclusivos donde la institución es miembro
-            Q(tipo_evento="club", audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
+            Q(
+                tipo_evento="club",
+                audiencia="club_exclusivo",
+                club_organizador_id__in=clubes_miembro_ids,
+            )
         )
 
         eventos_agg = Evento.objects.filter(activo=True).aggregate(
             disponibles=Count(
                 "id",
-                filter=Q(fecha__gte=hoy, estado_evento="abierto") & eventos_accesibles_q,
-                distinct=True
+                filter=Q(fecha__gte=hoy, estado_evento="abierto")
+                & eventos_accesibles_q,
+                distinct=True,
             ),
-            asignados=Count('id', filter=Q(grupos_inscritos__usuario_creador=user))
+            asignados=Count("id", filter=Q(grupos_inscritos__usuario_creador=user)),
         )
 
-        mis_clubes_agg = Club.objects.filter(institucion_creadora=institution).aggregate(
-            total=Count('id'),
-            aprobados=Count('id', filter=Q(status="aprobado", activo=True))
+        mis_clubes_agg = Club.objects.filter(
+            institucion_creadora=institution
+        ).aggregate(
+            total=Count("id"),
+            aprobados=Count("id", filter=Q(status="aprobado", activo=True)),
         )
 
         # Eventos de club accesibles (reutiliza clubes_miembro_ids ya calculado)
-        eventos_club_disponibles = Evento.objects.filter(
-            tipo_evento="club",
-            estado_evento="abierto",
-            activo=True,
-        ).filter(
-            Q(audiencia="publica") |
-            Q(audiencia="club_exclusivo", club_organizador_id__in=clubes_miembro_ids)
-        ).distinct().count()
+        eventos_club_disponibles = (
+            Evento.objects.filter(
+                tipo_evento="club",
+                estado_evento="abierto",
+                activo=True,
+            )
+            .filter(
+                Q(audiencia="publica")
+                | Q(
+                    audiencia="club_exclusivo",
+                    club_organizador_id__in=clubes_miembro_ids,
+                )
+            )
+            .distinct()
+            .count()
+        )
 
         # =============================================================================
         # PRÓXIMOS EVENTOS - Lógica robusta según requerimientos funcionales
@@ -333,7 +384,7 @@ class ReportService:
             EstadoEvento.ABIERTO,
             EstadoEvento.PAUSADO,
         }
-        
+
         # Query optimizada: eventos futuros accesibles para la institución
         proximos_eventos = (
             Evento.objects.filter(
@@ -344,32 +395,32 @@ class ReportService:
             )
             .filter(eventos_accesibles_q)  # Reutilizar lógica de accesibilidad
             .select_related("estado")  # Optimización ORM
-            .order_by("fecha", "nombre")  # Orden ascendente por fecha
-            [:5]  # Limitar a 5 eventos próximos
+            .order_by("fecha", "nombre")[  # Orden ascendente por fecha
+                :5
+            ]  # Limitar a 5 eventos próximos
         )
-        
+
         # =============================================================================
         # EQUIPOS RECIENTES - Completar contexto del dashboard
         # =============================================================================
         grupos_recientes = (
-            mis_grupos
-            .select_related("institucion")
+            mis_grupos.select_related("institucion")
             .prefetch_related("participantes", "tutores")
             .order_by("-fecha_registro")[:5]
         )
-        
+
         # Enriquecer grupos con nombre del tutor para el template
         for grupo in grupos_recientes:
             tutor = grupo.tutores.first()
             grupo.tutor_nombre = tutor.get_nombre_completo() if tutor else "Sin tutor"
-        
+
         return {
             "total_mis_grupos": mis_grupos.count(),
             "total_mis_participantes": total_mis_participantes,
-            "eventos_disponibles": eventos_agg['disponibles'],
-            "eventos_asignados": eventos_agg['asignados'],
-            "total_mis_clubes": mis_clubes_agg['total'],
-            "mis_clubes_aprobados": mis_clubes_agg['aprobados'],
+            "eventos_disponibles": eventos_agg["disponibles"],
+            "eventos_asignados": eventos_agg["asignados"],
+            "total_mis_clubes": mis_clubes_agg["total"],
+            "mis_clubes_aprobados": mis_clubes_agg["aprobados"],
             "eventos_club_disponibles": eventos_club_disponibles,
             "proximos_eventos": proximos_eventos,
             "grupos_recientes": grupos_recientes,

@@ -4,15 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0019_mejoras_clubes_lineas_dinamicas'),
+        ("registry", "0019_mejoras_clubes_lineas_dinamicas"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='notificacion',
-            name='tipo',
-            field=models.CharField(choices=[('club_aprobado', 'Club Aprobado'), ('club_rechazado', 'Club Rechazado'), ('solicitud_eliminacion', 'Solicitud de Eliminación'), ('eliminacion_aprobada', 'Eliminación Aprobada'), ('eliminacion_rechazada', 'Eliminación Rechazada'), ('membresia_aprobada', 'Membresía Aprobada'), ('membresia_rechazada', 'Membresía Rechazada'), ('salida_club', 'Salida de Club'), ('sistema', 'Notificación del Sistema')], db_index=True, max_length=30),
+            model_name="notificacion",
+            name="tipo",
+            field=models.CharField(
+                choices=[
+                    ("club_aprobado", "Club Aprobado"),
+                    ("club_rechazado", "Club Rechazado"),
+                    ("solicitud_eliminacion", "Solicitud de Eliminación"),
+                    ("eliminacion_aprobada", "Eliminación Aprobada"),
+                    ("eliminacion_rechazada", "Eliminación Rechazada"),
+                    ("membresia_aprobada", "Membresía Aprobada"),
+                    ("membresia_rechazada", "Membresía Rechazada"),
+                    ("salida_club", "Salida de Club"),
+                    ("sistema", "Notificación del Sistema"),
+                ],
+                db_index=True,
+                max_length=30,
+            ),
         ),
     ]

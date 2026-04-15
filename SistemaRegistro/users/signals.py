@@ -6,6 +6,7 @@ from users.models import UserProfile  # Asegúrate de que la ruta sea correcta
 
 logger = logging.getLogger(__name__)
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
@@ -18,13 +19,18 @@ def create_user_profile(sender, instance, created, **kwargs):
             return
 
         # Si el Admin nos dice que saltemos la creación (porque él lo manejará)
-        if getattr(instance, '_skip_profile_creation', False):
-            logger.info(f"Saltando creación de perfil para {instance.username} (manejado por Admin)")
+        if getattr(instance, "_skip_profile_creation", False):
+            logger.info(
+                f"Saltando creación de perfil para {instance.username} (manejado por Admin)"
+            )
             return
-        
+
         # Usamos get_or_create como red de seguridad absoluta
         UserProfile.objects.get_or_create(user=instance)
-        logger.info(f"Perfil creado automáticamente para el usuario: {instance.username}")
+        logger.info(
+            f"Perfil creado automáticamente para el usuario: {instance.username}"
+        )
+
 
 @receiver(pre_save, sender=User)
 def detectar_activacion_usuario(sender, instance, **kwargs):
@@ -37,6 +43,7 @@ def detectar_activacion_usuario(sender, instance, **kwargs):
     else:
         instance._estado_anterior = None
 
+
 @receiver(post_save, sender=User)
 def sincronizar_activacion_usuario(sender, instance, created, **kwargs):
     """
@@ -47,7 +54,9 @@ def sincronizar_activacion_usuario(sender, instance, created, **kwargs):
 
     # Si fue manejado por un servicio explícito, no duplicar lógica
     if getattr(instance, "_identity_service_handled", False):
-        logger.info(f"Omitiendo señales para {instance.username} (Manejado por IdentityService)")
+        logger.info(
+            f"Omitiendo señales para {instance.username} (Manejado por IdentityService)"
+        )
         return
 
     if not hasattr(instance, "_estado_anterior") or instance._estado_anterior is None:
@@ -59,12 +68,15 @@ def sincronizar_activacion_usuario(sender, instance, created, **kwargs):
     institucion = getattr(instance, "institucion", None)
     if not institucion:
         from registry.models import Institucion
+
         institucion = Institucion.objects.filter(codigo=instance.username).first()
 
     if institucion and institucion.activa != instance.is_active:
         institucion.activa = instance.is_active
         institucion.save(update_fields=["activa"])
-        logger.info(f"Institución {institucion.nombre} sincronizada: activa={instance.is_active}")
+        logger.info(
+            f"Institución {institucion.nombre} sincronizada: activa={instance.is_active}"
+        )
 
     if hasattr(instance, "_estado_anterior"):
         delattr(instance, "_estado_anterior")

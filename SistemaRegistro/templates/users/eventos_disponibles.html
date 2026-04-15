@@ -107,7 +107,7 @@
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ eventos|length }} Convocatorias</span>
         </div>
         <div class="eventos-header-divider"></div>
-        
+
         <div class="card-body p-0">
             {% if eventos %}
             <div class="table-responsive">
@@ -165,7 +165,7 @@
                             <td>
                                 <div class="small fw-bold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ evento.rango_fechas_display }}</div>
                                 <div class="x-small text-muted">
-                                    <i class="bi bi-geo-alt-fill text-danger"></i> 
+                                    <i class="bi bi-geo-alt-fill text-danger"></i>
                                     {% if evento.estado %}{{ evento.estado.nombre }}{% endif %}
                                     {% if evento.municipio %}, {{ evento.municipio.nombre }}{% endif %}
                                 </div>

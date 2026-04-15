@@ -4,10 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0049_fix_all_participante_fk_uuid'),
+        ("registry", "0049_fix_all_participante_fk_uuid"),
     ]
 
-    operations = [
-    ]
+    operations = []

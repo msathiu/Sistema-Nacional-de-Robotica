@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("registry", "0054_alter_evento_estado_evento_alter_participante_id_and_more"),
         ("registry", "1000_merge_20260308_1825"),

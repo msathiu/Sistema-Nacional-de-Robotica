@@ -14,7 +14,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'registrar_institucion' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Institución
                 </a>
@@ -136,7 +136,7 @@
                                 {% endif %}
                             </td>
                             <td data-sort-value="{{ item.institucion.tipo_institucion }}">
-                                <span class="badge rounded-pill px-3 py-2 small fw-bold" 
+                                <span class="badge rounded-pill px-3 py-2 small fw-bold"
                                       style="background: {% if item.institucion.tipo_institucion == 'particular' %}#8b5cf6{% elif item.institucion.tipo_institucion == 'educativa' %}#3b82f6{% elif item.institucion.tipo_institucion == 'publica' %}#10b981{% elif item.institucion.tipo_institucion == 'privada' %}#f59e0b{% else %}#6b7280{% endif %}; color: white;">
                                     {{ item.institucion.get_tipo_institucion_display }}
                                 </span>
@@ -150,12 +150,12 @@
                                 <div class="small fw-bold text-estado-val">{{ item.institucion.estado.nombre }}</div>
                                 <div class="x-small text-muted">{{ item.institucion.municipio.nombre }}</div>
                             </td>
-                            
+
                             {% if perfil.es_central %}
                             <td class="text-center" onclick="event.stopPropagation();" data-sort-value="{% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}VALIDADA{% else %}PENDIENTE{% endif %}">
                                 <div class="mt-2">
                                     <div class="form-check form-switch d-inline-block">
-                                        <input class="form-check-input switch-status" type="checkbox" role="switch" 
+                                        <input class="form-check-input switch-status" type="checkbox" role="switch"
                                                {% if item.institucion.activa and item.institucion.estatus == 'aprobado' %}checked{% endif %}
                                                onchange="event.stopPropagation(); confirmarAccionStatus('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}', this)">
                                     </div>
@@ -171,20 +171,20 @@
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-1">
                                     {% if perfil.es_central %}
-                                    <button class="btn btn-outline-info btn-sm rounded-circle p-2" 
+                                    <button class="btn btn-outline-info btn-sm rounded-circle p-2"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles"
                                             onclick="verDetallesCompletos('{{ item.institucion.id }}')">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                     {% endif %}
-                                    <button class="btn btn-outline-primary btn-sm rounded-circle p-2" 
+                                    <button class="btn btn-outline-primary btn-sm rounded-circle p-2"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"
                                             onclick="abrirModalEditar('{{ item.institucion.id }}')">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
-                                    
+
                                     {% if perfil.es_central %}
-                                    <button class="btn btn-outline-danger btn-sm rounded-circle p-2" 
+                                    <button class="btn btn-outline-danger btn-sm rounded-circle p-2"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
                                             onclick="abrirModalEliminar('{{ item.institucion.id }}', '{{ item.institucion.nombre|escapejs }}')">
                                         <i class="bi bi-trash"></i>
@@ -210,7 +210,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4 bg-light">
-                
+
                 <!-- BLOQUE 1: INFORMACIÓN DE IDENTIFICACIÓN -->
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
@@ -378,14 +378,14 @@
 <script>
     const universalModal = new bootstrap.Modal(document.getElementById('modalUniversal'));
     const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalle'));
-    
+
     // Función de sanitización para prevenir XSS
     function sanitizeHTML(str) {
         const temp = document.createElement('div');
         temp.textContent = str;
         return temp.innerHTML;
     }
-    
+
     // Obtener CSRF token de forma segura
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
@@ -469,9 +469,9 @@
             const rowTipo = row.querySelector('.tipo-hidden').innerText.toLowerCase();
             const rowStatus = row.querySelector('.status-hidden').innerText.toUpperCase();
             row.style.display = (
-                text.includes(searchVal) && 
-                (estadoVal === "" || rowEstado.includes(estadoVal)) && 
-                (tipoVal === "" || rowTipo === tipoVal) && 
+                text.includes(searchVal) &&
+                (estadoVal === "" || rowEstado.includes(estadoVal)) &&
+                (tipoVal === "" || rowTipo === tipoVal) &&
                 (statusVal === "" || rowStatus.includes(statusVal))
             ) ? "" : "none";
         });
@@ -508,7 +508,7 @@
             event.preventDefault();
             event.stopPropagation();
         }
-        
+
         // Si viene de botón, manejar el botón
         let btn = null;
         let originalText = '';
@@ -518,10 +518,10 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cargando...';
             btn.disabled = true;
         }
-        
+
         fetch(`/instituciones/detalle/${id}/`, {
             method: 'GET',
-            headers: { 
+            headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             },
@@ -537,7 +537,7 @@
             if (data.error) {
                 throw new Error(data.error);
             }
-            
+
             // Función auxiliar para mostrar/ocultar bloques condicionalmente
             function mostrarBloque(bloqueId, mostrar) {
                 const bloque = document.getElementById(bloqueId);
@@ -545,20 +545,20 @@
                     bloque.style.display = mostrar ? 'block' : 'none';
                 }
             }
-            
+
             function mostrarBloqueCol(bloqueId, mostrar) {
                 const bloque = document.getElementById(bloqueId);
                 if (bloque) {
                     bloque.style.display = mostrar ? 'flex' : 'none';
                 }
             }
-            
+
             const tipoInstitucion = data.tipo_institucion_key || data.tipo_institucion || '';
             const esParticular = tipoInstitucion === 'particular';
-            
+
             // ===== BLOQUE 1: INFORMACIÓN DE IDENTIFICACIÓN =====
             document.getElementById('detCodigo').textContent = data.codigo || 'N/A';
-            
+
             // Mostrar nombre según tipo
             if (esParticular && data.particular_nombres && data.particular_apellidos) {
                 // Para persona natural, no duplicar con los campos de "Nombres/Apellidos" dentro de bloqueParticular
@@ -568,23 +568,23 @@
                 document.getElementById('detNombre').textContent = data.nombre || 'N/A';
                 mostrarBloque('bloqueParticular', false);
             }
-            
+
             // Mostrar subtipo si existe
             const tipoTexto = data.tipo_institucion || '';
             mostrarBloque('bloqueSubtipo', !!tipoTexto);
             if (tipoTexto) {
                 document.getElementById('detTipoInstitucion').textContent = tipoTexto;
             }
-            
+
             // Mostrar federado si existe
             const federado = data.federado;
             mostrarBloque('bloqueFederado', federado !== null && federado !== undefined);
             if (federado !== null && federado !== undefined) {
-                document.getElementById('detFederado').innerHTML = federado ? 
-                    '<span class="badge bg-success px-3"><i class="bi bi-check-circle me-1"></i>Sí</span>' : 
+                document.getElementById('detFederado').innerHTML = federado ?
+                    '<span class="badge bg-success px-3"><i class="bi bi-check-circle me-1"></i>Sí</span>' :
                     '<span class="badge bg-secondary px-3"><i class="bi bi-x-circle me-1"></i>No</span>';
             }
-            
+
             // ===== BLOQUE 2: DOCUMENTACIÓN Y CATEGORÍA =====
             // Mostrar RIF para instituciones, no para particulares
             const rif = data.rif || '';
@@ -592,7 +592,7 @@
             if (!esParticular && rif) {
                 document.getElementById('detRif').textContent = rif;
             }
-            
+
             // Mostrar Identificación (Nacionalidad + Cédula) para particulares
             const nacional = data.particular_nacionalidad || '';
             const cedula = data.particular_cedula || '';
@@ -601,7 +601,7 @@
             if (esParticular && identificacion) {
                 document.getElementById('detIdentificacion').textContent = identificacion;
             }
-            
+
             // Mostrar Código MPPE solo si es educativa
             const codigoMPPE = data.codigo_mppe || '';
             const esEducativa = tipoInstitucion === 'educativa';
@@ -609,66 +609,66 @@
             if (esEducativa && codigoMPPE) {
                 document.getElementById('detCodigoMPPE').textContent = codigoMPPE;
             }
-            
+
             // Mostrar Naturaleza si existe
             const naturaleza = data.naturaleza || '';
             mostrarBloque('bloqueNaturaleza', !esParticular && !!naturaleza);
             if (naturaleza) {
-                document.getElementById('detNaturaleza').innerHTML = naturaleza === 'Pública' ? 
-                    '<span class="badge bg-primary px-3">Pública</span>' : 
+                document.getElementById('detNaturaleza').innerHTML = naturaleza === 'Pública' ?
+                    '<span class="badge bg-primary px-3">Pública</span>' :
                     (naturaleza === 'Privada' ? '<span class="badge bg-warning text-dark px-3">Privada</span>' : '<span class="text-muted">N/A</span>');
             }
-            
+
             // Mostrar Subcategoría si existe
             const subcategoria = data.subcategoria || '';
             mostrarBloque('bloqueSubcategoria', !esParticular && !!subcategoria);
             if (subcategoria) {
                 document.getElementById('detSubcategoria').textContent = subcategoria;
             }
-            
+
             // Mostrar Categoría si existe
             const categoria = data.categoria || '';
             mostrarBloque('bloqueCategoria', !esParticular && !!categoria);
             if (categoria) {
                 document.getElementById('detCategoria').textContent = categoria;
             }
-            
+
             // Mostrar Dependencia si existe
             const dependencia = data.dependencia || '';
             mostrarBloque('bloqueDependencia', !esParticular && !!dependencia);
             if (dependencia) {
                 document.getElementById('detDependencia').textContent = dependencia;
             }
-            
+
             // ===== BLOQUE 3: UBICACIÓN GEOGRÁFICA =====
             const estado = data.estado || '';
             const municipio = data.municipio || '';
             const parroquia = data.parroquia || '';
             const direccion = data.direccion || '';
-            
+
             mostrarBloque('bloqueEstado', !!estado);
             if (estado) document.getElementById('detEstado').textContent = estado;
-            
+
             mostrarBloque('bloqueMunicipio', !!municipio);
             if (municipio) document.getElementById('detMunicipio').textContent = municipio;
-            
+
             mostrarBloque('bloqueParroquia', !!parroquia);
             if (parroquia) document.getElementById('detParroquia').textContent = parroquia;
-            
+
             mostrarBloque('bloqueDireccion', !!direccion);
             if (direccion) document.getElementById('detDireccion').textContent = direccion;
-            
+
             // ===== BLOQUE 4: CONTACTO =====
             // Teléfono: Combinar telefono_codigo + telefono_numero
             const telCodigo = data.telefono_codigo || '';
             const telNumero = data.telefono_numero || '';
             const telefonoCompleto = telCodigo && telNumero ? `${telCodigo}-${telNumero}` : (data.telefono || '');
-            
+
             mostrarBloque('bloqueTelefono', !!telefonoCompleto);
             if (telefonoCompleto) {
                 document.getElementById('detTelefono').textContent = telefonoCompleto;
             }
-            
+
             // Email como mailto:
             const email = data.email || '';
             mostrarBloque('bloqueEmail', !!email);
@@ -677,16 +677,16 @@
                 emailLink.textContent = email;
                 emailLink.href = `mailto:${email}`;
             }
-            
+
             // Fecha de registro
             const fechaRegistro = data.fecha_registro || '';
             mostrarBloque('bloqueFechaRegistro', !!fechaRegistro);
             if (fechaRegistro) {
                 const fecha = new Date(fechaRegistro);
                 if (!isNaN(fecha.getTime())) {
-                    const fechaFormato = fecha.toLocaleDateString('es-ES', { 
-                        year: 'numeric', 
-                        month: 'long', 
+                    const fechaFormato = fecha.toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
                         day: 'numeric'
                     });
                     document.getElementById('detFechaRegistro').textContent = fechaFormato;
@@ -694,7 +694,7 @@
                     document.getElementById('detFechaRegistro').textContent = 'Fecha no disponible';
                 }
             }
-            
+
             detalleModal.show();
         })
         .catch(error => {
@@ -714,7 +714,7 @@
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Cargando...';
         btn.disabled = true;
-        
+
         fetch(`/instituciones/detalle/${id}/`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
@@ -724,7 +724,7 @@
             header.className = "modal-header border-0 pt-4 px-4 text-white";
             header.style.background = "var(--blue-main)";
             document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR INSTITUCIÓN';
-            
+
             // Limpiar errores previos
             const errorDiv = document.getElementById('editErrorMsg');
             errorDiv.style.display = 'none';
@@ -806,20 +806,20 @@
                         </div>
                     </div>
                 </div>`;
-            
+
             const form = document.getElementById('modalForm');
             form.action = `/instituciones/editar/${id}/`;
-            
+
             const submit = document.getElementById('modalSubmitBtn');
             submit.innerText = "Guardar Cambios";
             submit.className = "btn rounded-pill px-4 fw-bold w-100 shadow-sm text-white";
             submit.style.background = "var(--blue-main)";
-            
+
             // Validaciones al enviar
             form.onsubmit = function(e) {
                 const pass = document.getElementById('editPass').value;
                 const conf = document.getElementById('editPassConf').value;
-                
+
                 if(pass && pass !== conf) {
                     e.preventDefault();
                     document.getElementById('errorText').innerText = "Las contraseñas no coinciden.";
@@ -843,42 +843,42 @@
     function confirmarAccionStatus(id, nombre, checkbox) {
         const activa = checkbox.checked;
         const url = activa ? `/instituciones/aprobar/${id}/` : `/instituciones/desactivar/${id}/`;
-        
+
         // Configurar modal
         const header = document.getElementById('modalHeader');
         header.style.background = activa ? "#10b981" : "#f59e0b";
-        document.getElementById('modalTitle').innerHTML = activa ? 
-            '<i class="bi bi-check-circle me-2"></i> Habilitar Institución' : 
+        document.getElementById('modalTitle').innerHTML = activa ?
+            '<i class="bi bi-check-circle me-2"></i> Habilitar Institución' :
             '<i class="bi bi-pause-circle me-2"></i> Suspender Acceso';
-        
+
         const safeNombre = sanitizeHTML(nombre);
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-3">
                 <p class="fs-5 mb-0">¿Estás seguro de que deseas <b>${activa ? 'habilitar' : 'suspender'}</b> a:<br><b>${safeNombre}</b>?</p>
                 ${activa ? '<p class="text-muted small mt-2"><i class="bi bi-info-circle me-1"></i> Se generará su código RNR y se activarán sus credenciales de acceso.</p>' : ''}
             </div>`;
-                
+
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Confirmar y Procesar";
         submit.className = "btn rounded-pill px-4 fw-bold w-100 text-white shadow";
         submit.style.background = activa ? "#10b981" : "#f59e0b";
         submit.disabled = false; // Asegurar que esté habilitado al abrir
-        
+
         const form = document.getElementById('modalForm');
         // Importante: Remover el atributo action para evitar el envío tradicional del formulario
         form.removeAttribute('action');
-        
+
         // Manejar el envío mediante AJAX
         form.onsubmit = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             submit.disabled = true;
             submit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
-            
+
             fetch(url, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'X-CSRFToken': getCSRFToken(),
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -903,12 +903,12 @@
                 checkbox.checked = !activa; // Revertir el switch
                 universalModal.hide();
             });
-            
+
             return false;
         };
-        
+
         universalModal.show();
-        
+
         // Si cierran el modal (clic fuera o X) sin haber confirmado (submit no deshabilitado)
         const modalElement = document.getElementById('modalUniversal');
         const revertHandler = function () {
@@ -924,7 +924,7 @@
         const header = document.getElementById('modalHeader');
         header.style.background = "#ef4444";
         document.getElementById('modalTitle').innerHTML = `<i class="bi bi-trash3-fill me-2"></i> ELIMINAR REGISTRO`;
-        
+
         const safeNombreElim = sanitizeHTML(nombre);
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-2">
@@ -932,16 +932,16 @@
                 <p class="text-muted">Escriba <b>CONFIRMAR</b> para eliminar:<br><strong>${safeNombreElim}</strong></p>
                 <input type="text" id="confirmInput" class="form-control text-center fw-bold border-danger" placeholder="CONFIRMAR">
             </div>`;
-            
+
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Eliminar Definitivamente";
         submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow";
         submit.disabled = true;
-        
+
         const form = document.getElementById('modalForm');
         form.action = `/instituciones/eliminar/${id}/`;
         form.onsubmit = null;
-        
+
         universalModal.show();
         document.getElementById('confirmInput').addEventListener('input', (e) => {
             submit.disabled = (e.target.value.toUpperCase() !== "CONFIRMAR");
@@ -960,12 +960,12 @@
             const update = () => {
                 const now = +c.innerText;
                 const inc = target / 30;
-                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
                 else c.innerText = target;
             };
             update();
         });
-        
+
         // Event delegation para filas clickeables
         const tbody = document.querySelector('#institucionesTable tbody');
         if (tbody) {
@@ -974,7 +974,7 @@
                 if (e.target.closest('button') || e.target.closest('.form-check')) {
                     return;
                 }
-                
+
                 // Encontrar la fila clickeada
                 const row = e.target.closest('tr.clickable-row');
                 if (row) {

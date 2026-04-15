@@ -5,7 +5,14 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from registry.models import Estado, EstadoEvento, Evento, Institucion, Municipio, Parroquia
+from registry.models import (
+    Estado,
+    EstadoEvento,
+    Evento,
+    Institucion,
+    Municipio,
+    Parroquia,
+)
 
 
 User = get_user_model()
@@ -230,7 +237,9 @@ class EventoWorkflowTestCase(TestCase):
         self.assertEqual(evento.estado_evento, EstadoEvento.CANCELADO)
         self.assertTrue(evento.cancelado)
         self.assertFalse(evento.activo)
-        self.assertEqual(evento.motivo_cancelacion, "Cancelado por la institución organizadora")
+        self.assertEqual(
+            evento.motivo_cancelacion, "Cancelado por la institución organizadora"
+        )
 
     def test_flujo_pausado_cancelado_por_federacion(self):
         evento = self._crear_evento_borrador()
@@ -243,7 +252,9 @@ class EventoWorkflowTestCase(TestCase):
 
         evento.refresh_from_db()
         self.assertEqual(evento.estado_evento, EstadoEvento.CANCELADO)
-        self.assertEqual(evento.motivo_cancelacion, "Cancelado definitivamente por ente rector")
+        self.assertEqual(
+            evento.motivo_cancelacion, "Cancelado definitivamente por ente rector"
+        )
 
     def test_institucion_no_puede_pausar_evento(self):
         evento = self._crear_evento_borrador()

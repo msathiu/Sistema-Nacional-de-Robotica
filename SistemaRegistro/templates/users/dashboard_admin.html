@@ -19,11 +19,11 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4 text-end d-flex align-items-center justify-content-end gap-2">
             {% if perfil.can_create_evento %}
             <div class="dropdown">
-                <button class="btn shadow-sm px-4 fw-bold dropdown-toggle" 
+                <button class="btn shadow-sm px-4 fw-bold dropdown-toggle"
                         style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-plus-circle-fill me-2"></i> Nueva Gestión
@@ -306,13 +306,13 @@
         text-decoration: none; color: #1e293b; font-weight: 600; transition: all 0.3s ease;
     }
     .tech-report-btn:hover { background: white; border-color: var(--accent-cyan); transform: translateY(-2px); }
-    
+
     /* Efecto hover sutil para cards de métricas */
     .card-stat-tech {
         cursor: default;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    
+
     .card-stat-tech:hover {
         transform: translateY(-4px);
         box-shadow: 0 12px 24px rgba(11, 44, 109, 0.25) !important;
@@ -458,7 +458,7 @@
             },
             options: {
                 maintainAspectRatio: false,
-                plugins: { 
+                plugins: {
                     legend: { position: 'right', labels: { usePointStyle: true, font: { size: 11 }, padding: 12 } },
                     tooltip: {
                         callbacks: {

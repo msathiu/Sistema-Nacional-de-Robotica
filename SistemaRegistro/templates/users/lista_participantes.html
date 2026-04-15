@@ -20,7 +20,7 @@
                 </a>
                 {% endif %}
                 {% if perfil.can_create_participante %}
-                <a href="{% url 'crear_participante' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'crear_participante' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-person-plus-fill me-2"></i> Agregar Participante
                 </a>
@@ -125,7 +125,7 @@
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ participantes.count }} Registros</span>
         </div>
         <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
-        
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" id="participantesTable">
@@ -239,10 +239,10 @@
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     {% if perfil.can_delete_participantes %}
-                                    <button type="button" 
+                                    <button type="button"
                                             class="btn btn-outline-danger btn-sm rounded-circle p-2 {% if p.tiene_grupos_activos %}disabled opacity-50{% endif %}"
-                                            data-bs-toggle="tooltip" 
-                                            data-bs-placement="top" 
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
                                             title="{% if p.tiene_grupos_activos %}No se puede eliminar: participante está en {{ p.count_grupos_activos }} grupo(s){% else %}Eliminar del padrón{% endif %}"
                                             {% if not p.tiene_grupos_activos %}onclick="confirmarEliminacion('{{ p.id }}', '{{ p.nombres|escapejs }} {{ p.apellidos|escapejs }}')"{% endif %}>
                                         <i class="bi bi-trash3-fill"></i>
@@ -354,9 +354,9 @@
                         </div>
                         <div class="col-md-7">
                             <label class="form-label x-small fw-bold text-muted text-uppercase">Número (7 dígitos)</label>
-                            <input type="text" name="numero_telefono" id="editNumeroTelefono" 
-                                   class="form-control border-0 shadow-sm" 
-                                   style="border-radius: 10px;" 
+                            <input type="text" name="numero_telefono" id="editNumeroTelefono"
+                                   class="form-control border-0 shadow-sm"
+                                   style="border-radius: 10px;"
                                    maxlength="7"
                                    required>
                         </div>
@@ -749,7 +749,7 @@
 
     function abrirModalEditar(id, nombres, apellidos, email, codArea, telefono) {
         const form = document.getElementById('formEditar');
-        form.action = `/participante/editar/${id}/`; 
+        form.action = `/participante/editar/${id}/`;
 
         document.getElementById('editNombres').value = nombres;
         document.getElementById('editApellidos').value = apellidos;
@@ -774,17 +774,17 @@
         // Datos Personales
         document.getElementById('detNombres').innerText = data.nombres || 'N/A';
         document.getElementById('detApellidos').innerText = data.apellidos || 'N/A';
-        
+
         // Cédula: mostrar personal, si está vacía mostrar escolar
         const cedula = data.cedula || data.cedula_escolar || 'N/A';
         document.getElementById('detCedula').innerText = cedula;
-        
+
         document.getElementById('detEdad').innerText = data.edad ? `${data.edad} años` : 'N/A';
         document.getElementById('detSexo').innerText = data.sexo || 'N/A';
         document.getElementById('detEmail').innerText = data.email || 'N/A';
         document.getElementById('detNacionalidad').innerText = data.nacionalidad || 'N/A';
         document.getElementById('detTelefono').innerText = data.telefono || 'N/A';
-        
+
         // Condición TEA
         const teaElement = document.getElementById('detTEA');
         if (data.condicion_tea) {
@@ -792,16 +792,16 @@
         } else {
             teaElement.innerHTML = '<span class="badge bg-secondary">No</span>';
         }
-        
+
         // Ubicación
         document.getElementById('detEstado').innerText = data.estado || 'N/A';
         document.getElementById('detMunicipio').innerText = data.municipio || 'N/A';
         document.getElementById('detParroquia').innerText = data.parroquia || 'N/A';
         document.getElementById('detDireccion').innerText = data.direccion || 'N/A';
-        
+
         // Educación
         document.getElementById('detNivelEducativo').innerText = data.nivel_educativo || 'N/A';
-        
+
         // Lógica de Mayoría de Edad y Representante
         const repContainer = document.getElementById('detRepresentanteContainer');
         const badgeMayor = document.getElementById('badgeMayorEdad');
@@ -814,14 +814,14 @@
         } else {
             repContainer.classList.remove('d-none');
             badgeMayor.classList.add('d-none');
-            
+
             // Poblar datos del representante solo si es menor
             document.getElementById('detRepresentante').innerText = data.nombre_representante || 'N/A';
             document.getElementById('detCedulaRep').innerText = data.cedula_representante || 'N/A';
             document.getElementById('detTelefonoRep').innerText = data.telefono_representante || 'N/A';
             document.getElementById('detEmailRep').innerText = data.email_representante || 'N/A';
         }
-        
+
         modalDetalle.show();
     }
 
@@ -845,7 +845,7 @@
             const update = () => {
                 const now = +c.innerText;
                 const inc = target / 30;
-                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
                 else c.innerText = target;
             };
             update();

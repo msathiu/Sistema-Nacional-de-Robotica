@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0002_agregar_audiencia_eventos'),
-        ('registry', '0038_remove_grupo_tutor_apellidos_and_more'),
+        ("registry", "0002_agregar_audiencia_eventos"),
+        ("registry", "0038_remove_grupo_tutor_apellidos_and_more"),
     ]
 
-    operations = [
-    ]
+    operations = []

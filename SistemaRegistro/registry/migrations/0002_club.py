@@ -4,22 +4,87 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0001_initial'),
+        ("registry", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Club',
+            name="Club",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200, verbose_name='Nombre del Club')),
-                ('descripcion', models.TextField(verbose_name='Descripción')),
-                ('ubicacion', models.CharField(max_length=255, verbose_name='Ubicación')),
-                ('linea_1', models.CharField(choices=[('electronica', 'Electrónica y Circuitos'), ('programacion', 'Programación y Algoritmos'), ('mecanica', 'Mecánica y Estructuras'), ('ia', 'Inteligencia Artificial'), ('iot', 'Internet de las Cosas (IoT)'), ('automatizacion', 'Automatización Industrial'), ('diseno_3d', 'Diseño e Impresión 3D'), ('telecom', 'Telecomunicaciones')], max_length=50, verbose_name='Línea de investigación 1')),
-                ('linea_2', models.CharField(blank=True, choices=[('electronica', 'Electrónica y Circuitos'), ('programacion', 'Programación y Algoritmos'), ('mecanica', 'Mecánica y Estructuras'), ('ia', 'Inteligencia Artificial'), ('iot', 'Internet de las Cosas (IoT)'), ('automatizacion', 'Automatización Industrial'), ('diseno_3d', 'Diseño e Impresión 3D'), ('telecom', 'Telecomunicaciones')], max_length=50, null=True, verbose_name='Línea de investigación 2')),
-                ('linea_3', models.CharField(blank=True, choices=[('electronica', 'Electrónica y Circuitos'), ('programacion', 'Programación y Algoritmos'), ('mecanica', 'Mecánica y Estructuras'), ('ia', 'Inteligencia Artificial'), ('iot', 'Internet de las Cosas (IoT)'), ('automatizacion', 'Automatización Industrial'), ('diseno_3d', 'Diseño e Impresión 3D'), ('telecom', 'Telecomunicaciones')], max_length=50, null=True, verbose_name='Línea de investigación 3')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "nombre",
+                    models.CharField(max_length=200, verbose_name="Nombre del Club"),
+                ),
+                ("descripcion", models.TextField(verbose_name="Descripción")),
+                (
+                    "ubicacion",
+                    models.CharField(max_length=255, verbose_name="Ubicación"),
+                ),
+                (
+                    "linea_1",
+                    models.CharField(
+                        choices=[
+                            ("electronica", "Electrónica y Circuitos"),
+                            ("programacion", "Programación y Algoritmos"),
+                            ("mecanica", "Mecánica y Estructuras"),
+                            ("ia", "Inteligencia Artificial"),
+                            ("iot", "Internet de las Cosas (IoT)"),
+                            ("automatizacion", "Automatización Industrial"),
+                            ("diseno_3d", "Diseño e Impresión 3D"),
+                            ("telecom", "Telecomunicaciones"),
+                        ],
+                        max_length=50,
+                        verbose_name="Línea de investigación 1",
+                    ),
+                ),
+                (
+                    "linea_2",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("electronica", "Electrónica y Circuitos"),
+                            ("programacion", "Programación y Algoritmos"),
+                            ("mecanica", "Mecánica y Estructuras"),
+                            ("ia", "Inteligencia Artificial"),
+                            ("iot", "Internet de las Cosas (IoT)"),
+                            ("automatizacion", "Automatización Industrial"),
+                            ("diseno_3d", "Diseño e Impresión 3D"),
+                            ("telecom", "Telecomunicaciones"),
+                        ],
+                        max_length=50,
+                        null=True,
+                        verbose_name="Línea de investigación 2",
+                    ),
+                ),
+                (
+                    "linea_3",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("electronica", "Electrónica y Circuitos"),
+                            ("programacion", "Programación y Algoritmos"),
+                            ("mecanica", "Mecánica y Estructuras"),
+                            ("ia", "Inteligencia Artificial"),
+                            ("iot", "Internet de las Cosas (IoT)"),
+                            ("automatizacion", "Automatización Industrial"),
+                            ("diseno_3d", "Diseño e Impresión 3D"),
+                            ("telecom", "Telecomunicaciones"),
+                        ],
+                        max_length=50,
+                        null=True,
+                        verbose_name="Línea de investigación 3",
+                    ),
+                ),
             ],
         ),
     ]

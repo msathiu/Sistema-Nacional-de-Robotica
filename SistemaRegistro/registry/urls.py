@@ -1,7 +1,16 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
-from . import views, views_institucional, views_reportes, views_avanzadas, views_eventos, views_tutores, views_admin_eventos, views_grupos
+from . import (
+    views,
+    views_institucional,
+    views_reportes,
+    views_avanzadas,
+    views_eventos,
+    views_tutores,
+    views_admin_eventos,
+    views_grupos,
+)
 
 urlpatterns = [
     path("", views.registro_publico, name="registro_publico"),
@@ -37,8 +46,16 @@ urlpatterns = [
     # Eventos (rutas centralizadas en users/urls.py)
     # Clubes - Vistas para instituciones
     path("clubes/", views_institucional.clubes_lista, name="clubes_lista"),
-    path("clubes/directorio/", views_institucional.directorio_clubes_aprobados, name="directorio_clubes_aprobados"),
-    path("clubes/<int:club_id>/detalle/", views_institucional.detalle_club, name="detalle_club"),
+    path(
+        "clubes/directorio/",
+        views_institucional.directorio_clubes_aprobados,
+        name="directorio_clubes_aprobados",
+    ),
+    path(
+        "clubes/<int:club_id>/detalle/",
+        views_institucional.detalle_club,
+        name="detalle_club",
+    ),
     path("clubes/crear/", views_institucional.crear_club, name="crear_club"),
     path(
         "api/clubes/buscar-tutor/",
@@ -202,8 +219,16 @@ urlpatterns = [
         name="exportar_clubes_json",
     ),
     # Exportaciones de reportes (Excel o CSV vía ?format=xlsx|csv)
-    path("reportes/equipos/export/", views_reportes.exportar_equipos_excel, name="exportar_equipos_excel"),
-    path("reportes/tutores/export/", views_reportes.exportar_tutores_excel, name="exportar_tutores_excel"),
+    path(
+        "reportes/equipos/export/",
+        views_reportes.exportar_equipos_excel,
+        name="exportar_equipos_excel",
+    ),
+    path(
+        "reportes/tutores/export/",
+        views_reportes.exportar_tutores_excel,
+        name="exportar_tutores_excel",
+    ),
     path(
         "reportes/instituciones/export/",
         views_reportes.exportar_instituciones_excel,
@@ -224,11 +249,15 @@ urlpatterns = [
     ),
     path(
         "reportes/instituciones/excel/",
-        RedirectView.as_view(pattern_name="exportar_instituciones_excel", permanent=False),
+        RedirectView.as_view(
+            pattern_name="exportar_instituciones_excel", permanent=False
+        ),
     ),
     path(
         "reportes/inscripciones/excel/",
-        RedirectView.as_view(pattern_name="exportar_inscripciones_excel", permanent=False),
+        RedirectView.as_view(
+            pattern_name="exportar_inscripciones_excel", permanent=False
+        ),
     ),
     # Fase 4: Calificaciones
     path(

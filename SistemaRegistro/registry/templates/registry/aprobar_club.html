@@ -10,19 +10,19 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         overflow: hidden;
     }
-    
+
     .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
-    
+
     .section-icon {
         width: 40px;
         height: 40px;
@@ -31,18 +31,18 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .info-item {
         padding: 0.75rem;
         background: white;
         border-radius: 12px;
         margin-bottom: 0.75rem;
     }
-    
+
     .info-item:last-child { margin-bottom: 0; }
     .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-item strong { color: #1e293b; }
-    
+
     .badge-linea {
         background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
         color: white;
@@ -51,13 +51,13 @@
         font-size: 0.75rem;
         font-weight: 500;
     }
-    
+
     @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
     .animate-fade-in { animation: fadeInUp 0.5s ease forwards; }
     .delay-1 { animation-delay: 0.05s; }
     .delay-2 { animation-delay: 0.1s; }
     .delay-3 { animation-delay: 0.15s; }
-    
+
     /* Animaciones optimizadas */
     .animate-fade-in {
         opacity: 0;
@@ -68,11 +68,11 @@
     .delay-1 { animation-delay: 0.1s; }
     .delay-2 { animation-delay: 0.2s; }
     .delay-3 { animation-delay: 0.3s; }
-    
+
     @keyframes fadeIn {
         to { opacity: 1; }
     }
-    
+
     /* Prevenir movimientos inesperados */
     .section-card {
         contain: layout style paint;
@@ -224,7 +224,7 @@
                         <a href="{% url 'detalle_club' club.id %}" class="btn btn-outline-secondary rounded-pill fw-bold text-start">
                             <i class="bi bi-eye me-2"></i>Ver Detalles Completos
                         </a>
-                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub" 
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub"
                                 class="btn fw-bold rounded-pill text-white text-start" style="background: #dc2626;">
                             <i class="bi bi-x-circle me-2"></i>Rechazar en lugar de aprobar
                         </button>

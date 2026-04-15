@@ -6,48 +6,83 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('registry', '0001_initial'),
+        ("registry", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Estados',
+            name="Estados",
             fields=[
-                ('id_estado', models.IntegerField(primary_key=True, serialize=False)),
-                ('estado', models.CharField(max_length=100)),
-                ('iso_3166_2', models.CharField(max_length=4)),
+                ("id_estado", models.IntegerField(primary_key=True, serialize=False)),
+                ("estado", models.CharField(max_length=100)),
+                ("iso_3166_2", models.CharField(max_length=4)),
             ],
             options={
-                'db_table': 'estados',
-                'managed': False,
+                "db_table": "estados",
+                "managed": False,
             },
         ),
         migrations.CreateModel(
-            name='Municipios',
+            name="Municipios",
             fields=[
-                ('id_municipio', models.IntegerField(primary_key=True, serialize=False)),
-                ('municipio', models.CharField(max_length=100)),
+                (
+                    "id_municipio",
+                    models.IntegerField(primary_key=True, serialize=False),
+                ),
+                ("municipio", models.CharField(max_length=100)),
             ],
             options={
-                'db_table': 'municipios',
-                'managed': False,
+                "db_table": "municipios",
+                "managed": False,
             },
         ),
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('user_type', models.CharField(choices=[('participante', 'Participante'), ('institucional', 'Usuario Institucional'), ('admin', 'Administrador (Ministerio)')], default='participante', max_length=20)),
-                ('phone', models.CharField(blank=True, max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('institution', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='registry.institucion')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "user_type",
+                    models.CharField(
+                        choices=[
+                            ("participante", "Participante"),
+                            ("institucional", "Usuario Institucional"),
+                            ("admin", "Administrador (Ministerio)"),
+                        ],
+                        default="participante",
+                        max_length=20,
+                    ),
+                ),
+                ("phone", models.CharField(blank=True, max_length=20)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "institution",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="registry.institucion",
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

@@ -225,7 +225,9 @@ class TutorServiceTest(TutorBaseTestCase):
 
     def test_asignar_tutor_a_grupo(self):
         tutor = self.crear_tutor()
-        TutorService.vincular_tutor_institucion(tutor, self.institucion, usuario=self.usuario)
+        TutorService.vincular_tutor_institucion(
+            tutor, self.institucion, usuario=self.usuario
+        )
         grupo = self.crear_grupo()
 
         TutorService.asignar_tutor_a_grupo(tutor, grupo, self.usuario)
@@ -242,7 +244,9 @@ class TutorServiceTest(TutorBaseTestCase):
 
     def test_validar_grupo_listo_para_evento(self):
         tutor = self.crear_tutor()
-        TutorService.vincular_tutor_institucion(tutor, self.institucion, usuario=self.usuario)
+        TutorService.vincular_tutor_institucion(
+            tutor, self.institucion, usuario=self.usuario
+        )
 
         grupo_sin_tutor = self.crear_grupo(nombre="Grupo Sin Tutor")
         grupo_con_tutor = self.crear_grupo(nombre="Grupo Con Tutor")
@@ -253,7 +257,9 @@ class TutorServiceTest(TutorBaseTestCase):
 
     def test_cambiar_estado_tutor(self):
         tutor = self.crear_tutor()
-        TutorService.vincular_tutor_institucion(tutor, self.institucion, usuario=self.usuario)
+        TutorService.vincular_tutor_institucion(
+            tutor, self.institucion, usuario=self.usuario
+        )
 
         vinculacion = TutorService.cambiar_estado_tutor(
             tutor,
@@ -273,7 +279,9 @@ class TutorServiceTest(TutorBaseTestCase):
 
     def test_cambiar_estado_invalido(self):
         tutor = self.crear_tutor()
-        TutorService.vincular_tutor_institucion(tutor, self.institucion, usuario=self.usuario)
+        TutorService.vincular_tutor_institucion(
+            tutor, self.institucion, usuario=self.usuario
+        )
 
         with self.assertRaises(ValidationError):
             TutorService.cambiar_estado_tutor(
@@ -285,7 +293,9 @@ class TutorServiceTest(TutorBaseTestCase):
 
     def test_remover_ultimo_tutor_grupo_con_evento(self):
         tutor = self.crear_tutor()
-        TutorService.vincular_tutor_institucion(tutor, self.institucion, usuario=self.usuario)
+        TutorService.vincular_tutor_institucion(
+            tutor, self.institucion, usuario=self.usuario
+        )
 
         evento = Evento.objects.create(
             nombre="Evento Test",

@@ -185,7 +185,11 @@ urlpatterns = [
         name="cancelar_inscripcion_grupo_admin",
     ),
     path("eventos/editar/<int:evento_id>/", views.editar_evento, name="editar_evento"),
-    path("eventos/<int:evento_id>/asistencia/",   views.registro_asistencia,  name="registro_asistencia"),
+    path(
+        "eventos/<int:evento_id>/asistencia/",
+        views.registro_asistencia,
+        name="registro_asistencia",
+    ),
     path(
         "eventos/cambiar-estado/<int:evento_id>/",
         views.cambiar_estado_evento,
@@ -254,7 +258,11 @@ urlpatterns = [
     path("sedes/registrar/", views.registrar_sede, name="registrar_sede"),
     path("sedes/nueva/", views.registrar_sede, name="registrar_sede_fvrn"),
     path("sedes/gestionar/", views.gestionar_usuarios_sedes, name="gestionar_sedes"),
-    path("sedes/editar/<int:user_id>/", views.editar_sede_regional, name="editar_sede_regional"),
+    path(
+        "sedes/editar/<int:user_id>/",
+        views.editar_sede_regional,
+        name="editar_sede_regional",
+    ),
     path("sedes/eliminar/<int:user_id>/", views.eliminar_sede, name="eliminar_sede"),
     path(
         "eventos/<int:evento_id>/detalle-inscripcion/",

@@ -4,15 +4,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0021_eventos_club_support'),
+        ("registry", "0021_eventos_club_support"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='evento',
-            name='estado_evento',
-            field=models.CharField(choices=[('borrador', 'Borrador'), ('pendiente', 'Pendiente Aprobación'), ('en_revision', 'En Revisión'), ('aprobado', 'Aprobado'), ('publicado', 'Publicado'), ('en_proceso', 'En Proceso'), ('finalizado', 'Finalizado'), ('rechazado', 'Rechazado'), ('cancelado', 'Cancelado'), ('abierto', 'Abierto'), ('pausado', 'Pausado'), ('cerrado', 'Cerrado')], db_index=True, default='abierto', max_length=20),
+            model_name="evento",
+            name="estado_evento",
+            field=models.CharField(
+                choices=[
+                    ("borrador", "Borrador"),
+                    ("pendiente", "Pendiente Aprobación"),
+                    ("en_revision", "En Revisión"),
+                    ("aprobado", "Aprobado"),
+                    ("publicado", "Publicado"),
+                    ("en_proceso", "En Proceso"),
+                    ("finalizado", "Finalizado"),
+                    ("rechazado", "Rechazado"),
+                    ("cancelado", "Cancelado"),
+                    ("abierto", "Abierto"),
+                    ("pausado", "Pausado"),
+                    ("cerrado", "Cerrado"),
+                ],
+                db_index=True,
+                default="abierto",
+                max_length=20,
+            ),
         ),
     ]

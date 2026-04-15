@@ -16,7 +16,7 @@
                         Asignar Tutor al Grupo
                     </h2>
                     <p class="text-muted mb-0 small">
-                        <i class="bi bi-people me-1"></i> {{ grupo.nombre }} 
+                        <i class="bi bi-people me-1"></i> {{ grupo.nombre }}
                         <span class="badge bg-light text-dark border ms-2">{{ grupo.codigo }}</span>
                     </p>
                 </div>
@@ -34,7 +34,7 @@
         <!-- Tutores Asignados -->
         <div class="col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between" 
+                <div class="card-header border-0 py-3 px-4 d-flex align-items-center justify-content-between"
                      style="background: linear-gradient(145deg, #059669, #047857);">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-check-circle-fill text-white me-3 fs-5"></i>
@@ -79,7 +79,7 @@
         <!-- Agregar Nuevo Tutor -->
         <div class="col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
-                <div class="card-header border-0 py-3 px-4" 
+                <div class="card-header border-0 py-3 px-4"
                      style="background: linear-gradient(145deg, #0b2c6d, #051636);">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-plus-circle text-white me-3 fs-5"></i>
@@ -101,7 +101,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         {% if not tutores_disponibles %}
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle me-1"></i>
@@ -109,7 +109,7 @@
                                 <a href="{% url 'crear_tutor' %}" class="alert-link">Registrar nuevo tutor</a>
                             </div>
                         {% else %}
-                            <button type="submit" class="btn w-100 fw-bold" 
+                            <button type="submit" class="btn w-100 fw-bold"
                                     style="background: var(--accent-cyan); color: var(--blue-main);">
                                 <i class="bi bi-plus-circle me-1"></i> Asignar Tutor
                             </button>

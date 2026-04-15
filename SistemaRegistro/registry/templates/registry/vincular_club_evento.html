@@ -10,7 +10,7 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .modern-card {
         border-radius: 20px;
         border: none;
@@ -25,7 +25,7 @@
         border: none;
         position: relative;
     }
-    
+
     .card-header-modern::before {
         content: '';
         position: absolute;
@@ -58,13 +58,13 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
     }
-    
+
     .btn-outline-modern {
         border: 2px solid #e2e8f0;
         color: #64748b;
         background: transparent;
     }
-    
+
     .btn-outline-modern:hover {
         background: #f1f5f9;
         color: #334155;
@@ -108,10 +108,10 @@
                     <div class="alert alert-info rounded-3 mb-4" style="background: rgba(8, 145, 178, 0.1); border-left: 4px solid #0891b2; border-top:none; border-right:none; border-bottom:none;">
                         <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-robot me-2"></i>{{ club.nombre }}</h5>
                     </div>
-                    
+
                     {% if not eventos_disponibles %}
                     <div class="alert alert-warning rounded-3" style="background: rgba(245, 158, 11, 0.1); border:none; border-left: 4px solid #f59e0b;">
-                        <i class="bi bi-exclamation-triangle-fill me-2" style="color: #d97706;"></i> 
+                        <i class="bi bi-exclamation-triangle-fill me-2" style="color: #d97706;"></i>
                         <span class="text-dark">No hay eventos disponibles para vincular en este momento.</span>
                     </div>
                     <div class="text-end">
@@ -122,7 +122,7 @@
                     {% else %}
                     <form method="post">
                         {% csrf_token %}
-                        
+
                         <div class="mb-4">
                             <label for="evento_id" class="form-label fw-bold">Seleccionar Evento *</label>
                             <select name="evento_id" id="evento_id" class="form-select" required>
@@ -134,7 +134,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label for="rol" class="form-label fw-bold">Rol del Club *</label>
                             <select name="rol" id="rol" class="form-select" required>
@@ -144,7 +144,7 @@
                             </select>
                             <small class="text-muted mt-2 d-block">Indique la manera en la que el club participará en el evento.</small>
                         </div>
-                        
+
                         <hr class="my-4">
 
                         <div class="d-flex justify-content-end gap-3">

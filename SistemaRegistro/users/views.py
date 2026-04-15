@@ -1815,9 +1815,9 @@ def crear_evento(request):
             # Validar que el club_id sea válido y esté en clubes_disponibles
             if clubes_disponibles.filter(id=club_id_get).exists():
                 valores_iniciales["club_organizador"] = club_id_get
-                valores_iniciales["tipo_evento"] = (
-                    "club"  # Si se preselecciona un club, el tipo de evento es "club"
-                )
+                valores_iniciales[
+                    "tipo_evento"
+                ] = "club"  # Si se preselecciona un club, el tipo de evento es "club"
         except ValueError:
             pass  # Ignorar si club_id_get no es un entero válido
 
@@ -3131,12 +3131,17 @@ def eliminar_institucion(request, institucion_id):
     return redirect("lista_instituciones")
 
 
-
 @login_required
 @fed_central_required
 def mapa_interactivo(request):
-    conteo_db = Institucion.objects.filter(eliminado=False).values("estado__nombre").annotate(total=Count("id"))
-    mapa_data = {r["estado__nombre"]: r["total"] for r in conteo_db if r["estado__nombre"]}
+    conteo_db = (
+        Institucion.objects.filter(eliminado=False)
+        .values("estado__nombre")
+        .annotate(total=Count("id"))
+    )
+    mapa_data = {
+        r["estado__nombre"]: r["total"] for r in conteo_db if r["estado__nombre"]
+    }
     return render(request, "users/mapa_interactivo.html", {"mapa_data": mapa_data})
 
 
@@ -3146,15 +3151,20 @@ def api_mapa_datos(request):
     """Datos por estado para una capa del mapa. Soporta drill-down a municipio y parroquia."""
     from django.core.cache import cache
     from .services.mapa_service import (
-        _slug, datos_por_estado, municipios_por_estado, parroquias_por_municipio
+        _slug,
+        datos_por_estado,
+        municipios_por_estado,
+        parroquias_por_municipio,
     )
 
-    capa       = request.GET.get("capa", "instituciones")
-    estado     = request.GET.get("estado", "")
-    municipio  = request.GET.get("municipio", "")
+    capa = request.GET.get("capa", "instituciones")
+    estado = request.GET.get("estado", "")
+    municipio = request.GET.get("municipio", "")
     solo_activas = request.GET.get("activas", "1") == "1"
 
-    cache_key = f"mapa_{capa}_{_slug(estado)}_{_slug(municipio)}_{'a' if solo_activas else 't'}"
+    cache_key = (
+        f"mapa_{capa}_{_slug(estado)}_{_slug(municipio)}_{'a' if solo_activas else 't'}"
+    )
     resultado = cache.get(cache_key)
 
     if resultado is None:
@@ -3169,8 +3179,13 @@ def api_mapa_datos(request):
         elif estado:
             municipios = municipios_por_estado(capa, estado, solo_activas)
 
-        resultado = {"datos": datos, "total": total, "max": max_val,
-                     "municipios": municipios, "parroquias": parroquias}
+        resultado = {
+            "datos": datos,
+            "total": total,
+            "max": max_val,
+            "municipios": municipios,
+            "parroquias": parroquias,
+        }
         cache.set(cache_key, resultado, 60)
 
     return JsonResponse(resultado)
@@ -3467,7 +3482,6 @@ def obtener_datos_persona(request):
     # Lógica para buscar en Participantes o Tutores existentes
     # data = { 'nombres': 'Juan', 'apellidos': 'Perez', ... }
     return JsonResponse({"status": "success", "data": {}})
-
 
 
 @login_required

@@ -1,6 +1,6 @@
 # Guía de Configuración del Servidor — RNR-PRO
 
-> Stack: Python 3.12 · Django 5.0 · PostgreSQL 17 · Nginx · Docker Compose  
+> Stack: Python 3.12 · Django 5.0 · PostgreSQL 17 · Nginx · Docker Compose
 > Última revisión: 2026-04-07
 
 ---
@@ -189,7 +189,7 @@ El sistema usa `django.core.cache` en los context processors para:
 - Contador de clubes pendientes (federación) — TTL 300s
 - Contador de solicitudes de eliminación pendientes — TTL 300s
 
-**En desarrollo** usa `LocMemCache` (configurado en `settings.py`).  
+**En desarrollo** usa `LocMemCache` (configurado en `settings.py`).
 **En producción** se recomienda Redis para cache compartida entre workers de Gunicorn:
 
 ### 6.1 Agregar Redis al docker-compose-prod.yml

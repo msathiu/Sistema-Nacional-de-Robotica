@@ -19,7 +19,7 @@
             {% if no_leidas > 0 %}
             <form method="post" action="{% url 'marcar_todas_leidas' %}" class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn shadow-sm px-4 fw-bold" 
+                <button type="submit" class="btn shadow-sm px-4 fw-bold"
                         style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-check-all me-2"></i>Marcar Todas Leídas
                 </button>
@@ -99,7 +99,7 @@
                             </div>
                             <div class="ms-3">
                                 {% if not notif.leida %}
-                                <a href="{% url 'marcar_notificacion_leida' notif.id %}" 
+                                <a href="{% url 'marcar_notificacion_leida' notif.id %}"
                                    class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold"
                                    title="Marcar como leída">
                                     <i class="bi bi-check me-1"></i>Leída
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const update = () => {
             const now = +c.innerText;
             const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
             else c.innerText = target;
         };
         update();

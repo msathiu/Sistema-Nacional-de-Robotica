@@ -56,11 +56,11 @@ def _usuario_puede_modificar_grupo(user, grupo) -> bool:
 
 
 @login_required
-@fed_central_cannot_create('mis_grupos')
+@fed_central_cannot_create("mis_grupos")
 def crear_equipo(request):
     """
     Vista para crear un nuevo equipo.
-    
+
     Bloqueado para fed_central mediante decorador.
     """
     if not hasattr(request.user, "userprofile"):
@@ -71,9 +71,7 @@ def crear_equipo(request):
 
     # Solo institucionales pueden crear equipos
     if user_type != "institucional":
-        messages.error(
-            request, "Solo instituciones pueden crear equipos."
-        )
+        messages.error(request, "Solo instituciones pueden crear equipos.")
         return redirect("dashboard")
 
     # Obtener la institución
@@ -374,7 +372,8 @@ def ver_equipo(request, grupo_id):
             puede_modificar and grupo.estado_grupo == "editable" and not grupo.evento
         ),
         "dashboard_url": (
-            "dashboard" if request.user.userprofile.user_type == "fed_central"
+            "dashboard"
+            if request.user.userprofile.user_type == "fed_central"
             else "dashboard_institucional"
         ),
     }

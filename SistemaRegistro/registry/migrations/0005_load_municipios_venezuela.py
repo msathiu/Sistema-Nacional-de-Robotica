@@ -1,5 +1,6 @@
 from django.db import migrations
-from django.db import connection 
+from django.db import connection
+
 
 def cargar_municipios_venezuela(apps, schema_editor):
     Estado = apps.get_model("registry", "Estado")
@@ -357,12 +358,16 @@ def cargar_municipios_venezuela(apps, schema_editor):
             },
         )
 
-    tabla = Municipio._meta.db_table  # Esto obtiene "registry_municipio" automáticamente
+    tabla = (
+        Municipio._meta.db_table
+    )  # Esto obtiene "registry_municipio" automáticamente
     with connection.cursor() as cursor:
-        cursor.execute(f"""
-            SELECT setval(pg_get_serial_sequence('{tabla}', 'id'), 
+        cursor.execute(
+            f"""
+            SELECT setval(pg_get_serial_sequence('{tabla}', 'id'),
             coalesce(max(id), 1)) FROM {tabla};
-        """)
+        """
+        )
 
 
 class Migration(migrations.Migration):

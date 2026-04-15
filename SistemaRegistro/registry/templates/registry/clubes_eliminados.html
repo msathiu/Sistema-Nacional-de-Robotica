@@ -45,7 +45,7 @@
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ clubes|length }} Registro(s)</span>
         </div>
         <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
-        
+
         <div class="card-body p-0">
             {% if not clubes %}
             <div class="text-center py-5">
@@ -102,12 +102,12 @@
                             </td>
                             <td class="text-center px-4">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="{% url 'restaurar_club' club.id %}" 
+                                    <a href="{% url 'restaurar_club' club.id %}"
                                        class="btn-action btn-restore"
                                        title="Restaurar">
                                         <i class="bi bi-arrow-counterclockwise"></i>
                                     </a>
-                                    <button type="button" class="btn-action btn-delete" 
+                                    <button type="button" class="btn-action btn-delete"
                                             onclick="confirmarEliminacion('{{ club.id }}', '{{ club.nombre|escapejs }}')"
                                             title="Eliminar Permanentemente">
                                         <i class="bi bi-trash3-fill"></i>
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const update = () => {
             const now = +c.innerText;
             const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
             else c.innerText = target;
         };
         update();

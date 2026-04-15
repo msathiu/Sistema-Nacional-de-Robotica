@@ -11,7 +11,7 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .modern-card {
         border-radius: 20px;
         border: none;
@@ -19,19 +19,19 @@
         transition: all 0.3s ease;
         overflow: hidden;
     }
-    
+
     .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         overflow: hidden;
     }
-    
+
     .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
-    
+
     .section-icon {
         width: 40px;
         height: 40px;
@@ -40,7 +40,7 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .info-item {
         padding: 0.75rem;
         background: #f8fafc;
@@ -48,31 +48,31 @@
         margin-bottom: 0.75rem;
         transition: all 0.3s ease;
     }
-    
+
     .info-item:hover {
         background: white;
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
-    
+
     .member-item { transition: none; }
     .member-item:hover { transform: none; }
-    
+
     .linea-item { transition: none; }
     .linea-item:hover { transform: none; }
-    
+
     .status-badge {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
     }
-    
+
     .x-small { font-size: 0.72rem; }
-    
+
     .info-item:last-child { margin-bottom: 0; }
     .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-item strong { color: #1e293b; }
-    
+
     /* Animaciones removidas para consistencia con el resto del proyecto */
 </style>
 {% endblock %}
@@ -217,7 +217,7 @@
                                     <div class="flex-grow-1">
                                         <h6 class="mb-0 fw-bold">{{ membresia.institucion.nombre }}</h6>
                                         <small class="text-muted">
-                                            <i class="bi bi-tag me-1"></i>{{ membresia.get_tipo_linea_display }} · 
+                                            <i class="bi bi-tag me-1"></i>{{ membresia.get_tipo_linea_display }} ·
                                             <i class="bi bi-calendar-check me-1"></i>{{ membresia.fecha_respuesta|date:"d/m/Y" }}
                                         </small>
                                     </div>
@@ -266,7 +266,7 @@
                                         </div>
                                     </div>
                                     <span class="badge rounded-pill px-3 py-2 fw-bold"
-                                          style="font-size: 0.65rem; 
+                                          style="font-size: 0.65rem;
                                           {% if ct.rol == 'responsable' %}background: rgba(11, 44, 109, 0.1); color: var(--blue-main); border: 1px solid var(--blue-main);
                                           {% elif ct.rol == 'coordinador' %}background: rgba(8, 145, 178, 0.1); color: #0891b2; border: 1px solid #0891b2;
                                           {% elif ct.rol == 'entrenador' %}background: rgba(5, 150, 105, 0.1); color: #059669; border: 1px solid #059669;
@@ -311,7 +311,7 @@
                         <a href="{% url 'aprobar_club' club.id %}" class="btn fw-bold rounded-pill px-4" style="background: #059669; color: white;">
                             <i class="bi bi-check-circle me-2"></i> Aprobar Club
                         </a>
-                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub" 
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalRechazarClub"
                                 class="btn fw-bold rounded-pill px-4" style="background: #dc2626; color: white;">
                             <i class="bi bi-x-circle me-2"></i> Rechazar Club
                         </button>
@@ -418,7 +418,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             <!-- Eventos del Club -->
             {% if es_propietario or es_miembro %}
             <div class="section-card mb-4">
@@ -441,7 +441,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             <!-- Calificaciones -->
             {% if es_miembro %}
             <div class="section-card mb-4">
@@ -472,7 +472,7 @@
                         <p class="text-muted mb-0">Aún no hay calificaciones</p>
                     </div>
                     {% endif %}
-                    
+
                     {% if mi_calificacion %}
                     <div class="p-3 rounded mb-3" style="background: linear-gradient(145deg, #fef3c7, #fde68a);">
                         <small class="d-block text-muted mb-1">Tu calificación:</small>
@@ -492,9 +492,9 @@
                         {% endif %}
                     </div>
                     {% endif %}
-                    
+
                     <a href="{% url 'calificar_club' club.id %}" class="btn fw-bold rounded-pill px-4 w-100" style="background: #f59e0b; color: white;">
-                        <i class="bi bi-{% if mi_calificacion %}pencil{% else %}star{% endif %} me-2"></i> 
+                        <i class="bi bi-{% if mi_calificacion %}pencil{% else %}star{% endif %} me-2"></i>
                         {% if mi_calificacion %}Actualizar{% else %}Calificar{% endif %} Club
                     </a>
                 </div>
@@ -524,7 +524,7 @@
             </div>
             {% endif %}
             {% endif %}
-            
+
             <!-- Eventos Vinculados -->
             {% if eventos_vinculados %}
             <div class="section-card">

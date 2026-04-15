@@ -14,62 +14,62 @@
     --accent-cyan: #00d4ff;
     --gray-bg: #f5f7fa;
   }
-  body { 
+  body {
     background: var(--gray-bg);
     min-height: 100vh;
   }
-  .registration-container { 
-    max-width: 1000px; 
-    margin: 2rem auto; 
-    background: white; 
-    border-radius: 16px; 
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); 
-    overflow: hidden; 
+  .registration-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
   }
-  .form-header { 
-    background: linear-gradient(135deg, var(--blue-main) 0%, #1a3d7c 100%); 
-    color: white; 
-    padding: 1.5rem 2rem; 
-    text-align: center; 
+  .form-header {
+    background: linear-gradient(135deg, var(--blue-main) 0%, #1a3d7c 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    text-align: center;
   }
   .logo { display: none; }
   .form-body { padding: 2rem; }
-  .section-card { 
-    background: #f8fafc; 
-    border: 1px solid #e2e8f0; 
-    border-radius: 12px; 
-    padding: 1.5rem; 
-    margin-bottom: 1.5rem; 
+  .section-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
     transition: all 0.3s ease;
   }
-  .section-card.active { 
-    border-color: var(--blue-main); 
+  .section-card.active {
+    border-color: var(--blue-main);
     box-shadow: 0 2px 8px rgba(11, 44, 109, 0.1);
   }
   .section-header { display: flex; align-items: center; margin-bottom: 1rem; }
-  .section-number { 
-    background: var(--blue-main); 
-    color: white; 
-    width: 32px; 
-    height: 32px; 
-    border-radius: 8px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-weight: 600; 
+  .section-number {
+    background: var(--blue-main);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
     font-size: 0.9rem;
-    margin-right: .75rem; 
+    margin-right: .75rem;
   }
   .required::after { content: " *"; color: #ef4444; }
-  .form-control, .form-select, .select2-container--default .select2-selection--single { 
-    border: 1px solid #cbd5e1; 
-    border-radius: 8px; 
-    min-height: 42px; 
+  .form-control, .form-select, .select2-container--default .select2-selection--single {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    min-height: 42px;
     transition: all 0.2s ease;
   }
-  .form-control:focus, .form-select:focus { 
-    border-color: var(--blue-main); 
-    box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1); 
+  .form-control:focus, .form-select:focus {
+    border-color: var(--blue-main);
+    box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1);
   }
   .validation-text { color: #ef4444; font-size: .85rem; margin-top: .25rem; }
   .inline-alert {
@@ -107,11 +107,11 @@
   }
   .password-rules .rule.ok { color: #059669; }
   .password-rules .rule:last-child { margin-bottom: 0; }
-  .btn-next, .btn-submit { 
-    background: var(--blue-main); 
-    border: none; 
-    color: white; 
-    border-radius: 8px; 
+  .btn-next, .btn-submit {
+    background: var(--blue-main);
+    border: none;
+    color: white;
+    border-radius: 8px;
     padding: .65rem 1.25rem;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -415,13 +415,13 @@
             </div>
             <div class="col-md-6">
               <label class="form-label required">Cédula</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                name="particular_cedula" 
-                id="particularCedula" 
-                placeholder="Solo números" 
-                pattern="[0-9]+" 
+              <input
+                type="text"
+                class="form-control"
+                name="particular_cedula"
+                id="particularCedula"
+                placeholder="Solo números"
+                pattern="[0-9]+"
                 maxlength="10"
                 value="{{ form.particular_cedula.value|default:'' }}">
               {% if form.particular_cedula.errors %}<div class="validation-text">{{ form.particular_cedula.errors|striptags }}</div>{% endif %}
@@ -678,7 +678,7 @@
     const rifNumero = document.getElementById('rifNumero');
     const codigoMppe = document.getElementById('codigoMPPE');
     const codigoMppeLabel = document.getElementById('codigoMppeLabel');
-    
+
     // Campos de Persona Natural
     const camposParticular = document.getElementById('camposParticular');
     const camposRIF = document.getElementById('camposRIF');
@@ -691,33 +691,33 @@
       categorias.classList.add('hidden');
       depContainer.classList.add('hidden');
     }
-    
+
     // Lógica para Persona Natural (Particular)
     if (tipo === 'particular') {
       // OCULTAR Razón Social y RIF
       campoRazonSocial.classList.add('hidden');
       camposRIF.classList.add('hidden');
-      
+
       // MOSTRAR campos de persona natural
       camposParticular.classList.remove('hidden');
-      
+
       // Hacer campos de particular obligatorios
       document.getElementById('particularNombres').setAttribute('required', 'required');
       document.getElementById('particularApellidos').setAttribute('required', 'required');
       document.getElementById('particularNacionalidad').setAttribute('required', 'required');
       document.getElementById('particularCedula').setAttribute('required', 'required');
-      
+
       // Establecer nacionalidad por defecto "V" para venezolanos
       document.getElementById('particularNacionalidad').value = 'V';
-      
+
       // Quitar obligatoriedad de Razón Social y RIF
       razonSocial.removeAttribute('required');
       rifNumero.removeAttribute('required');
-      
+
       // Ocultar código MPPE
       codigoMppe.removeAttribute('required');
       codigoMppeLabel.classList.remove('required');
-      
+
       // Autocompletar nombre desde campos de particular
       const nombres = document.getElementById('particularNombres').value.trim();
       const apellidos = document.getElementById('particularApellidos').value.trim();
@@ -728,19 +728,19 @@
       // MOSTRAR Razón Social y RIF para instituciones
       campoRazonSocial.classList.remove('hidden');
       camposRIF.classList.remove('hidden');
-      
+
       // OCULTAR campos de persona natural
       camposParticular.classList.add('hidden');
-      
+
       // Quitar obligatoriedad de campos de particular
       document.getElementById('particularNombres').removeAttribute('required');
       document.getElementById('particularApellidos').removeAttribute('required');
       document.getElementById('particularNacionalidad').removeAttribute('required');
       document.getElementById('particularCedula').removeAttribute('required');
-      
+
       // LIMPIAR campo Razón Social al cambiar de particular a institución
       razonSocial.value = '';
-      
+
       // Hacer Razón Social y RIF obligatorios
       razonSocial.setAttribute('required', 'required');
       rifNumero.setAttribute('required', 'required');
@@ -927,7 +927,7 @@
         return { id: `new::${term}`, text: `${term} (nueva)`, isNew: true };
       }
     });
-    
+
     // Autocompletar nombre completo para particulares
     function actualizarNombreCompleto() {
       const tipo = document.getElementById('tipoInstitucion').value;
@@ -935,13 +935,13 @@
         const nombres = document.getElementById('particularNombres').value.trim();
         const apellidos = document.getElementById('particularApellidos').value.trim();
         const razonSocial = document.getElementById('razonSocial');
-        
+
         if (nombres && apellidos) {
           razonSocial.value = `${nombres} ${apellidos}`;
         }
       }
     }
-    
+
     // Eventos para autocompletar
     document.getElementById('particularNombres').addEventListener('input', actualizarNombreCompleto);
     document.getElementById('particularApellidos').addEventListener('input', actualizarNombreCompleto);
@@ -980,10 +980,10 @@
     // Validacion al enviar
     document.getElementById('registroForm').addEventListener('submit', function(e) {
       limpiarErrorInline();
-      
+
       const tipoInstitucion = document.getElementById('tipoInstitucion').value;
       const naturaleza = document.getElementById('naturaleza').value;
-      
+
       // Validar según tipo de institución
       if (tipoInstitucion === 'particular') {
         // Para particulares: validar campos de persona natural
@@ -991,7 +991,7 @@
         const apellidos = document.getElementById('particularApellidos').value.trim();
         const nacionalidad = document.getElementById('particularNacionalidad').value;
         const cedula = document.getElementById('particularCedula').value.trim();
-        
+
         if (!nombres || !apellidos || !nacionalidad || !cedula) {
           e.preventDefault();
           mostrarErrorInline('Debe completar todos los campos de persona natural (nombres, apellidos, nacionalidad y cédula).');
@@ -1007,7 +1007,7 @@
           document.getElementById('naturaleza').focus();
           return;
         }
-        
+
         const rifNum = document.getElementById('rifNumero').value.replace(/-/g, '');
         if (rifNum.length !== 9) {
           e.preventDefault();
@@ -1017,7 +1017,7 @@
           return;
         }
       }
-      
+
       if (!validarPasswordUI()) {
         e.preventDefault();
         mostrarErrorInline('La contraseña no cumple los requisitos indicados.');
@@ -1037,13 +1037,13 @@
     {% if es_regional and estado_fijo_id %}
         const estadoSelect = document.getElementById('estado');
         const estadoIdFijo = "{{ estado_fijo_id }}";
-        
+
         if (estadoIdFijo) {
             estadoSelect.value = estadoIdFijo;
             estadoSelect.style.pointerEvents = 'none';
             estadoSelect.style.backgroundColor = '#f1f5f9';
             estadoSelect.setAttribute('tabindex', '-1');
-            cargarMunicipios(); 
+            cargarMunicipios();
         }
     {% endif %}
 

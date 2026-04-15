@@ -20,7 +20,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card-body p-4">
                     <!-- Información del club -->
                     <div class="alert alert-light border rounded-3 mb-4">
@@ -67,7 +67,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <form method="post" action="{% url 'eliminar_club' club.id %}">
                             {% csrf_token %}
                             {% if es_fed_central %}
@@ -88,7 +88,7 @@
                                 </button>
                             </div>
                         </form>
-                    
+
                     <!-- CASO 2: Solicitud de eliminación (aprobado, pendiente, en_revision) -->
                     {% elif requiere_aprobacion %}
                         <div class="alert alert-info border-info">
@@ -102,18 +102,18 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <form method="post" action="{% url 'eliminar_club' club.id %}">
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="motivo" class="form-label fw-bold">
                                     <i class="bi bi-chat-text me-2"></i>Motivo de la eliminación
                                 </label>
-                                <textarea 
-                                    class="form-control" 
-                                    id="motivo" 
-                                    name="motivo" 
-                                    rows="4" 
+                                <textarea
+                                    class="form-control"
+                                    id="motivo"
+                                    name="motivo"
+                                    rows="4"
                                     placeholder="Explica el motivo por el cual solicitas la eliminación de este club..."
                                     required
                                 ></textarea>
@@ -121,7 +121,7 @@
                                     Proporciona un motivo claro para que la federación pueda evaluar tu solicitud.
                                 </div>
                             </div>
-                            
+
                             <div class="d-flex gap-3 mt-4">
                                 <a href="{% url 'clubes_lista' %}" class="btn btn-outline-secondary flex-grow-1 rounded-pill py-2">
                                     <i class="bi bi-arrow-left me-2"></i> Cancelar
@@ -133,13 +133,13 @@
                         </form>
                     {% endif %}
                 </div>
-                
+
                 <!-- Footer con ayuda -->
                 <div class="card-footer bg-light py-3">
                     <div class="text-center">
                         <p class="text-muted small mb-0">
                             <i class="bi bi-question-circle me-1"></i>
-                            ¿Necesitas ayuda? 
+                            ¿Necesitas ayuda?
                             <a href="#" class="text-decoration-none">Contacta a la federación</a>
                         </p>
                     </div>

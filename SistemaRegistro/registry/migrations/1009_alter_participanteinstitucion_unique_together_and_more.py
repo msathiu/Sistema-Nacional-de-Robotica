@@ -6,47 +6,83 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1008_alter_tutorinstitucion_unique_together_and_more'),
+        ("registry", "1008_alter_tutorinstitucion_unique_together_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='participanteinstitucion',
+            name="participanteinstitucion",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='creado_por_federacion',
-            field=models.BooleanField(default=False, verbose_name='Registrado por Federación'),
+            model_name="participante",
+            name="creado_por_federacion",
+            field=models.BooleanField(
+                default=False, verbose_name="Registrado por Federación"
+            ),
         ),
         migrations.AddField(
-            model_name='participanteinstitucion',
-            name='estado',
-            field=models.ForeignKey(blank=True, help_text='Solo requerido para vinculaciones de sede regional.', null=True, on_delete=django.db.models.deletion.SET_NULL, to='registry.estado', verbose_name='Estado/Sede Regional'),
+            model_name="participanteinstitucion",
+            name="estado",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Solo requerido para vinculaciones de sede regional.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="registry.estado",
+                verbose_name="Estado/Sede Regional",
+            ),
         ),
         migrations.AddField(
-            model_name='participanteinstitucion',
-            name='tipo_vinculacion',
-            field=models.CharField(choices=[('institucional', 'Institucional (Sede Educativa/Club)'), ('regional', 'Sede Regional (Federación Estado)'), ('central', 'Sede Central (Federación Nacional)')], default='institucional', max_length=20, verbose_name='Tipo de Vinculación'),
+            model_name="participanteinstitucion",
+            name="tipo_vinculacion",
+            field=models.CharField(
+                choices=[
+                    ("institucional", "Institucional (Sede Educativa/Club)"),
+                    ("regional", "Sede Regional (Federación Estado)"),
+                    ("central", "Sede Central (Federación Nacional)"),
+                ],
+                default="institucional",
+                max_length=20,
+                verbose_name="Tipo de Vinculación",
+            ),
         ),
         migrations.AlterField(
-            model_name='participanteinstitucion',
-            name='institucion',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='participantes_vinculados', to='registry.institucion', verbose_name='Institución'),
+            model_name="participanteinstitucion",
+            name="institucion",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="participantes_vinculados",
+                to="registry.institucion",
+                verbose_name="Institución",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='participanteinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'institucional')), fields=('participante', 'institucion'), name='unique_participante_institucion'),
+            model_name="participanteinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "institucional")),
+                fields=("participante", "institucion"),
+                name="unique_participante_institucion",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='participanteinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'regional')), fields=('participante', 'estado'), name='unique_participante_regional'),
+            model_name="participanteinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "regional")),
+                fields=("participante", "estado"),
+                name="unique_participante_regional",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='participanteinstitucion',
-            constraint=models.UniqueConstraint(condition=models.Q(('tipo_vinculacion', 'central')), fields=('participante',), name='unique_participante_central'),
+            model_name="participanteinstitucion",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("tipo_vinculacion", "central")),
+                fields=("participante",),
+                name="unique_participante_central",
+            ),
         ),
     ]

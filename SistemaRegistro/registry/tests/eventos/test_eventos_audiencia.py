@@ -26,13 +26,17 @@ class EventoAudienciaModelTestCase(TestCase):
 
     def setUp(self):
         """Configuración inicial."""
-        self.estado, _ = Estado.objects.get_or_create(nombre="Miranda", defaults={"codigo": "13"})
-        self.municipio, _ = Municipio.objects.get_or_create(nombre="Chacao", estado=self.estado)
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Miranda", defaults={"codigo": "13"}
+        )
+        self.municipio, _ = Municipio.objects.get_or_create(
+            nombre="Chacao", estado=self.estado
+        )
         self.parroquia, _ = Parroquia.objects.get_or_create(
             nombre="Altamira",
             municipio=self.municipio,
         )
-        
+
         self.institucion = Institucion.objects.create(
             nombre="Instituto Test",
             codigo="INST-AUD-001",
@@ -42,13 +46,13 @@ class EventoAudienciaModelTestCase(TestCase):
             municipio=self.municipio,
             parroquia=self.parroquia,
         )
-        
+
         self.user = User.objects.create_user(username="test_user", password="test123")
         self.profile = self.user.userprofile
         self.profile.user_type = "institucional"
         self.profile.institution = self.institucion
         self.profile.save()
-        
+
         self.club = Club.objects.create(
             nombre="Club Test",
             institucion_creadora=self.institucion,
@@ -113,7 +117,7 @@ class EventoAudienciaModelTestCase(TestCase):
             estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         publicos = Evento.objects.publicos()
         self.assertEqual(publicos.count(), 1)
         self.assertEqual(publicos.first().audiencia, "publica")
@@ -136,7 +140,7 @@ class EventoAudienciaModelTestCase(TestCase):
             estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         exclusivos = Evento.objects.exclusivos_club()
         self.assertEqual(exclusivos.count(), 1)
         self.assertEqual(exclusivos.first().audiencia, "club_exclusivo")
@@ -159,7 +163,7 @@ class EventoAudienciaModelTestCase(TestCase):
             estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         privados = Evento.objects.privados()
         self.assertEqual(privados.count(), 1)
         self.assertEqual(privados.first().audiencia, "institucional_privado")
@@ -180,7 +184,7 @@ class EventoAudienciaModelTestCase(TestCase):
             audiencia="club_exclusivo",
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         self.assertTrue(evento_inst.requiere_aprobacion)
         self.assertTrue(evento_club.requiere_aprobacion)
 
@@ -190,7 +194,9 @@ class EventoVisibilidadTestCase(TestCase):
 
     def setUp(self):
         """Configuración inicial."""
-        self.estado, _ = Estado.objects.get_or_create(nombre="Carabobo", defaults={"codigo": "07"})
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Carabobo", defaults={"codigo": "07"}
+        )
         self.municipio, _ = Municipio.objects.get_or_create(
             nombre="Valencia",
             estado=self.estado,
@@ -199,7 +205,7 @@ class EventoVisibilidadTestCase(TestCase):
             nombre="Candelaria",
             municipio=self.municipio,
         )
-        
+
         # Crear instituciones
         self.inst_creadora = Institucion.objects.create(
             nombre="Instituto Creador",
@@ -228,31 +234,39 @@ class EventoVisibilidadTestCase(TestCase):
             municipio=self.municipio,
             parroquia=self.parroquia,
         )
-        
+
         # Crear usuarios
-        self.user_creador = User.objects.create_user(username="creador", password="test123")
+        self.user_creador = User.objects.create_user(
+            username="creador", password="test123"
+        )
         profile_creador = self.user_creador.userprofile
         profile_creador.user_type = "institucional"
         profile_creador.institution = self.inst_creadora
         profile_creador.save()
-        
-        self.user_miembro = User.objects.create_user(username="miembro", password="test123")
+
+        self.user_miembro = User.objects.create_user(
+            username="miembro", password="test123"
+        )
         profile_miembro = self.user_miembro.userprofile
         profile_miembro.user_type = "institucional"
         profile_miembro.institution = self.inst_miembro
         profile_miembro.save()
-        
-        self.user_externo = User.objects.create_user(username="externo", password="test123")
+
+        self.user_externo = User.objects.create_user(
+            username="externo", password="test123"
+        )
         profile_externo = self.user_externo.userprofile
         profile_externo.user_type = "institucional"
         profile_externo.institution = self.inst_externa
         profile_externo.save()
-        
-        self.user_fed = User.objects.create_user(username="federacion", password="test123", is_staff=True)
+
+        self.user_fed = User.objects.create_user(
+            username="federacion", password="test123", is_staff=True
+        )
         profile_fed = self.user_fed.userprofile
         profile_fed.user_type = "fed_central"
         profile_fed.save()
-        
+
         # Crear club
         self.club = Club.objects.create(
             nombre="Club Test",
@@ -260,14 +274,14 @@ class EventoVisibilidadTestCase(TestCase):
             coordinador=self.user_creador,
             status="aprobado",
         )
-        
+
         # Crear membresía
         MembresiaClu.objects.create(
             club=self.club,
             institucion=self.inst_miembro,
             estado="miembro_activo",
         )
-        
+
         # Crear eventos
         self.evento_publico = Evento.objects.create(
             nombre="Evento Público",
@@ -299,7 +313,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="federacion", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         self.assertEqual(response.status_code, 200)
         # Federación debe ver los 3 eventos
         eventos = response.context["eventos_activos"]
@@ -310,7 +324,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="externo", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         eventos = response.context["eventos_activos"]
         # Debe ver solo el público
         self.assertIn(self.evento_publico, eventos)
@@ -320,7 +334,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="miembro", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         eventos = response.context["eventos_activos"]
         # Debe ver público + club exclusivo
         self.assertIn(self.evento_publico, eventos)
@@ -331,7 +345,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="externo", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         eventos = response.context["eventos_activos"]
         # NO debe ver el evento exclusivo del club
         self.assertNotIn(self.evento_club, eventos)
@@ -341,7 +355,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="creador", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         eventos = response.context["eventos_activos"]
         self.assertNotIn(self.evento_publico, eventos)
         self.assertNotIn(self.evento_privado, eventos)
@@ -351,7 +365,7 @@ class EventoVisibilidadTestCase(TestCase):
         client = Client()
         client.login(username="externo", password="test123")
         response = client.get(reverse("eventos_disponibles"))
-        
+
         eventos = response.context["eventos_activos"]
         # NO debe ver el evento privado
         self.assertNotIn(self.evento_privado, eventos)
@@ -362,7 +376,9 @@ class EventoAprobacionUnificadaTestCase(TestCase):
 
     def setUp(self):
         """Configuración inicial."""
-        self.estado, _ = Estado.objects.get_or_create(nombre="Zulia", defaults={"codigo": "23"})
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Zulia", defaults={"codigo": "23"}
+        )
         self.municipio, _ = Municipio.objects.get_or_create(
             nombre="Maracaibo",
             estado=self.estado,
@@ -371,7 +387,7 @@ class EventoAprobacionUnificadaTestCase(TestCase):
             nombre="Olegario Villalobos",
             municipio=self.municipio,
         )
-        
+
         self.institucion = Institucion.objects.create(
             nombre="Instituto Test",
             codigo="INST-APR-001",
@@ -381,14 +397,18 @@ class EventoAprobacionUnificadaTestCase(TestCase):
             municipio=self.municipio,
             parroquia=self.parroquia,
         )
-        
-        self.user_inst = User.objects.create_user(username="institucional", password="test123")
+
+        self.user_inst = User.objects.create_user(
+            username="institucional", password="test123"
+        )
         profile_inst = self.user_inst.userprofile
         profile_inst.user_type = "institucional"
         profile_inst.institution = self.institucion
         profile_inst.save()
-        
-        self.user_fed = User.objects.create_user(username="federacion", password="test123", is_staff=True)
+
+        self.user_fed = User.objects.create_user(
+            username="federacion", password="test123", is_staff=True
+        )
         profile_fed = self.user_fed.userprofile
         profile_fed.user_type = "fed_central"
         profile_fed.save()
@@ -397,22 +417,25 @@ class EventoAprobacionUnificadaTestCase(TestCase):
         """Test: Evento institucional inicia en borrador."""
         client = Client()
         client.login(username="institucional", password="test123")
-        
-        response = client.post(reverse("crear_evento"), {
-            "nombre": "Evento Test",
-            "categoria": "Competencia",
-            "fecha": (timezone.now().date() + timedelta(days=30)).isoformat(),
-            "descripcion": "Test",
-            "modalidad": "presencial",
-            "tipo_evento": "institucional",
-            "estado": self.estado.id,
-            "municipio": self.municipio.id,
-            "parroquia": self.parroquia.id,
-            "direccion": "Sede principal",
-            "audiencia": "publica",
-            "requisitos": "Registro previo",
-        })
-        
+
+        response = client.post(
+            reverse("crear_evento"),
+            {
+                "nombre": "Evento Test",
+                "categoria": "Competencia",
+                "fecha": (timezone.now().date() + timedelta(days=30)).isoformat(),
+                "descripcion": "Test",
+                "modalidad": "presencial",
+                "tipo_evento": "institucional",
+                "estado": self.estado.id,
+                "municipio": self.municipio.id,
+                "parroquia": self.parroquia.id,
+                "direccion": "Sede principal",
+                "audiencia": "publica",
+                "requisitos": "Registro previo",
+            },
+        )
+
         evento = Evento.objects.filter(nombre="Evento Test").first()
         if evento:
             self.assertEqual(evento.estado_evento, "borrador")
@@ -421,22 +444,25 @@ class EventoAprobacionUnificadaTestCase(TestCase):
         """Test: fed_central aprueba automáticamente."""
         client = Client()
         client.login(username="federacion", password="test123")
-        
-        response = client.post(reverse("crear_evento"), {
-            "nombre": "Evento Fed",
-            "categoria": "Competencia",
-            "fecha": (timezone.now().date() + timedelta(days=30)).isoformat(),
-            "descripcion": "Test",
-            "modalidad": "presencial",
-            "tipo_evento": "institucional",
-            "estado": self.estado.id,
-            "municipio": self.municipio.id,
-            "parroquia": self.parroquia.id,
-            "direccion": "Sede central",
-            "audiencia": "publica",
-            "requisitos": "Registro previo",
-        })
-        
+
+        response = client.post(
+            reverse("crear_evento"),
+            {
+                "nombre": "Evento Fed",
+                "categoria": "Competencia",
+                "fecha": (timezone.now().date() + timedelta(days=30)).isoformat(),
+                "descripcion": "Test",
+                "modalidad": "presencial",
+                "tipo_evento": "institucional",
+                "estado": self.estado.id,
+                "municipio": self.municipio.id,
+                "parroquia": self.parroquia.id,
+                "direccion": "Sede central",
+                "audiencia": "publica",
+                "requisitos": "Registro previo",
+            },
+        )
+
         evento = Evento.objects.filter(nombre="Evento Fed").first()
         if evento:
             self.assertEqual(evento.estado_evento, EstadoEvento.ABIERTO)
@@ -451,15 +477,15 @@ class EventoAprobacionUnificadaTestCase(TestCase):
             estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         client = Client()
         client.login(username="federacion", password="test123")
-        
+
         response = client.post(
             reverse("aprobar_evento", args=[evento.id]),
             {"observaciones": "Aprobado en prueba"},
         )
-        
+
         evento.refresh_from_db()
         self.assertEqual(evento.estado_evento, EstadoEvento.ABIERTO)
 
@@ -473,14 +499,14 @@ class EventoAprobacionUnificadaTestCase(TestCase):
             estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         client = Client()
         client.login(username="federacion", password="test123")
-        
+
         response = client.post(
             reverse("rechazar_evento", args=[evento.id]),
-            {"observaciones": "Rechazado por prueba"}
+            {"observaciones": "Rechazado por prueba"},
         )
-        
+
         evento.refresh_from_db()
         self.assertEqual(evento.estado_evento, EstadoEvento.RECHAZADO)

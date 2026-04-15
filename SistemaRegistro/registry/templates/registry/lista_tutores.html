@@ -17,7 +17,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'crear_tutor' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'crear_tutor' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Tutor
                 </a>
@@ -57,7 +57,7 @@
             <form method="GET" class="row g-3" id="tutor-filtros-form">
                 <div class="col-md-4">
                     <label class="form-label small fw-bold">Buscar</label>
-                    <input type="text" name="q" class="form-control" 
+                    <input type="text" name="q" class="form-control"
                            placeholder="Nombre o cédula..." value="{{ filtros.q }}">
                 </div>
                 <input type="hidden" name="tab" value="{{ tab_activo }}">
@@ -145,9 +145,9 @@
                                         </td>
                                         <td class="text-center status-cell align-middle" data-sort-value="{{ vinculacion.status }}">
                                             <div class="form-check form-switch m-0 toggle-wrap">
-                                                <input 
-                                                    type="checkbox" 
-                                                    class="form-check-input toggle-tutor" 
+                                                <input
+                                                    type="checkbox"
+                                                    class="form-check-input toggle-tutor"
                                                     role="switch"
                                                     data-tutor-id="{{ vinculacion.tutor.id }}"
                                                     data-vinc-id="{{ vinculacion.id }}"
@@ -160,12 +160,12 @@
                                         </td>
                                         <td class="text-center px-4">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
+                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}"
                                                    class="btn btn-outline-info btn-sm rounded-circle p-2"
                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
+                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}"
                                                    class="btn btn-outline-primary btn-sm rounded-circle p-2"
                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                     <i class="bi bi-pencil-square"></i>
@@ -248,9 +248,9 @@
                                         </td>
                                         <td class="text-center status-cell align-middle" data-sort-value="{{ vinculacion.status }}">
                                             <div class="form-check form-switch m-0 toggle-wrap">
-                                                <input 
-                                                    type="checkbox" 
-                                                    class="form-check-input toggle-tutor" 
+                                                <input
+                                                    type="checkbox"
+                                                    class="form-check-input toggle-tutor"
                                                     role="switch"
                                                     data-tutor-id="{{ vinculacion.tutor.id }}"
                                                     data-vinc-id="{{ vinculacion.id }}"
@@ -263,12 +263,12 @@
                                         </td>
                                         <td class="text-center px-4">
                                             <div class="d-flex justify-content-center gap-1">
-                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}" 
+                                                <a href="{% url 'detalle_tutor' vinculacion.tutor.id %}"
                                                    class="btn btn-outline-info btn-sm rounded-circle p-2"
                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}" 
+                                                <a href="{% url 'editar_tutor' vinculacion.tutor.id %}"
                                                    class="btn btn-outline-primary btn-sm rounded-circle p-2"
                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                                     <i class="bi bi-pencil-square"></i>
@@ -379,7 +379,7 @@
         background-color: #ffffff;
         border-bottom: 1px solid #edf2f7;
     }
-    
+
     .toggle-wrap {
         display: flex;
         align-items: center;
@@ -405,32 +405,32 @@
         background-color: #cbd5e1;
         margin: 0;
     }
-    
+
     .toggle-tutor.form-check-input:checked {
         background-color: var(--success-color);
         border-color: var(--success-color);
     }
-    
+
     .toggle-tutor.form-check-input:focus {
         box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.22);
     }
-    
+
     .tutor-row {
         transition: all 0.2s ease;
     }
-    
+
     .tutor-row:hover {
         background-color: rgba(0, 212, 255, 0.04) !important;
     }
-    
+
     .tutor-row.table-secondary {
         opacity: 0.65;
     }
-    
+
     .toast.show {
         animation: slideIn 0.3s ease-out;
     }
-    
+
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -532,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const toast = new bootstrap.Toast(toastElement);
     const actionText = document.getElementById('actionText');
     const tutorName = document.getElementById('tutorName');
-    
+
     let newStatus = null;
     let currentToggleElement = null;
     let previousCheckedState = null;
@@ -563,15 +563,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const tutorNombre = this.dataset.tutorNombre;
             newStatus = this.checked ? 'activo' : 'inactivo';
             const action = newStatus === 'activo' ? 'activar' : 'desactivar';
-            
+
             // Adjuntar vincId para usarlo en la confirmación
             currentToggleElement.dataset.pendingVincId = vincId;
-            
+
             // Actualizar estilo del modal según acción
             const modalHeader = document.getElementById('modalHeaderTutor');
             const modalTitle = document.getElementById('modalTitleTutor');
             const confirmButton = document.getElementById('confirmToggleBtn');
-            
+
             if (newStatus === 'activo') {
                 modalHeader.style.background = '#10b981';
                 modalTitle.innerHTML = '<i class="bi bi-check-circle me-2"></i>Habilitar Tutor';
@@ -581,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 modalTitle.innerHTML = '<i class="bi bi-pause-circle me-2"></i>Suspender Acceso';
                 confirmButton.style.background = '#f59e0b';
             }
-            
+
             actionText.textContent = action;
             tutorName.textContent = tutorNombre;
             const modal = new bootstrap.Modal(modalElement);
@@ -694,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
         toastIcon.className = `bi me-2 ${iconClass}`;
         toastTitle.textContent = title;
         toastBody.textContent = message;
-        
+
         toast.show();
     }
 });

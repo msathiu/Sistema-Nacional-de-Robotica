@@ -95,7 +95,14 @@ class InstitucionAdmin(admin.ModelAdmin):
 
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):
-    list_display = ["mostrar_cedula", "nombres", "apellidos", "email", "estado", "fecha_registro"]
+    list_display = [
+        "mostrar_cedula",
+        "nombres",
+        "apellidos",
+        "email",
+        "estado",
+        "fecha_registro",
+    ]
     list_filter = ["estado", "sexo", "grado_escolar", "condicion_tea", "nacionalidad"]
     search_fields = ["cedula", "cedula_escolar", "nombres", "apellidos", "email"]
     readonly_fields = ["fecha_registro"]
@@ -179,6 +186,7 @@ class ParticipanteAdmin(admin.ModelAdmin):
 @admin.action(description="Aprobar y generar código RNR")
 def aprobar_registros(modeladmin, request, queryset):
     from .services.admission_service import AdmissionService
+
     count = 0
     for institucion in queryset.filter(estatus="pendiente"):
         if AdmissionService.approve_institution(institucion, request.user):
@@ -261,6 +269,7 @@ class InstitucionAdmin(admin.ModelAdmin):
 
     def aprobar_instituciones(self, request, queryset):
         from .services.admission_service import AdmissionService
+
         count = 0
         for inst in queryset.filter(estatus="pendiente"):
             if AdmissionService.approve_institution(inst, request.user):
@@ -364,9 +373,9 @@ class InstitucionAdmin(admin.ModelAdmin):
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        response["Content-Disposition"] = (
-            f'attachment; filename="instituciones_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
-        )
+        response[
+            "Content-Disposition"
+        ] = f'attachment; filename="instituciones_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
         wb.save(response)
         return response
 
@@ -381,36 +390,36 @@ class InstitucionAdmin(admin.ModelAdmin):
 @admin.register(LineaInvestigacion)
 class LineaInvestigacionAdmin(admin.ModelAdmin):
     """Admin para gestionar Líneas de Investigación (Catálogo Dinámico)."""
-    
-    list_display = ['codigo', 'nombre', 'activa', 'orden', 'fecha_creacion']
-    list_filter = ['activa']
-    search_fields = ['codigo', 'nombre', 'descripcion']
-    list_editable = ['activa', 'orden']
-    ordering = ['orden', 'nombre']
-    
+
+    list_display = ["codigo", "nombre", "activa", "orden", "fecha_creacion"]
+    list_filter = ["activa"]
+    search_fields = ["codigo", "nombre", "descripcion"]
+    list_editable = ["activa", "orden"]
+    ordering = ["orden", "nombre"]
+
     fieldsets = (
-        ('Información Básica', {
-            'fields': ('codigo', 'nombre', 'descripcion')
-        }),
-        ('Configuración', {
-            'fields': ('activa', 'orden')
-        }),
-        ('Fechas', {
-            'fields': ('fecha_creacion', 'fecha_actualizacion'),
-            'classes': ('collapse',)
-        }),
+        ("Información Básica", {"fields": ("codigo", "nombre", "descripcion")}),
+        ("Configuración", {"fields": ("activa", "orden")}),
+        (
+            "Fechas",
+            {
+                "fields": ("fecha_creacion", "fecha_actualizacion"),
+                "classes": ("collapse",),
+            },
+        ),
     )
-    readonly_fields = ['fecha_creacion', 'fecha_actualizacion']
+    readonly_fields = ["fecha_creacion", "fecha_actualizacion"]
 
 
 class ClubLineaInvestigacionInline(admin.TabularInline):
     """Inline para gestionar líneas de investigación de un club."""
+
     model = ClubLineaInvestigacion
     extra = 1
     max_num = 3
     min_num = 1
-    fields = ['linea', 'tipo_linea', 'orden']
-    autocomplete_fields = ['linea']
+    fields = ["linea", "tipo_linea", "orden"]
+    autocomplete_fields = ["linea"]
 
 
 # =======================
@@ -558,7 +567,9 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
+        for membresia in queryset.filter(
+            estado__in=["pendiente_filtro", "visto_bueno_fundadora"]
+        ):
             membresia.estado = "miembro_activo"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])
@@ -573,7 +584,9 @@ class MembresiaCluAdmin(admin.ModelAdmin):
         from django.utils import timezone
 
         count = 0
-        for membresia in queryset.filter(estado__in=["pendiente_filtro", "visto_bueno_fundadora"]):
+        for membresia in queryset.filter(
+            estado__in=["pendiente_filtro", "visto_bueno_fundadora"]
+        ):
             membresia.estado = "rechazada"
             membresia.fecha_respuesta = timezone.now()
             membresia.save(update_fields=["estado", "fecha_respuesta"])

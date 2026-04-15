@@ -4,82 +4,101 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1012_membresiaclu_representante_tutor'),
+        ("registry", "1012_membresiaclu_representante_tutor"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='asistenciaevento',
+            name="asistenciaevento",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='calificacionclub',
+            name="calificacionclub",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='clubevento',
+            name="clubevento",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='clublineainvestigacion',
+            name="clublineainvestigacion",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='clubtutor',
+            name="clubtutor",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='inscripciongrupoevento',
+            name="inscripciongrupoevento",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='municipio',
+            name="municipio",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='parroquia',
+            name="parroquia",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='participantegrupo',
+            name="participantegrupo",
             unique_together=set(),
         ),
         migrations.AddConstraint(
-            model_name='asistenciaevento',
-            constraint=models.UniqueConstraint(fields=('evento', 'participante'), name='unique_asistenciaevento_evento_participante'),
+            model_name="asistenciaevento",
+            constraint=models.UniqueConstraint(
+                fields=("evento", "participante"),
+                name="unique_asistenciaevento_evento_participante",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='calificacionclub',
-            constraint=models.UniqueConstraint(fields=('club', 'institucion'), name='unique_calificacion_club_institucion'),
+            model_name="calificacionclub",
+            constraint=models.UniqueConstraint(
+                fields=("club", "institucion"),
+                name="unique_calificacion_club_institucion",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='clubevento',
-            constraint=models.UniqueConstraint(fields=('club', 'evento'), name='unique_clubevento_club_evento'),
+            model_name="clubevento",
+            constraint=models.UniqueConstraint(
+                fields=("club", "evento"), name="unique_clubevento_club_evento"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='clublineainvestigacion',
-            constraint=models.UniqueConstraint(fields=('club', 'linea'), name='unique_clublinea_club_linea'),
+            model_name="clublineainvestigacion",
+            constraint=models.UniqueConstraint(
+                fields=("club", "linea"), name="unique_clublinea_club_linea"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='clubtutor',
-            constraint=models.UniqueConstraint(fields=('club', 'tutor'), name='unique_club_tutor'),
+            model_name="clubtutor",
+            constraint=models.UniqueConstraint(
+                fields=("club", "tutor"), name="unique_club_tutor"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='inscripciongrupoevento',
-            constraint=models.UniqueConstraint(fields=('evento', 'grupo'), name='unique_inscripcion_evento_grupo'),
+            model_name="inscripciongrupoevento",
+            constraint=models.UniqueConstraint(
+                fields=("evento", "grupo"), name="unique_inscripcion_evento_grupo"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='municipio',
-            constraint=models.UniqueConstraint(fields=('estado', 'nombre'), name='unique_municipio_estado_nombre'),
+            model_name="municipio",
+            constraint=models.UniqueConstraint(
+                fields=("estado", "nombre"), name="unique_municipio_estado_nombre"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='parroquia',
-            constraint=models.UniqueConstraint(fields=('municipio', 'nombre'), name='unique_parroquia_municipio_nombre'),
+            model_name="parroquia",
+            constraint=models.UniqueConstraint(
+                fields=("municipio", "nombre"), name="unique_parroquia_municipio_nombre"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='participantegrupo',
-            constraint=models.UniqueConstraint(fields=('participante', 'grupo'), name='unique_participante_grupo'),
+            model_name="participantegrupo",
+            constraint=models.UniqueConstraint(
+                fields=("participante", "grupo"), name="unique_participante_grupo"
+            ),
         ),
     ]

@@ -4,15 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0003_add_location_fields'),
+        ("users", "0003_add_location_fields"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='userprofile',
-            name='user_type',
-            field=models.CharField(choices=[('participante', 'Participante'), ('institucional', 'Usuario Institucional (Sedes/Matriz)'), ('fed_central', 'Federación Central (Ente Rector)'), ('fed_regional', 'Federación Regional (Delegación)'), ('tecnologico', 'Administrador Tecnológico (Django)'), ('superuser', 'Superusuario')], default='participante', max_length=25),
+            model_name="userprofile",
+            name="user_type",
+            field=models.CharField(
+                choices=[
+                    ("participante", "Participante"),
+                    ("institucional", "Usuario Institucional (Sedes/Matriz)"),
+                    ("fed_central", "Federación Central (Ente Rector)"),
+                    ("fed_regional", "Federación Regional (Delegación)"),
+                    ("tecnologico", "Administrador Tecnológico (Django)"),
+                    ("superuser", "Superusuario"),
+                ],
+                default="participante",
+                max_length=25,
+            ),
         ),
     ]

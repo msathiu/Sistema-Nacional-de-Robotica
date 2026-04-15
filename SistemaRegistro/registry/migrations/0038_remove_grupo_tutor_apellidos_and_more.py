@@ -4,26 +4,25 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0037_agregar_campos_criterio_grupo'),
+        ("registry", "0037_agregar_campos_criterio_grupo"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='grupo',
-            name='tutor_apellidos',
+            model_name="grupo",
+            name="tutor_apellidos",
         ),
         migrations.RemoveField(
-            model_name='grupo',
-            name='tutor_cedula',
+            model_name="grupo",
+            name="tutor_cedula",
         ),
         migrations.RemoveField(
-            model_name='grupo',
-            name='tutor_nombre',
+            model_name="grupo",
+            name="tutor_nombre",
         ),
         migrations.RemoveField(
-            model_name='grupo',
-            name='tutor_telefono',
+            model_name="grupo",
+            name="tutor_telefono",
         ),
     ]

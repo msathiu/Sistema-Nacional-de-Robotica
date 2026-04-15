@@ -10,19 +10,19 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         overflow: hidden;
     }
-    
+
     .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
-    
+
     .section-icon {
         width: 40px;
         height: 40px;
@@ -31,18 +31,18 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .info-item {
         padding: 0.75rem;
         background: white;
         border-radius: 12px;
         margin-bottom: 0.75rem;
     }
-    
+
     .info-item:last-child { margin-bottom: 0; }
     .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-item strong { color: #1e293b; }
-    
+
     .checklist-item {
         padding: 0.75rem 1rem;
         border-radius: 12px;
@@ -51,16 +51,16 @@
         border: 1px solid #e2e8f0;
         transition: all 0.2s ease;
     }
-    
+
     .checklist-item:hover {
         border-color: var(--accent-cyan);
     }
-    
+
     .checklist-item .form-check-input {
         width: 1.1rem;
         height: 1.1rem;
     }
-    
+
     .badge-linea {
         background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
         color: white;
@@ -69,9 +69,9 @@
         font-size: 0.75rem;
         font-weight: 500;
     }
-    
+
     .x-small { font-size: 0.72rem; }
-    
+
     /* Animaciones optimizadas */
     .animate-fade-in {
         opacity: 0;
@@ -82,11 +82,11 @@
     .delay-1 { animation-delay: 0.1s; }
     .delay-2 { animation-delay: 0.2s; }
     .delay-3 { animation-delay: 0.3s; }
-    
+
     @keyframes fadeIn {
         to { opacity: 1; }
     }
-    
+
     /* Prevenir movimientos inesperados */
     .section-card {
         contain: layout style paint;
@@ -333,7 +333,7 @@ document.getElementById('formEnviar').addEventListener('submit', function(e) {
     const checks = document.querySelectorAll('input[type="checkbox"][required]');
     let allChecked = true;
     checks.forEach(check => { if (!check.checked) allChecked = false; });
-    
+
     if (!allChecked) {
         e.preventDefault();
         alert('Debes confirmar que has realizado todas las correcciones antes de reenviar.');

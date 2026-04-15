@@ -4,55 +4,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0024_add_tutor_model'),
+        ("registry", "0024_add_tutor_model"),
     ]
 
     operations = [
         migrations.RemoveIndex(
-            model_name='membresiaclu',
-            name='idx_memb_club_inst_active',
+            model_name="membresiaclu",
+            name="idx_memb_club_inst_active",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector',
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector_fecha',
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector_fecha",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='aprobacion_ente_rector_por',
+            model_name="membresiaclu",
+            name="aprobacion_ente_rector_por",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='observaciones_fundadora',
+            model_name="membresiaclu",
+            name="observaciones_fundadora",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='observaciones_rector',
+            model_name="membresiaclu",
+            name="observaciones_rector",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora',
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora_fecha',
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora_fecha",
         ),
         migrations.RemoveField(
-            model_name='membresiaclu',
-            name='visto_bueno_fundadora_por',
+            model_name="membresiaclu",
+            name="visto_bueno_fundadora_por",
         ),
         migrations.AlterField(
-            model_name='membresiaclu',
-            name='estado',
-            field=models.CharField(choices=[('pendiente', 'Pendiente'), ('revision', 'En Revisión'), ('aprobada', 'Aprobada'), ('rechazada', 'Rechazada')], db_index=True, default='pendiente', max_length=20),
+            model_name="membresiaclu",
+            name="estado",
+            field=models.CharField(
+                choices=[
+                    ("pendiente", "Pendiente"),
+                    ("revision", "En Revisión"),
+                    ("aprobada", "Aprobada"),
+                    ("rechazada", "Rechazada"),
+                ],
+                db_index=True,
+                default="pendiente",
+                max_length=20,
+            ),
         ),
         migrations.AddIndex(
-            model_name='membresiaclu',
-            index=models.Index(condition=models.Q(('estado__in', ['pendiente', 'revision'])), fields=['club', 'institucion'], name='idx_memb_club_inst_active'),
+            model_name="membresiaclu",
+            index=models.Index(
+                condition=models.Q(("estado__in", ["pendiente", "revision"])),
+                fields=["club", "institucion"],
+                name="idx_memb_club_inst_active",
+            ),
         ),
     ]

@@ -6,100 +6,177 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0028_normalizar_cedula_tutor'),
+        ("registry", "0028_normalizar_cedula_tutor"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AsistenciaEvento',
+            name="AsistenciaEvento",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('asistencia', models.CharField(choices=[('asistio', 'Asistió'), ('ausente', 'Ausente'), ('pendiente', 'Pendiente'), ('justificado', 'Justificado')], db_index=True, default='pendiente', max_length=12)),
-                ('observacion', models.TextField(blank=True)),
-                ('fecha_asistencia', models.DateTimeField(blank=True, help_text='Fecha y hora en que se marcó la asistencia.', null=True)),
-                ('fecha_creacion', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "asistencia",
+                    models.CharField(
+                        choices=[
+                            ("asistio", "Asistió"),
+                            ("ausente", "Ausente"),
+                            ("pendiente", "Pendiente"),
+                            ("justificado", "Justificado"),
+                        ],
+                        db_index=True,
+                        default="pendiente",
+                        max_length=12,
+                    ),
+                ),
+                ("observacion", models.TextField(blank=True)),
+                (
+                    "fecha_asistencia",
+                    models.DateTimeField(
+                        blank=True,
+                        help_text="Fecha y hora en que se marcó la asistencia.",
+                        null=True,
+                    ),
+                ),
+                ("fecha_creacion", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Asistencia a Evento',
-                'verbose_name_plural': 'Asistencias a Eventos',
-                'ordering': ['-evento__fecha', 'participante__apellidos'],
+                "verbose_name": "Asistencia a Evento",
+                "verbose_name_plural": "Asistencias a Eventos",
+                "ordering": ["-evento__fecha", "participante__apellidos"],
             },
         ),
         migrations.RemoveIndex(
-            model_name='participante',
-            name='idx_part_activo',
+            model_name="participante",
+            name="idx_part_activo",
         ),
         migrations.RemoveField(
-            model_name='participante',
-            name='activo',
+            model_name="participante",
+            name="activo",
         ),
         migrations.AddField(
-            model_name='participante',
-            name='campo1',
-            field=models.TextField(blank=True, help_text="Campo adicional para guardar grado/nivel cuando se selecciona 'Otro/No especificado'", verbose_name='Campo Adicional'),
+            model_name="participante",
+            name="campo1",
+            field=models.TextField(
+                blank=True,
+                help_text="Campo adicional para guardar grado/nivel cuando se selecciona 'Otro/No especificado'",
+                verbose_name="Campo Adicional",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='cedula_escolar',
-            field=models.CharField(blank=True, help_text='Cédula escolar del participante (si posee)', max_length=20, verbose_name='Cédula Escolar'),
+            model_name="participante",
+            name="cedula_escolar",
+            field=models.CharField(
+                blank=True,
+                help_text="Cédula escolar del participante (si posee)",
+                max_length=20,
+                verbose_name="Cédula Escolar",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='condicion_tea',
-            field=models.BooleanField(default=False, help_text='Indica si el participante posee condición en el espectro autista', verbose_name='Condición TEA'),
+            model_name="participante",
+            name="condicion_tea",
+            field=models.BooleanField(
+                default=False,
+                help_text="Indica si el participante posee condición en el espectro autista",
+                verbose_name="Condición TEA",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='grupo',
-            field=models.ForeignKey(blank=True, help_text='Grupo al que pertenece el participante por defecto', null=True, on_delete=django.db.models.deletion.SET_NULL, to='registry.grupo', verbose_name='Grupo'),
+            model_name="participante",
+            name="grupo",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Grupo al que pertenece el participante por defecto",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="registry.grupo",
+                verbose_name="Grupo",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='parroquia',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='registry.parroquia', verbose_name='Parroquia'),
+            model_name="participante",
+            name="parroquia",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="registry.parroquia",
+                verbose_name="Parroquia",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='status',
-            field=models.CharField(choices=[('activo', 'Activo'), ('inactivo', 'Inactivo')], default='activo', max_length=10, verbose_name='Status'),
+            model_name="participante",
+            name="status",
+            field=models.CharField(
+                choices=[("activo", "Activo"), ("inactivo", "Inactivo")],
+                default="activo",
+                max_length=10,
+                verbose_name="Status",
+            ),
         ),
         migrations.AddField(
-            model_name='participante',
-            name='titulo_universitario',
-            field=models.CharField(blank=True, help_text='Especificar título o estudios universitarios (solo si selecciona Estudios Universitarios)', max_length=200, verbose_name='Título/Estudios Universitarios'),
+            model_name="participante",
+            name="titulo_universitario",
+            field=models.CharField(
+                blank=True,
+                help_text="Especificar título o estudios universitarios (solo si selecciona Estudios Universitarios)",
+                max_length=200,
+                verbose_name="Título/Estudios Universitarios",
+            ),
         ),
         migrations.AddIndex(
-            model_name='participante',
-            index=models.Index(fields=['cedula_escolar'], name='idx_part_cedula_esc'),
+            model_name="participante",
+            index=models.Index(fields=["cedula_escolar"], name="idx_part_cedula_esc"),
         ),
         migrations.AddIndex(
-            model_name='participante',
-            index=models.Index(fields=['status'], name='idx_part_status'),
+            model_name="participante",
+            index=models.Index(fields=["status"], name="idx_part_status"),
         ),
         migrations.AddIndex(
-            model_name='participante',
-            index=models.Index(fields=['grupo'], name='idx_part_grupo'),
+            model_name="participante",
+            index=models.Index(fields=["grupo"], name="idx_part_grupo"),
         ),
         migrations.AddField(
-            model_name='asistenciaevento',
-            name='evento',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='asistencias', to='registry.evento'),
+            model_name="asistenciaevento",
+            name="evento",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="asistencias",
+                to="registry.evento",
+            ),
         ),
         migrations.AddField(
-            model_name='asistenciaevento',
-            name='grupo',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='asistencias', to='registry.grupo'),
+            model_name="asistenciaevento",
+            name="grupo",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="asistencias",
+                to="registry.grupo",
+            ),
         ),
         migrations.AddField(
-            model_name='asistenciaevento',
-            name='participante',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='asistencias', to='registry.participante'),
+            model_name="asistenciaevento",
+            name="participante",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="asistencias",
+                to="registry.participante",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='asistenciaevento',
-            unique_together={('evento', 'participante')},
+            name="asistenciaevento",
+            unique_together={("evento", "participante")},
         ),
     ]

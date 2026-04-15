@@ -68,7 +68,7 @@
                 <div style="height:100px; background: linear-gradient(145deg, #051636, #0b2c6d);"></div>
                 <div class="card-body text-center pt-0">
                     <div class="rounded-circle mx-auto shadow-lg border border-3 border-white"
-                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan); 
+                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan);
                                 display:flex; align-items:center; justify-content:center;
                                 font-size:2.5rem; font-weight:700; color:var(--blue-dark); font-family:'Space Grotesk';">
                         {{ user.first_name|default:user.username|first|upper }}
@@ -115,7 +115,7 @@
                                 <label>Correo Electrónico</label>
                                 <input type="email" name="email" class="form-control form-control-sm border-0 border-bottom rounded-0 px-0 fw-bold" value="{{ user.email }}">
                             </div>
-                            
+
                             <div class="col-12 mt-4 text-end">
                                 <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                                     <i class="bi bi-save me-2"></i> Guardar Cambios
@@ -128,7 +128,7 @@
 
             <div class="row g-3">
                 <div class="col-12 col-md-6">
-                    <div class="card border-0 shadow-sm p-3 p-md-4 h-100 tech-action-card" 
+                    <div class="card border-0 shadow-sm p-3 p-md-4 h-100 tech-action-card"
                          style="border-left:5px solid #8b5cf6; border-radius:15px;"
                          data-bs-toggle="modal" data-bs-target="#changePasswordModal"
                          role="button" tabindex="0" aria-controls="changePasswordModal">
@@ -165,7 +165,7 @@
 <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 text-white p-4" 
+            <div class="modal-header border-0 text-white p-4"
                  style="background: linear-gradient(145deg, #051636, #0b2c6d); border-radius: 20px 20px 0 0;">
                 <h5 class="modal-title fw-bold" id="changePasswordModalLabel">
                     <i class="bi bi-key me-2 text-info"></i>Actualizar Credenciales
@@ -176,7 +176,7 @@
                 <form id="passwordChangeForm" method="POST" action="{% url 'mi_perfil_federacion' %}">
                     {% csrf_token %}
                     <input type="hidden" name="form_type" value="password_change">
-                    
+
                     <div class="mb-4 tech-field">
                         <label>Contraseña Actual</label>
                         <div class="password-field-wrap">
@@ -241,14 +241,14 @@
     /* ... (Tus estilos originales se mantienen) ... */
     .tech-kpi-card { transition: transform 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
     .tech-kpi-card:hover { transform: translateY(-5px); }
-    
+
     .tech-action-card { transition: all 0.3s ease; cursor: pointer; background: #fff; border: 1px solid #f1f5f9; }
     .tech-action-card:hover { transform: translateX(4px); background: #f8fafc; border-color: #e2e8f0; }
     @media (max-width: 575.98px) {
         .tech-action-card:hover { transform: none; }
     }
     .min-w-0 { min-width: 0; }
-    
+
     .tech-field label {
         font-size: 0.65rem;
         text-transform: uppercase;
@@ -258,7 +258,7 @@
         display: block;
         margin-bottom: 2px;
     }
-    
+
     .tech-field input:focus {
         box-shadow: none;
         border-color: var(--accent-cyan) !important;
@@ -324,5 +324,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endblock %}
-
-

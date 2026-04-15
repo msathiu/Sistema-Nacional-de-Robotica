@@ -11,17 +11,17 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         overflow: hidden;
     }
-    
+
     .card-header-modern {
         border-radius: 20px 20px 0 0 !important;
         padding: 1.5rem;
         border: none;
     }
-    
+
     .danger-gradient {
         background: linear-gradient(145deg, #dc2626, #991b1b);
     }
-    
+
     .section-icon {
         width: 48px;
         height: 48px;
@@ -39,8 +39,8 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center">
-                <a href="{% url 'revisar_clubes' %}" 
-                   class="btn btn-secondary btn-circle me-3" 
+                <a href="{% url 'revisar_clubes' %}"
+                   class="btn btn-secondary btn-circle me-3"
                    style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
                     <i class="bi bi-arrow-left"></i>
                 </a>
@@ -90,12 +90,12 @@
 
                     <form method="post">
                         {% csrf_token %}
-                        
+
                         <div class="mb-4">
                             <label for="observaciones" class="form-label fw-bold" style="color: var(--blue-main);">
                                 <i class="bi bi-chat-left-text me-2"></i>Observaciones *
                             </label>
-                            <textarea class="form-control" id="observaciones" name="observaciones" 
+                            <textarea class="form-control" id="observaciones" name="observaciones"
                                       rows="4" placeholder="Indique las razones del rechazo..." required
                                       style="border-radius: 12px; border: 2px solid #e5e7eb;"></textarea>
                             <small class="text-muted mt-1 d-block">Estas observaciones serán visibles para la institución creadora</small>
@@ -116,4 +116,3 @@
     </div>
 </div>
 {% endblock %}
-

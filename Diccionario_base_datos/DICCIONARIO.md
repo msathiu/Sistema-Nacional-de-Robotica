@@ -1,9 +1,9 @@
 # Diccionario de Datos — RNR-PRO: Sistema Nacional de Robótica
 
-**Versión:** 1.0  
-**Fecha:** 2026-04-03  
-**Framework:** Django 5.0 / Python 3.12  
-**Base de Datos:** SQLite3 / PostgreSQL  
+**Versión:** 1.0
+**Fecha:** 2026-04-03
+**Framework:** Django 5.0 / Python 3.12
+**Base de Datos:** SQLite3 / PostgreSQL
 
 ---
 
@@ -73,7 +73,7 @@
 
 ## 1. Estado
 
-**Tabla:** `registry_estado`  
+**Tabla:** `registry_estado`
 **Descripción:** Catálogo de estados (entidades federales) de Venezuela.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -88,7 +88,7 @@
 
 ## 2. Municipio
 
-**Tabla:** `registry_municipio`  
+**Tabla:** `registry_municipio`
 **Descripción:** Catálogo de municipios, relacionados con su estado.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -97,14 +97,14 @@
 | `estado_id` | FK → Estado | No | No | Sí | Estado al que pertenece |
 | `nombre` | CharField(100) | No | No | Sí | Nombre del municipio |
 
-**Restricciones:** `unique_together = [estado, nombre]`  
+**Restricciones:** `unique_together = [estado, nombre]`
 **Índices:** `idx_mun_estado_nombre`
 
 ---
 
 ## 3. Parroquia
 
-**Tabla:** `registry_parroquia`  
+**Tabla:** `registry_parroquia`
 **Descripción:** Catálogo de parroquias, relacionadas con su municipio.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -113,14 +113,14 @@
 | `municipio_id` | FK → Municipio | No | No | Sí | Municipio al que pertenece |
 | `nombre` | CharField(100) | No | No | Sí | Nombre de la parroquia |
 
-**Restricciones:** `unique_together = [municipio, nombre]`  
+**Restricciones:** `unique_together = [municipio, nombre]`
 **Índices:** `idx_parr_mun_nombre`
 
 ---
 
 ## 4. Dependencia
 
-**Tabla:** `registry_dependencia`  
+**Tabla:** `registry_dependencia`
 **Descripción:** Catálogo de dependencias institucionales (ej. MPPE, MINCYT).
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -135,7 +135,7 @@
 
 ## 5. Institucion
 
-**Tabla:** `registry_institucion`  
+**Tabla:** `registry_institucion`
 **Descripción:** Entidad central del sistema. Representa instituciones educativas, organizaciones, clubes o particulares registrados en el RNR.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -179,7 +179,7 @@
 
 ## 6. UserProfile
 
-**Tabla:** `users_userprofile`  
+**Tabla:** `users_userprofile`
 **Descripción:** Perfil extendido del usuario Django. Define el rol y la institución asociada.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -211,7 +211,7 @@
 
 ## 7. Participante
 
-**Tabla:** `registry_participante`  
+**Tabla:** `registry_participante`
 **Descripción:** Datos personales únicos de cada participante del sistema. Un participante puede estar vinculado a múltiples instituciones.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -245,10 +245,10 @@
 | `fecha_registro` | DateTimeField | No | No | No | Fecha de registro (auto) |
 | `user_id` | FK → User (OneToOne) | Sí | Sí | No | Usuario Django asociado |
 
-**Restricciones:**  
-- `unique_participante_datos_personales`: unicidad por `nombres + apellidos + fecha_nacimiento`  
-- Edad mínima: 4 años  
-- Representante obligatorio para menores de 18 años  
+**Restricciones:**
+- `unique_participante_datos_personales`: unicidad por `nombres + apellidos + fecha_nacimiento`
+- Edad mínima: 4 años
+- Representante obligatorio para menores de 18 años
 
 **Índices:** `idx_part_cedula`, `idx_part_cedula_esc`, `idx_part_email`, `idx_part_nombre`, `idx_part_nombre_fn`
 
@@ -256,7 +256,7 @@
 
 ## 8. ParticipanteInstitucion
 
-**Tabla:** `registry_participanteinstitucion`  
+**Tabla:** `registry_participanteinstitucion`
 **Descripción:** Tabla de vinculación entre participantes e instituciones. Permite que un participante esté activo en múltiples instituciones con estados independientes.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -284,7 +284,7 @@
 
 ## 9. ParticipanteGrupo
 
-**Tabla:** `registry_participantegrupo`  
+**Tabla:** `registry_participantegrupo`
 **Descripción:** Historial de pertenencia de participantes a grupos.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -296,14 +296,14 @@
 | `fecha_salida` | DateTimeField | Sí | No | No | Fecha de salida del grupo |
 | `activo` | BooleanField | No | No | Sí | Indica si la membresía está activa |
 
-**Restricciones:** `unique_together = [participante, grupo]`  
+**Restricciones:** `unique_together = [participante, grupo]`
 **Índices:** `idx_partgrp_part_act`, `idx_partgrp_grp_act`
 
 ---
 
 ## 10. AsistenciaEvento
 
-**Tabla:** `registry_asistenciaevento`  
+**Tabla:** `registry_asistenciaevento`
 **Descripción:** Registro de asistencia de participantes a eventos.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -323,7 +323,7 @@
 
 ## 11. Tutor
 
-**Tabla:** `registry_tutor`  
+**Tabla:** `registry_tutor`
 **Descripción:** Tutores o responsables de grupos de robótica. Pueden estar vinculados a múltiples instituciones.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -348,7 +348,7 @@
 
 ## 12. TutorInstitucion
 
-**Tabla:** `registry_tutorinstitucion`  
+**Tabla:** `registry_tutorinstitucion`
 **Descripción:** Vinculación entre tutores e instituciones con rol y estado independiente por institución.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -375,7 +375,7 @@
 
 ## 13. LineaInvestigacion
 
-**Tabla:** `registry_lineainvestigacion`  
+**Tabla:** `registry_lineainvestigacion`
 **Descripción:** Catálogo de líneas de investigación gestionado por el Ente Rector.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -395,7 +395,7 @@
 
 ## 14. Club
 
-**Tabla:** `registry_club`  
+**Tabla:** `registry_club`
 **Descripción:** Clubes de robótica que agrupan múltiples instituciones. Requieren aprobación de la federación.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -429,7 +429,7 @@
 
 ## 15. MembresiaClu
 
-**Tabla:** `registry_membresiaclu`  
+**Tabla:** `registry_membresiaclu`
 **Descripción:** Solicitudes y membresías de instituciones a clubes. Flujo de aprobación en dos etapas: fundadora + ente rector.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -461,7 +461,7 @@
 
 ## 16. ClubLineaInvestigacion
 
-**Tabla:** `registry_clublineainvestigacion`  
+**Tabla:** `registry_clublineainvestigacion`
 **Descripción:** Relación entre clubes y líneas de investigación con tipo y orden.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -473,14 +473,14 @@
 | `orden` | IntegerField | No | No | Sí | Orden de visualización (default: 0) |
 | `fecha_vinculacion` | DateTimeField | No | No | No | Fecha de vinculación (auto) |
 
-**Restricciones:** `unique_together = [club, linea]`  
+**Restricciones:** `unique_together = [club, linea]`
 **Índices:** `idx_clublinea_club_orden`
 
 ---
 
 ## 17. ClubTutor
 
-**Tabla:** `registry_clubtutor`  
+**Tabla:** `registry_clubtutor`
 **Descripción:** Asignación de tutores a clubes con rol específico.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -498,7 +498,7 @@
 
 ## 18. HistorialClub
 
-**Tabla:** `registry_historialclub`  
+**Tabla:** `registry_historialclub`
 **Descripción:** Registro de cambios de estado de los clubes para trazabilidad.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -517,7 +517,7 @@
 
 ## 19. ComentarioClub
 
-**Tabla:** `registry_comentarioclub`  
+**Tabla:** `registry_comentarioclub`
 **Descripción:** Comentarios de usuarios sobre clubes (instituciones y federación).
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -535,7 +535,7 @@
 
 ## 20. CalificacionClub
 
-**Tabla:** `registry_calificacionclub`  
+**Tabla:** `registry_calificacionclub`
 **Descripción:** Calificaciones de instituciones a clubes (1–5 estrellas).
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -547,14 +547,14 @@
 | `resena` | TextField | Sí | No | No | Reseña textual |
 | `fecha` | DateTimeField | No | No | Sí | Fecha de la calificación (auto) |
 
-**Restricciones:** `unique_together = [club, institucion]`  
+**Restricciones:** `unique_together = [club, institucion]`
 **Índices:** `idx_calif_club_fecha`
 
 ---
 
 ## 21. SolicitudEliminacionClub
 
-**Tabla:** `registry_solicitudeliminacionclub`  
+**Tabla:** `registry_solicitudeliminacionclub`
 **Descripción:** Solicitudes de eliminación de clubes iniciadas por instituciones, revisadas por la federación.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -575,7 +575,7 @@
 
 ## 22. Evento
 
-**Tabla:** `registry_evento`  
+**Tabla:** `registry_evento`
 **Descripción:** Eventos del sistema (competencias, talleres, seminarios, etc.). Puede ser institucional o de club, con flujo de aprobación y máquina de estados.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -633,7 +633,7 @@
 
 ## 23. Inscripcion
 
-**Tabla:** `registry_inscripcion`  
+**Tabla:** `registry_inscripcion`
 **Descripción:** Inscripciones individuales o de equipo a eventos (modelo legado).
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -650,7 +650,7 @@
 
 ## 24. IntegranteEquipo
 
-**Tabla:** `registry_integranteequipo`  
+**Tabla:** `registry_integranteequipo`
 **Descripción:** Integrantes de una inscripción de equipo.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -663,7 +663,7 @@
 
 ## 25. InscripcionGrupoEvento
 
-**Tabla:** `registry_inscripciongrupoevento`  
+**Tabla:** `registry_inscripciongrupoevento`
 **Descripción:** Inscripción de grupos (equipos) a eventos. Modelo principal para el flujo de participación.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -681,7 +681,7 @@
 
 ## 26. ClubEvento
 
-**Tabla:** `registry_clubevento`  
+**Tabla:** `registry_clubevento`
 **Descripción:** Vinculación de clubes a eventos con rol específico.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -693,14 +693,14 @@
 | `fecha_vinculacion` | DateTimeField | No | No | No | Fecha de vinculación (auto) |
 | `activo` | BooleanField | No | No | Sí | Indica si la vinculación está activa |
 
-**Restricciones:** `unique_together = [club, evento]`  
+**Restricciones:** `unique_together = [club, evento]`
 **Índices:** `idx_clubevt_evt_act`
 
 ---
 
 ## 27. Grupo
 
-**Tabla:** `registry_grupo`  
+**Tabla:** `registry_grupo`
 **Descripción:** Grupos (equipos) de participantes que se inscriben a eventos. Cada grupo pertenece a una institución y puede tener tutores y participantes asignados.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |
@@ -722,14 +722,14 @@
 | `fecha_registro` | DateTimeField | No | No | No | Fecha de registro (auto) |
 | `activo` | BooleanField | No | No | Sí | Indica si el grupo está activo |
 
-**Restricciones:** `unique_nombre_evento_case_insensitive` (nombre + evento, insensible a mayúsculas)  
+**Restricciones:** `unique_nombre_evento_case_insensitive` (nombre + evento, insensible a mayúsculas)
 **Índices:** `idx_grupo_criterio`, `idx_grupo_institucion`
 
 ---
 
 ## 28. Notificacion
 
-**Tabla:** `registry_notificacion`  
+**Tabla:** `registry_notificacion`
 **Descripción:** Sistema de notificaciones internas (buzón de mensajes) para usuarios del sistema.
 
 | Campo | Tipo | Nulo | Único | Índice | Descripción |

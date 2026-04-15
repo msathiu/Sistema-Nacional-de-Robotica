@@ -15,6 +15,7 @@ from .evento import Evento
 
 logger = logging.getLogger(__name__)
 
+
 class Grupo(models.Model):
     """Modelo para representar grupos de participantes."""
 

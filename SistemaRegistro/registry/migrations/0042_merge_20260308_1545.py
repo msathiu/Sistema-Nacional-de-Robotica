@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0039_remove_old_tutor_fields'),
-        ('registry', '0041_alter_evento_tipo'),
+        ("registry", "0039_remove_old_tutor_fields"),
+        ("registry", "0041_alter_evento_tipo"),
     ]
 
-    operations = [
-    ]
+    operations = []

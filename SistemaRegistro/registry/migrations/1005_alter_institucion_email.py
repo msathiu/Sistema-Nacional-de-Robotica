@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1004_evento_fecha_hasta'),
+        ("registry", "1004_evento_fecha_hasta"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='institucion',
-            name='email',
+            model_name="institucion",
+            name="email",
             field=models.EmailField(max_length=254),
         ),
     ]

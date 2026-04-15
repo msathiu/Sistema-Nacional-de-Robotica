@@ -718,8 +718,12 @@ class Evento(models.Model):
                 "class": "badge-tipo bg-purple",
             }
         # Si es institucional pero creado por federación central
-        if self.creado_por and hasattr(self.creado_por, 'userprofile'):
-            if self.creado_por.userprofile.user_type in ['fed_central', 'superuser', 'tecnologico']:
+        if self.creado_por and hasattr(self.creado_por, "userprofile"):
+            if self.creado_por.userprofile.user_type in [
+                "fed_central",
+                "superuser",
+                "tecnologico",
+            ]:
                 return {
                     "label": "Federativo",
                     "icon": "bi-shield-check",

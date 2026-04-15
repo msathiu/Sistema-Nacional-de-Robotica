@@ -5,6 +5,7 @@ from registry.services.participante_service import ParticipanteService
 
 logger = logging.getLogger(__name__)
 
+
 class GrupoService:
     """
     Servicio para gestionar el ciclo de vida de los Grupos (Equipos).
@@ -36,16 +37,22 @@ class GrupoService:
                 for cedula in cedulas_participantes:
                     if cedula.strip():
                         try:
-                            participante = Participante.objects.get(cedula=cedula.strip())
+                            participante = Participante.objects.get(
+                                cedula=cedula.strip()
+                            )
                             nuevo_grupo.participantes.add(participante)
                         except Participante.DoesNotExist:
-                            logger.warning(f"Participante con cédula {cedula} no encontrado.")
+                            logger.warning(
+                                f"Participante con cédula {cedula} no encontrado."
+                            )
 
             ParticipanteService.sync_historial_miembros_grupo(nuevo_grupo)
             return nuevo_grupo
 
     @staticmethod
-    def editar_grupo(grupo_id, usuario, nuevo_nombre=None, eliminar_indices=None, nuevas_cedulas=None):
+    def editar_grupo(
+        grupo_id, usuario, nuevo_nombre=None, eliminar_indices=None, nuevas_cedulas=None
+    ):
         """
         Edita un grupo existente.
         """
@@ -73,10 +80,14 @@ class GrupoService:
                 for cedula in nuevas_cedulas:
                     if cedula.strip():
                         try:
-                            participante = Participante.objects.get(cedula=cedula.strip())
+                            participante = Participante.objects.get(
+                                cedula=cedula.strip()
+                            )
                             grupo.participantes.add(participante)
                         except Participante.DoesNotExist:
-                            logger.warning(f"Participante con cédula {cedula} no encontrado.")
+                            logger.warning(
+                                f"Participante con cédula {cedula} no encontrado."
+                            )
 
             ParticipanteService.sync_historial_miembros_grupo(grupo)
             return grupo

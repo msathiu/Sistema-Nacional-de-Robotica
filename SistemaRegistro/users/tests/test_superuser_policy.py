@@ -43,7 +43,9 @@ class SuperuserPolicyTests(TestCase):
 
     def test_fed_central_is_still_considered_rector(self):
         self.assertTrue(JurisdictionSelector.es_rector(self.fed_central.userprofile))
-        self.assertTrue(JurisdictionSelector.es_federacion(self.fed_central.userprofile))
+        self.assertTrue(
+            JurisdictionSelector.es_federacion(self.fed_central.userprofile)
+        )
 
     def test_fed_central_required_blocks_superuser(self):
         @fed_central_required

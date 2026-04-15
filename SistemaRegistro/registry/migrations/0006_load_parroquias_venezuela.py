@@ -1,5 +1,6 @@
 from django.db import migrations
-from django.db import connection 
+from django.db import connection
+
 
 def cargar_parroquias_venezuela(apps, schema_editor):
     Municipio = apps.get_model("registry", "Municipio")
@@ -1166,10 +1167,13 @@ def cargar_parroquias_venezuela(apps, schema_editor):
             )
     tabla = Parroquia._meta.db_table
     with connection.cursor() as cursor:
-        cursor.execute(f"""
-            SELECT setval(pg_get_serial_sequence('{tabla}', 'id'), 
+        cursor.execute(
+            f"""
+            SELECT setval(pg_get_serial_sequence('{tabla}', 'id'),
             coalesce(max(id), 1)) FROM {tabla};
-        """)
+        """
+        )
+
 
 class Migration(migrations.Migration):
     dependencies = [

@@ -14,9 +14,9 @@
         --warning: #f59e0b;
         --gray-bg: #f5f7fa;
     }
-    
+
     body { background: var(--gray-bg); }
-    
+
     .form-container {
         max-width: 1000px;
         margin: 0 auto;
@@ -25,13 +25,13 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         overflow: hidden;
     }
-    
+
     .form-header-custom {
         background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-dark) 100%);
         color: white;
         padding: 1.5rem 2rem;
     }
-    
+
     .section-card-custom {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -39,7 +39,7 @@
         padding: 1.5rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .section-header-custom {
         display: flex;
         align-items: center;
@@ -47,7 +47,7 @@
         padding-bottom: 0.75rem;
         border-bottom: 2px solid #e2e8f0;
     }
-    
+
     .section-number-custom {
         background: var(--blue-main);
         color: white;
@@ -61,7 +61,7 @@
         font-size: 0.9rem;
         margin-right: 0.75rem;
     }
-    
+
     .section-title-custom {
         font-size: 0.85rem;
         font-weight: 700;
@@ -70,7 +70,7 @@
         color: var(--blue-main);
         margin: 0;
     }
-    
+
     .form-control-custom, .form-select-custom {
         border: 1px solid #cbd5e1;
         border-radius: 8px;
@@ -79,12 +79,12 @@
         background: white;
         padding: 0.625rem 0.875rem;
     }
-    
+
     .form-control-custom:focus, .form-select-custom:focus {
         border-color: var(--blue-main);
         box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1);
     }
-    
+
     .form-label-custom {
         font-weight: 600;
         color: #334155;
@@ -93,11 +93,11 @@
         align-items: center;
         gap: 0.375rem;
     }
-    
+
     .form-label-custom i {
         color: var(--blue-main);
     }
-    
+
     .btn-submit-custom {
         background: var(--blue-main);
         border: none;
@@ -108,13 +108,13 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         transition: all 0.3s ease;
     }
-    
+
     .btn-submit-custom:hover {
         background: var(--blue-dark);
         transform: translateY(-2px);
         color: white;
     }
-    
+
     .btn-back-custom {
         border: 1px solid #cbd5e1;
         color: #475569;
@@ -124,13 +124,13 @@
         font-weight: 500;
         transition: all 0.2s ease;
     }
-    
+
     .btn-back-custom:hover {
         border-color: #94a3b8;
         background: #f8fafc;
         color: #334155;
     }
-    
+
     .btn-search-custom {
         background: var(--blue-main);
         border: none;
@@ -139,25 +139,25 @@
         padding: 0.5rem 1rem;
         font-weight: 500;
     }
-    
+
     .btn-search-custom:hover {
         background: var(--blue-dark);
         color: white;
     }
-    
+
     .tutor-card {
         background: #ecfdf5;
         border: 1px solid #6ee7b7;
         border-radius: 8px;
         padding: 1rem;
     }
-    
+
     .participante-table {
         background: white;
         border-radius: 8px;
         overflow: hidden;
     }
-    
+
     .header-icon-custom {
         width: 48px;
         height: 48px;
@@ -167,7 +167,7 @@
         justify-content: center;
         background: rgba(255,255,255,0.2);
     }
-    
+
     .header-icon-custom i {
         font-size: 1.5rem;
         color: white;
@@ -219,13 +219,13 @@
                         <div class="section-number-custom">1</div>
                         <h6 class="section-title-custom">Datos Básicos del Equipo</h6>
                     </div>
-                    
+
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label class="form-label-custom">
                                 <i class="bi bi-bookmark-star"></i> Nombre del Equipo *
                             </label>
-                            <input type="text" name="nombre" class="form-control form-control-custom" 
+                            <input type="text" name="nombre" class="form-control form-control-custom"
                                    value="{{ grupo.nombre }}" required>
                         </div>
 
@@ -233,7 +233,7 @@
                             <label class="form-label-custom">
                                 <i class="bi bi-hash"></i> Código
                             </label>
-                            <input type="text" class="form-control form-control-custom bg-light" 
+                            <input type="text" class="form-control form-control-custom bg-light"
                                    value="{{ grupo.codigo }}" readonly>
                         </div>
 
@@ -255,18 +255,18 @@
                                     <label class="form-label-custom">
                                         <i class="bi bi-calendar-range"></i> Edad Desde *
                                     </label>
-                                    <input type="number" name="edad_desde" class="form-control form-control-custom" 
+                                    <input type="number" name="edad_desde" class="form-control form-control-custom"
                                            value="{{ grupo.edad_desde|default:'' }}" min="4" max="99">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label-custom">
                                         <i class="bi bi-calendar-range"></i> Edad Hasta *
                                     </label>
-                                    <input type="number" name="edad_hasta" class="form-control form-control-custom" 
+                                    <input type="number" name="edad_hasta" class="form-control form-control-custom"
                                            value="{{ grupo.edad_hasta|default:'' }}" min="4" max="99">
                                 </div>
                             </div>
-                            
+
                             <div id="camposNivel" class="col-12" style="display: {% if grupo.criterio == 'nivel' %}block{% else %}none{% endif %};">
                                 <label class="form-label-custom">
                                     <i class="bi bi-mortarboard"></i> Nivel Educativo *
@@ -278,12 +278,12 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            
+
                             <div id="camposProyecto" class="col-12" style="display: {% if grupo.criterio == 'proyecto' %}block{% else %}none{% endif %};">
                                 <label class="form-label-custom">
                                     <i class="bi bi-lightbulb"></i> Nombre del Proyecto *
                                 </label>
-                                <input type="text" name="nombre_proyecto" class="form-control form-control-custom" 
+                                <input type="text" name="nombre_proyecto" class="form-control form-control-custom"
                                        value="{{ grupo.nombre_proyecto|default:'' }}" maxlength="200">
                             </div>
                         </div>
@@ -296,7 +296,7 @@
                         <div class="section-number-custom">2</div>
                         <h6 class="section-title-custom">Tutor Asignado (Solo 1)</h6>
                     </div>
-                    
+
                     <div id="tutorActualContainer">
                         {% if tutores_actuales %}
                             {% for tutor in tutores_actuales %}
@@ -308,7 +308,7 @@
                                             {{ tutor.get_nombre_completo }}
                                         </h6>
                                         <small class="text-muted">
-                                            <strong>Cédula:</strong> {{ tutor.nacionalidad }}-{{ tutor.cedula }} | 
+                                            <strong>Cédula:</strong> {{ tutor.nacionalidad }}-{{ tutor.cedula }} |
                                             <strong>Email:</strong> {{ tutor.email }}
                                         </small>
                                     </div>
@@ -325,14 +325,14 @@
                             </div>
                         {% endif %}
                     </div>
-                    
+
                     <div id="buscarTutorContainer" style="display: {% if tutores_actuales %}none{% else %}block{% endif %};">
                         <div class="row g-3">
                             <div class="col-md-5">
                                 <label class="form-label-custom">
                                     <i class="bi bi-search"></i> Buscar Tutor por Cédula
                                 </label>
-                                <input type="text" id="buscarTutorCedula" class="form-control form-control-custom" 
+                                <input type="text" id="buscarTutorCedula" class="form-control form-control-custom"
                                        placeholder="12345678" inputmode="numeric" pattern="[0-9]*"
                                        onkeypress="return event.charCode >= 48 && event.charCode <= 57"
                                        onpaste="return /\\d+/.test((event.clipboardData || window.clipboardData).getData('text'))">
@@ -343,7 +343,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div id="tutorResultado" class="mt-3" style="display: none;">
                             <div class="tutor-card">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -372,13 +372,13 @@
                         <div class="section-number-custom">3</div>
                         <h6 class="section-title-custom">Participantes del Equipo</h6>
                     </div>
-                    
+
                     <div class="d-flex justify-content-end gap-2 mb-3">
                         <button type="button" class="btn btn-primary btn-sm" onclick="agregarParticipante()">
                             <i class="bi bi-plus-lg"></i> Agregar Participante
                         </button>
                     </div>
-                    
+
                     {% if participantes_actuales %}
                     <div class="participante-table mb-3">
                         <table class="table table-hover mb-0">
@@ -414,7 +414,7 @@
                         </table>
                     </div>
                     {% endif %}
-                    
+
                     <div id="listaParticipantes"></div>
                 </div>
 
@@ -486,10 +486,10 @@ document.getElementById('btnBuscarTutor')?.addEventListener('click', function() 
         alert('Ingrese una cédula');
         return;
     }
-    
+
     this.disabled = true;
     this.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
-    
+
     fetch(`/registry/api/buscar-tutor/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
@@ -540,15 +540,15 @@ function eliminarParticipanteActual(btn) {
 function buscarParticipante(btn) {
     const card = btn.closest('.participante-card');
     const cedula = card.querySelector('.cedula-participante').value.trim();
-    
+
     if (!cedula) {
         alert('Ingrese una cédula');
         return;
     }
-    
+
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
-    
+
     fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
@@ -585,7 +585,7 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
             card.remove();
         }
     });
-    
+
     // Validar que haya al menos un tutor
     const tutoresValidos = document.querySelectorAll('input[name="tutores[]"]');
     if (tutoresValidos.length === 0) {
@@ -593,7 +593,7 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
         alert('Debe asignar un tutor al equipo');
         return false;
     }
-    
+
     // Validar que haya al menos un participante
     const participantesValidos = document.querySelectorAll('input[name="participantes[]"]').length;
     if (participantesValidos === 0) {

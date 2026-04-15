@@ -43,7 +43,7 @@
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ solicitudes_pendientes|length }} Pendiente(s)</span>
         </div>
         <div style="height: 3px; background: var(--accent-cyan); width: 100%;"></div>
-        
+
         <div class="card-body p-0">
             {% if solicitudes_pendientes %}
             <div class="table-responsive">
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const update = () => {
             const now = +c.innerText;
             const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
             else c.innerText = target;
         };
         update();

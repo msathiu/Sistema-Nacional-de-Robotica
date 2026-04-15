@@ -5,15 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1011_club_tipo_creador'),
+        ("registry", "1011_club_tipo_creador"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='membresiaclu',
-            name='representante_tutor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='membresias_representadas', to='registry.tutor', verbose_name='Representante Legal (Tutor)'),
+            model_name="membresiaclu",
+            name="representante_tutor",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="membresias_representadas",
+                to="registry.tutor",
+                verbose_name="Representante Legal (Tutor)",
+            ),
         ),
     ]

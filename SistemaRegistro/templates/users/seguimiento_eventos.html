@@ -19,7 +19,7 @@
                     <p class="text-muted mb-0 small">Eventos creados por tu institución - {{ institution.nombre }}</p>
                 </div>
             </div>
-            <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
+            <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold"
                style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                 <i class="bi bi-plus-circle-fill me-2"></i>Nuevo Evento
             </a>
@@ -138,7 +138,7 @@
             <span class="badge bg-white text-dark rounded-pill fw-bold">{{ stats.total }} Registros</span>
         </div>
         <div class="eventos-header-divider"></div>
-        
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" id="eventosTable">
@@ -321,18 +321,18 @@ function aplicarFiltros() {
     const filtroAudiencia = document.getElementById('filtroAudiencia');
     const audiencia = filtroAudiencia ? filtroAudiencia.value.toLowerCase() : '';
     const estado = document.getElementById('filtroEstado').value.toLowerCase();
-    
+
     document.querySelectorAll('.evento-row').forEach(row => {
         const nombre = row.querySelector('.evento-nombre').textContent.toLowerCase();
         const rowTipo = row.getAttribute('data-tipo').toLowerCase();
         const rowAudiencia = row.getAttribute('data-audiencia').toLowerCase();
         const rowEstado = row.getAttribute('data-estado').toLowerCase();
-        
+
         const matchBuscar = !buscar || nombre.includes(buscar);
         const matchTipo = !tipo || rowTipo.includes(tipo);
         const matchAudiencia = !audiencia || rowAudiencia === audiencia;
         const matchEstado = !estado || rowEstado === estado;
-        
+
         row.style.display = (matchBuscar && matchTipo && matchAudiencia && matchEstado) ? '' : 'none';
     });
 }
@@ -406,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const update = () => {
             const now = +c.innerText;
             const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
             else c.innerText = target;
         };
         update();

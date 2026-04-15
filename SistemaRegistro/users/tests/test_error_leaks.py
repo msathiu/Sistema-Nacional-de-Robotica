@@ -7,14 +7,24 @@ from django.core.exceptions import PermissionDenied
 from django.test import TestCase
 from django.urls import reverse
 
-from registry.models import Estado, Evento, Grupo, Institucion, Municipio, Parroquia, Participante
+from registry.models import (
+    Estado,
+    Evento,
+    Grupo,
+    Institucion,
+    Municipio,
+    Parroquia,
+    Participante,
+)
 
 
 class UserViewErrorLeakTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.estado = Estado.objects.create(nombre="Estado Error Leak", codigo="EL")
-        cls.municipio = Municipio.objects.create(nombre="Municipio Error Leak", estado=cls.estado)
+        cls.municipio = Municipio.objects.create(
+            nombre="Municipio Error Leak", estado=cls.estado
+        )
         cls.parroquia = Parroquia.objects.create(
             nombre="Parroquia Error Leak",
             municipio=cls.municipio,

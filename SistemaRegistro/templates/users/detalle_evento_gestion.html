@@ -272,8 +272,8 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
-                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes" 
-                                        data-grupo-id="{{ inscripcion.grupo.id }}" 
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold btn-ver-participantes"
+                                        data-grupo-id="{{ inscripcion.grupo.id }}"
                                         data-grupo-nombre="{{ inscripcion.grupo.nombre|escapejs }}"
                                         title="Ver participantes del grupo">
                                     <i class="bi bi-eye me-1"></i>Ver
@@ -365,46 +365,46 @@
         --blue-main: #0b2c6d;
         --accent-cyan: #00d4ff;
     }
-    
+
     .x-small {
         font-size: 0.72rem;
         letter-spacing: 0.3px;
     }
-    
+
     .card {
         transition: all 0.3s ease;
         border: 1px solid rgba(0,0,0,0.05);
     }
-    
+
     .badge.bg-primary {
         background-color: var(--blue-main) !important;
     }
-    
+
     .bg-success {
         background-color: #10b981 !important;
     }
-    
+
     .bg-warning {
         background-color: #f59e0b !important;
     }
-    
+
     .bg-secondary {
         background-color: #6c757d !important;
     }
-    
+
     .bg-info {
         background-color: var(--accent-cyan) !important;
         color: var(--blue-main) !important;
     }
-    
+
     .bg-danger {
         background-color: #ef4444 !important;
     }
-    
+
     .bg-light {
         background-color: #f8fafc !important;
     }
-    
+
     /* Estilos para información del evento */
     .ev-section-label {
         font-size: 0.7rem;
@@ -505,15 +505,15 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const grupoId = this.getAttribute('data-grupo-id');
             const grupoNombre = this.getAttribute('data-grupo-nombre');
-            
+
             // Actualizar título del modal
-            document.getElementById('participantesModalLabel').innerHTML = 
+            document.getElementById('participantesModalLabel').innerHTML =
                 '<i class="bi bi-people-fill me-2"></i>Participantes del Grupo: ' + grupoNombre;
-            
+
             // Mostrar modal
             const modal = new bootstrap.Modal(document.getElementById('participantesModal'));
             modal.show();
-            
+
             // Cargar participantes
             cargarParticipantes(grupoId);
         });
@@ -545,7 +545,7 @@ function cargarParticipantes(grupoId) {
 
 function mostrarParticipantes(participantes) {
     const content = document.getElementById('participantesContent');
-    
+
     if (participantes.length === 0) {
         content.innerHTML = `
             <div class="text-center py-4">
@@ -556,7 +556,7 @@ function mostrarParticipantes(participantes) {
         `;
         return;
     }
-    
+
     let html = `
         <div class="table-responsive">
             <table class="table table-hover">
@@ -572,7 +572,7 @@ function mostrarParticipantes(participantes) {
                 </thead>
                 <tbody>
     `;
-    
+
     participantes.forEach((participante, index) => {
         html += `
             <tr>
@@ -589,7 +589,7 @@ function mostrarParticipantes(participantes) {
             </tr>
         `;
     });
-    
+
     html += `
                 </tbody>
             </table>
@@ -601,9 +601,8 @@ function mostrarParticipantes(participantes) {
             </small>
         </div>
     `;
-    
+
     content.innerHTML = html;
 }
 </script>
 {% endblock %}
-

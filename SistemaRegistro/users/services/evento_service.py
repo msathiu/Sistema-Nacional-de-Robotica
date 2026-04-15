@@ -2,11 +2,18 @@ import logging
 from datetime import date, datetime
 from django.db import transaction
 from django.db.models import Q
-from registry.models import Evento, Club, EstadoEvento, AsistenciaEvento, InscripcionGrupoEvento
+from registry.models import (
+    Evento,
+    Club,
+    EstadoEvento,
+    AsistenciaEvento,
+    InscripcionGrupoEvento,
+)
 from ..forms import EventoContactDataForm
 from ..utils import LocationUtils
 
 logger = logging.getLogger(__name__)
+
 
 class EventoService:
     """
@@ -26,7 +33,11 @@ class EventoService:
             "fecha_hasta": (
                 evento.fecha_fin_efectiva.strftime("%Y-%m-%d")
                 if evento.fecha_fin_efectiva
-                else (evento.fecha_hasta.strftime("%Y-%m-%d") if evento.fecha_hasta else "")
+                else (
+                    evento.fecha_hasta.strftime("%Y-%m-%d")
+                    if evento.fecha_hasta
+                    else ""
+                )
             ),
             "modalidad": evento.modalidad or "presencial",
             "estado_evento": evento.estado_evento or EstadoEvento.BORRADOR,
@@ -54,19 +65,25 @@ class EventoService:
         # 1. Validar Fechas
         fecha_str = data.get("fecha")
         fecha_hasta_str = (data.get("fecha_hasta") or "").strip()
-        
+
         try:
             fecha_evento = datetime.strptime(fecha_str, "%Y-%m-%d").date()
             if not instance and fecha_evento < date.today():
-                raise ValueError("La fecha desde del evento no puede ser anterior a la fecha actual.")
-            
+                raise ValueError(
+                    "La fecha desde del evento no puede ser anterior a la fecha actual."
+                )
+
             if fecha_hasta_str:
-                fecha_hasta_evento = datetime.strptime(fecha_hasta_str, "%Y-%m-%d").date()
+                fecha_hasta_evento = datetime.strptime(
+                    fecha_hasta_str, "%Y-%m-%d"
+                ).date()
             else:
                 fecha_hasta_evento = fecha_evento
 
             if fecha_hasta_evento < fecha_evento:
-                raise ValueError("La fecha hasta no puede ser anterior a la fecha desde.")
+                raise ValueError(
+                    "La fecha hasta no puede ser anterior a la fecha desde."
+                )
         except ValueError as e:
             if "time data" in str(e):
                 raise ValueError("Formato de fecha inválido. Use YYYY-MM-DD.")
@@ -77,8 +94,10 @@ class EventoService:
         municipio_id = data.get("municipio")
         parroquia_id = data.get("parroquia")
         direccion = data.get("direccion", "")
-        
-        estado_obj, municipio_obj, parroquia_obj = LocationUtils.resolve_location(estado_id, municipio_id, parroquia_id)
+
+        estado_obj, municipio_obj, parroquia_obj = LocationUtils.resolve_location(
+            estado_id, municipio_id, parroquia_id
+        )
         contacto_form = EventoContactDataForm(
             data={
                 "telefono_codigo": data.get("telefono_codigo", ""),
@@ -92,9 +111,11 @@ class EventoService:
 
         telefono_codigo = contacto_form.cleaned_data.get("telefono_codigo", "")
         telefono_numero = contacto_form.cleaned_data.get("telefono_numero", "")
-        
+
         # 3. Validar Club y Audiencia
-        tipo_evento = data.get("tipo_evento", instance.tipo_evento if instance else "institucional")
+        tipo_evento = data.get(
+            "tipo_evento", instance.tipo_evento if instance else "institucional"
+        )
         club_organizador_id = data.get("club_organizador")
         audiencia = data.get("audiencia", instance.audiencia if instance else "publica")
         club_obj = None
@@ -102,27 +123,32 @@ class EventoService:
         if tipo_evento == "club":
             if not club_organizador_id:
                 raise ValueError("Debe seleccionar un club para eventos de club.")
-            
+
             try:
                 if user_type == "fed_central":
                     # fed_central puede crear eventos para cualquier club aprobado (ente rector)
-                    club_obj = Club.objects.get(id=club_organizador_id, status="aprobado", eliminado=False)
+                    club_obj = Club.objects.get(
+                        id=club_organizador_id, status="aprobado", eliminado=False
+                    )
                 else:
-                    club_obj = Club.objects.get(id=club_organizador_id, status="aprobado")
+                    club_obj = Club.objects.get(
+                        id=club_organizador_id, status="aprobado"
+                    )
             except Club.DoesNotExist:
                 raise ValueError("El club seleccionado no existe o no está aprobado.")
-            
+
             if user_type == "institucional":
                 es_creador = club_obj.institucion_creadora == institution
                 es_miembro = club_obj.membresias.filter(
-                    institucion=institution,
-                    estado="miembro_activo"
+                    institucion=institution, estado="miembro_activo"
                 ).exists()
                 if not es_creador and not es_miembro:
-                    raise ValueError("No tienes permisos para crear eventos en este club.")
-            
+                    raise ValueError(
+                        "No tienes permisos para crear eventos en este club."
+                    )
+
             audiencia = "club_exclusivo"
-        
+
         return {
             "nombre": data.get("nombre"),
             "tipo": data.get("categoria"),
@@ -136,7 +162,9 @@ class EventoService:
             "direccion": direccion,
             "requisitos": data.get("requisitos", ""),
             "tipo_evento": tipo_evento,
-            "institucion": institution if (user_type == "institucional" and tipo_evento == "institucional") else (instance.institucion if instance else None),
+            "institucion": institution
+            if (user_type == "institucional" and tipo_evento == "institucional")
+            else (instance.institucion if instance else None),
             "club_organizador": club_obj if tipo_evento == "club" else None,
             "audiencia": audiencia,
             "telefono_codigo": telefono_codigo,
@@ -148,7 +176,7 @@ class EventoService:
     def crear_evento(user, perfil, data: dict):
         """
         Crea un evento validando roles y estados iniciales.
-        
+
         El estado inicial se determina en el backend según el rol:
         - fed_central/superuser/tecnologico: ABIERTO (publicación directa)
         - institucional: BORRADOR (requiere revisión)
@@ -157,10 +185,12 @@ class EventoService:
         # Validar que fed_regional no pueda crear eventos en esta fase
         user_type = getattr(perfil, "user_type", None)
         if user_type == "fed_regional":
-            raise ValueError("Las sedes regionales no pueden crear eventos en esta fase.")
-        
+            raise ValueError(
+                "Las sedes regionales no pueden crear eventos en esta fase."
+            )
+
         validated_data = EventoService._validate_and_prepare_data(perfil, data)
-        
+
         # Determinar Estado Inicial (FUENTE DE VERDAD: backend)
         # Se ignora cualquier valor enviado desde el frontend
         if user_type in ["fed_central", "superuser", "tecnologico"]:
@@ -177,8 +207,10 @@ class EventoService:
             creado_por=user,
             activo=True,
         )
-        
-        logger.info(f"Evento '{evento.nombre}' creado por {user.username} con estado inicial '{estado_inicial}'.")
+
+        logger.info(
+            f"Evento '{evento.nombre}' creado por {user.username} con estado inicial '{estado_inicial}'."
+        )
         return evento
 
     @staticmethod
@@ -186,17 +218,26 @@ class EventoService:
         """
         Actualiza un evento existente.
         """
-        validated_data = EventoService._validate_and_prepare_data(perfil, data, instance=evento)
-        
+        validated_data = EventoService._validate_and_prepare_data(
+            perfil, data, instance=evento
+        )
+
         for field, value in validated_data.items():
             setattr(evento, field, value)
-        
+
         evento.save()
         logger.info(f"Evento '{evento.nombre}' actualizado.")
         return evento
 
     @staticmethod
-    def gestionar_estado(evento, user, nuevo_estado, observacion="", nueva_fecha=None, nueva_fecha_hasta=None):
+    def gestionar_estado(
+        evento,
+        user,
+        nuevo_estado,
+        observacion="",
+        nueva_fecha=None,
+        nueva_fecha_hasta=None,
+    ):
         """
         Gestiona el cambio de estado de un evento (pausa, reabrir, cancelar).
         Centraliza la lógica de negocio y validaciones de transición.
@@ -213,11 +254,15 @@ class EventoService:
 
         if nueva_fecha_hasta:
             if nueva_fecha and nueva_fecha_hasta < nueva_fecha:
-                raise ValueError("La fecha hasta no puede ser anterior a la fecha desde.")
+                raise ValueError(
+                    "La fecha hasta no puede ser anterior a la fecha desde."
+                )
             if nueva_fecha_hasta != evento.fecha_hasta:
                 evento.fecha_hasta = nueva_fecha_hasta
                 update_fields.append("fecha_hasta")
-        elif nueva_fecha and (not evento.fecha_hasta or evento.fecha_hasta < nueva_fecha):
+        elif nueva_fecha and (
+            not evento.fecha_hasta or evento.fecha_hasta < nueva_fecha
+        ):
             # Ajuste automático si solo se cambia fecha desde
             evento.fecha_hasta = nueva_fecha
             update_fields.append("fecha_hasta")
@@ -225,23 +270,30 @@ class EventoService:
         # 2. Transiciones según el estado solicitado
         if nuevo_estado == EstadoEvento.PAUSADO:
             if not evento.puede_pausar(user):
-                raise ValueError("Este evento no puede pausarse desde su estado actual o no tienes permisos.")
+                raise ValueError(
+                    "Este evento no puede pausarse desde su estado actual o no tienes permisos."
+                )
             if not observacion:
-                raise ValueError("Debes indicar una observación visible al pausar el evento.")
-            
+                raise ValueError(
+                    "Debes indicar una observación visible al pausar el evento."
+                )
+
             if not evento.pausar(observacion):
                 raise ValueError("No fue posible pausar el evento.")
-            
+
             if update_fields:
                 evento.save(update_fields=update_fields)
 
         elif nuevo_estado == EstadoEvento.ABIERTO:
-            if evento.estado_evento != EstadoEvento.PAUSADO or not evento.puede_transicionar(EstadoEvento.ABIERTO):
+            if (
+                evento.estado_evento != EstadoEvento.PAUSADO
+                or not evento.puede_transicionar(EstadoEvento.ABIERTO)
+            ):
                 raise ValueError("Solo se pueden reabrir eventos que estén pausados.")
 
             evento.estado_evento = EstadoEvento.ABIERTO
             update_fields.append("estado_evento")
-            
+
             # Gestionar observación
             if observacion:
                 evento.observacion_estado = observacion
@@ -265,10 +317,9 @@ class EventoService:
                             "Este evento no puede cancelarse desde su estado actual o no tienes permisos."
                         )
 
-                inscripciones = (
-                    InscripcionGrupoEvento.objects.filter(evento=evento, activo=True)
-                    .select_related("grupo")
-                )
+                inscripciones = InscripcionGrupoEvento.objects.filter(
+                    evento=evento, activo=True
+                ).select_related("grupo")
 
                 for inscripcion in inscripciones:
                     grupo = inscripcion.grupo
@@ -282,36 +333,48 @@ class EventoService:
                     inscripcion.delete()
 
         elif nuevo_estado == EstadoEvento.FINALIZADO:
-            if evento.estado_evento not in [EstadoEvento.ABIERTO, EstadoEvento.EN_PROCESO, EstadoEvento.PAUSADO]:
-                raise ValueError("Solo se pueden finalizar eventos que estén abiertos, en proceso o pausados.")
+            if evento.estado_evento not in [
+                EstadoEvento.ABIERTO,
+                EstadoEvento.EN_PROCESO,
+                EstadoEvento.PAUSADO,
+            ]:
+                raise ValueError(
+                    "Solo se pueden finalizar eventos que estén abiertos, en proceso o pausados."
+                )
             if not observacion:
-                raise ValueError("Debes indicar una observación al finalizar el evento.")
-            
+                raise ValueError(
+                    "Debes indicar una observación al finalizar el evento."
+                )
+
             evento.estado_evento = EstadoEvento.FINALIZADO
             evento.observacion_estado = observacion
             update_fields.extend(["estado_evento", "observacion_estado"])
-            
+
             evento.save(update_fields=update_fields)
-        
+
         elif nuevo_estado == "reprogramar":
             # Reprogramar es una acción especial que cambia fechas pero mantiene el estado
             if not nueva_fecha:
-                raise ValueError("Debes especificar una nueva fecha para reprogramar el evento.")
+                raise ValueError(
+                    "Debes especificar una nueva fecha para reprogramar el evento."
+                )
             if not observacion:
                 raise ValueError("Debes indicar el motivo de la reprogramación.")
-            
+
             # Las fechas ya fueron validadas y asignadas arriba
             evento.observacion_estado = observacion
             update_fields.append("observacion_estado")
-            
+
             evento.save(update_fields=update_fields)
             logger.info(f"Evento '{evento.nombre}' reprogramado por {user.username}.")
             return evento
-        
+
         else:
             raise ValueError(f"Estado '{nuevo_estado}' no soportado para esta acción.")
 
-        logger.info(f"Evento '{evento.nombre}' cambió a estado {nuevo_estado} por {user.username}.")
+        logger.info(
+            f"Evento '{evento.nombre}' cambió a estado {nuevo_estado} por {user.username}."
+        )
         return evento
 
     @staticmethod
@@ -321,8 +384,10 @@ class EventoService:
         """
         # Verificar inscripciones (usando el nombre de relación correcto)
         if evento.inscripciones_grupo.exists():
-            raise ValueError("No se puede eliminar un evento que ya tiene equipos inscritos.")
-        
+            raise ValueError(
+                "No se puede eliminar un evento que ya tiene equipos inscritos."
+            )
+
         nombre = evento.nombre
         evento.delete()
         logger.info(f"Evento '{nombre}' eliminado por {user.username}.")
@@ -336,6 +401,7 @@ class EventoService:
         Usa bulk_create con ignore_conflicts para ser idempotente.
         """
         from registry.models import InscripcionGrupoEvento
+
         inscripciones = InscripcionGrupoEvento.objects.filter(
             evento=evento, activo=True
         ).prefetch_related("grupo__participantes")
@@ -343,12 +409,14 @@ class EventoService:
         registros = []
         for inscripcion in inscripciones:
             for participante in inscripcion.grupo.participantes.all():
-                registros.append(AsistenciaEvento(
-                    evento=evento,
-                    participante=participante,
-                    grupo=inscripcion.grupo,
-                    asistencia="pendiente",
-                ))
+                registros.append(
+                    AsistenciaEvento(
+                        evento=evento,
+                        participante=participante,
+                        grupo=inscripcion.grupo,
+                        asistencia="pendiente",
+                    )
+                )
 
         if registros:
             AsistenciaEvento.objects.bulk_create(registros, ignore_conflicts=True)

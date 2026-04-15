@@ -5,20 +5,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '1006_remove_participante_nombre_escuela'),
+        ("registry", "1006_remove_participante_nombre_escuela"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tutor',
-            name='creado_por_federacion',
-            field=models.BooleanField(default=False, verbose_name='Registrado por Federación'),
+            model_name="tutor",
+            name="creado_por_federacion",
+            field=models.BooleanField(
+                default=False, verbose_name="Registrado por Federación"
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='cedula_representante',
-            field=models.CharField(blank=True, max_length=10, validators=[django.core.validators.RegexValidator('^\\d{7,10}$', 'La cédula del representante debe tener entre 7 y 10 números.')], verbose_name='Cédula Representante'),
+            model_name="participante",
+            name="cedula_representante",
+            field=models.CharField(
+                blank=True,
+                max_length=10,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        "^\\d{7,10}$",
+                        "La cédula del representante debe tener entre 7 y 10 números.",
+                    )
+                ],
+                verbose_name="Cédula Representante",
+            ),
         ),
     ]

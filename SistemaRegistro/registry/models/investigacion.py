@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class LineaInvestigacion(models.Model):
     """Catálogo dinámico de líneas de investigación gestionado por el Ente Rector."""
 

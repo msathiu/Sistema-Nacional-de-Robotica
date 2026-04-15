@@ -247,17 +247,17 @@ class Participante(models.Model):
             if edad_calculada < 18:
                 errores = {}
                 if not self.nombre_representante:
-                    errores["nombre_representante"] = (
-                        "El nombre del representante es obligatorio para menores de 18 años."
-                    )
+                    errores[
+                        "nombre_representante"
+                    ] = "El nombre del representante es obligatorio para menores de 18 años."
                 if not self.cedula_representante:
-                    errores["cedula_representante"] = (
-                        "La cédula del representante es obligatoria para menores de 18 años."
-                    )
+                    errores[
+                        "cedula_representante"
+                    ] = "La cédula del representante es obligatoria para menores de 18 años."
                 if not self.numero_telefono_representante:
-                    errores["numero_telefono_representante"] = (
-                        "El teléfono del representante es obligatorio para menores de 18 años."
-                    )
+                    errores[
+                        "numero_telefono_representante"
+                    ] = "El teléfono del representante es obligatorio para menores de 18 años."
                 if errores:
                     raise ValidationError(errores)
 
@@ -300,9 +300,9 @@ class Participante(models.Model):
 
         # 2) ParticipanteGrupo: bloquea si aún hay filas activas ligadas a grupos activos
         #    (cubre datos viejos sin fila M2M; con sync_historial_miembros_grupo no debería pasar)
-        hist_qs = self.historial_grupos.filter(activo=True, grupo__activo=True).select_related(
-            "grupo"
-        )
+        hist_qs = self.historial_grupos.filter(
+            activo=True, grupo__activo=True
+        ).select_related("grupo")
         if hist_qs.exists():
             muestra_pg = list(hist_qs[:3])
             nombres_h = ", ".join(pg.grupo.nombre for pg in muestra_pg)
@@ -316,7 +316,9 @@ class Participante(models.Model):
             )
 
         # Asignación explícita en la vinculación institucional
-        tiene_grupo_actual = self.vinculaciones.filter(grupo_actual__isnull=False).exists()
+        tiene_grupo_actual = self.vinculaciones.filter(
+            grupo_actual__isnull=False
+        ).exists()
         if tiene_grupo_actual:
             raise ValidationError(
                 f"No se puede eliminar a {self.nombre_completo} porque tiene un grupo asignado en su vinculación institucional. "

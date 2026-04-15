@@ -11,11 +11,11 @@
         --accent-cyan: #00d4ff;
         --success: var(--accent-cyan);
     }
-    
+
     .counter {
         font-family: 'Space Grotesk', sans-serif;
     }
-    
+
     .badge-linea {
         background: rgba(11, 44, 109, 0.1);
         color: var(--blue-main);
@@ -24,48 +24,48 @@
         padding: 0.35rem 0.65rem;
         border-radius: 20px;
     }
-    
+
     .badge-cupo {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
     }
-    
+
     .badge-cupo.disponible {
         background: rgba(0, 212, 255, 0.12);
         color: var(--blue-main);
         border: 1px solid rgba(0, 212, 255, 0.4);
     }
-    
+
     .badge-cupo.lleno {
         background: #f1f5f9;
         color: #64748b;
     }
-    
+
     .badge-estado {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
     }
-    
+
     .badge-estado.abierto {
         background: rgba(0, 212, 255, 0.12);
         color: var(--blue-main);
         border: 1px solid rgba(0, 212, 255, 0.4);
     }
-    
+
     .badge-estado.cerrado {
         background: #fee2e2;
         color: #dc2626;
     }
-    
+
     .badge-estado.invitacion {
         background: #fef3c7;
         color: #d97706;
     }
-    
+
     .x-small { font-size: 0.72rem; letter-spacing: 0.3px; }
     .btn.rounded-circle.p-2 { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 </style>
@@ -217,7 +217,7 @@
                                     </span>
                                 </td>
                                 <td class="text-center px-4">
-                                    <a href="{% url 'detalle_club' club.id %}" 
+                                    <a href="{% url 'detalle_club' club.id %}"
                                        class="btn btn-outline-info btn-sm rounded-circle p-2"
                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                         <i class="bi bi-eye"></i>
@@ -250,28 +250,28 @@
 
         // Contadores animados con requestAnimationFrame
         const counters = document.querySelectorAll('.counter');
-        
+
         counters.forEach(counter => {
             const target = parseInt(counter.getAttribute('data-target')) || 0;
             const duration = 1000; // 1 segundo
-            
+
             let startTime = null;
-            
+
             const updateCounter = (currentTime) => {
                 if (!startTime) startTime = currentTime;
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 const currentValue = Math.floor(progress * target);
-                
+
                 counter.innerText = currentValue;
-                
+
                 if (progress < 1) {
                     requestAnimationFrame(updateCounter);
                 } else {
                     counter.innerText = target;
                 }
             };
-            
+
             requestAnimationFrame(updateCounter);
         });
     });

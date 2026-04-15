@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0002_add_sexo_to_tutor'),
-        ('registry', '0051_merge_20260308_2008'),
+        ("registry", "0002_add_sexo_to_tutor"),
+        ("registry", "0051_merge_20260308_2008"),
     ]
 
-    operations = [
-    ]
+    operations = []

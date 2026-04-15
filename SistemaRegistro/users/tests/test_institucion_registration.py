@@ -16,24 +16,21 @@ logger = logging.getLogger(__name__)
 
 class InstitucionRegistrationFormTests(TestCase):
     """Tests del formulario de registro de instituciones"""
-    
+
     @classmethod
     def setUpTestData(cls):
         """Configurar datos de prueba"""
         # Crear estado, municipio, parroquia (usar get_or_create porque las migraciones ya cargan datos)
         cls.estado, _ = Estado.objects.get_or_create(
-            nombre="Miranda",
-            defaults={"codigo": "08"}
+            nombre="Miranda", defaults={"codigo": "08"}
         )
         cls.municipio, _ = Municipio.objects.get_or_create(
-            nombre="Baruta",
-            estado=cls.estado
+            nombre="Baruta", estado=cls.estado
         )
         cls.parroquia, _ = Parroquia.objects.get_or_create(
-            nombre="Baruta",
-            municipio=cls.municipio
+            nombre="Baruta", municipio=cls.municipio
         )
-        
+
     def get_valid_form_data(self, tipo="educativa"):
         """Retorna datos válidos para el formulario"""
         return {
@@ -54,7 +51,7 @@ class InstitucionRegistrationFormTests(TestCase):
             "confirm_password": "SecurePass123!",
             "codigo_mppe": "ME123456" if tipo == "educativa" else "",
         }
-    
+
     # ============================================================
     # TEST 1: REGISTRO EXITOSO - INSTITUCIÓN EDUCATIVA
     # ============================================================
@@ -62,12 +59,12 @@ class InstitucionRegistrationFormTests(TestCase):
         """Flujo completo: institución educativa con RIF válido"""
         data = self.get_valid_form_data(tipo="educativa")
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         self.assertEqual(form.cleaned_data["tipo_institucion"], "educativa")
         self.assertEqual(form.cleaned_data["naturaleza"], "publica")
         self.assertIsNotNone(form.cleaned_data.get("rif_numero"))
-    
+
     # ============================================================
     # TEST 2: REGISTRO EXITOSO - PERSONA PARTICULAR
     # ============================================================
@@ -90,12 +87,12 @@ class InstitucionRegistrationFormTests(TestCase):
             "confirm_password": "SecurePass123!",
         }
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         self.assertEqual(form.cleaned_data["tipo_institucion"], "particular")
         self.assertEqual(form.cleaned_data["particular_nombres"], "Juan")
         self.assertIsNone(form.cleaned_data.get("rif"))
-    
+
     # ============================================================
     # TEST 3: VALIDACIÓN - EMAIL DUPLICADO
     # ============================================================
@@ -110,18 +107,19 @@ class InstitucionRegistrationFormTests(TestCase):
             parroquia=self.parroquia,
             tipo_institucion="educativa",
             rif="J-12345678",
-            telefono="02125551234"
+            telefono="02125551234",
         )
-        
+
         # Intentar crear otra con mismo email
         data = self.get_valid_form_data()
         data["email"] = "duplicado@example.com"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
-        self.assertIn("Ya existe una institución registrada con este correo", 
-                      str(form.errors))
-    
+        self.assertIn(
+            "Ya existe una institución registrada con este correo", str(form.errors)
+        )
+
     # ============================================================
     # TEST 4: VALIDACIÓN - RIF + NOMBRE + UBICACIÓN DUPLICADO
     # ============================================================
@@ -136,20 +134,21 @@ class InstitucionRegistrationFormTests(TestCase):
             parroquia=self.parroquia,
             tipo_institucion="educativa",
             rif="J-12345678",
-            telefono="02125551234"
+            telefono="02125551234",
         )
-        
+
         # Intentar crear otra con mismo RIF, nombre, ubicación
         data = self.get_valid_form_data()
         data["nombre"] = "Instituto Principal"
         data["rif_numero"] = "123456789"
         data["email"] = "otro@example.com"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
-        self.assertIn("Ya existe una institución registrada", 
-                      str(form.non_field_errors()))
-    
+        self.assertIn(
+            "Ya existe una institución registrada", str(form.non_field_errors())
+        )
+
     # ============================================================
     # TEST 5: VALIDACIÓN - CÉDULA PARTICULAR DUPLICADA
     # ============================================================
@@ -167,9 +166,9 @@ class InstitucionRegistrationFormTests(TestCase):
             particular_apellidos="Pérez",
             particular_cedula="12345678",
             particular_nacionalidad="V",
-            telefono="04145551234"
+            telefono="04145551234",
         )
-        
+
         # Intentar crear otra con cédula duplicada
         data = {
             "tipo_institucion": "particular",
@@ -188,10 +187,10 @@ class InstitucionRegistrationFormTests(TestCase):
             "confirm_password": "SecurePass123!",
         }
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("ya registrada", str(form.errors))
-    
+
     # ============================================================
     # TEST 6: VALIDACIÓN - PASSWORD DÉBIL (Sin mayúscula)
     # ============================================================
@@ -201,10 +200,10 @@ class InstitucionRegistrationFormTests(TestCase):
         data["password"] = "securepass123!"
         data["confirm_password"] = "securepass123!"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("mayúscula", str(form.errors))
-    
+
     # ============================================================
     # TEST 7: VALIDACIÓN - PASSWORD DÉBIL (Sin número)
     # ============================================================
@@ -214,10 +213,10 @@ class InstitucionRegistrationFormTests(TestCase):
         data["password"] = "SecurePassWord!"
         data["confirm_password"] = "SecurePassWord!"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("número", str(form.errors))
-    
+
     # ============================================================
     # TEST 8: VALIDACIÓN - PASSWORD DÉBIL (Sin carácter especial)
     # ============================================================
@@ -227,10 +226,10 @@ class InstitucionRegistrationFormTests(TestCase):
         data["password"] = "SecurePass123"
         data["confirm_password"] = "SecurePass123"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("especial", str(form.errors))
-    
+
     # ============================================================
     # TEST 9: VALIDACIÓN - PASSWORD DÉBIL (Menos de 8 caracteres)
     # ============================================================
@@ -240,10 +239,10 @@ class InstitucionRegistrationFormTests(TestCase):
         data["password"] = "Sec12!"
         data["confirm_password"] = "Sec12!"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("Mínimo 8", str(form.errors))
-    
+
     # ============================================================
     # TEST 10: VALIDACIÓN - PASSWORDS NO COINCIDEN
     # ============================================================
@@ -253,7 +252,7 @@ class InstitucionRegistrationFormTests(TestCase):
         data["password"] = "SecurePass123!"
         data["confirm_password"] = "DifferentPass123!"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("no coinciden", str(form.errors))
 
@@ -280,41 +279,49 @@ class InstitucionRegistrationFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("numero_telefono", form.errors)
-    
+
     # ============================================================
     # TEST 11: VALIDACIÓN - CASCADA UBICACIÓN (Municipio no en Estado)
     # ============================================================
     def test_municipio_no_pertenece_estado_rechazado(self):
         """Validación: municipio no pertenece al estado seleccionado"""
         # Crear otro estado y municipio
-        otro_estado, _ = Estado.objects.get_or_create(nombre="Aragua", defaults={"codigo": "07"})
-        otro_municipio, _ = Municipio.objects.get_or_create(nombre="SanJaviera", estado=otro_estado)
-        
+        otro_estado, _ = Estado.objects.get_or_create(
+            nombre="Aragua", defaults={"codigo": "07"}
+        )
+        otro_municipio, _ = Municipio.objects.get_or_create(
+            nombre="SanJaviera", estado=otro_estado
+        )
+
         data = self.get_valid_form_data()
         data["estado"] = self.estado.id  # Estado: Miranda
         data["municipio"] = otro_municipio.id  # Municipio de Aragua
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("no pertenece", str(form.errors))
-    
+
     # ============================================================
     # TEST 12: VALIDACIÓN - CASCADA UBICACIÓN (Parroquia no en Municipio)
     # ============================================================
     def test_parroquia_no_pertenece_municipio_rechazado(self):
         """Validación: parroquia no pertenece al municipio seleccionado"""
         # Crear otro municipio y parroquia
-        otro_municipio, _ = Municipio.objects.get_or_create(nombre="Chacao", estado=self.estado)
-        otra_parroquia, _ = Parroquia.objects.get_or_create(nombre="Chacao", municipio=otro_municipio)
-        
+        otro_municipio, _ = Municipio.objects.get_or_create(
+            nombre="Chacao", estado=self.estado
+        )
+        otra_parroquia, _ = Parroquia.objects.get_or_create(
+            nombre="Chacao", municipio=otro_municipio
+        )
+
         data = self.get_valid_form_data()
         data["municipio"] = self.municipio.id  # Municipio: Baruta
         data["parroquia"] = otra_parroquia.id  # Parroquia de Chacao
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("no pertenece", str(form.errors))
-    
+
     # ============================================================
     # TEST 13: VALIDACIÓN - FORMATO RIF CONSISTENTE (9 dígitos)
     # ============================================================
@@ -323,13 +330,13 @@ class InstitucionRegistrationFormTests(TestCase):
         data = self.get_valid_form_data()
         data["rif_numero"] = "123456789"  # 9 dígitos
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         instance = form.save(commit=False)
         # Debe ser J-12345678-9 (8 + guion + 1)
         self.assertIn("-", instance.rif)
         self.assertTrue(instance.rif.startswith("J-"))
-    
+
     # ============================================================
     # TEST 14: VALIDACIÓN - FORMATO RIF CONSISTENTE (10 dígitos)
     # ============================================================
@@ -338,7 +345,7 @@ class InstitucionRegistrationFormTests(TestCase):
         data = self.get_valid_form_data()
         data["rif_numero"] = "1234567890"  # 10 dígitos
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         instance = form.save(commit=False)
         # Debe ser J-12345678-90 (8 + guion + 2)
@@ -347,7 +354,7 @@ class InstitucionRegistrationFormTests(TestCase):
         self.assertEqual(rif_parts[0], "J")
         self.assertEqual(len(rif_parts[1]), 8)
         self.assertEqual(len(rif_parts[2]), 2)
-    
+
     # ============================================================
     # TEST 15: VALIDACIÓN - TELÉFONO 7 DÍGITOS
     # ============================================================
@@ -356,10 +363,10 @@ class InstitucionRegistrationFormTests(TestCase):
         data = self.get_valid_form_data()
         data["numero_telefono"] = "555123"  # 6 dígitos
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("numero_telefono", form.errors)
-    
+
     # ============================================================
     # TEST 16: VALIDACIÓN - CAMPOS PERSONA NATURAL REQUERIDOS
     # ============================================================
@@ -382,10 +389,10 @@ class InstitucionRegistrationFormTests(TestCase):
             "confirm_password": "SecurePass123!",
         }
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertFalse(form.is_valid())
         self.assertIn("particular_nombres", form.errors)
-    
+
     # ============================================================
     # TEST 17: GUARDADO CORRECTO DE CÉDULA LIMPIA
     # ============================================================
@@ -408,12 +415,12 @@ class InstitucionRegistrationFormTests(TestCase):
             "confirm_password": "SecurePass123!",
         }
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         instance = form.save(commit=False)
         # Debe estar limpiada
         self.assertEqual(instance.particular_cedula, "123456789")
-    
+
     # ============================================================
     # TEST 18: GUARDADO CORRECTO DE TELÉFONO CONCATENADO
     # ============================================================
@@ -423,7 +430,7 @@ class InstitucionRegistrationFormTests(TestCase):
         data["codigo_area"] = "0212"
         data["numero_telefono"] = "5551234"
         form = InstitucionRegistrationForm(data)
-        
+
         self.assertTrue(form.is_valid(), msg=form.errors)
         instance = form.save(commit=False)
         # Debe concatenarse: 0212 + 5551234 = 02125551234
@@ -432,41 +439,38 @@ class InstitucionRegistrationFormTests(TestCase):
 
 class InstitucionRegistrationViewTests(TestCase):
     """Tests de la vista de registro de instituciones"""
-    
+
     @classmethod
     def setUpTestData(cls):
         """Configurar datos de prueba"""
         cls.estado, _ = Estado.objects.get_or_create(
-            nombre="Carabobo",
-            defaults={"codigo": "03"}
+            nombre="Carabobo", defaults={"codigo": "03"}
         )
         cls.municipio, _ = Municipio.objects.get_or_create(
-            nombre="Valencia",
-            estado=cls.estado
+            nombre="Valencia", estado=cls.estado
         )
         cls.parroquia, _ = Parroquia.objects.get_or_create(
-            nombre="Sucre",
-            municipio=cls.municipio
+            nombre="Sucre", municipio=cls.municipio
         )
-    
+
     def setUp(self):
         """Setup para cada test"""
         self.client = Client()
         self.url = reverse("registrar_institucion")
-    
+
     # ============================================================
     # TEST 19: GET - Página carga correctamente
     # ============================================================
     def test_get_registrar_institucion_carga_correctamente(self):
         """Vista GET: página carga con formulario"""
         response = self.client.get(self.url)
-        
+
         self.assertEqual(response.status_code, 200)
         self.assertIn("registroForm", response.content.decode())
         self.assertIn("tipoInstitucion", response.content.decode())
         self.assertIn('inputmode="numeric"', response.content.decode())
         self.assertIn('pattern="[0-9]{7}"', response.content.decode())
-    
+
     # ============================================================
     # TEST 20: POST - Registro exitoso crea Usuario
     # ============================================================
@@ -490,21 +494,19 @@ class InstitucionRegistrationViewTests(TestCase):
             "confirm_password": "NewPass123@",
             "codigo_mppe": "ME999999",
         }
-        
+
         # Realizar POST
         response = self.client.post(self.url, data, follow=True)
-        
+
         # Verificar que se creó la institución
         self.assertTrue(
-            Institucion.objects.filter(
-                email="nueva.escuela@test.com"
-            ).exists()
+            Institucion.objects.filter(email="nueva.escuela@test.com").exists()
         )
-        
+
         # Verificar que se creó el usuario
         institucion = Institucion.objects.get(email="nueva.escuela@test.com")
         self.assertIsNotNone(institucion.usuario)
-    
+
     # ============================================================
     # TEST 21: POST - Error de validación retorna forma
     # ============================================================
@@ -527,9 +529,9 @@ class InstitucionRegistrationViewTests(TestCase):
             "password": "Pass123",  # Sin especial
             "confirm_password": "Pass123",
         }
-        
+
         response = self.client.post(self.url, data)
-        
+
         # Debe retornar 200 (no redirect)
         self.assertEqual(response.status_code, 200)
         # Formulario en contexto
@@ -544,23 +546,20 @@ class InstitucionRegistrationViewTests(TestCase):
 
 class InstitucionServiceTests(TestCase):
     """Tests del servicio de creación de instituciones"""
-    
+
     @classmethod
     def setUpTestData(cls):
         """Configurar datos de prueba"""
         cls.estado, _ = Estado.objects.get_or_create(
-            nombre="Lara",
-            defaults={"codigo": "09"}
+            nombre="Lara", defaults={"codigo": "09"}
         )
         cls.municipio, _ = Municipio.objects.get_or_create(
-            nombre="Iribarren",
-            estado=cls.estado
+            nombre="Iribarren", estado=cls.estado
         )
         cls.parroquia, _ = Parroquia.objects.get_or_create(
-            nombre="Guarenas",
-            municipio=cls.municipio
+            nombre="Guarenas", municipio=cls.municipio
         )
-    
+
     # ============================================================
     # TEST 22: Servicio crea institución con formato RIF correcto
     # ============================================================
@@ -580,18 +579,17 @@ class InstitucionServiceTests(TestCase):
             "numero_telefono": "4445555",
             "password": "ServicePass123!",
         }
-        
+
         # Usar servicio
         institucion = InstitutionService.crear_institucion_con_usuario(
-            data=data,
-            es_central=True
+            data=data, es_central=True
         )
-        
+
         # Verificar formato RIF
         self.assertIsNotNone(institucion.rif)
         self.assertTrue(institucion.rif.startswith("J-"))
         self.assertIn("-", institucion.rif)
-    
+
     # ============================================================
     # TEST 23: Servicio rechaza duplicidad
     # ============================================================
@@ -606,9 +604,9 @@ class InstitucionServiceTests(TestCase):
             parroquia=self.parroquia,
             tipo_institucion="publica",
             rif="J-11111111",
-            telefono="02514445555"
+            telefono="02514445555",
         )
-        
+
         # Intentar crear duplicada
         data = {
             "tipo_institucion": "publica",
@@ -624,13 +622,10 @@ class InstitucionServiceTests(TestCase):
             "numero_telefono": "4446666",
             "password": "ServicePass123!",
         }
-        
+
         with self.assertRaises(ValueError) as context:
-            InstitutionService.crear_institucion_con_usuario(
-                data=data,
-                es_central=True
-            )
-        
+            InstitutionService.crear_institucion_con_usuario(data=data, es_central=True)
+
         self.assertIn("Ya existe", str(context.exception))
 
 
@@ -639,10 +634,10 @@ class InstitucionServiceTests(TestCase):
 # ============================================================
 class TestResumenExecution:
     """Resumen de tests ejecutados"""
-    
+
     TESTS_TOTAL = 23
     TESTS_CRITICOS = 15
-    
+
     @staticmethod
     def report():
         return f"""
@@ -651,7 +646,7 @@ class TestResumenExecution:
         ║   Total de Tests: {TestResumenExecution.TESTS_TOTAL}                       ║
         ║   Tests Críticos: {TestResumenExecution.TESTS_CRITICOS}                      ║
         ╚════════════════════════════════════════════════╝
-        
+
         ✓ VALIDACIONES IMPLEMENTADAS:
           1. Email único
           2. RIF + Nombre + Ubicación única

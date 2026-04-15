@@ -15,7 +15,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{% url 'registrar_sede' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'registrar_sede' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Registrar Sede
                 </a>
@@ -109,7 +109,7 @@
                     </thead>
                     <tbody>
                         {% for sede in sedes %}
-                        <tr class="clickable-row" style="cursor: pointer;" 
+                        <tr class="clickable-row" style="cursor: pointer;"
                             onclick="verDetalleSede('{{ sede.user.get_full_name|escapejs }}', '{{ sede.user.username }}', '{{ sede.estado.nombre }}', '{{ sede.user.email }}', '{{ sede.phone|default:'No registrado' }}')">
                             <td class="px-4">
                                 <div class="d-flex align-items-center">
@@ -133,11 +133,11 @@
                             </td>
                             <td class="text-center px-4" onclick="event.stopPropagation();">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold" 
+                                    <button class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-bold"
                                             onclick="abrirModalEditar('{{ sede.user.id }}', '{{ sede.user.first_name|escapejs }}', '{{ sede.user.last_name|escapejs }}', '{{ sede.user.email }}', '{{ sede.phone|default:'' }}')">
                                         <i class="bi bi-pencil-square me-1"></i> Editar
                                     </button>
-                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle" 
+                                    <button class="btn btn-outline-danger btn-sm px-2 rounded-circle"
                                             onclick="abrirModalEliminar('{{ sede.user.id }}', '{{ sede.user.get_full_name|escapejs }}')">
                                         <i class="bi bi-person-x"></i>
                                     </button>
@@ -243,9 +243,9 @@
         const header = document.getElementById('modalHeader');
         header.style.background = "var(--blue-main)";
         document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i> EDITAR COMISIONADO';
-        
+
         let codArea = "0412", numResto = "";
-        if(tel && tel.length >= 4) { codArea = tel.substring(0,4); numResto = tel.substring(4); } 
+        if(tel && tel.length >= 4) { codArea = tel.substring(0,4); numResto = tel.substring(4); }
         else { numResto = tel || ""; }
 
         let errorAlert = '';
@@ -288,7 +288,7 @@
                     </div>
                 </div>
             </div>`;
-        
+
         const form = document.getElementById('modalForm');
         form.action = `/sedes/editar/${id}/`;
 
@@ -298,7 +298,7 @@
             const conf = document.getElementById('confirmPass').value;
             if(pass && pass !== conf) {
                 e.preventDefault();
-                
+
                 // Mostrar error en el área de alertas del modal
                 let errorDiv = document.getElementById('modalErrorAlert');
                 if(!errorDiv) {
@@ -329,18 +329,18 @@
         const header = document.getElementById('modalHeader');
         header.style.background = "#ef4444";
         document.getElementById('modalTitle').innerHTML = `<i class="bi bi-person-x-fill me-2"></i> BAJA DE COMISIONADO`;
-        
+
         document.getElementById('modalBody').innerHTML = `
             <div class="text-center py-2">
                 <h5 class="fw-bold">¿CONFIRMAR BAJA DEL SISTEMA?</h5>
                 <p class="text-muted small">Se revocará el acceso al comisionado: <br><strong>${nombre}</strong></p>
-                
+
                 <div class="bg-light p-3 rounded-3 border mt-3">
                     <label class="d-block mb-2 fw-bold small text-danger">Escriba "CONFIRMAR" para habilitar el botón</label>
                     <input type="text" id="confirmInput" class="form-control text-center fw-bold" placeholder="Escriba aquí..." autocomplete="off">
                 </div>
             </div>`;
-            
+
         const submit = document.getElementById('modalSubmitBtn');
         submit.innerText = "Inhabilitar Registro";
         submit.className = "btn btn-danger rounded-pill px-4 fw-bold w-100 shadow mt-3";
@@ -365,10 +365,10 @@
             {% for sede in sedes %}
                 {% if sede.user.id == edit_user_id %}
                     abrirModalEditar(
-                        '{{ edit_user_id }}', 
-                        '{{ edit_data.first_name|default:sede.user.first_name|escapejs }}', 
-                        '{{ edit_data.last_name|default:sede.user.last_name|escapejs }}', 
-                        '{{ edit_data.email|default:sede.user.email|escapejs }}', 
+                        '{{ edit_user_id }}',
+                        '{{ edit_data.first_name|default:sede.user.first_name|escapejs }}',
+                        '{{ edit_data.last_name|default:sede.user.last_name|escapejs }}',
+                        '{{ edit_data.email|default:sede.user.email|escapejs }}',
                         '{{ edit_data.cod_area|default:sede.phone|slice:":4" }}{{ edit_data.phone_num|default:sede.phone|slice:"4:"|escapejs }}',
                         '{{ modal_error|escapejs }}'
                     );
@@ -381,7 +381,7 @@
             const update = () => {
                 const now = +c.innerText;
                 const inc = target / 30;
-                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); } 
+                if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
                 else c.innerText = target;
             };
             update();

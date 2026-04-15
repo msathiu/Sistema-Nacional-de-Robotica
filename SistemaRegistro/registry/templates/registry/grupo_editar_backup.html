@@ -17,7 +17,7 @@
     </div>
 
     <!-- Estado del grupo -->
-    <div class="alert 
+    <div class="alert
         {% if grupo.estado_grupo == 'editable' %}alert-info
         {% elif grupo.estado_grupo == 'inscrito' %}alert-warning
         {% elif grupo.estado_grupo == 'bloqueado' %}alert-danger
@@ -31,7 +31,7 @@
 
     <form method="POST" id="formGrupo">
         {% csrf_token %}
-        
+
         <!-- Sección 1: Datos del Grupo -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
@@ -64,26 +64,26 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Cédula <span class="text-danger">*</span></label>
-                        <input type="text" name="tutor_cedula" id="tutorCedula" class="form-control" 
-                               value="{{ grupo.tutor_cedula|default:'' }}" 
+                        <input type="text" name="tutor_cedula" id="tutorCedula" class="form-control"
+                               value="{{ grupo.tutor_cedula|default:'' }}"
                                {% if grupo.estado_grupo != 'editable' %}readonly{% endif %} required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Nombres <span class="text-danger">*</span></label>
-                        <input type="text" name="tutor_nombre" id="tutorNombre" class="form-control" 
-                               value="{{ grupo.tutor_nombre|default:'' }}" 
+                        <input type="text" name="tutor_nombre" id="tutorNombre" class="form-control"
+                               value="{{ grupo.tutor_nombre|default:'' }}"
                                {% if grupo.estado_grupo != 'editable' %}readonly{% endif %} required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Apellidos <span class="text-danger">*</span></label>
-                        <input type="text" name="tutor_apellidos" id="tutorApellidos" class="form-control" 
-                               value="{{ grupo.tutor_apellidos|default:'' }}" 
+                        <input type="text" name="tutor_apellidos" id="tutorApellidos" class="form-control"
+                               value="{{ grupo.tutor_apellidos|default:'' }}"
                                {% if grupo.estado_grupo != 'editable' %}readonly{% endif %} required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Teléfono <span class="text-danger">*</span></label>
-                        <input type="text" name="tutor_telefono" class="form-control" 
-                               value="{{ grupo.tutor_telefono|default:'' }}" 
+                        <input type="text" name="tutor_telefono" class="form-control"
+                               value="{{ grupo.tutor_telefono|default:'' }}"
                                {% if grupo.estado_grupo != 'editable' %}readonly{% endif %} required>
                     </div>
                 </div>
@@ -221,7 +221,7 @@ function eliminarParticipanteExistente(participanteId) {
         input.name = 'eliminar_participante';
         input.value = participanteId;
         form.appendChild(input);
-        
+
         // Recargar página para ver el cambio (o usar AJAX)
         location.reload();
     }
@@ -230,12 +230,12 @@ function eliminarParticipanteExistente(participanteId) {
 function buscarParticipante(btn) {
     const card = btn.closest('.participante-card');
     const cedula = card.querySelector('.cedula-participante').value;
-    
+
     if (!cedula) {
         alert('Ingrese una cédula');
         return;
     }
-    
+
     fetch(`/registry/api/buscar-participante/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
@@ -255,4 +255,3 @@ function buscarParticipante(btn) {
 }
 </script>
 {% endblock %}
-

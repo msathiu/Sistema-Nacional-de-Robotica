@@ -10,7 +10,9 @@ from users.models import UserProfile
 class EliminarSedeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.estado, _ = Estado.objects.get_or_create(nombre="Miranda", defaults={"codigo": "MI"})
+        cls.estado, _ = Estado.objects.get_or_create(
+            nombre="Miranda", defaults={"codigo": "MI"}
+        )
 
         cls.central_user = User.objects.create_user(
             username="central",
@@ -41,18 +43,24 @@ class EliminarSedeTests(TestCase):
 
     def test_eliminar_sede_requires_post(self):
         self.client.force_login(self.central_user)
-        response = self.client.get(reverse("eliminar_sede", args=[self.regional_user.id]))
+        response = self.client.get(
+            reverse("eliminar_sede", args=[self.regional_user.id])
+        )
         self.assertEqual(response.status_code, 405)
 
     def test_institucional_cannot_delete_sede(self):
         self.client.force_login(self.institucional_user)
-        response = self.client.post(reverse("eliminar_sede", args=[self.regional_user.id]))
+        response = self.client.post(
+            reverse("eliminar_sede", args=[self.regional_user.id])
+        )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(User.objects.filter(id=self.regional_user.id).exists())
 
     def test_cannot_delete_non_regional_user(self):
         self.client.force_login(self.central_user)
-        response = self.client.post(reverse("eliminar_sede", args=[self.institucional_user.id]))
+        response = self.client.post(
+            reverse("eliminar_sede", args=[self.institucional_user.id])
+        )
         self.assertEqual(response.status_code, 404)
         self.assertTrue(User.objects.filter(id=self.institucional_user.id).exists())
 

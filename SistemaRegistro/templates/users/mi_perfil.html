@@ -56,7 +56,7 @@
                 <div style="height:100px; background: linear-gradient(145deg, var(--blue-dark), var(--blue-main));"></div>
                 <div class="card-body text-center pt-0">
                     <div class="rounded-circle mx-auto shadow-lg border border-3 border-white"
-                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan); 
+                         style="margin-top:-50px; width:100px; height:100px; background:var(--accent-cyan);
                                 display:flex; align-items:center; justify-content:center;
                                 font-size:2.5rem; font-weight:700; color:var(--blue-dark); font-family:'Space Grotesk';">
                         {{ institucion.nombre|default:usuario.username|first|upper }}
@@ -65,7 +65,7 @@
                     <p class="text-muted small mb-4">
                         <i class="bi bi-person-circle me-1"></i> {{ usuario.get_full_name|default:usuario.username }}
                     </p>
-                    
+
                     <div class="bg-light p-3 rounded-3 text-start mb-2">
                         <label class="small text-muted fw-bold text-uppercase d-block mb-1" style="font-size:0.6rem">Email de Acceso</label>
                         <span class="small fw-bold">{{ usuario.email }}</span>

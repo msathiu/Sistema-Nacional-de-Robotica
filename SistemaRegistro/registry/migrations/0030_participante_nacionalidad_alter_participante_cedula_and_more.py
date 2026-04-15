@@ -5,25 +5,52 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0029_asistenciaevento_remove_participante_idx_part_activo_and_more'),
+        (
+            "registry",
+            "0029_asistenciaevento_remove_participante_idx_part_activo_and_more",
+        ),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='participante',
-            name='nacionalidad',
-            field=models.CharField(choices=[('V', 'Venezolano'), ('E', 'Extranjero')], default='V', max_length=1, verbose_name='Nacionalidad'),
+            model_name="participante",
+            name="nacionalidad",
+            field=models.CharField(
+                choices=[("V", "Venezolano"), ("E", "Extranjero")],
+                default="V",
+                max_length=1,
+                verbose_name="Nacionalidad",
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='cedula',
-            field=models.CharField(help_text='Solo números (ej: 19122516)', max_length=20, unique=True, validators=[django.core.validators.RegexValidator(message='Cédula debe contener solo números', regex='^[0-9]+$')]),
+            model_name="participante",
+            name="cedula",
+            field=models.CharField(
+                help_text="Solo números (ej: 19122516)",
+                max_length=20,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="Cédula debe contener solo números", regex="^[0-9]+$"
+                    )
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='cedula_escolar',
-            field=models.CharField(blank=True, help_text='Cédula escolar del participante (solo números)', max_length=20, validators=[django.core.validators.RegexValidator(message='La cédula escolar debe contener solo números', regex='^[0-9]*$')], verbose_name='Cédula Escolar'),
+            model_name="participante",
+            name="cedula_escolar",
+            field=models.CharField(
+                blank=True,
+                help_text="Cédula escolar del participante (solo números)",
+                max_length=20,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="La cédula escolar debe contener solo números",
+                        regex="^[0-9]*$",
+                    )
+                ],
+                verbose_name="Cédula Escolar",
+            ),
         ),
     ]

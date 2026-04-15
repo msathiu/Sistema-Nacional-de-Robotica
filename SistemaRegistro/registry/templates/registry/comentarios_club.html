@@ -14,7 +14,7 @@
                 </a>
                 <span class="badge bg-secondary ms-2">Estado: {{ club.get_status_display }}</span>
             </div>
-            
+
             <!-- Formulario para agregar comentario -->
             {% if puede_comentar %}
             <div class="card mb-4 bg-light">
@@ -23,10 +23,10 @@
                     <form method="post" action="{% url 'agregar_comentario_club' club.id %}">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <textarea 
-                                name="comentario" 
-                                class="form-control" 
-                                rows="3" 
+                            <textarea
+                                name="comentario"
+                                class="form-control"
+                                rows="3"
                                 required
                                 placeholder="Escribe tu comentario aquí..."
                             ></textarea>
@@ -38,7 +38,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             <!-- Lista de comentarios -->
             {% if comentarios %}
                 <div class="comentarios-lista">

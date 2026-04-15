@@ -25,7 +25,7 @@
             </div>
             {% if es_fed_central %}
             <div class="d-flex gap-2">
-                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'crear_evento' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px; transition: all 0.3s ease;">
                     <i class="bi bi-plus-circle-fill me-2"></i>Crear Evento Rector
                 </a>
@@ -226,20 +226,20 @@
                             </td>
                             <td class="text-center px-4">
                                 <div class="d-flex justify-content-center gap-1">
-                                    <a href="{% url 'detalle_evento_gestion_admin' evento.id %}" 
+                                    <a href="{% url 'detalle_evento_gestion_admin' evento.id %}"
                                        class="btn btn-outline-info btn-sm rounded-circle p-2"
                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ver Detalles">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
                                     {% if es_fed_central %}
-                                    <a href="{% url 'editar_evento' evento.id %}" 
+                                    <a href="{% url 'editar_evento' evento.id %}"
                                        class="btn btn-outline-primary btn-sm rounded-circle p-2"
                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     {% endif %}
-                                    
+
                                     {% if es_fed_central and evento.estado_evento == 'revision' %}
                                     <button class="btn btn-outline-success btn-sm rounded-circle p-2 btn-approve"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Aprobar"
@@ -253,7 +253,7 @@
                                             data-nombre="{{ evento.nombre|escapejs }}">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
-                                    {% endif %} 
+                                    {% endif %}
                                     {% if es_fed_central and evento.estado_evento not in 'cancelado,finalizado' and not evento.cancelado %}
                                     <button class="btn btn-outline-warning btn-sm rounded-circle p-2 btn-manage"
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Gestionar Estado"
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const eventoId = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
-            
+
             document.getElementById('aprobarRechazarTitulo').innerHTML = '<i class="bi bi-check-circle me-2"></i> APROBAR EVENTO';
             document.getElementById('evento_nombre').value = nombre;
             document.getElementById('bloqueObservacion').style.display = 'none';
@@ -368,12 +368,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('btnConfirmar').className = 'btn rounded-pill px-5 fw-bold shadow';
             document.getElementById('btnConfirmar').style.background = 'var(--accent-cyan)';
             document.getElementById('btnConfirmar').style.color = 'var(--blue-main)';
-            
+
             // Restaurar color del header a azul para aprobación
             document.querySelector('#modalAprobarRechazar .modal-header').style.background = 'var(--blue-main)';
-            
+
             document.getElementById('formAprobarRechazar').action = `/eventos/${eventoId}/aprobar/`;
-            
+
             new bootstrap.Modal(document.getElementById('modalAprobarRechazar')).show();
         });
     });
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const eventoId = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
-            
+
             document.getElementById('aprobarRechazarTitulo').innerHTML = '<i class="bi bi-x-circle me-2"></i> RECHAZAR EVENTO';
             document.getElementById('evento_nombre').value = nombre;
             document.getElementById('bloqueObservacion').style.display = 'block';
@@ -393,12 +393,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('btnConfirmar').className = 'btn rounded-pill px-5 fw-bold shadow';
             document.getElementById('btnConfirmar').style.background = '#dc3545';
             document.getElementById('btnConfirmar').style.color = 'white';
-            
+
             // Cambiar color del header a rojo para rechazo
             document.querySelector('#modalAprobarRechazar .modal-header').style.background = '#dc3545';
-            
+
             document.getElementById('formAprobarRechazar').action = `/eventos/${eventoId}/rechazar/`;
-            
+
             new bootstrap.Modal(document.getElementById('modalAprobarRechazar')).show();
         });
     });
@@ -571,11 +571,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h5 class="fw-bold mb-0"><i class="bi bi-people-fill me-2"></i> INSCRIBIR PROYECTO</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            
+
             <form id="formInscripcion" method="POST" action="">
                 {% csrf_token %}
                 <input type="hidden" name="evento_id" id="inscripcion_evento_id">
-                
+
                 <div class="modal-body p-4">
                     <div id="alertaErrorInscripcion" class="alert alert-danger d-none mb-3 rounded-4 fw-bold">
                         <i class="bi bi-exclamation-octagon me-2"></i> <span id="errorMsgInscripcion"></span>
@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </select>
                         {% if not grupos_disponibles %}
                         <div class="form-text text-warning mt-2">
-                            <i class="bi bi-exclamation-triangle me-1"></i> No tienes equipos disponibles. 
+                            <i class="bi bi-exclamation-triangle me-1"></i> No tienes equipos disponibles.
                             <a href="{% url 'mis_grupos' %}" class="text-primary">Crear un equipo</a>
                         </div>
                         {% endif %}
@@ -620,10 +620,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <textarea name="descripcion_proyecto" id="descripcion_proyecto" class="form-control" rows="4" placeholder="Describe brevemente el proyecto que presentarán..." required></textarea>
                     </div>
                 </div>
-                
+
                 <div class="modal-footer border-0 pb-4 px-4">
                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">CANCELAR</button>
-                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow" 
+                    <button type="submit" class="btn rounded-pill px-5 fw-bold shadow"
                             style="background: #10b981; color: white;">
                         <i class="bi bi-send-check-fill me-2"></i> INSCRIBIR PROYECTO
                     </button>
@@ -677,10 +677,10 @@ document.addEventListener('DOMContentLoaded', function() {
     .badge-tipo.bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     .badge-tipo.bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
 
-    .btn-action { 
-        width: 34px; height: 34px; 
-        display: inline-flex; align-items: center; justify-content: center; 
-        border-radius: 50%; border: 1px solid #e2e8f0; 
+    .btn-action {
+        width: 34px; height: 34px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%; border: 1px solid #e2e8f0;
         background: white; transition: 0.2s; color: #64748b;
         text-decoration: none;
         cursor: pointer;
@@ -695,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .sortable-th:hover .sort-icon { opacity: 0.7; }
     .sortable-th.sort-asc .sort-icon,
     .sortable-th.sort-desc .sort-icon { opacity: 1; color: var(--accent-cyan); }
-    
+
     .x-small { font-size: 0.72rem; }
     .tracking-wider { letter-spacing: 0.05em; }
     .badge-tipo-generic {
@@ -714,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     .bg-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     .bg-purple { background: #ede9fe !important; color: #6d28d9 !important; border: 1px solid #c4b5fd; }
-    
+
     .modal-content { border: none; }
     .form-control, .form-select { border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
     .form-control:focus, .form-select:focus { border-color: var(--accent-cyan); box-shadow: 0 0 0 0.25rem rgba(0,212,255,0.15); }
@@ -734,38 +734,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalInscripcion = new bootstrap.Modal(document.getElementById('modalGestionInscripcion'));
         const modalEliminar = new bootstrap.Modal(document.getElementById('modalEliminarEvento'));
         const modalGestionEstado = new bootstrap.Modal(document.getElementById('modalGestionEstadoEvento'));
-        
+
         // ============================================
         // BOTONES DE GESTIÓN DE INSCRIPCIONES
         // ============================================
         document.querySelectorAll('.btn-gestionar-inscripcion').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+
                 const id = this.dataset.id;
-                
+
                 document.getElementById('inscripcion_evento_id').value = id;
                 document.getElementById('formInscripcion').action = `/eventos/inscribir/${id}/`;
-                
+
                 // Limpiar campos
                 document.getElementById('nombre_proyecto').value = '';
                 document.getElementById('descripcion_proyecto').value = '';
                 document.getElementById('select_grupo').value = '';
-                
+
                 modalInscripcion.show();
             });
         });
-        
+
         // ============================================
         // BOTONES DE ENVIAR APROBACIÓN
         // ============================================
         document.querySelectorAll('.btn-enviar-aprobacion').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+
                 const id = this.dataset.id;
                 const nombre = this.dataset.nombre;
-                
+
                 if (confirm(`¿Enviar el evento "${nombre}" a revisión de la Federación Central?`)) {
                     fetch(`/eventos/enviar-revision/${id}/`, {
                         method: 'POST',
@@ -789,24 +789,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        
+
         // ============================================
         // BOTONES DE ELIMINACIÓN
         // ============================================
         document.querySelectorAll('.btn-eliminar-evento').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+
                 const id = this.dataset.id;
                 const nombre = this.dataset.nombre;
-                
+
                 document.getElementById('eliminar_evento_id').value = id;
                 document.getElementById('eliminar_nombre').innerText = nombre;
-                
+
                 // Actualizar acción del formulario
                 const form = document.getElementById('formEliminarEvento');
                 form.action = `/eventos/eliminar/${id}/`;
-                
+
                 modalEliminar.show();
             });
         });

@@ -49,7 +49,7 @@
         {% for evento in eventos %}
         <div class="col-md-6 col-lg-4">
             <div class="card border-0 shadow-sm h-100 evento-card">
-                <div class="card-header 
+                <div class="card-header
                     {% if evento.estado_evento == 'abierto' %}bg-success
                     {% elif evento.estado_evento == 'pausado' %}bg-warning
                     {% elif evento.estado_evento == 'en_proceso' %}bg-primary
@@ -62,19 +62,19 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ evento.nombre }}</h5>
                     <p class="card-text text-muted small">{{ evento.descripcion|truncatewords:20 }}</p>
-                    
+
                     <div class="mb-3">
                         <p class="mb-1 small">
-                            <i class="fas fa-calendar text-primary"></i> 
+                            <i class="fas fa-calendar text-primary"></i>
                             <strong>Fecha:</strong> {{ evento.fecha|date:"d/m/Y" }}
                         </p>
                         <p class="mb-1 small">
-                            <i class="fas fa-laptop text-info"></i> 
+                            <i class="fas fa-laptop text-info"></i>
                             <strong>Modalidad:</strong> {{ evento.get_modalidad_display }}
                         </p>
                         {% if evento.ubicacion %}
                         <p class="mb-1 small">
-                            <i class="fas fa-map-marker-alt text-danger"></i> 
+                            <i class="fas fa-map-marker-alt text-danger"></i>
                             <strong>Ubicación:</strong> {{ evento.ubicacion }}
                         </p>
                         {% endif %}

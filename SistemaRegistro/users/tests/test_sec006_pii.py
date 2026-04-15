@@ -5,15 +5,28 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from registry.models import Estado, Institucion, Municipio, Parroquia, Participante, ParticipanteInstitucion, Tutor, TutorInstitucion
+from registry.models import (
+    Estado,
+    Institucion,
+    Municipio,
+    Parroquia,
+    Participante,
+    ParticipanteInstitucion,
+    Tutor,
+    TutorInstitucion,
+)
 
 
 class PiiEnumerationMitigationTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.estado = Estado.objects.create(nombre="Estado PII", codigo="PI")
-        cls.municipio = Municipio.objects.create(nombre="Municipio PII", estado=cls.estado)
-        cls.parroquia = Parroquia.objects.create(nombre="Parroquia PII", municipio=cls.municipio)
+        cls.municipio = Municipio.objects.create(
+            nombre="Municipio PII", estado=cls.estado
+        )
+        cls.parroquia = Parroquia.objects.create(
+            nombre="Parroquia PII", municipio=cls.municipio
+        )
 
         cls.institucion_a = Institucion.objects.create(
             nombre="Institucion A",
@@ -105,12 +118,16 @@ class PiiEnumerationMitigationTests(TestCase):
         )
 
     def test_api_buscar_participante_requires_login(self):
-        response = self.client.get(reverse("api_buscar_participante", args=["12345678"]))
+        response = self.client.get(
+            reverse("api_buscar_participante", args=["12345678"])
+        )
         self.assertEqual(response.status_code, 302)
 
     def test_api_buscar_participante_returns_minimal_data_for_visible_participant(self):
         self.client.force_login(self.institucional)
-        response = self.client.get(reverse("api_buscar_participante", args=["12345678"]))
+        response = self.client.get(
+            reverse("api_buscar_participante", args=["12345678"])
+        )
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -123,7 +140,9 @@ class PiiEnumerationMitigationTests(TestCase):
 
     def test_api_buscar_participante_does_not_reveal_tutor_outside_scope(self):
         self.client.force_login(self.institucional)
-        response = self.client.get(reverse("api_buscar_participante", args=["22334455"]))
+        response = self.client.get(
+            reverse("api_buscar_participante", args=["22334455"])
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"encontrado": False})

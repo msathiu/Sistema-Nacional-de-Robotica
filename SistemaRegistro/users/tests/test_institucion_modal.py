@@ -11,7 +11,9 @@ class EditarInstitucionModalTests(TestCase):
     def setUpTestData(cls):
         cls.estado = Estado.objects.create(nombre="Distrito Capital", codigo="DC")
         cls.municipio = Municipio.objects.create(nombre="Libertador", estado=cls.estado)
-        cls.parroquia = Parroquia.objects.create(nombre="Catedral", municipio=cls.municipio)
+        cls.parroquia = Parroquia.objects.create(
+            nombre="Catedral", municipio=cls.municipio
+        )
 
         cls.usuario_institucion = User.objects.create_user(
             username="RNR-TEST",
@@ -80,7 +82,9 @@ class EditarInstitucionModalTests(TestCase):
         self.assertEqual(self.institucion.telefono_numero, "7654321")
         self.assertEqual(self.institucion.telefono, "04147654321")
         self.assertEqual(self.usuario_institucion.email, "nuevo@example.com")
-        self.assertTrue(check_password("NuevaClave123!", self.usuario_institucion.password))
+        self.assertTrue(
+            check_password("NuevaClave123!", self.usuario_institucion.password)
+        )
 
     def test_invalid_modal_payload_does_not_update_institution(self):
         self.client.force_login(self.owner_user)
@@ -109,4 +113,6 @@ class EditarInstitucionModalTests(TestCase):
         self.assertEqual(self.institucion.nombre, "Institucion Original")
         self.assertEqual(self.institucion.email, "original@example.com")
         self.assertEqual(self.institucion.telefono_numero, "1234567")
-        self.assertTrue(check_password("Original123!", self.usuario_institucion.password))
+        self.assertTrue(
+            check_password("Original123!", self.usuario_institucion.password)
+        )

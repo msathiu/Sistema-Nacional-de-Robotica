@@ -38,15 +38,19 @@ class Command(BaseCommand):
         verbose = options["verbose"]
         hoy = timezone.localdate()
 
-        self.stdout.write(self.style.HTTP_INFO(f"=== Inicio de actualizacion de estados ==="))
+        self.stdout.write(
+            self.style.HTTP_INFO(f"=== Inicio de actualizacion de estados ===")
+        )
         self.stdout.write(f"Fecha actual: {hoy}")
         self.stdout.write(f" dry_run: {dry_run}")
         self.stdout.write(f" incluir_pausados: {incluir_pausados}")
         self.stdout.write("")
 
-        candidatos = Evento.objects.exclude(
-            estado_evento__in=ESTADOS_FINALES
-        ).select_related("institucion", "club_organizador").order_by("fecha", "id")
+        candidatos = (
+            Evento.objects.exclude(estado_evento__in=ESTADOS_FINALES)
+            .select_related("institucion", "club_organizador")
+            .order_by("fecha", "id")
+        )
 
         revisados = 0
         actualizados = 0
@@ -56,7 +60,7 @@ class Command(BaseCommand):
             revisados += 1
             fecha_inicio = evento.fecha
             fecha_fin = evento.fecha_hasta or evento.fecha
-            
+
             if verbose:
                 self.stdout.write(
                     f"[{evento.id}] '{evento.nombre[:40]}...' | "
@@ -82,7 +86,7 @@ class Command(BaseCommand):
                     f"{evento.estado_evento} -> {nuevo_estado}"
                 )
             )
-            
+
             logger.info(
                 f"Evento {evento.id} '{evento.nombre}': "
                 f"cambio de estado de {evento.estado_evento} a {nuevo_estado}"
@@ -98,12 +102,11 @@ class Command(BaseCommand):
                     # Al iniciar el evento, generar registros de asistencia pendientes
                     if nuevo_estado == EstadoEvento.EN_PROCESO:
                         from users.services.evento_service import EventoService
+
                         EventoService.generar_asistencias_pendientes(evento)
             except Exception as e:
                 errores += 1
-                self.stdout.write(
-                    self.style.ERROR(f"  ERROR al actualizar: {str(e)}")
-                )
+                self.stdout.write(self.style.ERROR(f"  ERROR al actualizar: {str(e)}"))
                 logger.error(f"Error al actualizar evento {evento.id}: {str(e)}")
 
         self.stdout.write("")
@@ -112,10 +115,12 @@ class Command(BaseCommand):
         self.stdout.write(f"Eventos actualizados: {actualizados}")
         if errores > 0:
             self.stdout.write(self.style.ERROR(f"Errores: {errores}"))
-        
+
         if dry_run:
-            self.stdout.write(self.style.WARNING("MODO DRY-RUN: No se persistieron cambios"))
-        
+            self.stdout.write(
+                self.style.WARNING("MODO DRY-RUN: No se persistieron cambios")
+            )
+
         if not incluir_pausados:
             self.stdout.write(
                 self.style.WARNING(
@@ -132,10 +137,10 @@ class Command(BaseCommand):
     def _calcular_nuevo_estado(self, evento, *, hoy, incluir_pausados):
         """
         Calcula el nuevo estado del evento segun las reglas de EVENTO.md:
-        
+
         - abierto -> en_proceso: cuando fecha <= hoy <= fecha_hasta
         - abierto -> finalizado: cuando fecha_hasta < hoy
-        - en_proceso -> finalizado: cuando fecha_hasta < hoy  
+        - en_proceso -> finalizado: cuando fecha_hasta < hoy
         - pausado -> finalizado: solo si incluir_pausados=True y fecha_hasta < hoy
         """
         fecha_fin = evento.fecha_hasta or evento.fecha

@@ -1,6 +1,7 @@
 from django.db import migrations
 from django.db import connection
 
+
 def cargar_estados_venezuela(apps, schema_editor):
     # Obtenemos solo el modelo Estado
     Estado = apps.get_model("registry", "Estado")
@@ -42,13 +43,14 @@ def cargar_estados_venezuela(apps, schema_editor):
                 "codigo": codigo,
             },
         )
-     # Esto sincroniza el contador de IDs de Postgres con los datos insertados
+    # Esto sincroniza el contador de IDs de Postgres con los datos insertados
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT setval(pg_get_serial_sequence('registry_estado', 'id'), 
+        cursor.execute(
+            """
+            SELECT setval(pg_get_serial_sequence('registry_estado', 'id'),
             coalesce(max(id), 1)) FROM registry_estado;
-        """)
-
+        """
+        )
 
 
 class Migration(migrations.Migration):

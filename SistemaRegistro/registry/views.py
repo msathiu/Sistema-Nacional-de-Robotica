@@ -41,7 +41,9 @@ def cargar_parroquias(request):
         municipio_id = int(request.GET.get("municipio_id", 0))
         if municipio_id <= 0:
             return JsonResponse([], safe=False)
-        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by("nombre")
+        parroquias = Parroquia.objects.filter(municipio_id=municipio_id).order_by(
+            "nombre"
+        )
         return JsonResponse(list(parroquias.values("id", "nombre")), safe=False)
     except (ValueError, TypeError):
         return JsonResponse([], safe=False)

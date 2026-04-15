@@ -47,23 +47,23 @@
                             </ul>
                         </div>
                     {% endif %}
-                    
+
                     {% if participante_form.errors %}
                         <script>
                             document.addEventListener('DOMContentLoaded', () => {
                                 const formErrors = JSON.parse('{{ participante_form.errors.as_json|escapejs }}');
                                 for (let fieldName in formErrors) {
                                     if (fieldName === '__all__') continue;
-                                    
+
                                     let errors = formErrors[fieldName];
                                     let inputField = document.querySelector(`[name="${fieldName}"]`);
-                                    
+
                                     if (inputField) {
                                         inputField.classList.add('is-invalid');
                                         let errorDiv = document.createElement('div');
                                         errorDiv.className = 'invalid-feedback d-block fw-bold small text-danger mt-1';
                                         errorDiv.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${errors[0].message}`;
-                                        
+
                                         if (inputField.parentElement.classList.contains('input-group')) {
                                             inputField.parentElement.parentElement.appendChild(errorDiv);
                                         } else {
@@ -306,13 +306,13 @@
                     <i class="bi bi-info-circle me-2"></i>Se encontró un registro con datos similares
                 </div>
                 <div class="bg-white p-3 rounded-3 shadow-sm border-start border-4 border-warning mb-3" id="datosDuplicado"></div>
-                
+
                 <!-- Información de vinculación -->
                 <div id="infoVinculacion" class="alert alert-info border-0 shadow-sm" style="display: none;">
                     <i class="bi bi-building me-2"></i>
                     <span id="textoVinculacion"></span>
                 </div>
-                
+
                 <p class="fw-bold mt-3 mb-2 text-center">¿Es el mismo participante?</p>
             </div>
             <div class="modal-footer border-0 bg-light pb-4 px-4">
@@ -321,12 +321,12 @@
                     <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold w-100 shadow-sm" id="btnVincular" style="display: none;">
                         <i class="bi bi-link-45deg me-1"></i> Sí, vincular a mi institución
                     </button>
-                    
+
                     <!-- Botón de editar (solo si YA está vinculado) -->
                     <button type="button" class="btn text-white rounded-pill px-4 fw-bold w-100 shadow-sm" style="background: var(--blue-main); display: none;" id="btnIrEditar">
                         <i class="bi bi-pencil-square me-1"></i> Sí, editar existente
                     </button>
-                    
+
                     <!-- Botón de continuar como nuevo -->
                     <button type="button" class="btn btn-success rounded-pill px-4 fw-bold w-100 shadow-sm" id="btnContinuarNuevo">
                         <i class="bi bi-person-plus-fill me-1"></i> No, es otra persona (Guardar nuevo)
@@ -370,7 +370,7 @@
         const now = new Date();
         let edad = now.getFullYear() - born.getFullYear();
         if (now.getMonth() < born.getMonth() || (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) edad--;
-        
+
         edadDisp.value = edad;
         edadHid.value = edad;
 
@@ -388,18 +388,18 @@
         const labelEscolar = document.getElementById('label_cedula_escolar');
         const helpPersonal = document.getElementById('help_cedula_personal');
         const helpEscolar = document.getElementById('help_cedula_escolar');
-        
+
         if (edad <= 10 && edad >= 3) {
             // Menor o igual a 10 años: mostrar ambos campos, al menos uno requerido
             cedulaEscolarCont.style.display = 'block';
             cedulaPersonalCont.style.display = 'block';
-            
+
             // Actualizar labels y textos de ayuda
             labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase';
             labelEscolar.className = 'form-label fw-bold text-muted small text-uppercase';
             helpPersonal.textContent = 'Opcional si tiene cédula escolar';
             helpEscolar.textContent = 'Opcional si tiene cédula personal';
-            
+
             // Ninguno es obligatorio por defecto, se valida en submit
             cedulaPersonalInput.required = false;
             cedulaEscolarInput.required = false;
@@ -407,10 +407,10 @@
             // Mayor de 10 años: solo cédula personal
             cedulaEscolarCont.style.display = 'none';
             cedulaPersonalCont.style.display = 'block';
-            
+
             labelPersonal.className = 'form-label fw-bold text-muted small text-uppercase required-field';
             helpPersonal.textContent = '';
-            
+
             cedulaEscolarInput.required = false;
             cedulaPersonalInput.required = true;
         }
@@ -434,7 +434,7 @@
             valor = valor.substring(0, 10);
         }
         e.target.value = valor;
-        
+
         const edad = parseInt(edadHid.value) || 0;
         if (edad <= 10 && edad >= 3) {
             const helpEscolar = document.getElementById('help_cedula_escolar');
@@ -448,7 +448,7 @@
             }
         }
     });
-    
+
     cedulaEscolarInput.addEventListener('input', function(e) {
         // Remover todo excepto números
         let valor = e.target.value.replace(/\D/g, '');
@@ -457,7 +457,7 @@
             valor = valor.substring(0, 20);
         }
         e.target.value = valor;
-        
+
         const edad = parseInt(edadHid.value) || 0;
         if (edad <= 10 && edad >= 3) {
             const helpPersonal = document.getElementById('help_cedula_personal');
@@ -486,7 +486,7 @@
         const edad = parseInt(edadHid.value) || 0;
         const cedulaPersonal = cedulaPersonalInput.value.trim();
         const cedulaEscolar = cedulaEscolarInput.value.trim();
-        
+
         if (edad <= 10 && edad >= 3) {
             // Para menores de 10 años: al menos una cédula requerida
             if (!cedulaPersonal && !cedulaEscolar) {
@@ -500,11 +500,11 @@
     gradoSel.addEventListener('change', () => {
         const val = gradoSel.value;
         const text = gradoSel.options[gradoSel.selectedIndex].text.toLowerCase();
-        
+
         // Ocultar ambos por defecto
         profesionCont.style.display = 'none';
         otroCont.style.display = 'none';
-        
+
         // Mostrar campo de título universitario si es nivel universitario
         if (val === 'U' || text.includes('universitario')) {
             profesionCont.style.display = 'block';
@@ -541,7 +541,7 @@
             const estadoId = this.value;
             const municipioSelect = document.getElementById('id_municipio');
             const parroquiaSelect = document.getElementById('id_parroquia');
-            
+
             if (estadoId) {
                 municipioSelect.innerHTML = '<option value="">Cargando...</option>';
                 fetch(`/ajax/municipios/?estado_id=${estadoId}`)
@@ -560,31 +560,31 @@
 
     // 6. Validación de duplicados antes de enviar
     let verificacionRealizada = false; // Flag para evitar loop infinito
-    
+
     registroForm.addEventListener('submit', async (e) => {
         // Si ya se verificó y el usuario decidió continuar, permitir submit
         if (verificacionRealizada) {
             return true;
         }
-        
+
         e.preventDefault();
-        
+
         const nombres = document.querySelector('[name="nombres"]').value;
         const apellidos = document.querySelector('[name="apellidos"]').value;
         const fechaNacimiento = fechaNac.value;
         const cedulaPersonal = cedulaPersonalInput.value.trim();
         const cedulaEscolar = cedulaEscolarInput.value.trim();
-        
+
         // Validar que tenga al menos una cédula
         if (!validarCedulas()) {
             alert('Debe ingresar al menos una cédula (personal o escolar)');
             return;
         }
-        
+
         // Función para prevenir XSS
         const escapeHTML = (str) => {
             if (str == null) return '';
-            return str.toString().replace(/[&<>'"]/g, 
+            return str.toString().replace(/[&<>'"]/g,
                 tag => ({
                     '&': '&amp;',
                     '<': '&lt;',
@@ -612,9 +612,9 @@
                     nacionalidad: document.getElementById('id_nacionalidad').value
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.existe) {
                 // Mostrar modal con datos del duplicado
                 participanteDuplicadoId = data.participante_id;
@@ -627,20 +627,20 @@
                     <div><strong>Cédula Escolar:</strong> ${escapeHTML(data.datos.cedula_escolar)}</div>
                 `;
                 document.getElementById('datosDuplicado').innerHTML = datosDuplicado;
-                
+
                 // Mostrar información de vinculación
                 const infoVinculacion = document.getElementById('infoVinculacion');
                 const textoVinculacion = document.getElementById('textoVinculacion');
                 const btnVincular = document.getElementById('btnVincular');
                 const btnEditar = document.getElementById('btnIrEditar');
-                
+
                 // Escapar la lista de instituciones vinculadas
                 const instVinculadasSeguras = (data.instituciones_vinculadas || []).map(escapeHTML).join(', ');
                 const numInstSeguro = escapeHTML(data.total_instituciones);
                 const detalleInstituciones = instVinculadasSeguras
                     ? `Instituciones vinculadas (${numInstSeguro}): ${instVinculadasSeguras}`
                     : `Registro detectado en ${numInstSeguro} vínculo(s) activo(s).`;
-                
+
                 if (data.ya_vinculado) {
                     // Ya está vinculado a esta institución
                     if (data.vinculacion_activa) {
@@ -666,9 +666,9 @@
                     btnVincular.innerHTML = '<i class="bi bi-link-45deg me-1"></i> Sí, vincular a mi institución';
                     btnEditar.style.display = 'none';
                 }
-                
+
                 infoVinculacion.style.display = 'block';
-                
+
                 const modal = new bootstrap.Modal(document.getElementById('modalDuplicado'));
                 modal.show();
             } else {
@@ -683,14 +683,14 @@
             registroForm.submit();
         }
     });
-    
+
     // 7. Botón "Vincular" - Vincular participante existente a la institución
     document.getElementById('btnVincular').addEventListener('click', async () => {
         const btn = document.getElementById('btnVincular');
         const originalText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Vinculando...';
-        
+
         try {
             const response = await fetch('/participantes/vincular/', {
                 method: 'POST',
@@ -702,9 +702,9 @@
                     participante_id: participanteDuplicadoId
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 // Cerrar modal
                 const modalElement = document.getElementById('modalDuplicado');
@@ -726,7 +726,7 @@
             btn.innerHTML = originalText;
         }
     });
-    
+
     // 8. Botón "No, es otra persona" - Guardar como nuevo participante
     document.getElementById('btnContinuarNuevo').addEventListener('click', () => {
         verificacionRealizada = true;
@@ -739,14 +739,14 @@
             registroForm.submit();
         }, 300);
     });
-    
+
     // 9. Botón "Sí, editar" - Ir a editar el existente
     document.getElementById('btnIrEditar').addEventListener('click', () => {
         if (participanteDuplicadoId) {
             window.location.href = `/participantes/${participanteDuplicadoId}/editar/`;
         }
     });
-    
+
     // 10. Resetear estado cuando se cierra el modal
     document.getElementById('modalDuplicado').addEventListener('hidden.bs.modal', () => {
         verificacionRealizada = false;
@@ -761,7 +761,7 @@
 
     // 11. RESET DEL FORMULARIO MODIFICADO: Limpia edad y oculta secciones
     registroForm.addEventListener('reset', () => {
-        setTimeout(() => { 
+        setTimeout(() => {
             edadDisp.value = "0";
             edadHid.value = "0";
             repSec.style.display = 'none';

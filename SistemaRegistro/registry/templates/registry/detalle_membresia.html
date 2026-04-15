@@ -10,150 +10,150 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .modern-card {
         border-radius: 20px;
         border: none;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
     }
-    
+
     .modern-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
     }
-    
+
     .card-header-modern {
         border-radius: 20px 20px 0 0 !important;
         padding: 1.25rem 1.5rem;
         border: none;
     }
-    
+
     .header-gradient {
         background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));
     }
-    
+
     .info-gradient {
         background: linear-gradient(145deg, #059669, #047857);
     }
-    
+
     .member-gradient {
         background: linear-gradient(145deg, #7c3aed, #5b21b6);
     }
-    
+
     .detail-gradient {
         background: linear-gradient(145deg, #0b2c6d, #1a4ca8);
     }
-    
+
     .letter-gradient {
         background: linear-gradient(145deg, #d97706, #b45309);
     }
-    
+
     .proposal-gradient {
         background: linear-gradient(145deg, #0891b2, #0e7490);
     }
-    
+
     .obs-gradient {
         background: linear-gradient(145deg, #dc2626, #991b1b);
     }
-    
+
     .action-gradient {
         background: linear-gradient(145deg, #7c3aed, #5b21b6);
     }
-    
+
     .badge-modern {
         padding: 0.5rem 1rem;
         border-radius: 50px;
         font-weight: 600;
         font-size: 0.85rem;
     }
-    
+
     .badge-success-modern {
         background: rgba(16, 185, 129, 0.15);
         color: #059669;
         border: 1px solid #059669;
     }
-    
+
     .badge-warning-modern {
         background: rgba(217, 119, 6, 0.15);
         color: #b45309;
         border: 1px solid #d97706;
     }
-    
+
     .badge-danger-modern {
         background: rgba(220, 38, 38, 0.15);
         color: #dc2626;
         border: 1px solid #dc2626;
     }
-    
+
     .badge-info-modern {
         background: rgba(124, 58, 237, 0.15);
         color: #7c3aed;
         border: 1px solid #7c3aed;
     }
-    
+
     .badge-secondary-modern {
         background: rgba(107, 114, 128, 0.15);
         color: #4b5563;
         border: 1px solid #6b7280;
     }
-    
+
     .btn-modern {
         border-radius: 50px;
         padding: 0.6rem 1.5rem;
         font-weight: 600;
         transition: all 0.3s ease;
     }
-    
+
     .btn-modern:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
-    
+
     .btn-primary-modern {
         background: var(--blue-main);
         border: none;
         color: white;
     }
-    
+
     .btn-primary-modern:hover {
         background: var(--accent-cyan);
         color: var(--blue-main);
     }
-    
+
     .btn-success-modern {
         background: #059669;
         border: none;
         color: white;
     }
-    
+
     .btn-success-modern:hover {
         background: #10b981;
         color: white;
     }
-    
+
     .btn-danger-modern {
         background: #dc2626;
         border: none;
         color: white;
     }
-    
+
     .btn-danger-modern:hover {
         background: #ef4444;
         color: white;
     }
-    
+
     .btn-secondary-modern {
         background: #6b7280;
         border: none;
         color: white;
     }
-    
+
     .btn-secondary-modern:hover {
         background: #9ca3af;
         color: white;
     }
-    
+
     .section-icon {
         width: 48px;
         height: 48px;
@@ -163,32 +163,32 @@
         justify-content: center;
         font-size: 1.5rem;
     }
-    
+
     .text-justify {
         text-align: justify;
         line-height: 1.8;
     }
-    
+
     .detail-label {
         font-weight: 600;
         color: var(--blue-main);
         font-size: 0.9rem;
     }
-    
+
     .detail-value {
         color: #4b5563;
     }
-    
+
     .divider-modern {
         height: 1px;
         background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
         margin: 1rem 0;
     }
-    
+
     .back-btn {
         transition: all 0.3s ease;
     }
-    
+
     .back-btn:hover {
         transform: translateX(-5px);
     }
@@ -237,19 +237,19 @@
                     {% if membresia.club.siglas %}
                     <p class="text-muted mb-3">{{ membresia.club.siglas }}</p>
                     {% endif %}
-                    
+
                     <div class="divider-modern"></div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-bank2 me-2"></i>Institución Creadora</div>
                         <div class="detail-value">{{ membresia.club.institucion_creadora.nombre }}</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-geo-alt me-2"></i>Ubicación</div>
                         <div class="detail-value">{{ membresia.club.ubicacion }}</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-info-circle me-2"></i>Estado</div>
                         <span class="badge badge-success-modern">
@@ -275,19 +275,19 @@
                 <div class="card-body p-4">
                     <h4 class="fw-bold mb-1" style="color: var(--blue-main);">{{ membresia.institucion.nombre }}</h4>
                     <p class="text-muted mb-3">{{ membresia.institucion.codigo }}</p>
-                    
+
                     <div class="divider-modern"></div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-diagram-3 me-2"></i>Tipo de Institución</div>
                         <div class="detail-value">{{ membresia.institucion.get_tipo_institucion_display }}</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-geo me-2"></i>Ubicación</div>
                         <div class="detail-value">{{ membresia.institucion.estado.nombre }}, {{ membresia.institucion.municipio.nombre }}</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="detail-label mb-1"><i class="bi bi-envelope me-2"></i>Email</div>
                         <div class="detail-value">{{ membresia.institucion.email }}</div>
@@ -337,12 +337,12 @@
                                     </span>
                                 {% endif %}
                             </div>
-                            
+
                             <div class="mb-3">
                                 <div class="detail-label mb-1"><i class="bi bi-diagram-2 me-2"></i>Tipo de Línea</div>
                                 <div class="detail-value">{{ membresia.get_tipo_linea_display }}</div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <div class="detail-label mb-1"><i class="bi bi-calendar-plus me-2"></i>Fecha de Solicitud</div>
                                 <div class="detail-value">
@@ -361,7 +361,7 @@
                                 </div>
                             </div>
                             {% endif %}
-                            
+
                             <div class="mb-3">
                                 <div class="detail-label mb-1"><i class="bi bi-person-badge me-2"></i>Representante Legal</div>
                                 <div class="detail-value">{{ membresia.representante_legal }}</div>
@@ -466,4 +466,3 @@
 </div>
 
 {% endblock %}
-

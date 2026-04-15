@@ -33,7 +33,7 @@
                 <a href="{% url 'directorio_clubes_aprobados' %}" class="btn btn-outline-success shadow-sm px-4 fw-bold" style="border-radius: 12px;">
                     <i class="bi bi-award me-2"></i> Directorio
                 </a>
-                <a href="{% url 'crear_club' %}" class="btn shadow-sm px-4 fw-bold" 
+                <a href="{% url 'crear_club' %}" class="btn shadow-sm px-4 fw-bold"
                    style="background: var(--accent-cyan); color: var(--blue-main); border-radius: 12px;">
                     <i class="bi bi-plus-circle-fill me-2"></i> Crear Club
                 </a>
@@ -226,7 +226,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> 
+                    <i class="bi bi-info-circle"></i>
                     {% if es_fed_central %}
                         No has creado ningún club de la federación aún.
                     {% else %}
@@ -303,7 +303,7 @@
                                             </a>
                                         {% endif %}
                                     {% elif club.puede_postularse %}
-                                        <a href="{% url 'postular_club' club.id %}" 
+                                        <a href="{% url 'postular_club' club.id %}"
                                            class="btn btn-sm rounded-pill px-3 fw-bold" style="background: var(--blue-main); color: white;">
                                             <i class="bi bi-send me-1"></i>Postular
                                         </a>
@@ -318,7 +318,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> 
+                    <i class="bi bi-info-circle"></i>
                     No hay clubes disponibles para postular en este momento.
                 </div>
             {% endif %}
@@ -542,11 +542,11 @@ function mostrarModalEnviarRevision(clubId, clubNombre, clubStatus) {
     document.getElementById('modalEnviarClubId').value = clubId;
     document.getElementById('modalEnviarNombre').textContent = clubNombre;
     document.getElementById('formEnviarRevision').action = `/registry/clubes/${clubId}/enviar-revision/`;
-    
+
     // Actualizar título según estado
     const titulo = document.getElementById('modalEnviarTitulo');
     const btnConfirmar = document.getElementById('modalEnviarBtn');
-    
+
     if (clubStatus === 'rechazado') {
         titulo.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Reenviar a Revisión';
         btnConfirmar.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Confirmar Reenvío';
@@ -554,7 +554,7 @@ function mostrarModalEnviarRevision(clubId, clubNombre, clubStatus) {
         titulo.innerHTML = '<i class="bi bi-send me-2"></i>Enviar a Revisión';
         btnConfirmar.innerHTML = '<i class="bi bi-send me-2"></i>Confirmar Envío';
     }
-    
+
     new bootstrap.Modal(document.getElementById('modalEnviarRevision')).show();
 }
 </script>

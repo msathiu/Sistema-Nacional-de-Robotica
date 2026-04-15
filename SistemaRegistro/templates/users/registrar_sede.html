@@ -80,7 +80,7 @@
                                 <span class="badge bg-primary me-3 rounded-4 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; font-size: 1rem;">2</span>
                                 <h5 class="fw-bold text-dark mb-0">Credenciales de Seguridad</h5>
                             </div>
-                            
+
                             <div class="row g-4">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold text-muted small text-uppercase required-field">Nombre de Usuario</label>
@@ -157,7 +157,7 @@
     .custom-input-group input[type="password"], .custom-input-group input[type="text"] { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; }
     #togglePassword { border-left: 1px solid #e2e8f0 !important; }
     #togglePassword:hover { background-color: #e2e8f0 !important; }
-    
+
     /* Validación visual */
     .is-valid { border-color: #10b981 !important; background-color: #f0fdf4 !important; }
     .is-invalid { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
@@ -165,7 +165,7 @@
     .custom-input-group.is-invalid .input-group-text { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
     .custom-input-group.is-valid #togglePassword { border-color: #10b981 !important; background-color: #f0fdf4 !important; }
     .custom-input-group.is-invalid #togglePassword { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
-    
+
     .x-small { font-size: 0.72rem; }
     .required-field::after { content: " *"; color: #ef4444; }
     .tracking-widest { letter-spacing: 0.15em; }
@@ -176,7 +176,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('registroSedeForm');
-        
+
         // Mostrar errores inline de Django
         {% if form.errors %}
         const errors = {
@@ -184,22 +184,22 @@
             '{{ field }}': '{{ error_list.0|escapejs }}',
             {% endfor %}
         };
-        
+
         // Ocultar alertas grandes
         document.querySelectorAll('.alert-danger').forEach(alert => {
             alert.style.display = 'none';
         });
-        
+
         // Mostrar errores inline
         Object.keys(errors).forEach(fieldName => {
             const errorEl = document.querySelector(`[data-field="${fieldName}"]`);
             const input = document.querySelector(`[name="${fieldName}"]`);
-            
+
             if (errorEl) {
                 errorEl.textContent = '⚠️ ' + errors[fieldName];
                 errorEl.style.display = 'block';
             }
-            
+
             if (input) {
                 input.classList.add('is-invalid');
                 input.style.borderColor = '#ef4444';
@@ -207,14 +207,14 @@
             }
         });
         {% endif %}
-        
+
         // Toggle password visibility
         const togglePassword = document.getElementById('togglePassword');
         const passInput = document.getElementById('id_password1');
         const eyeIcon = document.getElementById('eyeIcon');
         const passwordGroup = passInput.closest('.custom-input-group');
         const feedbackDiv = document.getElementById('password-feedback');
-        
+
         if (togglePassword && passInput) {
             togglePassword.addEventListener('click', function() {
                 const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -223,10 +223,10 @@
                 eyeIcon.classList.toggle('bi-eye-slash');
             });
         }
-        
+
         // Password validation
         const btnSubmit = document.getElementById('btnFinalizar');
-        
+
         const requirements = {
             'min-length': /.{8,}/,
             'has-uppercase': /[A-Z]/,
@@ -253,7 +253,7 @@
                         }
                     }
                 }
-                
+
                 // Aplicar estilos visuales al input-group
                 if (val.length > 0) {
                     if (allOk) {
@@ -278,7 +278,7 @@
                     passInput.classList.remove('is-valid', 'is-invalid');
                     feedbackDiv.style.display = 'none';
                 }
-                
+
                 btnSubmit.disabled = !allOk;
             };
 

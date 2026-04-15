@@ -5,20 +5,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0033_add_evento_es_publico'),
+        ("registry", "0033_add_evento_es_publico"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='participante',
-            name='cedula',
-            field=models.CharField(blank=True, help_text='Solo números (ej: 19122516)', max_length=20, null=True, unique=True, validators=[django.core.validators.RegexValidator(message='Cédula debe contener solo números', regex='^[0-9]+$')]),
+            model_name="participante",
+            name="cedula",
+            field=models.CharField(
+                blank=True,
+                help_text="Solo números (ej: 19122516)",
+                max_length=20,
+                null=True,
+                unique=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="Cédula debe contener solo números", regex="^[0-9]+$"
+                    )
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='participante',
-            name='cedula_escolar',
-            field=models.CharField(blank=True, help_text='Cédula escolar del participante (solo números)', max_length=20, null=True, validators=[django.core.validators.RegexValidator(message='La cédula escolar debe contener solo números', regex='^[0-9]*$')], verbose_name='Cédula Escolar'),
+            model_name="participante",
+            name="cedula_escolar",
+            field=models.CharField(
+                blank=True,
+                help_text="Cédula escolar del participante (solo números)",
+                max_length=20,
+                null=True,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        message="La cédula escolar debe contener solo números",
+                        regex="^[0-9]*$",
+                    )
+                ],
+                verbose_name="Cédula Escolar",
+            ),
         ),
     ]

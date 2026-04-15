@@ -112,17 +112,20 @@ INSTITUCION_FORM_CONFIG = {
 def get_form_config(tipo_institucion):
     """
     Obtiene la configuración de campos para un tipo de institución.
-    
+
     Args:
         tipo_institucion: str - Tipo de institución (particular, educativa, publica, privada, otra)
-    
+
     Returns:
         dict - Configuración de campos o configuración vacía si no existe
     """
-    return INSTITUCION_FORM_CONFIG.get(tipo_institucion, {
-        "hidden_fields": [],
-        "visible_fields": [],
-        "required_fields": [],
-        "optional_fields": [],
-        "default_values": {},
-    })
+    return INSTITUCION_FORM_CONFIG.get(
+        tipo_institucion,
+        {
+            "hidden_fields": [],
+            "visible_fields": [],
+            "required_fields": [],
+            "optional_fields": [],
+            "default_values": {},
+        },
+    )

@@ -598,9 +598,9 @@ class ParticipanteRegistrationForm(
             if field_name in self.fields:
                 existing_class = self.fields[field_name].widget.attrs.get("class", "")
                 if "is-invalid" not in existing_class:
-                    self.fields[field_name].widget.attrs["class"] = (
-                        f"{existing_class} is-invalid".strip()
-                    )
+                    self.fields[field_name].widget.attrs[
+                        "class"
+                    ] = f"{existing_class} is-invalid".strip()
 
         # 2. Configurar querysets de ubicación usando el Mixin
         self.setup_location_fields()

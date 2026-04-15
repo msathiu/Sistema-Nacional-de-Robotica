@@ -17,15 +17,13 @@ lineas = [
 for nombre, descripcion, orden in lineas:
     linea, created = LineaInvestigacion.objects.get_or_create(
         nombre=nombre,
-        defaults={
-            'descripcion': descripcion,
-            'orden': orden,
-            'activa': True
-        }
+        defaults={"descripcion": descripcion, "orden": orden, "activa": True},
     )
     if created:
         print(f"✅ Creada: {nombre}")
     else:
         print(f"ℹ️  Ya existe: {nombre}")
 
-print(f"\n📊 Total de líneas activas: {LineaInvestigacion.objects.filter(activa=True).count()}")
+print(
+    f"\n📊 Total de líneas activas: {LineaInvestigacion.objects.filter(activa=True).count()}"
+)

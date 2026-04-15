@@ -232,9 +232,10 @@ class Club(models.Model):
         if not self.pk:
             return 0
         from django.db.models import Q
+
         return self.membresias.filter(
-            Q(estado="visto_bueno_fundadora") |
-            Q(estado="pendiente_filtro", club__institucion_creadora__isnull=True)
+            Q(estado="visto_bueno_fundadora")
+            | Q(estado="pendiente_filtro", club__institucion_creadora__isnull=True)
         ).count()
 
 

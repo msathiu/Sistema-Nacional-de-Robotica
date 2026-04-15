@@ -14,9 +14,9 @@
         --warning: #f59e0b;
         --gray-bg: #f5f7fa;
     }
-    
+
     body { background: var(--gray-bg); }
-    
+
     .form-container {
         max-width: 1000px;
         margin: 0 auto;
@@ -25,13 +25,13 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         overflow: hidden;
     }
-    
+
     .form-header-custom {
         background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-dark) 100%);
         color: white;
         padding: 1.5rem 2rem;
     }
-    
+
     .stepper-section {
         display: flex;
         justify-content: space-between;
@@ -39,7 +39,7 @@
         background: #f8fafc;
         border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .step-item-custom {
         display: flex;
         align-items: center;
@@ -47,7 +47,7 @@
         flex: 1;
         position: relative;
     }
-    
+
     .step-item-custom:not(:last-child)::after {
         content: '';
         flex: 1;
@@ -55,11 +55,11 @@
         background: #e2e8f0;
         margin: 0 0.5rem;
     }
-    
+
     .step-item-custom.completed:not(:last-child)::after {
         background: var(--success);
     }
-    
+
     .step-number-custom {
         width: 36px;
         height: 36px;
@@ -75,36 +75,36 @@
         transition: all 0.3s ease;
         flex-shrink: 0;
     }
-    
+
     .step-item-custom.active .step-number-custom {
         background: var(--blue-main);
         border-color: var(--blue-main);
         color: white;
         box-shadow: 0 2px 8px rgba(11, 44, 109, 0.3);
     }
-    
+
     .step-item-custom.completed .step-number-custom {
         background: var(--success);
         border-color: var(--success);
         color: white;
     }
-    
+
     .step-text-custom {
         font-size: 0.85rem;
         font-weight: 500;
         color: #94a3b8;
         transition: all 0.3s ease;
     }
-    
+
     .step-item-custom.active .step-text-custom {
         color: var(--blue-main);
         font-weight: 600;
     }
-    
+
     .step-item-custom.completed .step-text-custom {
         color: var(--success);
     }
-    
+
     .section-card-custom {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -113,12 +113,12 @@
         margin-bottom: 1.5rem;
         transition: all 0.3s ease;
     }
-    
+
     .section-card-custom.active {
         border-color: var(--blue-main);
         box-shadow: 0 2px 8px rgba(11, 44, 109, 0.1);
     }
-    
+
     .section-header-custom {
         display: flex;
         align-items: center;
@@ -126,7 +126,7 @@
         padding-bottom: 0.75rem;
         border-bottom: 2px solid #e2e8f0;
     }
-    
+
     .section-number-custom {
         background: var(--blue-main);
         color: white;
@@ -140,7 +140,7 @@
         font-size: 0.9rem;
         margin-right: 0.75rem;
     }
-    
+
     .section-title-custom {
         font-size: 0.85rem;
         font-weight: 700;
@@ -149,7 +149,7 @@
         color: var(--blue-main);
         margin: 0;
     }
-    
+
     .form-control-custom, .form-select-custom {
         border: 1px solid #cbd5e1;
         border-radius: 8px;
@@ -158,16 +158,16 @@
         background: white;
         padding: 0.625rem 0.875rem;
     }
-    
+
     .form-control-custom:hover, .form-select-custom:hover {
         border-color: var(--blue-main);
     }
-    
+
     .form-control-custom:focus, .form-select-custom:focus {
         border-color: var(--blue-main);
         box-shadow: 0 0 0 3px rgba(11, 44, 109, 0.1);
     }
-    
+
     .form-label-custom {
         font-weight: 600;
         color: #334155;
@@ -176,17 +176,17 @@
         align-items: center;
         gap: 0.375rem;
     }
-    
+
     .form-label-custom i {
         color: var(--blue-main);
     }
-    
+
     .form-text-custom {
         color: #64748b;
         font-size: 0.85rem;
         margin-top: 0.25rem;
     }
-    
+
     .btn-next-custom {
         background: var(--blue-main);
         border: none;
@@ -199,13 +199,13 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .btn-next-custom:hover {
         background: var(--blue-dark);
         transform: translateY(-1px);
         color: white;
     }
-    
+
     .btn-back-custom {
         border: 1px solid #cbd5e1;
         color: #475569;
@@ -218,13 +218,13 @@
         gap: 0.4rem;
         transition: all 0.2s ease;
     }
-    
+
     .btn-back-custom:hover {
         border-color: #94a3b8;
         background: #f8fafc;
         color: #334155;
     }
-    
+
     .btn-submit-custom {
         background: var(--success);
         border: none;
@@ -238,14 +238,14 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .btn-submit-custom:hover {
         background: #059669;
         box-shadow: 0 4px 8px rgba(16, 185, 129, 0.25);
         transform: translateY(-1px);
         color: white;
     }
-    
+
     .btn-search-custom {
         background: var(--blue-main);
         border: none;
@@ -255,19 +255,19 @@
         font-weight: 500;
         transition: all 0.2s ease;
     }
-    
+
     .btn-search-custom:hover {
         background: var(--blue-dark);
         color: white;
     }
-    
+
     .info-box-custom {
         background: #dbeafe;
         border: 1px solid #93c5fd;
         border-radius: 12px;
         padding: 1.25rem;
     }
-    
+
     .header-icon-custom {
         width: 48px;
         height: 48px;
@@ -277,41 +277,41 @@
         justify-content: center;
         background: rgba(255,255,255,0.2);
     }
-    
+
     .header-icon-custom i {
         font-size: 1.5rem;
         color: white;
     }
-    
+
     .fade-in {
         animation: fadeIn 0.4s ease-out;
     }
-    
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    
+
     .tutor-card {
         background: #ecfdf5;
         border: 1px solid #6ee7b7;
         border-radius: 8px;
         padding: 1rem;
     }
-    
+
     .participante-table {
         background: white;
         border-radius: 8px;
         overflow: hidden;
     }
-    
+
     @media (max-width: 768px) {
         .stepper-section {
             flex-direction: column;
             gap: 1rem;
             padding: 1rem;
         }
-        
+
         .step-item-custom:not(:last-child)::after {
             display: none;
         }
@@ -385,13 +385,13 @@
                             <div class="section-number-custom">1</div>
                             <h6 class="section-title-custom">Datos Básicos del Equipo</h6>
                         </div>
-                        
+
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <label class="form-label-custom">
                                     <i class="bi bi-bookmark-star"></i> Nombre del Equipo *
                                 </label>
-                                <input type="text" name="nombre" class="form-control form-control-custom" 
+                                <input type="text" name="nombre" class="form-control form-control-custom"
                                        placeholder="Ej: Equipo Robótica Avanzada">
                             </div>
 
@@ -399,7 +399,7 @@
                                 <label class="form-label-custom">
                                     <i class="bi bi-hash"></i> Código
                                 </label>
-                                <input type="text" class="form-control form-control-custom bg-light" 
+                                <input type="text" class="form-control form-control-custom bg-light"
                                        value="Se generará automáticamente" readonly>
                                 <small class="form-text-custom">Formato: EQP-XXXXXXXX</small>
                             </div>
@@ -424,7 +424,7 @@
                                         <label class="form-label-custom">
                                             <i class="bi bi-calendar-range"></i> Edad Desde *
                                         </label>
-                                        <input type="number" name="edad_desde" class="form-control form-control-custom" 
+                                        <input type="number" name="edad_desde" class="form-control form-control-custom"
                                                placeholder="Ej: 8" min="4" max="99">
                                         <small class="form-text-custom">Edad mínima de los participantes</small>
                                     </div>
@@ -432,12 +432,12 @@
                                         <label class="form-label-custom">
                                             <i class="bi bi-calendar-range"></i> Edad Hasta *
                                         </label>
-                                        <input type="number" name="edad_hasta" class="form-control form-control-custom" 
+                                        <input type="number" name="edad_hasta" class="form-control form-control-custom"
                                                placeholder="Ej: 12" min="4" max="99">
                                         <small class="form-text-custom">Edad máxima de los participantes</small>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Por Nivel Educativo -->
                                 <div id="camposNivel" class="campos-criterio col-12" style="display: none;">
                                     <label class="form-label-custom">
@@ -451,20 +451,20 @@
                                     </select>
                                     <small class="form-text-custom">Grado escolar del equipo</small>
                                 </div>
-                                
+
                                 <!-- Por Proyecto -->
                                 <div id="camposProyecto" class="campos-criterio col-12" style="display: none;">
                                     <label class="form-label-custom">
                                         <i class="bi bi-lightbulb"></i> Nombre del Proyecto *
                                     </label>
-                                    <input type="text" name="nombre_proyecto" class="form-control form-control-custom" 
+                                    <input type="text" name="nombre_proyecto" class="form-control form-control-custom"
                                            placeholder="Ej: Robot Seguidor de Línea" maxlength="200">
                                     <small class="form-text-custom">Nombre del proyecto que desarrollará el equipo</small>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-end">
                         <button type="button" class="btn-next-custom" onclick="goToStep(2)">
                             Siguiente <i class="bi bi-arrow-right"></i>
@@ -479,13 +479,13 @@
                             <div class="section-number-custom">2</div>
                             <h6 class="section-title-custom">Asignar Tutor (Obligatorio)</h6>
                         </div>
-                        
+
                         <div class="row g-3">
                             <div class="col-md-5">
                                 <label class="form-label-custom">
                                     <i class="bi bi-search"></i> Buscar por Cédula
                                 </label>
-                                <input type="text" id="buscarTutorCedula" class="form-control form-control-custom" 
+                                <input type="text" id="buscarTutorCedula" class="form-control form-control-custom"
                                        placeholder="Ej: 12345678" pattern="[0-9]+" maxlength="12">
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
@@ -499,7 +499,7 @@
                                 </a>
                             </div>
                         </div>
-                        
+
                         <!-- Resultado de búsqueda -->
                         <div id="tutorResultado" class="mt-3" style="display: none;">
                             <div class="tutor-card">
@@ -510,7 +510,7 @@
                                             <span id="tutorNombre"></span>
                                         </h6>
                                         <small class="text-muted">
-                                            <strong>Email:</strong> <span id="tutorEmail"></span> | 
+                                            <strong>Email:</strong> <span id="tutorEmail"></span> |
                                             <strong>Teléfono:</strong> <span id="tutorTelefono"></span>
                                         </small>
                                     </div>
@@ -521,7 +521,7 @@
                             </div>
                             <input type="hidden" name="tutores[]" id="tutorSeleccionado">
                         </div>
-                        
+
                         <div id="tutorNoEncontrado" class="mt-3" style="display: none;">
                             <div class="alert alert-warning border-0">
                                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -530,7 +530,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between">
                         <button type="button" class="btn-back-custom" onclick="goToStep(1)">
                             <i class="bi bi-arrow-left"></i> Anterior
@@ -548,7 +548,7 @@
                             <div class="section-number-custom">3</div>
                             <h6 class="section-title-custom">Agregar Participantes</h6>
                         </div>
-                        
+
                         <div class="d-flex justify-content-end gap-2 mb-3">
                             <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
                                 <i class="bi bi-upload"></i> Carga Masiva
@@ -557,7 +557,7 @@
                                 <i class="bi bi-plus-lg"></i> Agregar Uno
                             </button>
                         </div>
-                        
+
                         <!-- Tabla de participantes -->
                         <div id="tablaParticipantes" class="participante-table" style="display: none;">
                             <table class="table table-hover mb-0">
@@ -573,18 +573,18 @@
                                 <tbody id="bodyParticipantes"></tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Mensaje vacío -->
                         <div id="mensajeVacio" class="text-center text-muted py-5">
                             <i class="bi bi-people fs-1 opacity-25"></i>
                             <p class="mt-3">No hay participantes agregados</p>
                             <small>Use "Carga Masiva" o "Agregar Uno"</small>
                         </div>
-                        
+
                         <!-- Formulario individual -->
                         <div id="listaParticipantes" style="display: none;"></div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between">
                         <button type="button" class="btn-back-custom" onclick="goToStep(2)">
                             <i class="bi bi-arrow-left"></i> Anterior
@@ -602,7 +602,7 @@
                             <div class="section-number-custom">4</div>
                             <h6 class="section-title-custom">Confirmar Creación</h6>
                         </div>
-                        
+
                         <div class="alert alert-info border-0 shadow-sm" style="border-radius: 8px; background: #dbeafe; border-left: 4px solid var(--blue-main);">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-info-circle-fill fs-5 me-3" style="color: var(--blue-main);"></i>
@@ -613,7 +613,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between">
                         <button type="button" class="btn-back-custom" onclick="goToStep(3)">
                             <i class="bi bi-arrow-left"></i> Anterior
@@ -633,7 +633,7 @@
                     <i class="bi bi-shield-check-fill" style="color: var(--blue-main);"></i>
                     <span class="fw-bold" style="color: var(--blue-dark);">📋 Información Importante</span>
                 </div>
-                
+
                 <div class="row g-2">
                     <div class="col-md-6">
                         <div class="d-flex align-items-center gap-2">
@@ -675,17 +675,17 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-info border-0">
-                    <i class="bi bi-info-circle"></i> 
+                    <i class="bi bi-info-circle"></i>
                     <strong>Instrucciones:</strong> Ingrese las cédulas separadas por comas, espacios o saltos de línea.
                     <br><small>Ejemplo: 12345678, 98765432, 11223344</small>
                 </div>
-                
+
                 <div class="mb-3">
                     <label class="form-label fw-bold">Lista de Cédulas</label>
-                    <textarea id="cedulasMasivas" class="form-control" rows="8" 
+                    <textarea id="cedulasMasivas" class="form-control" rows="8"
                               placeholder="12345678&#10;98765432&#10;11223344"></textarea>
                 </div>
-                
+
                 <div id="resultadosCarga" class="mt-3" style="display: none;">
                     <div class="alert alert-success" id="exitososCarga" style="display: none;">
                         <strong>✓ Encontrados:</strong> <span id="countExitosos">0</span> participantes
@@ -748,35 +748,35 @@ function mostrarAlerta(mensaje, tipo = 'warning') {
         'success': 'check-circle-fill',
         'info': 'info-circle-fill'
     };
-    
+
     const alertasAnteriores = document.querySelectorAll('.alert-validacion-custom');
     alertasAnteriores.forEach(a => a.remove());
-    
+
     const alerta = document.createElement('div');
     alerta.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm alert-validacion-custom`;
     alerta.style.borderRadius = '8px';
     alerta.style.marginBottom = '1rem';
-    
+
     // SEGURIDAD: Crear elementos DOM en lugar de innerHTML
     const icon = document.createElement('i');
     icon.className = `bi bi-${iconos[tipo]} me-2`;
-    
+
     const mensajeSpan = document.createElement('span');
     mensajeSpan.innerHTML = mensaje; // Solo para mensajes controlados del sistema
-    
+
     const btnClose = document.createElement('button');
     btnClose.type = 'button';
     btnClose.className = 'btn-close';
     btnClose.setAttribute('data-bs-dismiss', 'alert');
-    
+
     alerta.appendChild(icon);
     alerta.appendChild(mensajeSpan);
     alerta.appendChild(btnClose);
-    
+
     const formBody = document.querySelector('.form-body');
     formBody.insertAdjacentElement('afterbegin', alerta);
     alerta.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
+
     setTimeout(() => {
         alerta.classList.remove('show');
         setTimeout(() => alerta.remove(), 150);
@@ -786,15 +786,15 @@ function mostrarAlerta(mensaje, tipo = 'warning') {
 // Navegación entre pasos
 function goToStep(step) {
     document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
-    
+
     const currentStep = document.getElementById('step' + step);
     currentStep.style.display = 'block';
     currentStep.classList.add('fade-in');
-    
+
     for (let i = 1; i <= 4; i++) {
         const indicator = document.getElementById('step' + i + '-indicator');
         const numberEl = indicator.querySelector('.step-number-custom');
-        
+
         if (i < step) {
             indicator.className = 'step-item-custom completed';
             numberEl.innerHTML = '✓';
@@ -806,7 +806,7 @@ function goToStep(step) {
             numberEl.innerHTML = i;
         }
     }
-    
+
     document.querySelector('.form-body').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -814,14 +814,14 @@ function goToStep(step) {
 document.getElementById('id_criterio')?.addEventListener('change', function() {
     const criterio = this.value;
     const contenedor = document.getElementById('camposCriterio');
-    
+
     document.querySelectorAll('.campos-criterio').forEach(el => el.style.display = 'none');
-    
+
     document.querySelector('[name="edad_desde"]').value = '';
     document.querySelector('[name="edad_hasta"]').value = '';
     document.querySelector('[name="nivel_educativo"]').value = '';
     document.querySelector('[name="nombre_proyecto"]').value = '';
-    
+
     if (criterio === 'edad') {
         contenedor.style.display = 'block';
         document.getElementById('camposEdad').style.display = 'flex';
@@ -839,16 +839,16 @@ document.getElementById('id_criterio')?.addEventListener('change', function() {
 // Búsqueda de tutor
 document.getElementById('btnBuscarTutor')?.addEventListener('click', function() {
     const cedula = document.getElementById('buscarTutorCedula').value.trim().replace(/\D/g, '');
-    
+
     if (!cedula) {
         mostrarAlerta('Por favor ingrese una cédula', 'warning');
         return;
     }
-    
+
     const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
-    
+
     fetch(`/registry/api/buscar-tutor/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
@@ -887,39 +887,39 @@ function actualizarTabla() {
     const tabla = document.getElementById('tablaParticipantes');
     const mensaje = document.getElementById('mensajeVacio');
     const form = document.getElementById('formGrupo');
-    
+
     tbody.innerHTML = '';
-    
+
     // CRÍTICO: Eliminar TODOS los inputs hidden de participantes anteriores
     const inputsAnteriores = form.querySelectorAll('input[name="participantes[]"]');
     inputsAnteriores.forEach(input => input.remove());
-    
+
     if (participantesAgregados.size === 0) {
         tabla.style.display = 'none';
         mensaje.style.display = 'block';
         return;
     }
-    
+
     tabla.style.display = 'block';
     mensaje.style.display = 'none';
-    
+
     let index = 1;
     participantesAgregados.forEach((data, id) => {
         const tr = document.createElement('tr');
-        
+
         // SEGURIDAD: Escapar datos del usuario
         const tdIndex = document.createElement('td');
         tdIndex.textContent = index++;
-        
+
         const tdCedula = document.createElement('td');
         tdCedula.textContent = data.cedula;
-        
+
         const tdNombres = document.createElement('td');
         tdNombres.textContent = data.nombres;
-        
+
         const tdApellidos = document.createElement('td');
         tdApellidos.textContent = data.apellidos;
-        
+
         const tdAcciones = document.createElement('td');
         const btnEliminar = document.createElement('button');
         btnEliminar.type = 'button';
@@ -927,15 +927,15 @@ function actualizarTabla() {
         btnEliminar.onclick = () => eliminarParticipante(id);
         btnEliminar.innerHTML = '<i class="bi bi-trash"></i>';
         tdAcciones.appendChild(btnEliminar);
-        
+
         tr.appendChild(tdIndex);
         tr.appendChild(tdCedula);
         tr.appendChild(tdNombres);
         tr.appendChild(tdApellidos);
         tr.appendChild(tdAcciones);
-        
+
         tbody.appendChild(tr);
-        
+
         // Crear nuevo input hidden con el ID del participante
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -968,15 +968,15 @@ function eliminarParticipanteIndividual(btn) {
 function buscarParticipante(btn) {
     const card = btn.closest('.participante-card');
     const cedula = card.querySelector('.cedula-participante').value.trim();
-    
+
     if (!cedula) {
         mostrarAlerta('Ingrese una cédula', 'warning');
         return;
     }
-    
+
     btn.disabled = true;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Buscando...';
-    
+
     fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
         .then(res => res.json())
         .then(data => {
@@ -986,16 +986,16 @@ function buscarParticipante(btn) {
                     card.remove();
                     return;
                 }
-                
+
                 participantesAgregados.set(data.id, {
                     cedula: cedula,
                     nombres: data.nombres,
                     apellidos: data.apellidos
                 });
-                
+
                 actualizarTabla();
                 card.remove();
-                
+
                 if (document.querySelectorAll('.participante-card').length === 0) {
                     document.getElementById('listaParticipantes').style.display = 'none';
                 }
@@ -1020,33 +1020,33 @@ function buscarParticipante(btn) {
 function procesarCargaMasiva() {
     const textarea = document.getElementById('cedulasMasivas');
     const texto = textarea.value.trim();
-    
+
     if (!texto) {
         mostrarAlerta('Ingrese al menos una cédula', 'warning');
         return;
     }
-    
+
     const cedulas = texto.split(/[,\s\n]+/).filter(c => c.trim());
-    
+
     if (cedulas.length === 0) {
         mostrarAlerta('No se encontraron cédulas válidas', 'warning');
         return;
     }
-    
+
     const btnBuscar = event.target;
     btnBuscar.disabled = true;
     btnBuscar.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
-    
-    const promesas = cedulas.map(cedula => 
+
+    const promesas = cedulas.map(cedula =>
         fetch(`/registry/api/buscar-participante-equipo/?cedula=${cedula}`)
             .then(res => res.json())
             .then(data => ({cedula, data}))
     );
-    
+
     Promise.all(promesas).then(resultados => {
         let encontrados = 0;
         let noEncontrados = [];
-        
+
         resultados.forEach(({cedula, data}) => {
             if (data.found) {
                 if (!participantesAgregados.has(data.id)) {
@@ -1061,24 +1061,24 @@ function procesarCargaMasiva() {
                 noEncontrados.push(cedula);
             }
         });
-        
+
         actualizarTabla();
-        
+
         document.getElementById('resultadosCarga').style.display = 'block';
-        
+
         if (encontrados > 0) {
             document.getElementById('exitososCarga').style.display = 'block';
             document.getElementById('countExitosos').textContent = encontrados;
         }
-        
+
         if (noEncontrados.length > 0) {
             document.getElementById('noEncontradosCarga').style.display = 'block';
             document.getElementById('listNoEncontrados').textContent = noEncontrados.join(', ');
         }
-        
+
         btnBuscar.disabled = false;
         btnBuscar.innerHTML = '<i class="bi bi-search"></i> Buscar Participantes';
-        
+
         if (noEncontrados.length === 0) {
             setTimeout(() => {
                 bootstrap.Modal.getInstance(document.getElementById('modalCargaMasiva')).hide();
@@ -1101,21 +1101,21 @@ document.getElementById('modalCargaMasiva').addEventListener('hidden.bs.modal', 
 document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
     e.preventDefault();
     console.log('Formulario enviado - iniciando validación');
-    
+
     let errores = [];
-    
+
     // 1. Validar nombre del equipo
     const nombre = document.querySelector('[name="nombre"]')?.value.trim() || '';
     if (!nombre) {
         errores.push('El nombre del equipo es obligatorio');
     }
-    
+
     // 2. Validar criterio
     const criterio = document.getElementById('id_criterio')?.value || '';
     if (!criterio) {
         errores.push('Debe seleccionar un criterio de agrupación');
     }
-    
+
     // 3. Validar campos según criterio
     if (criterio === 'edad') {
         const edadDesde = document.querySelector('[name="edad_desde"]')?.value || '';
@@ -1136,28 +1136,28 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
             errores.push('Debe ingresar el nombre del proyecto');
         }
     }
-    
+
     // 4. Validar tutor
     const tutorSeleccionado = document.getElementById('tutorSeleccionado')?.value || '';
     if (!tutorSeleccionado) {
         errores.push('Debe asignar al menos un tutor al equipo');
     }
-    
+
     // 5. Validar participantes
     if (participantesAgregados.size === 0) {
         errores.push('Debe agregar al menos un participante al equipo');
     }
-    
+
     console.log('Errores encontrados:', errores);
-    
+
     // Si hay errores, mostrar y redirigir al paso correspondiente
     if (errores.length > 0) {
-        const mensajeCompleto = errores.length === 1 
-            ? `<strong>⚠️ ${errores[0]}</strong>` 
+        const mensajeCompleto = errores.length === 1
+            ? `<strong>⚠️ ${errores[0]}</strong>`
             : `<strong>⚠️ Se encontraron ${errores.length} errores que debe corregir:</strong><br><br>• ${errores.join('<br>• ')}`;
-        
+
         mostrarAlerta(mensajeCompleto, 'warning');
-        
+
         // Ir al primer paso con error
         if (!nombre || !criterio || (criterio === 'edad' && (!document.querySelector('[name="edad_desde"]')?.value || !document.querySelector('[name="edad_hasta"]')?.value)) || (criterio === 'nivel' && !document.querySelector('[name="nivel_educativo"]')?.value) || (criterio === 'proyecto' && !document.querySelector('[name="nombre_proyecto"]')?.value.trim())) {
             goToStep(1);
@@ -1166,10 +1166,10 @@ document.getElementById('formGrupo')?.addEventListener('submit', function(e) {
         } else if (participantesAgregados.size === 0) {
             goToStep(3);
         }
-        
+
         return false;
     }
-    
+
     console.log('Validación exitosa - enviando formulario');
     // Si todo está bien, enviar formulario
     e.target.submit();

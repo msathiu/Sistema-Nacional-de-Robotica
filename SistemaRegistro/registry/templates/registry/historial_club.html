@@ -10,19 +10,19 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         overflow: hidden;
     }
-    
+
     .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
-    
+
     .section-icon {
         width: 40px;
         height: 40px;
@@ -31,24 +31,24 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .info-item {
         padding: 0.75rem;
         background: white;
         border-radius: 12px;
         margin-bottom: 0.75rem;
     }
-    
+
     .info-item:last-child { margin-bottom: 0; }
     .info-item small { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-item strong { color: #1e293b; }
-    
+
     /* Timeline */
     .timeline {
         position: relative;
         padding: 20px 0;
     }
-    
+
     .timeline::before {
         content: '';
         position: absolute;
@@ -59,15 +59,15 @@
         background: linear-gradient(to bottom, var(--accent-cyan), var(--blue-main));
         border-radius: 3px;
     }
-    
+
     .timeline-item {
         position: relative;
         padding-left: 70px;
         margin-bottom: 24px;
     }
-    
+
     .timeline-item:last-child { margin-bottom: 0; }
-    
+
     .timeline-marker {
         position: absolute;
         left: 0;
@@ -80,13 +80,13 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         z-index: 1;
     }
-    
+
     .timeline-marker.aprobado { background: linear-gradient(135deg, #10b981, #059669); }
     .timeline-marker.rechazado { background: linear-gradient(135deg, #dc2626, #b91c1c); }
     .timeline-marker.en_revision { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
     .timeline-marker.pendiente { background: linear-gradient(135deg, #f59e0b, #d97706); }
     .timeline-marker.borrador { background: linear-gradient(135deg, #64748b, #475569); }
-    
+
     .timeline-content {
         background: white;
         border: 1px solid #e2e8f0;
@@ -94,7 +94,7 @@
         padding: 1rem 1.25rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-    
+
     .timeline-comment {
         background: #f8fafc;
         border-radius: 10px;
@@ -102,9 +102,9 @@
         margin-top: 0.75rem;
         border-left: 3px solid var(--accent-cyan);
     }
-    
+
     .x-small { font-size: 0.72rem; }
-    
+
     /* Animaciones optimizadas */
     .animate-fade-in {
         opacity: 0;
@@ -115,11 +115,11 @@
     .delay-1 { animation-delay: 0.1s; }
     .delay-2 { animation-delay: 0.2s; }
     .delay-3 { animation-delay: 0.3s; }
-    
+
     @keyframes fadeIn {
         to { opacity: 1; }
     }
-    
+
     /* Prevenir movimientos inesperados */
     .section-card {
         contain: layout style paint;

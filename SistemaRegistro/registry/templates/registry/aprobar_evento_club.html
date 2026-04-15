@@ -9,7 +9,7 @@
         --blue-dark: #051636;
         --accent-cyan: #00d4ff;
     }
-    
+
     .modern-card {
         border-radius: 20px;
         border: none;
@@ -46,24 +46,24 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
     }
-    
+
     .btn-outline-modern {
         border: 2px solid #e2e8f0;
         color: #64748b;
         background: transparent;
     }
-    
+
     .btn-outline-modern:hover {
         background: #f1f5f9;
         color: #334155;
         border-color: #cbd5e1;
         transform: translateY(-2px);
     }
-    
+
     .form-control, .form-label {
         color: #334155;
     }
-    
+
     .form-control {
         border: 2px solid #e2e8f0;
         border-radius: 12px;
@@ -93,7 +93,7 @@
                         <h5 class="fw-bold mb-1 text-dark">{{ evento.nombre }}</h5>
                         <p class="text-muted small mb-0"><i class="bi bi-robot me-1"></i>Club: {{ evento.club_organizador.nombre }}</p>
                     </div>
-                    
+
                     <div class="p-3 bg-light rounded-3 border mb-4">
                         <div class="row">
                             <div class="col-md-6 mb-2 mb-md-0">
@@ -118,7 +118,7 @@
                         {% csrf_token %}
                         <div class="mb-4">
                             <label class="form-label fw-bold">Comentario de Apertura *</label>
-                            <textarea name="observaciones" class="form-control" rows="4" required 
+                            <textarea name="observaciones" class="form-control" rows="4" required
                                 placeholder="Ej: Evento validado y abierto para inscripciones de las instituciones miembros..."></textarea>
                         </div>
 

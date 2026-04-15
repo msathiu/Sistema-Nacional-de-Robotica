@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}RNR - Panel{% endblock %}</title>
-    
+
     <link href="{% static 'fonts/css2.css' %}" rel="stylesheet">
     <link href="{% static 'bootstrap-5.3.8/css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'bootstrap-5.3.8/css/bootstrap-icons.css' %}" rel="stylesheet">
@@ -522,7 +522,7 @@
                 </button>
                 <span class="fw-bold" style="font-family: 'Space Grotesk';">{{ sidebar_header_title }}</span>
             </div>
-            
+
             <!-- User Dropdown - Top Right -->
             <div class="user-dropdown" id="userDropdown">
                 <a href="#" class="user-dropdown-toggle" id="userDropdownToggle">
@@ -535,19 +535,19 @@
                     </div>
                     <i class="bi bi-chevron-down chevron"></i>
                 </a>
-                
+
                 <div class="user-dropdown-menu">
                     <div class="dropdown-header">
                         <div class="user-fullname">{{ user.get_full_name|default:user.username }}</div>
                         <div class="user-email">{{ user.email|default:user.username }}</div>
                     </div>
-                    
+
                     <a href="{% url sidebar_perfil_url %}" class="dropdown-item">
                         <i class="bi bi-person-badge"></i> Mi Perfil
                     </a>
-                    
+
                     <div class="dropdown-divider"></div>
-                    
+
                     <form action="{% url 'logout' %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="dropdown-item logout-item w-100 text-start">

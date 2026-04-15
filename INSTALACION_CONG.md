@@ -600,7 +600,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -617,7 +617,7 @@ Para producción, modificar `server_name`:
 server {
     listen 80;
     server_name fvrc.org.ve www.fvrc.org.ve;
-    
+
     # Redirigir HTTP a HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -625,11 +625,11 @@ server {
 server {
     listen 443 ssl http2;
     server_name fvrc.org.ve www.fvrc.org.ve;
-    
+
     # Configuración SSL
     ssl_certificate /etc/nginx/ssl/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/key.pem;
-    
+
     # ... resto de configuración
 }
 ```

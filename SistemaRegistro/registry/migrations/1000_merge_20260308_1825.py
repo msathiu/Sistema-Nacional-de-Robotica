@@ -4,9 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0047_fix_grupo_participantes_uuid'),
+        ("registry", "0047_fix_grupo_participantes_uuid"),
     ]
 
     operations = [
@@ -15,12 +14,12 @@ class Migration(migrations.Migration):
             DO $$
             BEGIN
                 IF EXISTS (
-                    SELECT 1 FROM information_schema.columns 
-                    WHERE table_name = 'registry_participanteinstitucion' 
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'registry_participanteinstitucion'
                     AND column_name = 'participante_id'
                     AND data_type != 'uuid'
                 ) THEN
-                    ALTER TABLE registry_participanteinstitucion 
+                    ALTER TABLE registry_participanteinstitucion
                     ALTER COLUMN participante_id TYPE uuid USING participante_id::text::uuid;
                 END IF;
             END $$;

@@ -30,9 +30,15 @@ class EventoModelTestCase(TestCase):
     def setUp(self):
         """Configuración inicial para tests."""
         # Crear ubicación
-        self.estado, _ = Estado.objects.get_or_create(nombre="Miranda", defaults={"codigo": "13"})
-        self.municipio, _ = Municipio.objects.get_or_create(nombre="Chacao", estado=self.estado)
-        self.parroquia, _ = Parroquia.objects.get_or_create(nombre="Chacao", municipio=self.municipio)
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Miranda", defaults={"codigo": "13"}
+        )
+        self.municipio, _ = Municipio.objects.get_or_create(
+            nombre="Chacao", estado=self.estado
+        )
+        self.parroquia, _ = Parroquia.objects.get_or_create(
+            nombre="Chacao", municipio=self.municipio
+        )
 
         # Crear institución
         self.institucion = Institucion.objects.create(
@@ -104,7 +110,7 @@ class EventoModelTestCase(TestCase):
             club_organizador=self.club,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         institucionales = Evento.objects.institucionales()
         self.assertEqual(institucionales.count(), 1)
         self.assertEqual(institucionales.first().tipo_evento, "institucional")
@@ -123,7 +129,7 @@ class EventoModelTestCase(TestCase):
             club_organizador=self.club,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         de_club = Evento.objects.de_club()
         self.assertEqual(de_club.count(), 1)
         self.assertEqual(de_club.first().tipo_evento, "club")
@@ -144,7 +150,7 @@ class EventoModelTestCase(TestCase):
             estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         pendientes = Evento.objects.pendientes_aprobacion()
         self.assertEqual(pendientes.count(), 1)
         self.assertEqual(pendientes.first().estado_evento, EstadoEvento.REVISION)
@@ -163,7 +169,7 @@ class EventoModelTestCase(TestCase):
             club_organizador=self.club,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         self.assertEqual(evento_inst.organizador, self.institucion)
         self.assertEqual(evento_club.organizador, self.club)
 
@@ -183,7 +189,7 @@ class EventoModelTestCase(TestCase):
             estado_evento=EstadoEvento.ABIERTO,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         self.assertTrue(evento_inst.puede_inscribirse)
         self.assertTrue(evento_club.puede_inscribirse)
 
@@ -194,9 +200,15 @@ class InscripcionEventoClubTestCase(TestCase):
     def setUp(self):
         """Configuración inicial."""
         # Crear ubicación
-        self.estado, _ = Estado.objects.get_or_create(nombre="Miranda", defaults={"codigo": "13"})
-        self.municipio, _ = Municipio.objects.get_or_create(nombre="Chacao", estado=self.estado)
-        self.parroquia, _ = Parroquia.objects.get_or_create(nombre="Chacao", municipio=self.municipio)
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Miranda", defaults={"codigo": "13"}
+        )
+        self.municipio, _ = Municipio.objects.get_or_create(
+            nombre="Chacao", estado=self.estado
+        )
+        self.parroquia, _ = Parroquia.objects.get_or_create(
+            nombre="Chacao", municipio=self.municipio
+        )
 
         # Crear instituciones
         self.inst_creadora = Institucion.objects.create(
@@ -228,19 +240,25 @@ class InscripcionEventoClubTestCase(TestCase):
         )
 
         # Crear usuarios
-        self.user_creador = User.objects.create_user(username="creador", password="test123")
+        self.user_creador = User.objects.create_user(
+            username="creador", password="test123"
+        )
         profile_creador = self.user_creador.userprofile
         profile_creador.user_type = "institucional"
         profile_creador.institution = self.inst_creadora
         profile_creador.save()
-        
-        self.user_miembro = User.objects.create_user(username="miembro", password="test123")
+
+        self.user_miembro = User.objects.create_user(
+            username="miembro", password="test123"
+        )
         profile_miembro = self.user_miembro.userprofile
         profile_miembro.user_type = "institucional"
         profile_miembro.institution = self.inst_miembro
         profile_miembro.save()
-        
-        self.user_externo = User.objects.create_user(username="externo", password="test123")
+
+        self.user_externo = User.objects.create_user(
+            username="externo", password="test123"
+        )
         profile_externo = self.user_externo.userprofile
         profile_externo.user_type = "institucional"
         profile_externo.institution = self.inst_externa
@@ -311,11 +329,17 @@ class EventoClubViewsTestCase(TestCase):
     def setUp(self):
         """Configuración inicial."""
         self.client = Client()
-        
+
         # Crear ubicación
-        self.estado, _ = Estado.objects.get_or_create(nombre="Carabobo", defaults={"codigo": "07"})
-        self.municipio, _ = Municipio.objects.get_or_create(nombre="Valencia", estado=self.estado)
-        self.parroquia, _ = Parroquia.objects.get_or_create(nombre="Candelaria", municipio=self.municipio)
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Carabobo", defaults={"codigo": "07"}
+        )
+        self.municipio, _ = Municipio.objects.get_or_create(
+            nombre="Valencia", estado=self.estado
+        )
+        self.parroquia, _ = Parroquia.objects.get_or_create(
+            nombre="Candelaria", municipio=self.municipio
+        )
 
         # Crear institución
         self.institucion = Institucion.objects.create(
@@ -369,7 +393,7 @@ class EventoClubViewsTestCase(TestCase):
     def test_listar_eventos_club(self):
         """Test: Listar eventos del club."""
         self.client.login(username="test_user", password="test123")
-        
+
         # Crear evento
         Evento.objects.create(
             nombre="Evento Test",
@@ -378,7 +402,7 @@ class EventoClubViewsTestCase(TestCase):
             estado_evento="borrador",
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         response = self.client.get(reverse("eventos_club", args=[self.club.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Evento Test")
@@ -386,7 +410,7 @@ class EventoClubViewsTestCase(TestCase):
     def test_revisar_eventos_club_federacion(self):
         """Test: Federación puede revisar eventos."""
         self.client.login(username="federacion", password="test123")
-        
+
         # Crear evento pendiente (REVISION)
         Evento.objects.create(
             nombre="Evento Pendiente",
@@ -445,8 +469,10 @@ class EventoClubViewsTestCase(TestCase):
         evento.refresh_from_db()
         # Verificar que el estado cambió o que hubo redirect exitoso
         self.assertTrue(
-            evento.estado_evento == EstadoEvento.RECHAZADO or response.status_code == 200
+            evento.estado_evento == EstadoEvento.RECHAZADO
+            or response.status_code == 200
         )
+
 
 class EventoClubPermisosTestCase(TestCase):
     """Tests de permisos para eventos de club."""
@@ -454,11 +480,17 @@ class EventoClubPermisosTestCase(TestCase):
     def setUp(self):
         """Configuración inicial."""
         self.client = Client()
-        
+
         # Crear ubicación
-        self.estado, _ = Estado.objects.get_or_create(nombre="Zulia", defaults={"codigo": "23"})
-        self.municipio, _ = Municipio.objects.get_or_create(nombre="Maracaibo", estado=self.estado)
-        self.parroquia, _ = Parroquia.objects.get_or_create(nombre="Olegario Villalobos", municipio=self.municipio)
+        self.estado, _ = Estado.objects.get_or_create(
+            nombre="Zulia", defaults={"codigo": "23"}
+        )
+        self.municipio, _ = Municipio.objects.get_or_create(
+            nombre="Maracaibo", estado=self.estado
+        )
+        self.parroquia, _ = Parroquia.objects.get_or_create(
+            nombre="Olegario Villalobos", municipio=self.municipio
+        )
 
         # Crear instituciones
         self.inst1 = Institucion.objects.create(
@@ -486,7 +518,7 @@ class EventoClubPermisosTestCase(TestCase):
         profile1.user_type = "institucional"
         profile1.institution = self.inst1
         profile1.save()
-        
+
         self.user2 = User.objects.create_user(username="user2", password="test123")
         profile2 = self.user2.userprofile
         profile2.user_type = "institucional"
@@ -508,7 +540,7 @@ class EventoClubPermisosTestCase(TestCase):
         url = reverse("crear_evento") + f"?club_id={self.club.id}"
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        
+
         # User2 (no propietario) no obtiene el club dentro de sus opciones disponibles.
         self.client.login(username="user2", password="test123")
         url = reverse("crear_evento") + f"?club_id={self.club.id}"
@@ -525,7 +557,7 @@ class EventoClubPermisosTestCase(TestCase):
             estado_evento=EstadoEvento.REVISION,
             fecha=timezone.now().date() + timedelta(days=30),
         )
-        
+
         # Usuario institucional no puede
         self.client.login(username="user1", password="test123")
         response = self.client.get(reverse("aprobar_evento", args=[evento.id]))

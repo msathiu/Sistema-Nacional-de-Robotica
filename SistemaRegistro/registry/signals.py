@@ -12,14 +12,18 @@ from .models import Club, Evento, Institucion
 
 _MAPA_PREFIJOS = {
     "instituciones": ["mapa_instituciones____a", "mapa_instituciones____t"],
-    "clubes":        ["mapa_clubes____a"],
-    "eventos":       ["mapa_eventos____a"],
+    "clubes": ["mapa_clubes____a"],
+    "eventos": ["mapa_eventos____a"],
 }
 
+
 def _invalidar_cache_mapa(*prefijos):
-    keys = list({k for p in prefijos for k in _MAPA_PREFIJOS.get(p, [])} | {"mapa_resumen_all"})
+    keys = list(
+        {k for p in prefijos for k in _MAPA_PREFIJOS.get(p, [])} | {"mapa_resumen_all"}
+    )
     cache.delete_many(keys)
     logger.debug(f"Cache mapa invalidada: {keys}")
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +54,9 @@ def _sincronizar_usuario_institucion(instance):
         )
 
 
-def _enviar_correo_si_corresponde(instance, estado_anterior, fue_activada, tiene_codigo_permanente):
+def _enviar_correo_si_corresponde(
+    instance, estado_anterior, fue_activada, tiene_codigo_permanente
+):
     """Envía correo de activación si se cumplen las condiciones."""
     if fue_activada and tiene_codigo_permanente and instance.usuario:
         logger.info(
@@ -81,7 +87,9 @@ def enviar_correo_activacion_institucion(sender, instance, created, **kwargs):
 
     # Si fue manejado por un servicio explícito, no duplicar lógica
     if getattr(instance, "_identity_service_handled", False):
-        logger.info(f"Omitiendo señales para {instance.nombre} (Manejado por IdentityService)")
+        logger.info(
+            f"Omitiendo señales para {instance.nombre} (Manejado por IdentityService)"
+        )
         return
 
     if not hasattr(instance, "_estado_anterior") or instance._estado_anterior is None:
@@ -96,15 +104,17 @@ def enviar_correo_activacion_institucion(sender, instance, created, **kwargs):
     )
 
     _sincronizar_usuario_institucion(instance)
-    _enviar_correo_si_corresponde(instance, estado_anterior, fue_activada, tiene_codigo_permanente)
+    _enviar_correo_si_corresponde(
+        instance, estado_anterior, fue_activada, tiene_codigo_permanente
+    )
 
     if hasattr(instance, "_estado_anterior"):
         delattr(instance, "_estado_anterior")
 
     # Invalidar caché del mapa cuando cambia estatus o activa
     if estado_anterior and (
-        estado_anterior.estatus != instance.estatus or
-        estado_anterior.activa != instance.activa
+        estado_anterior.estatus != instance.estatus
+        or estado_anterior.activa != instance.activa
     ):
         _invalidar_cache_mapa("instituciones")
 

@@ -5,20 +5,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('registry', '0009_alter_club_options_alter_evento_options_and_more'),
+        ("registry", "0009_alter_club_options_alter_evento_options_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='club',
-            name='fecha_creacion',
-            field=models.DateTimeField(default=django.utils.timezone.now, editable=False),
+            model_name="club",
+            name="fecha_creacion",
+            field=models.DateTimeField(
+                default=django.utils.timezone.now, editable=False
+            ),
         ),
         migrations.AlterField(
-            model_name='evento',
-            name='fecha_creacion',
-            field=models.DateTimeField(default=django.utils.timezone.now, editable=False),
+            model_name="evento",
+            name="fecha_creacion",
+            field=models.DateTimeField(
+                default=django.utils.timezone.now, editable=False
+            ),
         ),
     ]

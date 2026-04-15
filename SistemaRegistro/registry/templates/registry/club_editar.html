@@ -13,101 +13,101 @@
         --warning: #f59e0b;
         --danger: #dc2626;
     }
-    
+
     .main-card {
         border: none;
         border-radius: 20px;
         box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         overflow: hidden;
     }
-    
+
     .info-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         transition: all 0.3s ease;
     }
-    
+
     .info-card:hover {
         box-shadow: 0 8px 25px rgba(0,0,0,0.1);
     }
-    
+
     .form-label {
         font-weight: 600;
         color: #334155;
         margin-bottom: 0.5rem;
     }
-    
+
     .form-control, .form-select {
         border: 2px solid #e2e8f0;
         border-radius: 12px;
         padding: 0.625rem 1rem;
         transition: all 0.3s ease;
     }
-    
+
     .form-control:focus, .form-select:focus {
         border-color: var(--accent-cyan);
         box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.1);
     }
-    
+
     .form-text {
         font-size: 0.8rem;
         color: #64748b;
     }
-    
+
     .alert-modern {
         border: none;
         border-radius: 16px;
         padding: 1.25rem;
     }
-    
+
     .alert-borrador {
         background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
         border-left: 4px solid #64748b;
     }
-    
+
     .alert-pendiente {
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         border-left: 4px solid var(--warning);
     }
-    
+
     .alert-aprobado {
         background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         border-left: 4px solid var(--success);
     }
-    
+
     .alert-rechazado {
         background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         border-left: 4px solid var(--danger);
     }
-    
+
     .status-badge {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
     }
-    
+
     .status-borrador {
         background: #f1f5f9;
         color: #64748b;
     }
-    
+
     .status-pendiente {
         background: #fef3c7;
         color: #d97706;
     }
-    
+
     .status-aprobado {
         background: #d1fae5;
         color: #059669;
     }
-    
+
     .status-rechazado {
         background: #fee2e2;
         color: #dc2626;
     }
-    
+
     .info-item {
         padding: 0.75rem;
         background: #f8fafc;
@@ -115,26 +115,26 @@
         margin-bottom: 0.75rem;
         transition: all 0.3s ease;
     }
-    
+
     .info-item:hover {
         background: white;
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
-    
+
     .info-item:last-child {
         margin-bottom: 0;
     }
-    
+
     .info-item small {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    
+
     .info-item strong {
         color: #1e293b;
     }
-    
+
     .club-info-icon {
         width: 48px;
         height: 48px;
@@ -144,9 +144,9 @@
         justify-content: center;
         background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--blue-main) 100%);
     }
-    
+
     .x-small { font-size: 0.72rem; }
-    
+
     .responsable-card {
         border: 1px solid #e2e8f0;
         border-radius: 12px;
@@ -155,28 +155,28 @@
         background: white;
         transition: all 0.2s ease;
     }
-    
+
     .responsable-card:hover {
         border-color: var(--accent-cyan);
         box-shadow: 0 2px 8px rgba(0, 212, 255, 0.1);
     }
-    
+
     .responsable-card.primero {
         border-left: 3px solid var(--blue-main);
     }
-    
+
     .section-card {
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         background: #f8fafc;
         overflow: hidden;
     }
-    
+
     .section-card .card-header {
         border: none;
         padding: 1rem 1.25rem;
     }
-    
+
     .section-icon {
         width: 40px;
         height: 40px;
@@ -185,7 +185,7 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .linea-badge {
         background: linear-gradient(135deg, var(--blue-main) 0%, #1a4ca8 100%);
         color: white;
@@ -219,19 +219,19 @@
     <hr class="mt-2 mb-4 opacity-10">
 
     <!-- Estado actual del club -->
-    <div class="alert alert-modern 
+    <div class="alert alert-modern
         {% if club.status == 'borrador' %}alert-borrador
         {% elif club.status == 'pendiente' or club.status == 'en_revision' %}alert-pendiente
         {% elif club.status == 'aprobado' %}alert-aprobado
         {% elif club.status == 'rechazado' %}alert-rechazado
         {% else %}alert-info{% endif %} mb-4">
         <div class="d-flex align-items-center">
-            <i class="bi 
+            <i class="bi
                 {% if club.status == 'borrador' %}bi-file-earmark-text
                 {% elif club.status == 'pendiente' or club.status == 'en_revision' %}bi-hourglass-split
                 {% elif club.status == 'aprobado' %}bi-check-circle-fill
                 {% elif club.status == 'rechazado' %}bi-x-circle-fill
-                {% else %}bi-info-circle{% endif %} 
+                {% else %}bi-info-circle{% endif %}
                 fs-4 me-3
                 {% if club.status == 'borrador' %}text-secondary
                 {% elif club.status == 'pendiente' or club.status == 'en_revision' %}text-warning
@@ -239,7 +239,7 @@
                 {% elif club.status == 'rechazado' %}text-danger
                 {% endif %}"></i>
             <div>
-                <strong>Estado actual:</strong> 
+                <strong>Estado actual:</strong>
                 <span class="status-badge status-{{ club.status }}">{{ club.get_status_display }}</span>
                 {% if club.status == 'borrador' %}
                 <span class="d-block small text-muted mt-1">El club no será visible hasta que sea aprobado</span>
@@ -266,7 +266,7 @@
                 <div class="card-body p-4">
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        
+
                         <!-- Información Básica -->
                         <div class="section-card mb-4">
                             <div class="card-header text-white d-flex align-items-center" style="background: linear-gradient(145deg, var(--blue-main), var(--blue-dark));">
@@ -279,31 +279,31 @@
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-8">
                                         <label for="nombre" class="form-label fw-bold">Nombre del Club *</label>
-                                        <input type="text" class="form-control" id="nombre" name="nombre" 
+                                        <input type="text" class="form-control" id="nombre" name="nombre"
                                                value="{{ club.nombre }}" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label for="siglas" class="form-label fw-bold">Siglas</label>
-                                        <input type="text" class="form-control" id="siglas" name="siglas" 
+                                        <input type="text" class="form-control" id="siglas" name="siglas"
                                                value="{{ club.siglas|default:'' }}" maxlength="10" placeholder="Ej: CIR">
                                     </div>
                                 </div>
 
                                 <div class="mb-4">
                                     <label for="descripcion" class="form-label fw-bold">Descripción *</label>
-                                    <textarea class="form-control" id="descripcion" name="descripcion" 
+                                    <textarea class="form-control" id="descripcion" name="descripcion"
                                               rows="4" required>{{ club.descripcion|default:'' }}</textarea>
                                 </div>
 
                                 <div class="row g-3 mb-0">
                                     <div class="col-md-6">
                                         <label for="ubicacion" class="form-label fw-bold">Ubicación</label>
-                                        <input type="text" class="form-control" id="ubicacion" name="ubicacion" 
+                                        <input type="text" class="form-control" id="ubicacion" name="ubicacion"
                                                value="{{ club.ubicacion|default:'' }}">
                                     </div>
                                     <div class="col-md-6">
                                         <label for="fecha_fundacion" class="form-label fw-bold">Fecha de Fundación</label>
-                                        <input type="date" class="form-control" id="fecha_fundacion" name="fecha_fundacion" 
+                                        <input type="date" class="form-control" id="fecha_fundacion" name="fecha_fundacion"
                                                value="{{ club.fecha_fundacion|date:'Y-m-d'|default:'' }}">
                                     </div>
                                 </div>
@@ -413,7 +413,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label for="cupo_maximo" class="form-label fw-bold">Cupo Máximo *</label>
-                                        <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo" 
+                                        <input type="number" class="form-control" id="cupo_maximo" name="cupo_maximo"
                                                value="{{ club.cupo_maximo }}" min="1" max="100" required>
                                         <small class="form-text">Número máximo de instituciones miembro</small>
                                     </div>
@@ -421,13 +421,13 @@
 
                                 <div class="mb-4">
                                     <label for="requisitos" class="form-label fw-bold">Requisitos de Membresía</label>
-                                    <textarea class="form-control" id="requisitos" name="requisitos" 
+                                    <textarea class="form-control" id="requisitos" name="requisitos"
                                               rows="3">{{ club.requisitos|default:'' }}</textarea>
                                 </div>
 
                                 <div class="mb-0">
                                     <label for="documento_legal" class="form-label fw-bold">Documento Legal</label>
-                                    <textarea class="form-control" id="documento_legal" name="documento_legal" 
+                                    <textarea class="form-control" id="documento_legal" name="documento_legal"
                                               rows="2">{{ club.documento_legal|default:'' }}</textarea>
                                 </div>
                             </div>
@@ -499,7 +499,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             <!-- Tips -->
             {% if club.status == 'aprobado' %}
             <div class="section-card mt-4">
@@ -666,7 +666,7 @@
                 <div class="responsable-card ${esPrimero ? 'primero' : ''}">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center flex-grow-1">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" 
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm"
                                  style="width: 40px; height: 40px; background: ${esPrimero ? 'var(--blue-main)' : '#64748b'}; color: white; font-size: 0.8rem; font-weight: bold;">
                                 ${r.nombre_completo.split(' ').map(n => n[0]).join('').substring(0, 2)}
                             </div>
@@ -680,7 +680,7 @@
                                     onchange="cambiarRol(${i}, this.value)">
                                 ${selectHtml}
                             </select>
-                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" 
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle"
                                     style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;"
                                     onclick="eliminarResponsable(${i})" title="Eliminar">
                                 <i class="bi bi-trash3" style="font-size: 0.7rem;"></i>
@@ -752,7 +752,7 @@
                         <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle me-2"></i>Último rechazo:</h6>
                         <p class="mb-1 small">{{ ultimo_rechazo.observaciones }}</p>
                         <small class="text-muted">
-                            Rechazado el {{ ultimo_rechazo.fecha|date:"d/m/Y H:i" }} 
+                            Rechazado el {{ ultimo_rechazo.fecha|date:"d/m/Y H:i" }}
                             por {{ ultimo_rechazo.usuario.get_full_name|default:ultimo_rechazo.usuario.username }}
                         </small>
                     </div>
@@ -766,7 +766,7 @@
                     </div>
                     {% endif %}
                     {% endwith %}
-                    
+
                     <div class="text-center mb-3">
                         <i class="bi bi-question-circle" style="font-size: 3rem; color: #059669;"></i>
                     </div>
@@ -798,4 +798,3 @@
     </div>
 </div>
 {% endblock %}
-
