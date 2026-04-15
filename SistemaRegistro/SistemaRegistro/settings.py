@@ -194,14 +194,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if not DEBUG:
     # CSRF y seguridad de cookies
     CSRF_TRUSTED_ORIGINS = os.getenv(
-        "CSRF_TRUSTED_ORIGINS", "http://localhost:8000"
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:8000",  # En producciópn debe ser el dominio real del sitio
     ).split(",")
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = (
+        False  # CSRF cookie debe ser accesible por JavaScript para el token
+    )
     SESSION_COOKIE_SAMESITE = "Strict"
     CSRF_COOKIE_SAMESITE = "Strict"
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
