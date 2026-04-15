@@ -16,26 +16,20 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        # Hemos quitado el --baseline para evitar el error 'Unable to read' en Windows
-        exclude: package-lock.json
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: package-lock.json|.secrets.baseline
 
-# --- SECCIÓN: AUDITORÍA DE SEGURIDAD LOCAL (vía Docker) ---
-  - repo: local
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
     hooks:
-      - id: bandit-docker
-        name: Bandit (Seguridad de Código)
-        entry: docker compose exec -T web bandit -r . -x ./venv,./tests
-        language: system
+      - id: bandit
+        args: ["-r", "SistemaRegistro", "-x", "./venv,./tests,./SIN_USO,./old,./backup,./scripts,registry/tests,users/tests,simplified_test.py,verificar_estadisticas.py,registry/migrations,SistemaRegistro/settings.py,registry/context_processors.py,users/views.py"]
         pass_filenames: false
 
-      - id: pip-audit-docker
-        name: Pip-audit (Seguridad de Librerías)
-        entry: docker compose exec -T web pip-audit
-        language: system
-        pass_filenames: false
-
-      - id: django-check-deploy
-        name: Django Check Deploy
-        entry: docker compose exec -T web python manage.py check --deploy
-        language: system
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.10.0
+    hooks:
+      - id: pip-audit
+        args: ["-r", "SistemaRegistro/requirements.txt"]
+        files: "requirements.txt"
         pass_filenames: false

@@ -17,6 +17,3 @@ whitenoise==6.11.0
 django-jazzmin==3.0.1
 uuid6==2025.0.1
 nh3==0.3.4
-bandit==1.8.3
-pip-audit==2.10.0
-

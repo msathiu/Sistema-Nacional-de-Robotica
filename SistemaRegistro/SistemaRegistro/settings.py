@@ -110,9 +110,7 @@ WSGI_APPLICATION = "SistemaRegistro.wsgi.application"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL no está definida. PostgreSQL es obligatorio."
-    )
+    raise ValueError("DATABASE_URL no está definida. PostgreSQL es obligatorio.")
 
 DATABASES = {
     "default": dj_database_url.parse(
@@ -204,14 +202,15 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Strict'
-    CSRF_COOKIE_SAMESITE = 'Strict'
+    SESSION_COOKIE_SAMESITE = "Strict"
+    CSRF_COOKIE_SAMESITE = "Strict"
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     X_FRAME_OPTIONS = "DENY"
 else:
     # Configuraciones de desarrollo
@@ -276,19 +275,18 @@ JAZZMIN_SETTINGS = {
     "site_logo": None,
     "welcome_sign": "Bienvenido al Panel de Administración",
     "copyright": "FVRC - Federación Venezolana de Robótica Creativa",
-    
     "show_sidebar": True,
     "navigation_expanded": True,
-    
     "theme": "flatly",
     "dark_mode_theme": "darkly",
-    
     "topmenu_links": [
-        {"name": "Dashboard", "url": "admin_dashboard", "icon": "fas fa-tachometer-alt"},
+        {
+            "name": "Dashboard",
+            "url": "admin_dashboard",
+            "icon": "fas fa-tachometer-alt",
+        },
         {"name": "Ver Logs", "url": "admin_logs", "icon": "fas fa-file-alt"},
-
     ],
-    
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -303,7 +301,6 @@ JAZZMIN_SETTINGS = {
         "registry.grupo": "fas fa-users",
         "registry.club": "fas fa-robot",
     },
-    
     "order_with_respect_to": ["auth", "users", "registry"],
     "show_ui_builder": False,
     "changeform_format": "horizontal_tabs",
@@ -345,8 +342,8 @@ JAZZMIN_UI_TWEAKS = {
 # Configuración de cache para desarrollo con Docker
 if DEBUG:
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'unique-snowflake',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
         }
     }
