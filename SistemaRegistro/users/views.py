@@ -4197,7 +4197,13 @@ def toggle_submenu(request):
     """
     Endpoint HTMX para expandir/colapsar un submenu del sidebar.
     Persiste el estado en la sesión y re-renderiza solo el sidebar.
+    Solo acepta solicitudes HTMX.
     """
+    if not request.headers.get("HX-Request"):
+        from django.shortcuts import redirect
+
+        return redirect("dashboard")
+
     from django.template.loader import render_to_string
 
     label = request.GET.get("label", "")

@@ -245,14 +245,7 @@ function rechazarSolicitud(solicitudId, clubNombre) {
 document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     document.querySelectorAll('.counter').forEach(c => {
-        const target = +c.getAttribute('data-target');
-        const update = () => {
-            const now = +c.innerText;
-            const inc = target / 30;
-            if (now < target) { c.innerText = Math.ceil(now + inc); setTimeout(update, 30); }
-            else c.innerText = target;
-        };
-        update();
+        c.textContent = parseInt(c.getAttribute('data-target')).toLocaleString('es-VE');
     });
 });
 </script>

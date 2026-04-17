@@ -324,18 +324,9 @@
 <script src="{% static 'chart.js/chart.umd.js' %}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const counters = document.querySelectorAll('.counter');
-        counters.forEach(counter => {
-            const updateCount = () => {
-                const target = parseInt(counter.getAttribute('data-target'));
-                const count = parseInt(counter.innerText);
-                const increment = Math.max(Math.trunc(target / 100), 1);
-                if (count < target) {
-                    counter.innerText = count + increment;
-                    setTimeout(updateCount, 20);
-                } else { counter.innerText = target; }
-            };
-            updateCount();
+        document.querySelectorAll('.counter').forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            counter.textContent = target.toLocaleString('es-VE');
         });
 
         new Chart(document.getElementById('growthChart').getContext('2d'), {
