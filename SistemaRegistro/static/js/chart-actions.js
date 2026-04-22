@@ -90,7 +90,10 @@
                     ctx.fillStyle = '#0b2c6d';
                     ctx.fillText(label, element.x, element.y - 12);
                 } else if (type === 'doughnut' || type === 'pie') {
-                    // Para dona/pie: pintar en el centro de cada segmento
+                    // Para dona/pie: pintar porcentaje en el centro de cada segmento
+                    const total = dataset.data.reduce((a, b) => (a || 0) + (b || 0), 0);
+                    const percentage = total > 0 ? ((valor / total) * 100).toFixed(1) + '%' : '0%';
+                    const label = percentage;
                     const angle = (element.startAngle + element.endAngle) / 2;
                     const r = (element.innerRadius + element.outerRadius) / 2;
                     const x = element.x + Math.cos(angle) * r;

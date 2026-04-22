@@ -121,6 +121,26 @@ class Institucion(models.Model):
             models.Index(fields=["federado"], name="idx_inst_federado"),
             models.Index(fields=["particular_cedula"], name="idx_inst_part_cedula"),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["codigo_mppe"],
+                condition=models.Q(eliminado=False)
+                & models.Q(tipo_institucion="educativa"),
+                name="unique_codigo_mppe_educativas",
+            ),
+            models.UniqueConstraint(
+                fields=["rif", "estado", "municipio", "parroquia"],
+                condition=models.Q(eliminado=False)
+                & models.Q(tipo_institucion__in=["publica", "privada", "otra"]),
+                name="unique_rif_ubicacion_regulares",
+            ),
+            models.UniqueConstraint(
+                fields=["particular_cedula"],
+                condition=models.Q(eliminado=False)
+                & models.Q(tipo_institucion="particular"),
+                name="unique_cedula_particulares",
+            ),
+        ]
 
     def generar_codigo_rnr(self):
         year = str(timezone.now().year)[2:]

@@ -842,20 +842,9 @@
             });
         });
 
-        // Contador animado
+        // Contador simple
         document.querySelectorAll('.counter').forEach(function(counter) {
-            var target = parseInt(counter.getAttribute('data-target'));
-            var updateCount = function() {
-                var count = parseInt(counter.innerText);
-                var increment = Math.max(Math.trunc(target / 20), 1);
-                if (count < target) {
-                    counter.innerText = count + increment;
-                    setTimeout(updateCount, 30);
-                } else {
-                    counter.innerText = target;
-                }
-            };
-            updateCount();
+            counter.textContent = parseInt(counter.getAttribute('data-target')).toLocaleString('es-VE');
         });
     });
 </script>

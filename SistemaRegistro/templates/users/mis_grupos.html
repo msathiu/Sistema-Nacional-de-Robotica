@@ -572,20 +572,7 @@
         // CONTADORES
         // ============================================
         document.querySelectorAll('.counter').forEach(c => {
-            const target = +c.getAttribute('data-target');
-            if (target > 0) {
-                let current = 0;
-                const increment = target / 30;
-                const timer = setInterval(() => {
-                    current += increment;
-                    if (current >= target) {
-                        c.innerText = target;
-                        clearInterval(timer);
-                    } else {
-                        c.innerText = Math.ceil(current);
-                    }
-                }, 30);
-            }
+            c.textContent = parseInt(c.getAttribute('data-target')).toLocaleString('es-VE');
         });
 
         // ============================================

@@ -238,17 +238,7 @@
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
         document.querySelectorAll('.counter').forEach(counter => {
-            const updateCount = () => {
-                const target = parseInt(counter.getAttribute('data-target')) || 0;
-                const count = parseInt(counter.innerText);
-                if (count < target) {
-                    counter.innerText = count + Math.ceil(target / 40);
-                    setTimeout(updateCount, 25);
-                } else {
-                    counter.innerText = target;
-                }
-            };
-            updateCount();
+            counter.textContent = parseInt(counter.getAttribute('data-target')).toLocaleString('es-VE');
         });
 
         // Ordenamiento de columnas

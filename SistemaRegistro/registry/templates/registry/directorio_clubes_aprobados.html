@@ -248,31 +248,9 @@
             new bootstrap.Tooltip(el);
         });
 
-        // Contadores animados con requestAnimationFrame
-        const counters = document.querySelectorAll('.counter');
-
-        counters.forEach(counter => {
-            const target = parseInt(counter.getAttribute('data-target')) || 0;
-            const duration = 1000; // 1 segundo
-
-            let startTime = null;
-
-            const updateCounter = (currentTime) => {
-                if (!startTime) startTime = currentTime;
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const currentValue = Math.floor(progress * target);
-
-                counter.innerText = currentValue;
-
-                if (progress < 1) {
-                    requestAnimationFrame(updateCounter);
-                } else {
-                    counter.innerText = target;
-                }
-            };
-
-            requestAnimationFrame(updateCounter);
+        // Contadores simples
+        document.querySelectorAll('.counter').forEach(counter => {
+            counter.textContent = parseInt(counter.getAttribute('data-target')).toLocaleString('es-VE');
         });
     });
 </script>

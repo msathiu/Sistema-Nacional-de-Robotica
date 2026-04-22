@@ -121,7 +121,8 @@ def normalizar_texto_titulo(texto: Optional[str]) -> Optional[str]:
     RE_APOSTROFE = re.compile(r"^([dD]'|[lL]'|[oO]'|[mM]c)(\w+)")
 
     def capitalizar_palabra(palabra: str, posicion: int, total: int) -> str:
-        if palabra.isupper() and len(palabra) > 1:
+        # Preservar palabras ya escritas en mayúscula (siglas de 1 o más chars: "A", "C", "ONG")
+        if palabra.isupper():
             return palabra
 
         palabra_lower = palabra.lower()
@@ -137,7 +138,9 @@ def normalizar_texto_titulo(texto: Optional[str]) -> Optional[str]:
         es_ultima = posicion == total - 1
         es_nombre_propio = palabra_lower in {p.lower() for p in NOMBRES_PROPIOS}
 
-        if (es_primera or es_ultima) and palabra_lower not in EXCEPCIONES_INICIO_FIN:
+        # La primera y última palabra de un nombre institucional SIEMPRE van en mayúscula,
+        # sin importar si son partículas o artículos (ej. "A C Colegio", "Colegio Y Más")
+        if es_primera or es_ultima:
             return palabra_lower.capitalize()
 
         if es_nombre_propio:
@@ -151,7 +154,14 @@ def normalizar_texto_titulo(texto: Optional[str]) -> Optional[str]:
     palabras = texto.split()
     total = len(palabras)
 
-    if all(p.isupper() for p in palabras if len(p) > 1):
+    # Si la mayoría de palabras significativas (>1 char) están en mayúsculas,
+    # normalizar a minúsculas primero antes de aplicar la capitalización por regla.
+    palabras_significativas = [p for p in palabras if len(p) > 1]
+    if (
+        palabras_significativas
+        and sum(1 for p in palabras_significativas if p.isupper())
+        > len(palabras_significativas) / 2
+    ):
         palabras = [p.lower() for p in palabras]
 
     resultado = [
