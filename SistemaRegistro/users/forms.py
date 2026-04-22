@@ -1063,6 +1063,50 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
         # Si llega aquí, todos los datos coinciden
         return institucion
 
+    def clean_particular_nombres(self):
+        nombres = self.cleaned_data.get("particular_nombres")
+        if nombres:
+            nombres = nombres.strip()
+            if (
+                "@" in nombres
+                or "N/A" in nombres.upper()
+                or nombres.upper() == "NO APLICA"
+            ):
+                raise forms.ValidationError(
+                    "Debe ingresar un nombre válido, no un correo ni texto genérico."
+                )
+            if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", nombres):
+                raise forms.ValidationError(
+                    "Los nombres solo pueden contener letras y espacios."
+                )
+            if len(nombres) < 2:
+                raise forms.ValidationError(
+                    "Los nombres deben tener al menos 2 caracteres."
+                )
+        return nombres
+
+    def clean_particular_apellidos(self):
+        apellidos = self.cleaned_data.get("particular_apellidos")
+        if apellidos:
+            apellidos = apellidos.strip()
+            if (
+                "@" in apellidos
+                or "N/A" in apellidos.upper()
+                or apellidos.upper() == "NO APLICA"
+            ):
+                raise forms.ValidationError(
+                    "Debe ingresar un apellido válido, no un correo ni texto genérico."
+                )
+            if not re.match(r"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", apellidos):
+                raise forms.ValidationError(
+                    "Los apellidos solo pueden contener letras y espacios."
+                )
+            if len(apellidos) < 2:
+                raise forms.ValidationError(
+                    "Los apellidos deben tener al menos 2 caracteres."
+                )
+        return apellidos
+
     def clean_email(self):
         """
         Validar email con unicidad solo para instituciones activas (no eliminadas).
@@ -1244,49 +1288,69 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                     f"La parroquia '{parroquia.nombre}' no pertenece al municipio '{municipio.nombre}'.",
                 )
 
-        # 4. VALIDACIÓN ATÓMICA DE DUPLICIDAD (Nombre, RIF, Ubicación)
-        nombre = cleaned_data.get("nombre")
-        rif_letra = cleaned_data.get("rif_letra")
-        rif_num = StringUtils.clean_numeric_id(cleaned_data.get("rif_numero"))
+        # 4. VALIDACIÓN ATÓMICA DE DUPLICIDAD (Estrategia por tipo_institucion)
+        if tipo_institucion == "educativa":
+            # REGLA: El código MPPE es único a nivel NACIONAL.
+            codigo_mppe = cleaned_data.get("codigo_mppe")
+            if codigo_mppe:
+                codigo_mppe_limpio = codigo_mppe.strip().upper()
+                duplicado = Institucion.objects.filter(
+                    codigo_mppe__iexact=codigo_mppe_limpio, eliminado=False
+                ).first()
+                if duplicado:
+                    raise ValidationError(
+                        f"Ya existe una institución educativa registrada con el código MPPE '{codigo_mppe_limpio}'. "
+                        f"Aparece registrada bajo el nombre: '{duplicado.nombre}'."
+                    )
 
-        if (
-            tipo_institucion != "particular"
-            and nombre
-            and rif_letra
-            and rif_num
-            and estado
-            and municipio
-            and parroquia
-        ):
-            # Formato consistente: J-12345678 (8 dígitos máximo)
-            # Si rif_num es 10 dígitos, usar primeros 8
-            rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
-            rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}"
-            if len(rif_num_limpio) > 8:
-                rif_completo = (
-                    f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
-                )
+        elif tipo_institucion == "particular":
+            # REGLA: La cédula de la persona natural es única en el sistema.
+            cedula = cleaned_data.get("particular_cedula")
+            if cedula:
+                duplicado = Institucion.objects.filter(
+                    tipo_institucion="particular",
+                    particular_cedula=cedula,
+                    eliminado=False,
+                ).first()
+                if duplicado:
+                    nombre_part = f"{duplicado.particular_nombres} {duplicado.particular_apellidos}"
+                    raise ValidationError(
+                        f"La cédula '{cedula}' ya se encuentra registrada en el sistema para la persona '{nombre_part}'."
+                    )
 
-            # Permitir considerar duplicado si el RIF coincide con el value base de 8 dígitos
-            rif_base = f"{rif_letra}-{rif_num_limpio[:8]}"
-            rif_posibles = [rif_completo]
-            if rif_completo != rif_base:
-                rif_posibles.append(rif_base)
+        else:
+            # REGLA (Pública, Privada, Otra): RIF + Ubicación (Ignorando Nombre)
+            rif_letra = cleaned_data.get("rif_letra")
+            rif_num = StringUtils.clean_numeric_id(cleaned_data.get("rif_numero"))
 
-            # Buscar coincidencia de RIF (exacto o base) + nombre + ubicación
-            duplicado = Institucion.objects.filter(
-                nombre__iexact=nombre,
-                rif__in=rif_posibles,
-                estado=estado,
-                municipio=municipio,
-                parroquia=parroquia,
-                eliminado=False,
-            ).exists()
+            if rif_letra and rif_num and estado and municipio and parroquia:
+                rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
+                rif_completo = f"{rif_letra}-{rif_num_limpio[:8]}"
+                if len(rif_num_limpio) > 8:
+                    rif_completo = (
+                        f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                    )
 
-            if duplicado:
-                raise ValidationError(
-                    f"Ya existe una institución registrada con el nombre '{nombre}' y RIF '{rif_completo}' en esta ubicación (Estado {estado.nombre}, Municipio {municipio.nombre})."
-                )
+                # Permitir considerar duplicado si el RIF coincide con el value base de 8 dígitos
+                rif_base = f"{rif_letra}-{rif_num_limpio[:8]}"
+                rif_posibles = [rif_completo]
+                if rif_completo != rif_base:
+                    rif_posibles.append(rif_base)
+
+                duplicado = Institucion.objects.filter(
+                    rif__in=rif_posibles,
+                    estado=estado,
+                    municipio=municipio,
+                    parroquia=parroquia,
+                    eliminado=False,
+                ).first()
+
+                if duplicado:
+                    raise ValidationError(
+                        f"Ya existe una institución registrada con el RIF '{rif_completo}' en esta ubicación "
+                        f"(Estado {estado.nombre}, Municipio {municipio.nombre}, Parroquia {parroquia.nombre}). "
+                        f"Aparece bajo el nombre: '{duplicado.nombre}'."
+                    )
 
         return cleaned_data
 
