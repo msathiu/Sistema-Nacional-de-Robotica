@@ -3,13 +3,14 @@ Tests exhaustivos para el registro de instituciones.
 Valida todos los escenarios críticos identificados en el análisis.
 """
 
-from django.test import TestCase, Client
-from django.contrib.auth.models import User
+import logging
+
+from django.test import Client, TestCase
 from django.urls import reverse
-from registry.models import Institucion, Estado, Municipio, Parroquia
+from registry.models import Estado, Institucion, Municipio, Parroquia
+
 from users.forms import InstitucionRegistrationForm
 from users.services.institution_service import InstitutionService
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,32 @@ class InstitucionRegistrationFormTests(TestCase):
         self.assertEqual(form.cleaned_data["tipo_institucion"], "particular")
         self.assertEqual(form.cleaned_data["particular_nombres"], "Juan")
         self.assertIsNone(form.cleaned_data.get("rif"))
+
+    def test_cedula_particular_longitud_invalida_rechazado(self):
+        """Validación: cédula particular debe tener entre 7 y 10 dígitos"""
+        data = {
+            "tipo_institucion": "particular",
+            "particular_nombres": "Juan",
+            "particular_apellidos": "Pérez",
+            "particular_nacionalidad": "V",
+            "particular_cedula": "2026",
+            "email": "juan@example.com",
+            "estado": self.estado.id,
+            "municipio": self.municipio.id,
+            "parroquia": self.parroquia.id,
+            "direccion": "Calle prueba 456",
+            "codigo_area": "0414",
+            "numero_telefono": "5551234",
+            "password": "SecurePass123!",
+            "confirm_password": "SecurePass123!",
+        }
+        form = InstitucionRegistrationForm(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "La cédula debe tener al menos 7 dígitos.",
+            str(form.errors),
+        )
 
     # ============================================================
     # TEST 3: VALIDACIÓN - EMAIL DUPLICADO
@@ -340,20 +367,14 @@ class InstitucionRegistrationFormTests(TestCase):
     # ============================================================
     # TEST 14: VALIDACIÓN - FORMATO RIF CONSISTENTE (10 dígitos)
     # ============================================================
-    def test_formato_rif_10_digitos_guardado_consistente(self):
+    def test_rif_con_digitos_extra_rechazado(self):
         """Validación: RIF con 10 dígitos se guarda en formato consistente"""
         data = self.get_valid_form_data()
         data["rif_numero"] = "1234567890"  # 10 dígitos
         form = InstitucionRegistrationForm(data)
 
-        self.assertTrue(form.is_valid(), msg=form.errors)
-        instance = form.save(commit=False)
-        # Debe ser J-12345678-90 (8 + guion + 2)
-        rif_parts = instance.rif.split("-")
-        self.assertEqual(len(rif_parts), 3)
-        self.assertEqual(rif_parts[0], "J")
-        self.assertEqual(len(rif_parts[1]), 8)
-        self.assertEqual(len(rif_parts[2]), 2)
+        self.assertFalse(form.is_valid())
+        self.assertIn("rif_numero", form.errors)
 
     # ============================================================
     # TEST 15: VALIDACIÓN - TELÉFONO 7 DÍGITOS

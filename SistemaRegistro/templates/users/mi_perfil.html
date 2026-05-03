@@ -94,7 +94,13 @@
                         </div>
                         <div class="col-md-6 tech-field">
                             <label>Contacto Telefónico</label>
-                            <div class="p-2 border-bottom fw-bold text-dark">{{ institucion.telefono|default:"No registrado" }}</div>
+                            <div class="p-2 border-bottom fw-bold text-dark">
+                                {% if institucion.telefono_codigo and institucion.telefono_numero %}
+                                    {{ institucion.telefono_codigo }}-{{ institucion.telefono_numero }}
+                                {% else %}
+                                    {{ institucion.telefono|default:"No registrado" }}
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="col-md-6 tech-field">
                             <label>Email Institucional</label>
@@ -162,10 +168,20 @@
                     <div class="row g-3">
                         <div class="col-12"><label class="form-label small fw-bold">Nombre / Razón Social</label><input type="text" name="nombre" id="editNombre" class="form-control" required></div>
                         <div class="col-md-6"><label class="form-label small fw-bold">Email</label><input type="email" name="email" id="editEmail" class="form-control" required></div>
-                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono</label><input type="text" name="telefono" id="editTelefono" class="form-control" maxlength="11"></div>
-                        <div class="col-md-4"><label class="form-label small fw-bold">Estado</label><select name="estado" id="editEstado" class="form-select" onchange="cargarMunicipiosPerfil()"><option value="">Seleccione...</option>{% for estado in estados %}<option value="{{ estado.id }}">{{ estado.nombre }}</option>{% endfor %}</select></div>
-                        <div class="col-md-4"><label class="form-label small fw-bold">Municipio</label><select name="municipio" id="editMunicipio" class="form-select" onchange="cargarParroquiasPerfil()"><option value="">Seleccione estado primero...</option></select></div>
-                        <div class="col-md-4"><label class="form-label small fw-bold">Parroquia</label><select name="parroquia" id="editParroquia" class="form-select"><option value="">Seleccione municipio primero...</option></select></div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Teléfono</label>
+                            <div class="d-flex gap-2">
+                                <select class="form-select" style="max-width:140px" name="codigo_area" id="editCodigoArea">
+                                    {% for value, label in codigo_area_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="numero_telefono" id="editTelefonoNumero" class="form-control" maxlength="7" minlength="7" inputmode="numeric" pattern="[0-9]{7}" autocomplete="tel-national" placeholder="1234567" oninput="this.value=this.value.replace(/\D/g,'').slice(0,7)">
+                            </div>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Estado</label><input type="text" id="editEstado" class="form-control bg-light" value="{{ institucion.estado|default:'---' }}" readonly></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Municipio</label><input type="text" id="editMunicipio" class="form-control bg-light" value="{{ institucion.municipio|default:'---' }}" readonly></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Parroquia</label><input type="text" id="editParroquia" class="form-control bg-light" value="{{ institucion.parroquia|default:'---' }}" readonly></div>
                         <div class="col-12"><label class="form-label small fw-bold">Dirección</label><textarea name="direccion" id="editDireccion" class="form-control" rows="3"></textarea></div>
                     </div>
                 </div>
@@ -322,38 +338,10 @@ document.addEventListener('DOMContentLoaded', function () {
 function abrirModalEditarPerfil() {
     document.getElementById('editNombre').value = '{{ institucion.nombre|escapejs }}';
     document.getElementById('editEmail').value = '{{ institucion.email|escapejs }}';
-    document.getElementById('editTelefono').value = '{{ institucion.telefono|default:""|escapejs }}';
-    document.getElementById('editEstado').value = '{{ institucion.estado.id|default:"" }}';
+    document.getElementById('editCodigoArea').value = '{{ institucion.telefono_codigo|default:""|escapejs }}';
+    document.getElementById('editTelefonoNumero').value = '{{ institucion.telefono_numero|default:""|escapejs }}';
     document.getElementById('editDireccion').value = '{{ institucion.direccion|default:""|escapejs }}';
-    if('{{ institucion.estado.id }}') cargarMunicipiosPerfil();
     new bootstrap.Modal(document.getElementById('editarPerfilModal')).show();
-}
-
-function cargarMunicipiosPerfil() {
-    const estadoId = document.getElementById('editEstado').value;
-    const municipioSelect = document.getElementById('editMunicipio');
-    municipioSelect.innerHTML = '<option value="">Cargando...</option>';
-    if(!estadoId) { municipioSelect.innerHTML = '<option value="">Seleccione estado primero...</option>'; return; }
-    fetch(`/ajax/municipios/?estado_id=${estadoId}`)
-        .then(r => r.json())
-        .then(data => {
-            municipioSelect.innerHTML = '<option value="">Seleccione...</option>';
-            data.forEach(m => municipioSelect.innerHTML += `<option value="${m.id}" ${m.id == '{{ institucion.municipio.id|default:"" }}' ? 'selected' : ''}>${m.nombre}</option>`);
-            if('{{ institucion.municipio.id }}') cargarParroquiasPerfil();
-        });
-}
-
-function cargarParroquiasPerfil() {
-    const municipioId = document.getElementById('editMunicipio').value;
-    const parroquiaSelect = document.getElementById('editParroquia');
-    parroquiaSelect.innerHTML = '<option value="">Cargando...</option>';
-    if(!municipioId) { parroquiaSelect.innerHTML = '<option value="">Seleccione municipio primero...</option>'; return; }
-    fetch(`/ajax/parroquias/?municipio_id=${municipioId}`)
-        .then(r => r.json())
-        .then(data => {
-            parroquiaSelect.innerHTML = '<option value="">Seleccione...</option>';
-            data.forEach(p => parroquiaSelect.innerHTML += `<option value="${p.id}" ${p.id == '{{ institucion.parroquia.id|default:"" }}' ? 'selected' : ''}>${p.nombre}</option>`);
-        });
 }
 </script>
 

@@ -1,16 +1,18 @@
 import logging
 import string
-from django.db import models, transaction
+
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.apps import apps
+from django.core.mail import send_mail
+from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.db import models, transaction
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.utils.html import strip_tags
 
-from .base import normalizar_texto_titulo, Estado, Municipio, Parroquia, Dependencia
+from .base import Dependencia, Estado, Municipio, Parroquia, normalizar_texto_titulo
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +71,7 @@ class Institucion(models.Model):
         blank=True,
         db_index=True,
         verbose_name="Cédula (solo números)",
+        validators=[MinLengthValidator(7), MaxLengthValidator(10)],
     )
     tipo_institucion = models.CharField(
         max_length=20, choices=TIPO_INSTITUCION_CHOICES, default="educativa"

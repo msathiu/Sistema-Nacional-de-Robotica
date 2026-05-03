@@ -325,14 +325,14 @@
       <div class="section-card active" id="section1">
         <div class="section-header">
           <div class="section-number">1</div>
-          <div><h5 class="mb-0">Datos de Identificacion Institucional</h5></div>
+          <div><h5 class="mb-0">Datos de Identificación Institucional</h5></div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-8">
-            <label class="form-label required">Tipo de Institucion</label>
+            <label class="form-label required">Tipo de Institución/Particular</label>
             <select class="form-select" id="tipoInstitucion" name="tipo_institucion" required>
-              <option value="">Seleccione el tipo de institucion</option>
+              <option value="">Seleccione el tipo de institución/Particular</option>
               <option value="educativa" {% if form.tipo_institucion.value == 'educativa' %}selected{% endif %}>Institución Educativa (Adscrita a MPPE)</option>
               <option value="publica" {% if form.tipo_institucion.value == 'publica' %}selected{% endif %}>Pública</option>
               <option value="privada" {% if form.tipo_institucion.value == 'privada' %}selected{% endif %}>Privada</option>
@@ -415,15 +415,19 @@
             </div>
             <div class="col-md-6">
               <label class="form-label required">Cédula</label>
-              <input
-                type="text"
-                class="form-control"
-                name="particular_cedula"
-                id="particularCedula"
-                placeholder="Solo números"
-                pattern="[0-9]+"
-                maxlength="10"
-                value="{{ form.particular_cedula.value|default:'' }}">
+               <input
+                 type="text"
+                 class="form-control"
+                 name="particular_cedula"
+                 id="particularCedula"
+                 placeholder="Solo números"
+                 pattern="[0-9]{7,10}"
+                 title="7 a 10 dígitos numéricos"
+                 maxlength="10"
+                 minlength="7"
+                 inputmode="numeric"
+                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                 value="{{ form.particular_cedula.value|default:'' }}">
               {% if form.particular_cedula.errors %}<div class="validation-text">{{ form.particular_cedula.errors|striptags }}</div>{% endif %}
             </div>
           </div>
@@ -454,22 +458,23 @@
             >
             {% if form.rif_numero.errors %}<div class="validation-text">{{ form.rif_numero.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4" id="campoCodigoMPPE">
-            <label class="form-label" id="codigoMppeLabel">Codigo MPPE</label>
-            <input type="text" class="form-control" name="codigo_mppe" id="codigoMPPE" value="{{ form.codigo_mppe.value|default:'' }}" placeholder="Ej: ME123456">
-            {% if form.codigo_mppe.errors %}<div class="validation-text">{{ form.codigo_mppe.errors|striptags }}</div>{% endif %}
-          </div>
+        <div class="col-md-4" id="campoCodigoMPPE">
+          <label class="form-label" id="codigoMppeLabel">Código MPPE</label>
+          <input type="text" class="form-control" name="codigo_mppe" id="codigoMPPE" value="{{ form.codigo_mppe.value|default:'' }}" placeholder="Ej: ME123456" maxlength="12" minlength="6" pattern="[A-Za-z0-9]{6,12}" inputmode="text" autocomplete="off" oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').slice(0,12).toUpperCase()">
+          {% if form.codigo_mppe.errors %}<div class="validation-text">{{ form.codigo_mppe.errors|striptags }}</div>{% endif %}
+
+        </div>
         </div>
 
         <div class="text-end">
-          <button type="button" class="btn btn-next" onclick="irSeccion(2)">Continuar a Seccion 2</button>
+          <button type="button" class="btn btn-next" onclick="irSeccion(2)">Continuar a Sección 2</button>
         </div>
       </div>
 
       <div class="section-card hidden" id="section2">
         <div class="section-header">
           <div class="section-number">2</div>
-          <div><h5 class="mb-0">Ubicacion y Contacto</h5></div>
+          <div><h5 class="mb-0">Ubicación y Contacto</h5></div>
         </div>
 
         <div class="row g-3 mb-3">
@@ -515,22 +520,17 @@
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label required">Correo Electronico</label>
+            <label class="form-label required">Correo Electrónico</label>
             <input type="email" class="form-control" name="email" id="email" value="{{ form.email.value|default:'' }}" required>
             {% if form.email.errors %}<div class="validation-text">{{ form.email.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-6">
-            <label class="form-label required">Telefono</label>
+            <label class="form-label required">Teléfono</label>
             <div class="d-flex gap-2">
               <select class="form-select" style="max-width:140px" name="codigo_area" id="codigoOperadora">
-                <option value="">Codigo</option>
-                <option value="0412" {% if form.codigo_area.value == '0412' %}selected{% endif %}>0412</option>
-                <option value="0414" {% if form.codigo_area.value == '0414' %}selected{% endif %}>0414</option>
-                <option value="0416" {% if form.codigo_area.value == '0416' %}selected{% endif %}>0416</option>
-                <option value="0424" {% if form.codigo_area.value == '0424' %}selected{% endif %}>0424</option>
-                <option value="0426" {% if form.codigo_area.value == '0426' %}selected{% endif %}>0426</option>
-                <option value="0212" {% if form.codigo_area.value == '0212' %}selected{% endif %}>0212</option>
-                <option value="0281" {% if form.codigo_area.value == '0281' %}selected{% endif %}>0281</option>
+                {% for value, label in form.fields.codigo_area.choices %}
+                  <option value="{{ value }}" {% if form.codigo_area.value|stringformat:'s' == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
               </select>
               <input
                 type="text"
@@ -553,7 +553,7 @@
 
         <div class="d-flex justify-content-between actions-stack">
           <button type="button" class="btn btn-back" onclick="irSeccion(1)"><i class="bi bi-arrow-left"></i>Regresar</button>
-          <button type="button" class="btn btn-next" onclick="irSeccion(3)">Continuar a Seccion 3</button>
+          <button type="button" class="btn btn-next" onclick="irSeccion(3)">Continuar a Sección 3</button>
         </div>
       </div>
 
@@ -565,7 +565,7 @@
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label required">Contrasena</label>
+            <label class="form-label required">Contraseña</label>
             <div class="input-group">
               <input type="password" class="form-control" id="password" name="password" required>
               <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('password', this)">
@@ -575,7 +575,7 @@
             {% if form.password.errors %}<div class="validation-text">{{ form.password.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-6">
-            <label class="form-label required">Confirmar Contrasena</label>
+            <label class="form-label required">Confirmar Contraseña</label>
             <div class="input-group">
               <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required>
               <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordField('confirmPassword', this)">
@@ -591,7 +591,7 @@
               {% for rule in password_rules %}
               <div class="rule" id="{{ rule.id }}"><i class="bi {{ rule.icon }}"></i> {{ rule.text }}</div>
               {% endfor %}
-              <div class="rule" id="ruleMatch"><i class="bi bi-x-circle"></i> Confirmacion coincide</div>
+              <div class="rule" id="ruleMatch"><i class="bi bi-x-circle"></i> Confirmación coincide</div>
             </div>
           </div>
         </div>
@@ -617,12 +617,12 @@
     { value: 'primaria', text: 'Primaria (1ra y 2da etapa)' },
     { value: 'secundaria', text: 'Secundaria (3ra etapa)' },
     { value: 'media_general', text: 'Media General' },
-    { value: 'media_tecnica', text: 'Media Tecnica' }
+    { value: 'media_tecnica', text: 'Media Técnica' }
   ];
 
   const subcategoriasOtraPrivada = [
     { value: 'empresa', text: 'Empresa' },
-    { value: 'fundacion', text: 'Fundacion' }
+    { value: 'fundacion', text: 'Fundación' }
   ];
 
   function irSeccion(num) {
@@ -967,8 +967,21 @@
     });
 
     // Eventos de Formulario
-    document.getElementById('tipoInstitucion').addEventListener('change', aplicarTipoInstitucion);
-    document.getElementById('naturaleza').addEventListener('change', aplicarTipoInstitucion);
+document.getElementById('tipoInstitucion').addEventListener('change', aplicarTipoInstitucion);
+document.getElementById('naturaleza').addEventListener('change', aplicarTipoInstitucion);
+
+// Validación cédula en tiempo real
+const cedulaInput = document.getElementById('particularCedula');
+cedulaInput.addEventListener('input', function(e) {
+  this.setCustomValidity('');
+  if (this.validity.patternMismatch) {
+    this.setCustomValidity('La cédula debe contener solo números.');
+  } else if (this.validity.tooShort) {
+    this.setCustomValidity('La cédula debe tener al menos 7 dígitos.');
+  } else if (this.validity.tooLong) {
+    this.setCustomValidity('La cédula no puede tener más de 10 dígitos.');
+  }
+});
     document.getElementById('estado').addEventListener('change', cargarMunicipios);
     document.getElementById('municipio').addEventListener('change', cargarParroquias);
     document.getElementById('password').addEventListener('input', validarPasswordUI);
@@ -976,6 +989,12 @@
     document.getElementById('rifNumero').addEventListener('input', function(e) {
       e.target.value = formatearRifNumero(e.target.value);
     });
+
+     document.getElementById('codigoMPPE').addEventListener('input', function(e) {
+       var value = e.target.value.toUpperCase();
+       var isValid = /^[A-Z0-9]{6,12}$/.test(value);
+       e.target.style.borderColor = isValid ? '' : '#ef4444';
+     });
 
     // Validacion al enviar
     document.getElementById('registroForm').addEventListener('submit', function(e) {
@@ -996,6 +1015,14 @@
           e.preventDefault();
           mostrarErrorInline('Debe completar todos los campos de persona natural (nombres, apellidos, nacionalidad y cédula).');
           if (currentSection !== 1) irSeccion(1);
+          return;
+        }
+
+        if (cedula.length < 7 || cedula.length > 10) {
+          e.preventDefault();
+          mostrarErrorInline('La cédula debe tener entre 7 y 10 dígitos.');
+          if (currentSection !== 1) irSeccion(1);
+          document.getElementById('particularCedula').focus();
           return;
         }
       } else {

@@ -5,7 +5,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from registry.models import (
+    CODIGO_AREA_CHOICES,
     NACIONALIDAD_CHOICES,
     Club,
     Dependencia,
@@ -17,6 +19,8 @@ from registry.models import (
 
 from .mixins import LocationFormMixin, ParticipanteBaseFormMixin
 from .utils import StringUtils
+
+CODIGO_AREA_CHOICES_WITH_EMPTY = [("", "Código")] + list(CODIGO_AREA_CHOICES)
 
 
 # --- FORMULARIO DE SEDE REGIONAL (ADMINISTRACIÓN CENTRAL) ---
@@ -66,17 +70,9 @@ class SedeRegionalForm(forms.Form):
     )
 
     # Teléfono (Formato Código + Número de 7 dígitos)
-    CODIGOS_AREA = [
-        ("0424", "0424"),
-        ("0414", "0414"),
-        ("0422", "0422"),
-        ("0412", "0412"),
-        ("0426", "0426"),
-        ("0416", "0416"),
-        ("0212", "0212"),
-    ]
     codigo_area = forms.ChoiceField(
-        choices=CODIGOS_AREA, widget=forms.Select(attrs={"class": "form-select"})
+        choices=CODIGO_AREA_CHOICES,
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
     numero_telefono = forms.CharField(
         max_length=7,
@@ -171,18 +167,9 @@ class CustomUserCreationForm(UserCreationForm):
 
 
 class ParticipanteModalEditForm(forms.ModelForm):
-    CODIGOS_AREA = [
-        ("0412", "0412"),
-        ("0414", "0414"),
-        ("0424", "0424"),
-        ("0416", "0416"),
-        ("0426", "0426"),
-        ("0212", "0212"),
-    ]
-
     # Usamos widgets para añadir clases de Bootstrap directamente
     codigo_area = forms.ChoiceField(
-        choices=CODIGOS_AREA,
+        choices=CODIGO_AREA_CHOICES,
         widget=forms.Select(attrs={"class": "form-select border-0 shadow-sm"}),
     )
     numero_telefono = forms.CharField(
@@ -213,15 +200,6 @@ class ParticipanteModalEditForm(forms.ModelForm):
 
 class InstitucionModalEditForm(forms.Form):
     RIF_PREFIJO_CHOICES = [("J", "J"), ("G", "G"), ("V", "V"), ("E", "E")]
-    CODIGO_AREA_CHOICES = [
-        ("0412", "0412"),
-        ("0422", "0422"),
-        ("0414", "0414"),
-        ("0424", "0424"),
-        ("0416", "0416"),
-        ("0426", "0426"),
-    ]
-
     nombre = forms.CharField(max_length=255)
     email = forms.EmailField()
     direccion = forms.CharField(required=False)
@@ -275,18 +253,18 @@ class InstitucionModalEditForm(forms.Form):
         confirm_password = cleaned_data.get("confirm_password") or ""
 
         if rif_letra and not rif_numero:
-            self.add_error("rif_numero", "Debe indicar el numero del RIF.")
+            self.add_error("rif_numero", "Debe indicar el número del RIF.")
         if rif_numero and not rif_letra:
             self.add_error("rif_letra", "Debe indicar el prefijo del RIF.")
 
         if cod_area and not numero:
-            self.add_error("modal_num_puro", "Debe indicar el numero telefonico.")
+            self.add_error("modal_num_puro", "Debe indicar el número telefónico.")
         if numero and not cod_area:
-            self.add_error("modal_cod_area", "Debe indicar el codigo de area.")
+            self.add_error("modal_cod_area", "Debe indicar el código de área.")
 
         if new_password or confirm_password:
             if new_password != confirm_password:
-                self.add_error("confirm_password", "Las contrasenas no coinciden.")
+                self.add_error("confirm_password", "Las contraseñas no coinciden.")
             else:
                 validate_password(new_password, self.target_user)
 
@@ -316,6 +294,64 @@ class InstitucionModalEditForm(forms.Form):
         return self.instance
 
 
+class InstitucionProfileEditForm(forms.Form):
+    nombre = forms.CharField(max_length=255)
+    email = forms.EmailField()
+    direccion = forms.CharField(required=False)
+    codigo_area = forms.ChoiceField(
+        choices=CODIGO_AREA_CHOICES_WITH_EMPTY,
+        required=False,
+    )
+    numero_telefono = forms.CharField(max_length=7, required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.instance = kwargs.pop("instance", None)
+        super().__init__(*args, **kwargs)
+
+        if self.instance and not self.is_bound:
+            self.fields["nombre"].initial = self.instance.nombre
+            self.fields["email"].initial = self.instance.email
+            self.fields["direccion"].initial = self.instance.direccion
+            self.fields["codigo_area"].initial = self.instance.telefono_codigo
+            self.fields["numero_telefono"].initial = self.instance.telefono_numero
+
+    def clean_nombre(self):
+        nombre = (self.cleaned_data.get("nombre") or "").strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre es obligatorio.")
+        return nombre
+
+    def clean_email(self):
+        return (self.cleaned_data.get("email") or "").strip().lower()
+
+    def clean_direccion(self):
+        return StringUtils.clean_html(
+            (self.cleaned_data.get("direccion") or "").strip()
+        )
+
+    def clean_numero_telefono(self):
+        numero = StringUtils.clean_numeric_id(self.cleaned_data.get("numero_telefono"))
+        if not numero:
+            return ""
+        if len(numero) != 7:
+            raise forms.ValidationError(
+                "El numero telefonico debe tener exactamente 7 digitos."
+            )
+        return numero
+
+    def clean(self):
+        cleaned_data = super().clean()
+        codigo_area = cleaned_data.get("codigo_area")
+        numero_telefono = cleaned_data.get("numero_telefono")
+
+        if codigo_area and not numero_telefono:
+            self.add_error("numero_telefono", "Debe indicar el número telefónico.")
+        if numero_telefono and not codigo_area:
+            self.add_error("codigo_area", "Debe indicar el código de área.")
+
+        return cleaned_data
+
+
 class InstitucionCredentialAdminForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput())
     confirm_password = forms.CharField(widget=forms.PasswordInput())
@@ -330,11 +366,11 @@ class InstitucionCredentialAdminForm(forms.Form):
         confirm_password = cleaned_data.get("confirm_password") or ""
 
         if not password:
-            self.add_error("password", "La nueva contrasena es obligatoria.")
+            self.add_error("password", "La nueva contraseña es obligatoria.")
             return cleaned_data
 
         if password != confirm_password:
-            self.add_error("confirm_password", "Las contrasenas no coinciden.")
+            self.add_error("confirm_password", "Las contraseñas no coinciden.")
             return cleaned_data
 
         try:
@@ -346,18 +382,10 @@ class InstitucionCredentialAdminForm(forms.Form):
 
 
 class EventoContactDataForm(forms.Form):
-    CODIGO_AREA_CHOICES = [
-        ("", "Codigo"),
-        ("0412", "0412"),
-        ("0414", "0414"),
-        ("0416", "0416"),
-        ("0422", "0422"),
-        ("0424", "0424"),
-        ("0426", "0426"),
-        ("0212", "0212"),
-    ]
-
-    telefono_codigo = forms.ChoiceField(choices=CODIGO_AREA_CHOICES, required=False)
+    telefono_codigo = forms.ChoiceField(
+        choices=CODIGO_AREA_CHOICES_WITH_EMPTY,
+        required=False,
+    )
     telefono_numero = forms.CharField(
         required=False,
         max_length=7,
@@ -382,7 +410,7 @@ class EventoContactDataForm(forms.Form):
 
         if re.search(r"[A-Za-z]", raw_value):
             raise forms.ValidationError(
-                "El teléfono de contacto debe contener solo dígitos."
+                "El teléfono de contacto debe contener sólo dígitos."
             )
 
         if re.search(r"[^0-9\\s().-]", raw_value):
@@ -598,9 +626,9 @@ class ParticipanteRegistrationForm(
             if field_name in self.fields:
                 existing_class = self.fields[field_name].widget.attrs.get("class", "")
                 if "is-invalid" not in existing_class:
-                    self.fields[field_name].widget.attrs[
-                        "class"
-                    ] = f"{existing_class} is-invalid".strip()
+                    self.fields[field_name].widget.attrs["class"] = (
+                        f"{existing_class} is-invalid".strip()
+                    )
 
         # 2. Configurar querysets de ubicación usando el Mixin
         self.setup_location_fields()
@@ -800,17 +828,6 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
     ]
 
     RIF_PREFIJO_CHOICES = [("J", "J"), ("G", "G"), ("V", "V"), ("E", "E")]
-    CODIGO_AREA_CHOICES = [
-        ("", "Codigo"),
-        ("0412", "0412"),
-        ("0414", "0414"),
-        ("0416", "0416"),
-        ("0424", "0424"),
-        ("0426", "0426"),
-        ("0212", "0212"),
-        ("0281", "0281"),
-        ("0241", "0241"),
-    ]
 
     tipo_institucion = forms.ChoiceField(
         choices=[("", "Seleccione el tipo de institucion")]
@@ -843,26 +860,103 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
         label="Nacionalidad",
     )
     particular_cedula = forms.CharField(
-        max_length=20,
+        max_length=10,
+        min_length=7,
         required=False,
         label="Cédula",
+        validators=[
+            RegexValidator(
+                regex=r"^[0-9]+$", message="La cédula debe contener solo números."
+            )
+        ],
         widget=forms.TextInput(
             attrs={
                 "placeholder": "Solo números",
-                "pattern": r"[0-9.\-\s]+",
-                "maxlength": "20",
+                "pattern": "[0-9]+",
+                "maxlength": "10",
+                "minlength": "7",
+                "inputmode": "numeric",
+                "oninput": "this.value = this.value.replace(/[^0-9]/g, '')",
             }
         ),
+        error_messages={
+            "min_length": "La cédula debe tener al menos 7 dígitos.",
+            "max_length": "La cédula no puede tener más de 10 dígitos.",
+            "invalid": "La cédula debe contener solo números.",
+        },
     )
 
     def clean_particular_cedula(self):
         raw = self.cleaned_data.get("particular_cedula", "")
         cleaned = StringUtils.clean_numeric_id(raw)
-        if cleaned and len(cleaned) > 10:
-            raise forms.ValidationError("La cédula no puede tener más de 10 dígitos.")
+
+        # Validación atómica y segura a nivel backend
+        if cleaned:
+            if not cleaned.isdigit():
+                raise forms.ValidationError("La cédula debe contener solo números.")
+
+            if len(cleaned) < 7:
+                raise forms.ValidationError("La cédula debe tener al menos 7 dígitos.")
+
+            if len(cleaned) > 10:
+                raise forms.ValidationError(
+                    "La cédula no puede tener más de 10 dígitos."
+                )
+
         return cleaned
 
-    codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES)
+    def clean_rif_numero(self):
+        rif_numero = StringUtils.normalize_rif_number(
+            self.cleaned_data.get("rif_numero")
+        )
+        if rif_numero and len(rif_numero) != 9:
+            raise forms.ValidationError(
+                "El RIF debe incluir 8 digitos mas 1 digito verificador."
+            )
+        return rif_numero
+
+    def clean_subcategoria(self):
+        """
+        Valida que la subcategoría sea una opción válida según el tipo de institución.
+        Mantiene la coherencia con las opciones definidas en SUBCATEGORIAS_EDUCATIVA
+        y SUBCATEGORIAS_OTRA_PRIVADA.
+        """
+        tipo_inst = self.cleaned_data.get("tipo_institucion")
+        subcategoria = (self.cleaned_data.get("subcategoria") or "").strip()
+
+        # Si está vacío y no es requerido, está OK
+        if not subcategoria:
+            return subcategoria
+
+        # Validar según tipo de institución
+        if tipo_inst == "educativa":
+            validas = dict(self.SUBCATEGORIAS_EDUCATIVA)
+            if subcategoria not in validas:
+                opciones = ", ".join(v for v in validas.values())
+                raise forms.ValidationError(
+                    f"Subcategoría inválida para institución educativa. "
+                    f"Opciones válidas: {opciones}"
+                )
+        elif tipo_inst == "otra":
+            naturaleza = self.cleaned_data.get("naturaleza", "")
+            if naturaleza == "privada":
+                validas = dict(self.SUBCATEGORIAS_OTRA_PRIVADA)
+                if subcategoria not in validas:
+                    opciones = ", ".join(v for v in validas.values())
+                    raise forms.ValidationError(
+                        f"Subcategoría inválida para institución privada. "
+                        f"Opciones válidas: {opciones}"
+                    )
+            elif naturaleza == "publica":
+                # Solo "no_aplica" es válido según el frontend
+                if subcategoria != "no_aplica":
+                    raise forms.ValidationError(
+                        'Para institución pública, subcategoría debe ser "No aplica"'
+                    )
+
+        return subcategoria
+
+    codigo_area = forms.ChoiceField(choices=CODIGO_AREA_CHOICES_WITH_EMPTY)
     numero_telefono = forms.CharField(
         max_length=7,
         min_length=7,
@@ -969,7 +1063,7 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             rif_letra = cleaned_data.get("rif_letra", "")
             rif_numero = cleaned_data.get("rif_numero", "")
             if rif_letra and rif_numero:
-                rif_form = f"{rif_letra}-{rif_numero}"
+                rif_form = StringUtils.format_rif(rif_letra, rif_numero)
                 if institucion_eliminada.rif != rif_form:
                     return False
 
@@ -1041,7 +1135,7 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             rif_letra = cleaned_data.get("rif_letra", "")
             rif_numero = cleaned_data.get("rif_numero", "")
             if rif_letra and rif_numero:
-                rif_form = f"{rif_letra}-{rif_numero}"
+                rif_form = StringUtils.format_rif(rif_letra, rif_numero)
                 if institucion.rif != rif_form:
                     return None
 
@@ -1217,6 +1311,11 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             rif_numero = cleaned_data.get("rif_numero")
             if not rif_numero:
                 self.add_error("rif_numero", "El RIF es obligatorio.")
+            elif len(rif_numero) != 9:
+                self.add_error(
+                    "rif_numero",
+                    "El RIF debe incluir 8 digitos mas 1 digito verificador.",
+                )
 
             # Validar código MPPE obligatorio para instituciones educativas
             if tipo_institucion == "educativa":
@@ -1227,28 +1326,42 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                         "El código MPPE es obligatorio para instituciones educativas.",
                     )
                 else:
-                    # Normalizar el código MPPE (mayúsculas y espacios)
-                    codigo_mppe_normalizado = codigo_mppe.strip().upper()
+                    # Siempre normalizar primero (igual que el flujo original)
+                    codigo_mppe_limpio = codigo_mppe.strip().upper()
 
-                    # Buscar institución existente con este código MPPE
-                    existing = Institucion.objects.filter(
-                        codigo_mppe=codigo_mppe_normalizado
-                    ).first()
-                    if existing:
-                        if existing.eliminado:
-                            # ⚡ ESCENARIO ESPECIAL: Reactivar institución eliminada
-                            self._handle_institucion_eliminada(
-                                existing, "codigo_mppe", codigo_mppe_normalizado
-                            )
-                        else:
-                            # Validación normal: institución activa ya existe
-                            self.add_error(
-                                "codigo_mppe",
-                                f"El código MPPE '{codigo_mppe_normalizado}' ya está registrado. "
-                                "Si cree que esto es un error, por favor contacte con la administración.",
-                            )
+                    # ✅ VALIDACIONES NUEVAS (6-12 caracteres alfanuméricos)
+                    if not codigo_mppe_limpio.isalnum():
+                        self.add_error(
+                            "codigo_mppe",
+                            "El código MPPE solo puede contener letras y números (sin caracteres especiales).",
+                        )
+                    elif len(codigo_mppe_limpio) < 6 or len(codigo_mppe_limpio) > 12:
+                        self.add_error(
+                            "codigo_mppe",
+                            "El código MPPE debe tener entre 6 y 12 caracteres.",
+                        )
 
-                    cleaned_data["codigo_mppe"] = codigo_mppe_normalizado
+                    # ✅ SIEMPRE actualizar cleaned_data (PRESERVAR FLUJO ORIGINAL)
+                    cleaned_data["codigo_mppe"] = codigo_mppe_limpio
+
+                    # ✅ Validar unicidad solo si no hay errores previos
+                    if not self.errors.get("codigo_mppe"):
+                        existing = Institucion.objects.filter(
+                            codigo_mppe=codigo_mppe_limpio
+                        ).first()
+                        if existing:
+                            if existing.eliminado:
+                                # ⚡ ESCENARIO ESPECIAL: Reactivar institución eliminada
+                                self._handle_institucion_eliminada(
+                                    existing, "codigo_mppe", codigo_mppe_limpio
+                                )
+                            else:
+                                # Validación normal: institución activa ya existe
+                                self.add_error(
+                                    "codigo_mppe",
+                                    f"El código MPPE '{codigo_mppe_limpio}' ya está registrado. "
+                                    "Si cree que esto es un error, por favor contacte con la administración.",
+                                )
 
         # Validación de contraseña con requisitos fuertes
         if len(password) < 8:
@@ -1321,7 +1434,7 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
         else:
             # REGLA (Pública, Privada, Otra): RIF + Ubicación (Ignorando Nombre)
             rif_letra = cleaned_data.get("rif_letra")
-            rif_num = StringUtils.clean_numeric_id(cleaned_data.get("rif_numero"))
+            rif_num = cleaned_data.get("rif_numero")
 
             if rif_letra and rif_num and estado and municipio and parroquia:
                 rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
@@ -1377,14 +1490,11 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             rif_letra = self.cleaned_data.get("rif_letra")
             rif_num = StringUtils.clean_numeric_id(self.cleaned_data.get("rif_numero"))
             if rif_letra and rif_num:
-                # Formato consistente: J-12345678 o J-12345678-90
-                rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
-                if len(rif_num_limpio) <= 8:
-                    instance.rif = f"{rif_letra}-{rif_num_limpio}"
-                else:
-                    instance.rif = (
-                        f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                if len(rif_num) != 9:
+                    raise ValueError(
+                        "El RIF debe incluir 8 digitos mas 1 digito verificador."
                     )
+                instance.rif = StringUtils.format_rif(rif_letra, rif_num)
 
         instance.telefono_codigo = self.cleaned_data.get("codigo_area")
         instance.telefono_numero = self.cleaned_data.get("numero_telefono")

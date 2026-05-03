@@ -348,12 +348,9 @@
                                     <div class="input-group custom-input-group">
                                         <div style="width: 35%;">
                                             <select name="telefono_codigo" class="form-select custom-input" style="border-radius: 12px 0 0 12px !important;">
-                                                <option value="0424" {% if valores_previos.telefono_codigo == '0424' %}selected{% endif %}>0424</option>
-                                                <option value="0414" {% if valores_previos.telefono_codigo == '0414' %}selected{% endif %}>0414</option>
-                                                <option value="0422" {% if valores_previos.telefono_codigo == '0422' %}selected{% endif %}>0422</option>
-                                                <option value="0412" {% if valores_previos.telefono_codigo == '0412' %}selected{% endif %}>0412</option>
-                                                <option value="0426" {% if valores_previos.telefono_codigo == '0426' %}selected{% endif %}>0426</option>
-                                                <option value="0416" {% if valores_previos.telefono_codigo == '0416' %}selected{% endif %}>0416</option>
+                                                {% for value, label in codigo_area_choices %}
+                                                <option value="{{ value }}" {% if valores_previos.telefono_codigo == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
                                             </select>
                                         </div>
                                         <input type="text" class="form-control custom-input"

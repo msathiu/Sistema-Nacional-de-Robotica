@@ -29,6 +29,7 @@ services:
       dockerfile: Dockerfile
     image: sistema-registro-web:latest
     container_name: django_web_dev
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./SistemaRegistro:/app
       - static_volume:/app/staticfiles
@@ -40,11 +41,14 @@ services:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-SistemaRegistro.settings}
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+      - PYTHONUNBUFFERED=1
+      - DJANGO_AUTORELOAD_ENV=true
     env_file:
       - .env
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
 
     networks:
       - backend_network

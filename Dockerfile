@@ -12,6 +12,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    inotify-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. Gestión de Usuarios y Carpetas (ANTES de copiar el código)

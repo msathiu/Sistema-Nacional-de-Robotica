@@ -1,20 +1,20 @@
 """Vistas para búsqueda avanzada y reportes de clubes."""
 
-from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count, Q, Avg, F, ExpressionWrapper, DurationField
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.utils import timezone
-from datetime import timedelta
 import csv
+from datetime import timedelta
 
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
+from django.db.models import Avg, Count, DurationField, ExpressionWrapper, F, Q
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.shortcuts import redirect, render
+from django.utils import timezone
 from users.report_export_utils import parse_export_format, rows_to_response
 
-from .models import Club, MembresiaClu, HistorialClub, Grupo, InscripcionGrupoEvento
-from .models.tutor import Tutor, TutorInstitucion
+from .models import Club, Grupo, InscripcionGrupoEvento
 from .models.institucion import Institucion
+from .models.tutor import TutorInstitucion
 
 
 @login_required
@@ -457,7 +457,12 @@ def exportar_tutores_excel(request):
 
 @login_required
 def exportar_instituciones_excel(request):
-    """Exporta instituciones a Excel o CSV. Solo federación."""
+    """Exporta instituciones a Excel o CSV. Solo federación.
+
+    Lógica de identificación (columna 'RIF / Cédula'):
+      - tipo_institucion == 'particular' → imprime <nacionalidad>-<cedula> (persona natural)
+      - cualquier otro tipo              → imprime el RIF de la organización
+    """
     out = _report_format_or_chooser(request, "Exportar instituciones")
     if out[1] is not None:
         return out[1]
@@ -468,39 +473,107 @@ def exportar_instituciones_excel(request):
         messages.error(request, "No tienes permisos para exportar instituciones.")
         return redirect("dashboard")
 
+    # select_related ampliado: incluye parroquia y dependencia_rel para evitar N+1 queries
     qs = Institucion.objects.filter(eliminado=False).select_related(
-        "estado", "municipio"
+        "estado", "municipio", "parroquia", "dependencia_rel"
     )
     qs = _filtro_territorial(qs, perfil, "estado")
 
     headers = [
+        # ── Identificación ───────────────────────────────────────────────────────
         "Código",
         "Nombre",
-        "RIF",
+        "RIF / Cédula",
+        # ── Clasificación ─────────────────────────────────────────────────────────
         "Tipo",
         "Naturaleza",
+        "Subcategoría",
+        "Categoría",
+        "Dependencia",
+        "Código MPPE",
+        "Institución Procedencia",
+        # ── Ubicación geográfica ──────────────────────────────────────────────────
         "Estado",
         "Municipio",
+        "Parroquia",
+        "Dirección",
+        # ── Contacto ─────────────────────────────────────────────────────────────
         "Email",
         "Teléfono",
+        # ── Estado administrativo ─────────────────────────────────────────────────
         "Estatus",
         "Federado",
         "Fecha Registro",
     ]
     rows = []
     for inst in qs:
+        # ── Lógica RIF / Cédula ──────────────────────────────────────────────────
+        # Para instituciones "particular" (persona natural) se exporta la cédula;
+        # para el resto de tipos se exporta el RIF de la organización.
+        if inst.tipo_institucion == "particular":
+            nac = inst.particular_nacionalidad or ""
+            cedula = inst.particular_cedula or ""
+            rif_o_cedula = f"{nac}-{cedula}" if cedula else ""
+        else:
+            rif_o_cedula = inst.rif or ""
+
+        # ── Dependencia: FK tiene prioridad sobre el campo de texto libre ────────
+        dependencia_valor = (
+            inst.dependencia_rel.nombre
+            if inst.dependencia_rel_id and inst.dependencia_rel
+            else (inst.dependencia or "")
+        )
+        if inst.tipo_institucion == "particular":
+            dependencia_valor = ""
+
+        telefono_completo = inst.telefono or ""
+        if inst.telefono_codigo and inst.telefono_numero:
+            telefono_completo = f"{inst.telefono_codigo}-{inst.telefono_numero}"
+
+        naturaleza_display = (
+            inst.get_naturaleza_display()
+            if inst.tipo_institucion != "particular" and inst.naturaleza
+            else ""
+        )
+        subcategoria_value = (
+            inst.subcategoria if inst.tipo_institucion != "particular" else ""
+        )
+        categoria_value = (
+            inst.categoria if inst.tipo_institucion != "particular" else ""
+        )
+        codigo_mppe_value = (
+            inst.codigo_mppe if inst.tipo_institucion == "educativa" else ""
+        )
+        institucion_procedencia_value = (
+            inst.institucion_procedencia
+            if inst.tipo_institucion != "particular"
+            else ""
+        )
+
         rows.append(
             [
+                # Identificación
                 inst.codigo,
                 inst.nombre,
-                inst.rif or "",
+                rif_o_cedula,
+                # Clasificación
                 inst.get_tipo_institucion_display() if inst.tipo_institucion else "",
-                inst.get_naturaleza_display() if inst.naturaleza else "",
+                naturaleza_display,
+                subcategoria_value,
+                categoria_value,
+                dependencia_valor,
+                codigo_mppe_value,
+                institucion_procedencia_value,
+                # Ubicación geográfica
                 inst.estado.nombre if inst.estado else "",
                 inst.municipio.nombre if inst.municipio else "",
+                inst.parroquia.nombre if inst.parroquia else "",
+                inst.direccion or "",
+                # Contacto
                 inst.email or "",
-                inst.telefono or "",
-                inst.estatus,
+                telefono_completo,
+                # Estado administrativo
+                inst.get_estatus_display() if inst.estatus else "",
                 "Sí" if inst.federado else "No",
                 inst.fecha_registro.strftime("%d/%m/%Y") if inst.fecha_registro else "",
             ]

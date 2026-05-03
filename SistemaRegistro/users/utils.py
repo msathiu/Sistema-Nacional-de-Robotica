@@ -65,6 +65,27 @@ class StringUtils:
         return "".join(filter(str.isdigit, str(value)))
 
     @staticmethod
+    def normalize_rif_number(value: Optional[str]) -> str:
+        """
+        Normaliza el cuerpo numerico del RIF.
+
+        El formulario recibe 8 digitos base + 1 digito verificador. Se permiten
+        separadores visuales, pero no se inventa ni se recorta el verificador.
+        """
+        return StringUtils.clean_numeric_id(value)
+
+    @staticmethod
+    def format_rif(prefix: Optional[str], number: Optional[str]) -> str:
+        """
+        Devuelve el RIF canonico: J-12345678-9.
+        """
+        prefix = (prefix or "").strip().upper()
+        digits = StringUtils.normalize_rif_number(number)
+        if not prefix or len(digits) != 9:
+            return ""
+        return f"{prefix}-{digits[:8]}-{digits[8]}"
+
+    @staticmethod
     def clean_html(value: Optional[str]) -> str:
         """
         Sanitiza contenido de texto libre usando nh3.

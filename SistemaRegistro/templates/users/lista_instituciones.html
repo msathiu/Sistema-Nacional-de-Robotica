@@ -110,14 +110,15 @@
                     <thead class="bg-light">
                         <tr class="text-uppercase x-small fw-bold text-muted">
                             <th class="px-4 py-3 sortable-th" data-sort="0" style="cursor:pointer; user-select:none;">RNR <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none;">Razón Social / Cédula <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
-                            <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Ubicación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="1" style="cursor:pointer; user-select:none; min-width: 180px;">Razón Social <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="2" style="cursor:pointer; user-select:none; min-width: 130px;">Cédula / RIF <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="3" style="cursor:pointer; user-select:none;">Tipo <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="4" style="cursor:pointer; user-select:none;">Correo / Teléfono <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 sortable-th" data-sort="5" style="cursor:pointer; user-select:none; min-width: 120px;">Ubicación <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             {% if perfil.es_central %}
-                            <th class="py-3 text-center sortable-th" data-sort="5" style="cursor:pointer; user-select:none; min-width: 100px;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
+                            <th class="py-3 text-center sortable-th" data-sort="6" style="cursor:pointer; user-select:none; min-width: 100px;">Estatus <i class="bi bi-arrow-down-up sort-icon ms-1 x-small"></i></th>
                             {% else %}
-                            <th class="d-none" data-sort="5"><i class="bi bi-arrow-down-up sort-icon d-none"></i></th>
+                            <th class="d-none" data-sort="6"><i class="bi bi-arrow-down-up sort-icon d-none"></i></th>
                             {% endif %}
                             <th class="py-3 text-center">Acciones</th>
                         </tr>
@@ -129,10 +130,15 @@
                             <td data-sort-value="{% if item.institucion.tipo_institucion == 'particular' %}{{ item.institucion.particular_apellidos }} {{ item.institucion.particular_nombres }}{% else %}{{ item.institucion.nombre }}{% endif %}">
                                 {% if item.institucion.tipo_institucion == 'particular' %}
                                     <div class="fw-bold small text-dark">{{ item.institucion.particular_nombres }} {{ item.institucion.particular_apellidos }}</div>
-                                    <div class="x-small text-muted">Cédula: <span class="rif-completo-texto">{{ item.institucion.particular_nacionalidad }}-{{ item.institucion.particular_cedula }}</span></div>
                                 {% else %}
                                     <div class="fw-bold small text-dark">{{ item.institucion.nombre }}</div>
-                                    <div class="x-small text-muted">RIF: <span class="rif-completo-texto">{{ item.institucion.rif }}</span></div>
+                                {% endif %}
+                            </td>
+                            <td data-sort-value="{% if item.institucion.tipo_institucion == 'particular' %}{{ item.institucion.particular_nacionalidad }}-{{ item.institucion.particular_cedula }}{% else %}{{ item.institucion.rif }}{% endif %}">
+                                {% if item.institucion.tipo_institucion == 'particular' %}
+                                    <span class="x-small text-muted">{{ item.institucion.particular_nacionalidad }}-{{ item.institucion.particular_cedula }}</span>
+                                {% else %}
+                                    <span class="x-small text-muted rif-completo-texto">{{ item.institucion.rif }}</span>
                                 {% endif %}
                             </td>
                             <td data-sort-value="{{ item.institucion.tipo_institucion }}">
@@ -553,6 +559,42 @@
                 }
             }
 
+            // ── Mapeo de códigos a descripciones (Title Case) ──
+            const MAPA_SUBCATEGORIAS = {
+                // Educativas
+                'preescolar': 'Preescolar',
+                'primaria': 'Primaria (1ra y 2da etapa)',
+                'secundaria': 'Secundaria (3ra etapa)',
+                'media_general': 'Media General',
+                'media_tecnica': 'Media Técnica',
+                // Otras/Privadas
+                'empresa': 'Empresa',
+                'fundacion': 'Fundación',
+                // Casos especiales
+                'no_aplica': 'No aplica'
+            };
+
+            const MAPA_CATEGORIAS = {
+                // Si el backend envía códigos aquí, se mapean.
+                // Por ahora, categoria suele venir como texto libre,
+                // así que se normaliza con Title Case genérico.
+            };
+
+            function obtenerDescripcionSubcategoria(codigo) {
+                if (!codigo || codigo === 'N/A') return 'N/A';
+                const key = String(codigo).toLowerCase().trim();
+                return MAPA_SUBCATEGORIAS[key] || 
+                       // Fallback: Title Case genérico
+                       key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            }
+
+            function obtenerDescripcionCategoria(codigo) {
+                if (!codigo || codigo === 'N/A') return 'N/A';
+                const key = String(codigo).toLowerCase().trim();
+                return MAPA_CATEGORIAS[key] ||
+                       key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            }
+
             const tipoInstitucion = data.tipo_institucion_key || data.tipo_institucion || '';
             const esParticular = tipoInstitucion === 'particular';
 
@@ -623,14 +665,14 @@
             const subcategoria = data.subcategoria || '';
             mostrarBloque('bloqueSubcategoria', !esParticular && !!subcategoria);
             if (subcategoria) {
-                document.getElementById('detSubcategoria').textContent = subcategoria;
+                document.getElementById('detSubcategoria').textContent = obtenerDescripcionSubcategoria(subcategoria);
             }
 
             // Mostrar Categoría si existe
             const categoria = data.categoria || '';
             mostrarBloque('bloqueCategoria', !esParticular && !!categoria);
             if (categoria) {
-                document.getElementById('detCategoria').textContent = categoria;
+                document.getElementById('detCategoria').textContent = obtenerDescripcionCategoria(categoria);
             }
 
             // Mostrar Dependencia si existe
@@ -769,12 +811,9 @@
                         <label class="form-label small fw-bold d-block">Teléfono</label>
                         <div class="input-group">
                             <select name="modal_cod_area" class="form-select" style="max-width: 90px;">
-                                <option value="0412" ${codArea == '0412' ? 'selected' : ''}>0412</option>
-                                <option value="0422" ${codArea == '0422' ? 'selected' : ''}>0422</option>
-                                <option value="0414" ${codArea == '0414' ? 'selected' : ''}>0414</option>
-                                <option value="0424" ${codArea == '0424' ? 'selected' : ''}>0424</option>
-                                <option value="0416" ${codArea == '0416' ? 'selected' : ''}>0416</option>
-                                <option value="0426" ${codArea == '0426' ? 'selected' : ''}>0426</option>
+                                {% for value, label in codigo_area_choices %}
+                                <option value="{{ value }}" ${codArea == '{{ value }}' ? 'selected' : ''}>{{ label }}</option>
+                                {% endfor %}
                             </select>
                             <input type="text" name="modal_num_puro" class="form-control" value="${numResto}" maxlength="7">
                         </div>

@@ -23,6 +23,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic.edit import UpdateView
 from registry.models import (
     AsistenciaEvento,
+    CODIGO_AREA_CHOICES,
     Dependencia,
     Estado,
     EstadoEvento,
@@ -53,6 +54,7 @@ from .decorators import (
 from .forms import (
     InstitucionCredentialAdminForm,
     InstitucionModalEditForm,
+    InstitucionProfileEditForm,
     InstitucionRegistrationForm,
     ParticipanteModalEditForm,
     ParticipanteRegistrationForm,
@@ -250,6 +252,7 @@ def _render_formulario_evento(
         "errores": errores or {},
         "es_federacion": es_federacion,
         "clubes_disponibles": clubes_disponibles,
+        "codigo_area_choices": CODIGO_AREA_CHOICES,
         "modo_edicion": evento is not None,
         "url_cancelar": url_cancelar,
     }
@@ -1311,6 +1314,7 @@ def lista_instituciones(request):
         "es_central": user_type == "fed_central",
         "es_regional": user_type == "fed_regional",
         "perfil": perfil,
+        "codigo_area_choices": CODIGO_AREA_CHOICES,
     }
     return render(request, "users/lista_instituciones.html", context)
 
@@ -1361,7 +1365,7 @@ def registrar_institucion(request):
 
                 if es_central:
                     messages.success(
-                        request, f"Sede '{institucion.nombre}' activada con éxito."
+                        request, f"Sede '{institucion.nombre}' registrada con éxito."
                     )
                     return redirect("lista_instituciones")
                 elif es_federacion:
@@ -1589,6 +1593,7 @@ def lista_participantes(request):
         "es_institucional": user_type == "institucional",
         "perfil": perfil,
         "user_type": user_type,
+        "codigo_area_choices": CODIGO_AREA_CHOICES,
     }
     return render(request, "users/lista_participantes.html", context)
 
@@ -3307,10 +3312,21 @@ def mi_perfil_institucional(request):
                     userprofile__user=usuario
                 ).first()
                 if institucion:
-                    InstitutionService.actualizar_institucion(
-                        institucion=institucion, data=request.POST
+                    perfil_form = InstitucionProfileEditForm(
+                        request.POST,
+                        instance=institucion,
                     )
-                    messages.success(request, "Perfil actualizado correctamente.")
+                    if perfil_form.is_valid():
+                        InstitutionService.actualizar_institucion(
+                            institucion=institucion,
+                            data=perfil_form.cleaned_data,
+                            actualizar_ubicacion=False,
+                        )
+                        messages.success(request, "Perfil actualizado correctamente.")
+                    else:
+                        for field_errors in perfil_form.errors.values():
+                            for error in field_errors:
+                                messages.error(request, error)
                 else:
                     messages.error(request, "No se encontró la institución asociada.")
             except Exception:
@@ -3327,14 +3343,16 @@ def mi_perfil_institucional(request):
     institucion = Institucion.objects.filter(userprofile__user=usuario).first()
     if not institucion:
         institucion = Institucion.objects.filter(email=usuario.email).first()
+    perfil_form = InstitucionProfileEditForm(instance=institucion)
 
     context = {
         "usuario": usuario,
         "institucion": institucion,
+        "perfil_form": perfil_form,
+        "codigo_area_choices": [("", "Codigo")] + list(CODIGO_AREA_CHOICES),
         "fecha_unido": usuario.date_joined,
         "password_form": password_form,
         "open_password_modal": open_password_modal,
-        "estados": Estado.objects.all().order_by("nombre"),
     }
     return render(request, "users/mi_perfil.html", context)
 

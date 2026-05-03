@@ -1,10 +1,11 @@
 import logging
+
 from django.db import transaction
-from django.contrib.auth.models import User
-from registry.models import Institucion, Estado, Municipio, Parroquia, Dependencia
-from .identity_service import IdentityService
+from registry.models import Dependencia, Institucion
 from registry.services.admission_service import AdmissionService
+
 from ..utils import LocationUtils, StringUtils
+from .identity_service import IdentityService
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,10 @@ class InstitutionService:
         # 0. Validación de Duplicidad (Nombre, RIF, Ubicación)
         # Reconstruir RIF para validación - Formato consistente
         rif_letra = data.get("rif_letra")
-        rif_num = StringUtils.clean_numeric_id(data.get("rif_numero"))
+        rif_num = StringUtils.normalize_rif_number(data.get("rif_numero"))
         rif_completo = data.get("rif")
+        if not rif_completo and rif_letra and rif_num and len(rif_num) != 9:
+            raise ValueError("El RIF debe incluir 8 digitos mas 1 digito verificador.")
         if not rif_completo and rif_letra and rif_num:
             # Formato consistente: J-12345678 o J-12345678-90
             rif_num_limpio = rif_num[:10]  # Máximo 10 dígitos
@@ -88,15 +91,24 @@ class InstitutionService:
             rif_letra = data.get("rif_letra")
             rif_numero = data.get("rif_numero")
             rif_completo = data.get("rif")
+            rif_digits = StringUtils.normalize_rif_number(rif_numero)
+            if not rif_completo and rif_letra and rif_digits and len(rif_digits) != 9:
+                raise ValueError(
+                    "El RIF debe incluir 8 digitos mas 1 digito verificador."
+                )
             if not rif_completo and rif_letra and rif_numero:
-                # Formato consistente: J-12345678 o J-12345678-90
-                rif_num_limpio = StringUtils.clean_numeric_id(rif_numero)[:10]
-                if len(rif_num_limpio) <= 8:
-                    rif_completo = f"{rif_letra}-{rif_num_limpio}"
-                else:
-                    rif_completo = (
-                        f"{rif_letra}-{rif_num_limpio[:8]}-{rif_num_limpio[8:10]}"
+                rif_formateado = StringUtils.format_rif(rif_letra, rif_numero)
+                if not rif_formateado:
+                    raise ValueError(
+                        "El RIF debe incluir 8 digitos mas 1 digito verificador."
                     )
+                rif_completo = rif_formateado
+
+            particular_cedula = data.get("particular_cedula")
+            if data.get("tipo_institucion") == "particular" and particular_cedula:
+                particular_cedula = StringUtils.clean_numeric_id(particular_cedula)
+                if len(particular_cedula) < 7 or len(particular_cedula) > 10:
+                    raise ValueError("La cédula debe tener entre 7 y 10 dígitos.")
 
             institucion = Institucion(
                 nombre=data.get("nombre"),
@@ -113,7 +125,7 @@ class InstitutionService:
                 particular_nombres=data.get("particular_nombres"),
                 particular_apellidos=data.get("particular_apellidos"),
                 particular_nacionalidad=data.get("particular_nacionalidad"),
-                particular_cedula=data.get("particular_cedula"),
+                particular_cedula=particular_cedula,
                 # Otros campos del modelo
                 naturaleza=data.get("naturaleza"),
                 subcategoria=data.get("subcategoria"),
@@ -206,30 +218,49 @@ class InstitutionService:
             return institucion
 
     @staticmethod
-    def actualizar_institucion(institucion: Institucion, data: dict):
+    def actualizar_institucion(
+        institucion: Institucion,
+        data: dict,
+        actualizar_ubicacion: bool = True,
+    ):
         """
         Actualiza los datos de una institución.
         """
         with transaction.atomic():
             # Campos básicos
-            for field in ["nombre", "email", "telefono", "direccion"]:
+            for field in ["nombre", "email", "direccion"]:
                 if field in data:
                     setattr(institucion, field, data.get(field))
 
-            # Ubicación
-            estado_id = data.get("estado")
-            municipio_id = data.get("municipio")
-            parroquia_id = data.get("parroquia")
+            codigo_area = data.get("codigo_area")
+            numero_telefono = data.get("numero_telefono")
+            if "codigo_area" in data or "numero_telefono" in data:
+                institucion.telefono_codigo = codigo_area or None
+                institucion.telefono_numero = numero_telefono or None
+                institucion.telefono = (
+                    f"{codigo_area}{numero_telefono}"
+                    if codigo_area and numero_telefono
+                    else ""
+                )
 
-            estado, municipio, parroquia = LocationUtils.resolve_location(
-                estado_id, municipio_id, parroquia_id
-            )
-            if estado:
-                institucion.estado = estado
-            if municipio:
-                institucion.municipio = municipio
-            if parroquia:
-                institucion.parroquia = parroquia
+            if "telefono" in data and "codigo_area" not in data:
+                institucion.telefono = data.get("telefono")
+
+            # Ubicación
+            if actualizar_ubicacion:
+                estado_id = data.get("estado")
+                municipio_id = data.get("municipio")
+                parroquia_id = data.get("parroquia")
+
+                estado, municipio, parroquia = LocationUtils.resolve_location(
+                    estado_id, municipio_id, parroquia_id
+                )
+                if estado:
+                    institucion.estado = estado
+                if municipio:
+                    institucion.municipio = municipio
+                if parroquia:
+                    institucion.parroquia = parroquia
 
             institucion.save()
 
