@@ -213,6 +213,7 @@ class InstitucionAdmin(admin.ModelAdmin):
         "tipo_institucion",
         "naturaleza",
         "rif",
+        "mostrar_cedula_particular",
         "email",
         "estado",
         "activa",
@@ -257,6 +258,8 @@ class InstitucionAdmin(admin.ModelAdmin):
                     "federado",
                     "email",
                     "telefono",
+                    "particular_nacionalidad",
+                    "particular_cedula",
                 )
             },
         ),
@@ -280,6 +283,12 @@ class InstitucionAdmin(admin.ModelAdmin):
         )
 
     aprobar_instituciones.short_description = "✅ Aprobar y generar códigos RNR"
+
+    @admin.display(description="Céd.", ordering="particular_cedula")
+    def mostrar_cedula_particular(self, obj):
+        if obj.particular_nacionalidad and obj.particular_cedula:
+            return f"{obj.particular_nacionalidad}-{obj.particular_cedula}"
+        return ""
 
     def exportar_excel(self, request, queryset):
         # Asegurar que los objetos relacionados estén cargados para evitar N+1 queries

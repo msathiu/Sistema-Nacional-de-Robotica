@@ -1,18 +1,19 @@
 import logging
-from django.utils import timezone
+
 from django.db.models import Count, F, Q
 from django.db.models.functions import Coalesce, ExtractMonth
+from django.utils import timezone
 from registry.models import (
-    EstadoEvento,
-    Participante,
-    Institucion,
     Club,
-    Evento,
-    MembresiaClu,
-    Grupo,
     ClubLineaInvestigacion,
-    TutorInstitucion,
+    EstadoEvento,
+    Evento,
+    Grupo,
     InscripcionGrupoEvento,
+    Institucion,
+    MembresiaClu,
+    Participante,
+    TutorInstitucion,
 )
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,11 @@ class ReportService:
 
         # 11. Instituciones por tipo
         inst_tipo_qs = (
-            Institucion.objects.filter(filtros_inst)
+            Institucion.objects.filter(
+                filtros_inst,
+                activa=True,
+                estatus="aprobado",
+            )
             .values("tipo_institucion")
             .annotate(total=Count("id"))
             .order_by("-total")
