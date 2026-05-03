@@ -565,9 +565,9 @@ def exportar_instituciones_excel(request):
                 codigo_mppe_value,
                 institucion_procedencia_value,
                 # Ubicación geográfica
-                inst.estado.nombre if inst.estado else "",
-                inst.municipio.nombre if inst.municipio else "",
-                inst.parroquia.nombre if inst.parroquia else "",
+                str(inst.estado) if inst.estado else "",
+                str(inst.municipio) if inst.municipio else "",
+                str(inst.parroquia) if inst.parroquia else "",
                 inst.direccion or "",
                 # Contacto
                 inst.email or "",

@@ -82,8 +82,18 @@ class InstitucionesExportTest(TestCase):
         self.assertEqual(fila_particular["Código MPPE"], "")
         self.assertEqual(fila_particular["Institución Procedencia"], "")
         self.assertEqual(fila_particular["Teléfono"], "0412-1234567")
+        self.assertEqual(fila_particular["Estado"], "Zulia Test")
+        self.assertEqual(fila_particular["Municipio"], "Maracaibo Test (Zulia Test)")
+        self.assertEqual(
+            fila_particular["Parroquia"], "La Limpia Test (Mun. Maracaibo Test)"
+        )
 
         fila_educativa = next(r for r in rows if r["Nombre"] == "Colegio Export")
         self.assertEqual(fila_educativa["RIF / Cédula"], "J-12345678-9")
         self.assertEqual(fila_educativa["Código MPPE"], "MPPE-1234")
         self.assertEqual(fila_educativa["Teléfono"], "0414-7654321")
+        self.assertEqual(fila_educativa["Estado"], "Zulia Test")
+        self.assertEqual(fila_educativa["Municipio"], "Maracaibo Test (Zulia Test)")
+        self.assertEqual(
+            fila_educativa["Parroquia"], "La Limpia Test (Mun. Maracaibo Test)"
+        )

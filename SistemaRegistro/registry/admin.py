@@ -1,8 +1,8 @@
-from django.utils import timezone
 import openpyxl
 from django.contrib import admin
 from django.contrib.admin.exceptions import NotRegistered
 from django.http import HttpResponse
+from django.utils import timezone
 from openpyxl.styles import Font, PatternFill
 
 from .models import (
@@ -282,6 +282,10 @@ class InstitucionAdmin(admin.ModelAdmin):
     aprobar_instituciones.short_description = "✅ Aprobar y generar códigos RNR"
 
     def exportar_excel(self, request, queryset):
+        # Asegurar que los objetos relacionados estén cargados para evitar N+1 queries
+        queryset = queryset.select_related(
+            "estado", "municipio", "parroquia", "dependencia_rel"
+        )
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Instituciones"
@@ -347,9 +351,9 @@ class InstitucionAdmin(admin.ModelAdmin):
                     inst.codigo_mppe or "",
                     inst.email,
                     telefono_completo,
-                    inst.estado.nombre if inst.estado else "",
-                    inst.municipio.nombre if inst.municipio else "",
-                    inst.parroquia.nombre if inst.parroquia else "",
+                    str(inst.estado) if inst.estado else "",
+                    str(inst.municipio) if inst.municipio else "",
+                    str(inst.parroquia) if inst.parroquia else "",
                     inst.direccion or "",
                     "Sí" if inst.activa else "No",
                     "Sí" if inst.federado else "No",
@@ -373,9 +377,9 @@ class InstitucionAdmin(admin.ModelAdmin):
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        response[
-            "Content-Disposition"
-        ] = f'attachment; filename="instituciones_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        response["Content-Disposition"] = (
+            f'attachment; filename="instituciones_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        )
         wb.save(response)
         return response
 
