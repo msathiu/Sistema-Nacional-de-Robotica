@@ -130,6 +130,7 @@ class InstitutionService:
                 naturaleza=data.get("naturaleza"),
                 subcategoria=data.get("subcategoria"),
                 codigo_mppe=data.get("codigo_mppe"),
+                codigo_infocentro=data.get("codigo_infocentro"),
             )
 
             # 2. Lógica de Ubicación
@@ -168,6 +169,13 @@ class InstitutionService:
                 institucion.dependencia = dependencia_obj.nombre
                 if created:
                     logger.info(f"Nueva dependencia creada: {dependencia_obj.nombre}")
+
+            # 3.5. Lógica específica para Infocentro
+            if data.get("tipo_institucion") == "infocentro":
+                institucion.rif = "G-20007728-0"
+                institucion.codigo_infocentro = (
+                    data.get("codigo_infocentro") or institucion.codigo_infocentro
+                )
 
             # 4. Lógica de Activación Inicial
             if es_central:

@@ -972,6 +972,21 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             }
         ),
     )
+    codigo_infocentro = forms.CharField(
+        max_length=5,
+        required=False,
+        label="Código Infocentro",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Máximo 5 caracteres alfanuméricos",
+                "pattern": "[A-Za-z0-9]{1,5}",
+                "title": "Ingrese un código alfanumérico de máximo 5 caracteres",
+                "inputmode": "text",
+                "oninput": "this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0,5);",
+            }
+        ),
+    )
     password = forms.CharField(label="Contrasena", widget=forms.PasswordInput())
     confirm_password = forms.CharField(
         label="Confirmar Contrasena", widget=forms.PasswordInput()
@@ -991,6 +1006,7 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             "naturaleza",
             "subcategoria",
             "codigo_mppe",
+            "codigo_infocentro",
         ]
         widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
@@ -1332,38 +1348,51 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                     # ✅ VALIDACIONES NUEVAS (6-12 caracteres alfanuméricos)
                     if not codigo_mppe_limpio.isalnum():
                         self.add_error(
-                            "codigo_mppe",
-                            "El código MPPE solo puede contener letras y números (sin caracteres especiales).",
+                            "codigo_mppe", "El código MPPE debe ser alfanumérico."
                         )
                     elif len(codigo_mppe_limpio) < 6 or len(codigo_mppe_limpio) > 12:
                         self.add_error(
                             "codigo_mppe",
-                            "El código MPPE debe tener entre 6 y 12 caracteres.",
+                            "El código MPPE debe tener entre 6 y 12 caracteres alfanuméricos.",
                         )
-
-                    # ✅ SIEMPRE actualizar cleaned_data (PRESERVAR FLUJO ORIGINAL)
-                    cleaned_data["codigo_mppe"] = codigo_mppe_limpio
-
-                    # ✅ Validar unicidad solo si no hay errores previos
-                    if not self.errors.get("codigo_mppe"):
-                        existing = Institucion.objects.filter(
-                            codigo_mppe=codigo_mppe_limpio
+                    else:
+                        # Validar unicidad a nivel nacional
+                        duplicado = Institucion.objects.filter(
+                            codigo_mppe__iexact=codigo_mppe_limpio, eliminado=False
                         ).first()
-                        if existing:
-                            if existing.eliminado:
-                                # ⚡ ESCENARIO ESPECIAL: Reactivar institución eliminada
-                                self._handle_institucion_eliminada(
-                                    existing, "codigo_mppe", codigo_mppe_limpio
-                                )
-                            else:
-                                # Validación normal: institución activa ya existe
-                                self.add_error(
-                                    "codigo_mppe",
-                                    f"El código MPPE '{codigo_mppe_limpio}' ya está registrado. "
-                                    "Si cree que esto es un error, por favor contacte con la administración.",
-                                )
+                        if duplicado:
+                            raise ValidationError(
+                                f"Ya existe una institución educativa registrada con el código MPPE '{codigo_mppe_limpio}'. "
+                                f"Aparece registrada bajo el nombre: '{duplicado.nombre}'."
+                            )
 
-        # Validación de contraseña con requisitos fuertes
+            # Validar código infocentro obligatorio solo si es infocentro
+            if tipo_institucion == "infocentro":
+                codigo_infocentro = cleaned_data.get("codigo_infocentro")
+                if not codigo_infocentro or not codigo_infocentro.strip():
+                    self.add_error(
+                        "codigo_infocentro",
+                        "El código infocentro es obligatorio para instituciones Infocentro.",
+                    )
+                else:
+                    # Normalizar
+                    codigo_infocentro_limpio = codigo_infocentro.strip().upper()
+
+                    # Validar alfanumérico y longitud
+                    if not codigo_infocentro_limpio.isalnum():
+                        self.add_error(
+                            "codigo_infocentro",
+                            "El código infocentro debe ser alfanumérico.",
+                        )
+                    elif len(codigo_infocentro_limpio) > 5:
+                        self.add_error(
+                            "codigo_infocentro",
+                            "El código infocentro no puede exceder los 5 caracteres.",
+                        )
+                    else:
+                        cleaned_data["codigo_infocentro"] = codigo_infocentro_limpio
+
+            # Validación de contraseña con requisitos fuertes
         if len(password) < 8:
             self.add_error("password", "Mínimo 8 caracteres.")
         else:
@@ -1431,6 +1460,35 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                         f"La cédula '{cedula}' ya se encuentra registrada en el sistema para la persona '{nombre_part}'."
                     )
 
+        elif tipo_institucion == "infocentro":
+            codigo_infocentro = cleaned_data.get("codigo_infocentro")
+            if codigo_infocentro:
+                duplicado_codigo = Institucion.objects.filter(
+                    tipo_institucion="infocentro",
+                    codigo_infocentro__iexact=codigo_infocentro,
+                    eliminado=False,
+                ).first()
+                if duplicado_codigo:
+                    raise ValidationError(
+                        f"Ya existe un Infocentro registrado con el código '{codigo_infocentro}'. "
+                        f"Aparece registrado bajo el nombre: '{duplicado_codigo.nombre}'."
+                    )
+
+            if estado and municipio and parroquia:
+                duplicado_ubicacion = Institucion.objects.filter(
+                    tipo_institucion="infocentro",
+                    estado=estado,
+                    municipio=municipio,
+                    parroquia=parroquia,
+                    eliminado=False,
+                ).first()
+                if duplicado_ubicacion:
+                    raise ValidationError(
+                        f"Ya existe un Infocentro registrado en esta ubicación "
+                        f"(Estado {estado.nombre}, Municipio {municipio.nombre}, Parroquia {parroquia.nombre}). "
+                        f"Aparece bajo el nombre: '{duplicado_ubicacion.nombre}'."
+                    )
+
         else:
             # REGLA (Pública, Privada, Otra): RIF + Ubicación (Ignorando Nombre)
             rif_letra = cleaned_data.get("rif_letra")
@@ -1495,6 +1553,11 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                         "El RIF debe incluir 8 digitos mas 1 digito verificador."
                     )
                 instance.rif = StringUtils.format_rif(rif_letra, rif_num)
+
+            # Para infocentro, establecer RIF fijo y guardar código infocentro
+            if tipo_institucion == "infocentro":
+                instance.rif = "G-20007728-0"
+                instance.codigo_infocentro = self.cleaned_data.get("codigo_infocentro")
 
         instance.telefono_codigo = self.cleaned_data.get("codigo_area")
         instance.telefono_numero = self.cleaned_data.get("numero_telefono")

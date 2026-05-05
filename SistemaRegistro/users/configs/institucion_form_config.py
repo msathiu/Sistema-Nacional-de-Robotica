@@ -106,6 +106,25 @@ INSTITUCION_FORM_CONFIG = {
         ],
         "default_values": {},
     },
+    "infocentro": {
+        "hidden_fields": [
+            "camposParticular",
+            "categoriasContainer",
+            "dependenciaContainer",
+        ],
+        "visible_fields": [
+            "campoRazonSocial",
+            "camposRIF",
+            "campoCodigoInfocentro",
+        ],
+        "required_fields": [
+            "razonSocial",
+            "rifNumero",
+            "codigoInfocentro",
+        ],
+        "optional_fields": [],
+        "default_values": {},
+    },
 }
 
 

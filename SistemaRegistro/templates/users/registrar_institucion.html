@@ -337,6 +337,7 @@
               <option value="publica" {% if form.tipo_institucion.value == 'publica' %}selected{% endif %}>Pública</option>
               <option value="privada" {% if form.tipo_institucion.value == 'privada' %}selected{% endif %}>Privada</option>
               <option value="otra" {% if form.tipo_institucion.value == 'otra' %}selected{% endif %}>Otras Instituciones</option>
+              <option value="infocentro" {% if form.tipo_institucion.value == 'infocentro' %}selected{% endif %}>Infocentro</option>
               <option value="particular" {% if form.tipo_institucion.value == 'particular' %}selected{% endif %}>Particular (Persona Natural)</option>
             </select>
             {% if form.tipo_institucion.errors %}<div class="validation-text">{{ form.tipo_institucion.errors|striptags }}</div>{% endif %}
@@ -463,6 +464,11 @@
           <input type="text" class="form-control" name="codigo_mppe" id="codigoMPPE" value="{{ form.codigo_mppe.value|default:'' }}" placeholder="Ej: ME123456" maxlength="12" minlength="6" pattern="[A-Za-z0-9]{6,12}" inputmode="text" autocomplete="off" oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').slice(0,12).toUpperCase()">
           {% if form.codigo_mppe.errors %}<div class="validation-text">{{ form.codigo_mppe.errors|striptags }}</div>{% endif %}
 
+        </div>
+        <div class="col-md-4 hidden" id="campoCodigoInfocentro">
+          <label class="form-label required">Código Infocentro</label>
+          <input type="text" class="form-control" name="codigo_infocentro" id="codigoInfocentro" value="{{ form.codigo_infocentro.value|default:'' }}" placeholder="Ej: ABC12" maxlength="5" pattern="[A-Za-z0-9]{1,5}" inputmode="text" autocomplete="off" oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').slice(0,5).toUpperCase()">
+          {% if form.codigo_infocentro.errors %}<div class="validation-text">{{ form.codigo_infocentro.errors|striptags }}</div>{% endif %}
         </div>
         </div>
 
@@ -672,7 +678,8 @@
     const tipo = document.getElementById('tipoInstitucion').value;
     const categorias = document.getElementById('categoriasContainer');
     const depContainer = document.getElementById('dependenciaContainer');
-    const naturaleza = document.getElementById('naturaleza').value;
+    const naturaleza = document.getElementById('naturaleza');
+    const subcategoria = document.getElementById('subcategoria');
 
     const rifLetra = document.getElementById('rifLetra');
     const rifNumero = document.getElementById('rifNumero');
@@ -685,45 +692,124 @@
     const campoRazonSocial = document.getElementById('campoRazonSocial');
     const razonSocial = document.getElementById('razonSocial');
 
+    const campoCodigoMPPE = document.getElementById('campoCodigoMPPE');
+    const campoCodigoInfocentro = document.getElementById('campoCodigoInfocentro');
+    const codigoInfocentro = document.getElementById('codigoInfocentro');
+
+    const particularNombres = document.getElementById('particularNombres');
+    const particularApellidos = document.getElementById('particularApellidos');
+    const particularNacionalidad = document.getElementById('particularNacionalidad');
+    const particularCedula = document.getElementById('particularCedula');
+
+    const resetField = (field) => {
+      if (!field) return;
+      field.value = '';
+      field.removeAttribute('required');
+      field.disabled = true;
+    };
+
+    const enableField = (field, required = false) => {
+      if (!field) return;
+      field.disabled = false;
+      if (required) field.setAttribute('required', 'required');
+    };
+
+    // Reset general states y limpiar campos no relevantes.
+    categorias.classList.add('hidden');
+    depContainer.classList.add('hidden');
+    campoCodigoMPPE.classList.add('hidden');
+    campoCodigoInfocentro.classList.add('hidden');
+    camposParticular.classList.add('hidden');
+    camposRIF.classList.remove('hidden');
+    campoRazonSocial.classList.remove('hidden');
+
+    enableField(rifLetra);
+    enableField(rifNumero);
+    enableField(codigoMppe);
+    enableField(codigoInfocentro);
+    enableField(particularNombres);
+    enableField(particularApellidos);
+    enableField(particularNacionalidad);
+    enableField(particularCedula);
+
+    // Reset campos específicos por tipo
+    if (tipo !== 'educativa' && tipo !== 'otra') {
+      resetField(naturaleza);
+      resetField(subcategoria);
+    }
+    if (tipo !== 'educativa') {
+      resetField(codigoMppe);
+    }
+    if (tipo !== 'infocentro') {
+      resetField(codigoInfocentro);
+    }
+    if (tipo !== 'particular') {
+      resetField(particularNombres);
+      resetField(particularApellidos);
+      resetField(particularNacionalidad);
+      resetField(particularCedula);
+    }
+
     if (tipo === 'educativa' || tipo === 'otra') {
       categorias.classList.remove('hidden');
     } else {
       categorias.classList.add('hidden');
-      depContainer.classList.add('hidden');
     }
 
     // Lógica para Persona Natural (Particular)
     if (tipo === 'particular') {
-      // OCULTAR Razón Social y RIF
       campoRazonSocial.classList.add('hidden');
       camposRIF.classList.add('hidden');
-
-      // MOSTRAR campos de persona natural
       camposParticular.classList.remove('hidden');
 
-      // Hacer campos de particular obligatorios
-      document.getElementById('particularNombres').setAttribute('required', 'required');
-      document.getElementById('particularApellidos').setAttribute('required', 'required');
-      document.getElementById('particularNacionalidad').setAttribute('required', 'required');
-      document.getElementById('particularCedula').setAttribute('required', 'required');
+      enableField(particularNombres, true);
+      enableField(particularApellidos, true);
+      enableField(particularNacionalidad, true);
+      enableField(particularCedula, true);
 
-      // Establecer nacionalidad por defecto "V" para venezolanos
-      document.getElementById('particularNacionalidad').value = 'V';
+      particularNacionalidad.value = 'V';
+      resetField(rifLetra);
+      resetField(rifNumero);
+      razonSocial.value = '';
 
-      // Quitar obligatoriedad de Razón Social y RIF
-      razonSocial.removeAttribute('required');
-      rifNumero.removeAttribute('required');
-
-      // Ocultar código MPPE
-      codigoMppe.removeAttribute('required');
-      codigoMppeLabel.classList.remove('required');
-
-      // Autocompletar nombre desde campos de particular
-      const nombres = document.getElementById('particularNombres').value.trim();
-      const apellidos = document.getElementById('particularApellidos').value.trim();
+      const nombres = particularNombres.value.trim();
+      const apellidos = particularApellidos.value.trim();
       if (nombres && apellidos) {
         razonSocial.value = `${nombres} ${apellidos}`;
       }
+    } else if (tipo === 'infocentro') {
+      // MOSTRAR Razón Social y RIF
+      campoRazonSocial.classList.remove('hidden');
+      camposRIF.classList.remove('hidden');
+
+      // OCULTAR campos de persona natural
+      camposParticular.classList.add('hidden');
+
+      // OCULTAR categorias y dependencia
+      categorias.classList.add('hidden');
+      depContainer.classList.add('hidden');
+
+      // OCULTAR código MPPE
+      campoCodigoMPPE.classList.add('hidden');
+
+      // MOSTRAR código infocentro
+      campoCodigoInfocentro.classList.remove('hidden');
+
+      // Setear RIF fijo
+      rifLetra.value = 'G';
+      rifNumero.value = '20007728-0';
+      rifLetra.setAttribute('readonly', 'readonly');
+      rifNumero.setAttribute('readonly', 'readonly');
+      rifLetra.style.pointerEvents = 'none';
+      rifLetra.style.opacity = '0.6';
+
+      // Hacer campos obligatorios
+      razonSocial.setAttribute('required', 'required');
+      rifNumero.setAttribute('required', 'required');
+      codigoInfocentro.setAttribute('required', 'required');
+
+      enableField(codigoInfocentro, true);
+      codigoMppeLabel.classList.remove('required');
     } else {
       // MOSTRAR Razón Social y RIF para instituciones
       campoRazonSocial.classList.remove('hidden');
@@ -744,11 +830,19 @@
       // Hacer Razón Social y RIF obligatorios
       razonSocial.setAttribute('required', 'required');
       rifNumero.setAttribute('required', 'required');
+
+      // OCULTAR código infocentro
+      campoCodigoInfocentro.classList.add('hidden');
+      codigoInfocentro.removeAttribute('required');
+
+      // Quitar readonly de RIF
+      rifLetra.removeAttribute('readonly');
+      rifNumero.removeAttribute('readonly');
     }
 
-    const campoCodigoMPPE = document.getElementById('campoCodigoMPPE');
-
     if (tipo === 'educativa') {
+      enableField(naturaleza, true);
+      enableField(subcategoria, true);
       rifLetra.value = 'G';
       rifNumero.value = '20000009-0';
       rifLetra.style.pointerEvents = 'none';
@@ -758,7 +852,23 @@
       codigoMppeLabel.classList.add('required');
       campoCodigoMPPE.classList.remove('hidden');
       depContainer.classList.remove('hidden');
-    } else {
+    } else if (tipo === 'otra') {
+      enableField(naturaleza, true);
+      enableField(subcategoria, true);
+      if (tipo !== 'infocentro') {
+        rifLetra.style.pointerEvents = '';
+        rifLetra.style.opacity = '';
+        rifNumero.removeAttribute('readonly');
+        codigoMppe.removeAttribute('required');
+        codigoMppeLabel.classList.remove('required');
+        campoCodigoMPPE.classList.add('hidden');
+
+        if (naturaleza === 'publica') rifLetra.value = 'G';
+        else if (naturaleza === 'privada') rifLetra.value = 'J';
+
+        if (rifNumero.value === '20000009-0') rifNumero.value = '';
+      }
+    } else if (tipo !== 'infocentro') {
       rifLetra.style.pointerEvents = '';
       rifLetra.style.opacity = '';
       rifNumero.removeAttribute('readonly');
@@ -772,9 +882,6 @@
         rifLetra.value = 'G';
       } else if (tipo === 'privada') {
         rifLetra.value = 'J';
-      } else if (tipo === 'otra') {
-        if (naturaleza === 'publica') rifLetra.value = 'G';
-        else if (naturaleza === 'privada') rifLetra.value = 'J';
       }
 
       if (rifNumero.value === '20000009-0') rifNumero.value = '';
@@ -996,6 +1103,12 @@ cedulaInput.addEventListener('input', function(e) {
        e.target.style.borderColor = isValid ? '' : '#ef4444';
      });
 
+     document.getElementById('codigoInfocentro').addEventListener('input', function(e) {
+       var value = e.target.value.toUpperCase();
+       var isValid = /^[A-Z0-9]{1,5}$/.test(value);
+       e.target.style.borderColor = isValid ? '' : '#ef4444';
+     });
+
     // Validacion al enviar
     document.getElementById('registroForm').addEventListener('submit', function(e) {
       limpiarErrorInline();
@@ -1023,6 +1136,25 @@ cedulaInput.addEventListener('input', function(e) {
           mostrarErrorInline('La cédula debe tener entre 7 y 10 dígitos.');
           if (currentSection !== 1) irSeccion(1);
           document.getElementById('particularCedula').focus();
+          return;
+        }
+      } else if (tipoInstitucion === 'infocentro') {
+        // Validar campos para infocentro
+        const nombre = document.getElementById('razonSocial').value.trim();
+        const codigoInfocentroVal = document.getElementById('codigoInfocentro').value.trim();
+
+        if (!nombre || !codigoInfocentroVal) {
+          e.preventDefault();
+          mostrarErrorInline('Debe completar la Razón Social y el Código Infocentro.');
+          if (currentSection !== 1) irSeccion(1);
+          return;
+        }
+
+        if (codigoInfocentroVal.length < 1 || codigoInfocentroVal.length > 5 || !/^[A-Z0-9]+$/.test(codigoInfocentroVal)) {
+          e.preventDefault();
+          mostrarErrorInline('El Código Infocentro debe ser alfanumérico y tener máximo 5 caracteres.');
+          if (currentSection !== 1) irSeccion(1);
+          document.getElementById('codigoInfocentro').focus();
           return;
         }
       } else {

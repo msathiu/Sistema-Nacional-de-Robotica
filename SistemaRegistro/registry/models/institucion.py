@@ -30,6 +30,7 @@ class Institucion(models.Model):
         ("privada", "Privada"),
         ("otra", "Otras Instituciones"),
         ("particular", "Particular (Persona Natural)"),
+        ("infocentro", "Infocentro"),
     ]
 
     NATURALEZA_CHOICES = [
@@ -89,6 +90,12 @@ class Institucion(models.Model):
     categoria = models.CharField(max_length=50, null=True, blank=True)
     institucion_procedencia = models.CharField(max_length=120, null=True, blank=True)
     codigo_mppe = models.CharField(max_length=30, null=True, blank=True)
+    codigo_infocentro = models.CharField(
+        max_length=5,
+        null=True,
+        blank=True,
+        help_text="Código alfanumérico de máximo 5 caracteres para Infocentros",
+    )
     estado = models.ForeignKey(Estado, on_delete=models.PROTECT)
     municipio = models.ForeignKey(Municipio, on_delete=models.PROTECT)
     parroquia = models.ForeignKey(Parroquia, on_delete=models.PROTECT)
@@ -136,6 +143,18 @@ class Institucion(models.Model):
                 condition=models.Q(eliminado=False)
                 & models.Q(tipo_institucion__in=["publica", "privada", "otra"]),
                 name="unique_rif_ubicacion_regulares",
+            ),
+            models.UniqueConstraint(
+                fields=["codigo_infocentro"],
+                condition=models.Q(eliminado=False)
+                & models.Q(tipo_institucion="infocentro"),
+                name="unique_codigo_infocentro_infocentros",
+            ),
+            models.UniqueConstraint(
+                fields=["estado", "municipio", "parroquia"],
+                condition=models.Q(eliminado=False)
+                & models.Q(tipo_institucion="infocentro"),
+                name="unique_ubicacion_infocentros",
             ),
             models.UniqueConstraint(
                 fields=["particular_cedula"],
@@ -221,6 +240,13 @@ class Institucion(models.Model):
 
         if self.codigo_mppe and isinstance(self.codigo_mppe, str):
             self.codigo_mppe = self.codigo_mppe.strip().upper()
+
+        # Establecer valores fijos para RIF cuando es Infocentro
+        if self.tipo_institucion == "infocentro":
+            self.rif = "G-20007728-0"
+            # Normalizar código infocentro si existe
+            if self.codigo_infocentro and isinstance(self.codigo_infocentro, str):
+                self.codigo_infocentro = self.codigo_infocentro.strip().upper()
 
         # Generación de Código Temporal para nuevos registros
         if not self.codigo:

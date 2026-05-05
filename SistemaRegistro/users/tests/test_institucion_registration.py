@@ -219,7 +219,44 @@ class InstitucionRegistrationFormTests(TestCase):
         self.assertIn("ya registrada", str(form.errors))
 
     # ============================================================
-    # TEST 6: VALIDACIÓN - PASSWORD DÉBIL (Sin mayúscula)
+    # TEST 6: VALIDACIÓN - INFOCENTRO REQUIERE CÓDIGO
+    # ============================================================
+    def test_infocentro_requiere_codigo_y_ubicacion_unica(self):
+        """Validación: Infocentro requiere código y no se duplica por ubicación"""
+        data = self.get_valid_form_data(tipo="infocentro")
+        data["codigo_infocentro"] = "AB123"
+        form = InstitucionRegistrationForm(data)
+
+        self.assertTrue(form.is_valid(), msg=form.errors)
+        self.assertEqual(form.cleaned_data["codigo_infocentro"], "AB123")
+
+    def test_infocentro_ubicacion_duplicada_rechazado(self):
+        """Validación: no se permiten dos Infocentros en la misma ubicación"""
+        Institucion.objects.create(
+            nombre="Infocentro Recinto",
+            email="infocentro1@test.com",
+            estado=self.estado,
+            municipio=self.municipio,
+            parroquia=self.parroquia,
+            tipo_institucion="infocentro",
+            rif="G-20007728-0",
+            codigo_infocentro="AB123",
+            telefono="02125551234",
+        )
+
+        data = self.get_valid_form_data(tipo="infocentro")
+        data["codigo_infocentro"] = "XY999"
+        data["email"] = "infocentro2@test.com"
+        form = InstitucionRegistrationForm(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Ya existe un Infocentro registrado en esta ubicación",
+            str(form.non_field_errors()),
+        )
+
+    # ============================================================
+    # TEST 7: VALIDACIÓN - PASSWORD DÉBIL (Sin mayúscula)
     # ============================================================
     def test_password_sin_mayuscula_rechazado(self):
         """Validación: password sin mayúscula (nueva validación fuerte)"""
@@ -610,6 +647,29 @@ class InstitucionServiceTests(TestCase):
         self.assertIsNotNone(institucion.rif)
         self.assertTrue(institucion.rif.startswith("J-"))
         self.assertIn("-", institucion.rif)
+
+    def test_servicio_crea_infocentro_con_rif_fijo_y_codigo(self):
+        """InstitutionService: crea un Infocentro con RIF fijo y código preserve"""
+        data = {
+            "tipo_institucion": "infocentro",
+            "nombre": "Infocentro Servicio",
+            "email": "infocentro@test.com",
+            "estado": self.estado.id,
+            "municipio": self.municipio.id,
+            "parroquia": self.parroquia.id,
+            "direccion": "Avenida Infocentro 1",
+            "codigo_infocentro": "AB123",
+            "codigo_area": "0251",
+            "numero_telefono": "4445555",
+            "password": "ServicePass123!",
+        }
+
+        institucion = InstitutionService.crear_institucion_con_usuario(
+            data=data, es_central=True
+        )
+
+        self.assertEqual(institucion.rif, "G-20007728-0")
+        self.assertEqual(institucion.codigo_infocentro, "AB123")
 
     # ============================================================
     # TEST 23: Servicio rechaza duplicidad
