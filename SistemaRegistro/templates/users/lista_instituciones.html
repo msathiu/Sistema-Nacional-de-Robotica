@@ -81,6 +81,7 @@
                         <option value="publica">Pública</option>
                         <option value="privada">Privada</option>
                         <option value="otra">Otras</option>
+                        <option value="infocentro">Infocentro</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -143,7 +144,7 @@
                             </td>
                             <td data-sort-value="{{ item.institucion.tipo_institucion }}">
                                 <span class="badge rounded-pill px-3 py-2 small fw-bold"
-                                      style="background: {% if item.institucion.tipo_institucion == 'particular' %}#8b5cf6{% elif item.institucion.tipo_institucion == 'educativa' %}#3b82f6{% elif item.institucion.tipo_institucion == 'publica' %}#10b981{% elif item.institucion.tipo_institucion == 'privada' %}#f59e0b{% else %}#6b7280{% endif %}; color: white;">
+                                      style="background: {% if item.institucion.tipo_institucion == 'particular' %}#8b5cf6{% elif item.institucion.tipo_institucion == 'educativa' %}#3b82f6{% elif item.institucion.tipo_institucion == 'publica' %}#10b981{% elif item.institucion.tipo_institucion == 'privada' %}#f59e0b{% elif item.institucion.tipo_institucion == 'infocentro' %}#6366f1{% else %}#6b7280{% endif %}; color: white;">
                                     {{ item.institucion.get_tipo_institucion_display }}
                                 </span>
                                 <span class="d-none tipo-hidden">{{ item.institucion.tipo_institucion }}</span>
@@ -615,7 +616,25 @@
             const tipoTexto = data.tipo_institucion || '';
             mostrarBloque('bloqueSubtipo', !!tipoTexto);
             if (tipoTexto) {
-                document.getElementById('detTipoInstitucion').textContent = tipoTexto;
+                const tipoBadge = document.getElementById('detTipoInstitucion');
+                tipoBadge.textContent = tipoTexto;
+                tipoBadge.style.background = '#6b7280';
+                tipoBadge.style.color = 'white';
+
+                const tipoKey = tipoTexto.toLowerCase().trim();
+                if (tipoKey === 'particular') {
+                    tipoBadge.style.background = '#8b5cf6';
+                } else if (tipoKey === 'educativa') {
+                    tipoBadge.style.background = '#3b82f6';
+                } else if (tipoKey === 'publica') {
+                    tipoBadge.style.background = '#10b981';
+                } else if (tipoKey === 'privada') {
+                    tipoBadge.style.background = '#f59e0b';
+                } else if (tipoKey === 'otra') {
+                    tipoBadge.style.background = '#ef4444';
+                } else if (tipoKey === 'infocentro') {
+                    tipoBadge.style.background = '#6366f1';
+                }
             }
 
             // Mostrar federado si existe

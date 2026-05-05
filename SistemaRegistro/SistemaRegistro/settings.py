@@ -347,3 +347,12 @@ if DEBUG:
             "LOCATION": "unique-snowflake",
         }
     }
+    # Configuración de sesiones para usar cache en desarrollo con Docker
+REST_FRAMEWORK = {  # Configuración de throttling para proteger la API en desarrollo y producción
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/hour",  # Ajustar según necesidad
+    },
+}
