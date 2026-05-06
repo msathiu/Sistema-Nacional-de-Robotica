@@ -1523,6 +1523,20 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                         f"Aparece bajo el nombre: '{duplicado.nombre}'."
                     )
 
+        # Validación de dependencia obligatoria para instituciones públicas de tipo "otra"
+        if tipo_institucion == "otra" and cleaned_data.get("naturaleza") == "publica":
+            if not cleaned_data.get("dependencia_existente") and not cleaned_data.get(
+                "nueva_dependencia"
+            ):
+                self.add_error(
+                    "dependencia_existente",
+                    "La dependencia es obligatoria para instituciones públicas de tipo 'Otras Instituciones'.",
+                )
+                self.add_error(
+                    "nueva_dependencia",
+                    "La dependencia es obligatoria para instituciones públicas de tipo 'Otras Instituciones'.",
+                )
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -1562,6 +1576,19 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
         instance.telefono_codigo = self.cleaned_data.get("codigo_area")
         instance.telefono_numero = self.cleaned_data.get("numero_telefono")
         instance.telefono = f"{instance.telefono_codigo}{instance.telefono_numero}"
+
+        # Manejar dependencia para instituciones públicas de tipo "otra"
+        dependencia_existente = self.cleaned_data.get("dependencia_existente")
+        nueva_dependencia = self.cleaned_data.get("nueva_dependencia")
+        if nueva_dependencia:
+            instance.dependencia = nueva_dependencia
+            instance.dependencia_rel = None
+        elif dependencia_existente:
+            instance.dependencia_rel = dependencia_existente
+            instance.dependencia = dependencia_existente.nombre
+        else:
+            instance.dependencia = None
+            instance.dependencia_rel = None
 
         if commit:
             instance.save()

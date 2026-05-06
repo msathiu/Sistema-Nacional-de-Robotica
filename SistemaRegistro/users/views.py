@@ -22,8 +22,8 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic.edit import UpdateView
 from registry.models import (
-    AsistenciaEvento,
     CODIGO_AREA_CHOICES,
+    AsistenciaEvento,
     Dependencia,
     Estado,
     EstadoEvento,
@@ -1820,9 +1820,9 @@ def crear_evento(request):
             # Validar que el club_id sea válido y esté en clubes_disponibles
             if clubes_disponibles.filter(id=club_id_get).exists():
                 valores_iniciales["club_organizador"] = club_id_get
-                valores_iniciales[
-                    "tipo_evento"
-                ] = "club"  # Si se preselecciona un club, el tipo de evento es "club"
+                valores_iniciales["tipo_evento"] = (
+                    "club"  # Si se preselecciona un club, el tipo de evento es "club"
+                )
         except ValueError:
             pass  # Ignorar si club_id_get no es un entero válido
 
@@ -3155,6 +3155,7 @@ def mapa_interactivo(request):
 def api_mapa_datos(request):
     """Datos por estado para una capa del mapa. Soporta drill-down a municipio y parroquia."""
     from django.core.cache import cache
+
     from .services.mapa_service import (
         _slug,
         datos_por_estado,
@@ -3201,6 +3202,7 @@ def api_mapa_datos(request):
 def api_mapa_resumen(request):
     """Resumen de todas las capas por estado para el tooltip del mapa."""
     from django.core.cache import cache
+
     from .services.mapa_service import resumen_todas_capas
 
     solo_activas = request.GET.get("activas", "1") == "1"
@@ -4166,6 +4168,8 @@ def detalle_institucion_api(request, institucion_id):
             if hasattr(institucion, "get_naturaleza_display")
             else (getattr(institucion, "naturaleza", None) or "N/A"),
             "codigo_mppe": getattr(institucion, "codigo_mppe", None) or "N/A",
+            "codigo_infocentro": getattr(institucion, "codigo_infocentro", None)
+            or "N/A",
             "dependencia": institucion.dependencia or "N/A",
             "dependencia_rel": dependencia_rel_nombre or "N/A",
             # Nuevos campos agregados

@@ -288,6 +288,10 @@
                                 <label class="text-muted small d-block">Dependencia</label>
                                 <span id="detDependencia" class="text-dark"></span>
                             </div>
+                            <div id="bloqueCodigoInfocentro" class="col-md-6" style="display: none;">
+                                <label class="text-muted small d-block">Código Infocentro</label>
+                                <span id="detCodigoInfocentro" class="text-dark font-monospace"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -699,6 +703,14 @@
             mostrarBloque('bloqueDependencia', !esParticular && !!dependencia);
             if (dependencia) {
                 document.getElementById('detDependencia').textContent = dependencia;
+            }
+
+            // Mostrar Código Infocentro solo si es infocentro
+            const codigoInfocentro = data.codigo_infocentro || '';
+            const esInfocentro = tipoInstitucion === 'infocentro';
+            mostrarBloque('bloqueCodigoInfocentro', esInfocentro && !!codigoInfocentro);
+            if (esInfocentro && codigoInfocentro) {
+                document.getElementById('detCodigoInfocentro').textContent = codigoInfocentro;
             }
 
             // ===== BLOQUE 3: UBICACIÓN GEOGRÁFICA =====

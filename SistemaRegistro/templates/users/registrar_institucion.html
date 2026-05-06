@@ -676,9 +676,10 @@
 
   function aplicarTipoInstitucion() {
     const tipo = document.getElementById('tipoInstitucion').value;
+    const naturaleza = document.getElementById('naturaleza').value;
     const categorias = document.getElementById('categoriasContainer');
     const depContainer = document.getElementById('dependenciaContainer');
-    const naturaleza = document.getElementById('naturaleza');
+    const naturalezaField = document.getElementById('naturaleza');
     const subcategoria = document.getElementById('subcategoria');
 
     const rifLetra = document.getElementById('rifLetra');
@@ -734,7 +735,7 @@
 
     // Reset campos específicos por tipo
     if (tipo !== 'educativa' && tipo !== 'otra') {
-      resetField(naturaleza);
+      resetField(naturalezaField);
       resetField(subcategoria);
     }
     if (tipo !== 'educativa') {
@@ -754,6 +755,13 @@
       categorias.classList.remove('hidden');
     } else {
       categorias.classList.add('hidden');
+    }
+
+    // Lógica para mostrar dependencia: solo para "otra" + "publica"
+    if (tipo === 'otra' && naturaleza === 'publica') {
+      depContainer.classList.remove('hidden');
+    } else {
+      depContainer.classList.add('hidden');
     }
 
     // Lógica para Persona Natural (Particular)
@@ -841,7 +849,7 @@
     }
 
     if (tipo === 'educativa') {
-      enableField(naturaleza, true);
+      enableField(naturalezaField, true);
       enableField(subcategoria, true);
       rifLetra.value = 'G';
       rifNumero.value = '20000009-0';
@@ -851,23 +859,26 @@
       codigoMppe.setAttribute('required', 'required');
       codigoMppeLabel.classList.add('required');
       campoCodigoMPPE.classList.remove('hidden');
-      depContainer.classList.remove('hidden');
     } else if (tipo === 'otra') {
-      enableField(naturaleza, true);
+      enableField(naturalezaField, true);
       enableField(subcategoria, true);
-      if (tipo !== 'infocentro') {
-        rifLetra.style.pointerEvents = '';
-        rifLetra.style.opacity = '';
-        rifNumero.removeAttribute('readonly');
-        codigoMppe.removeAttribute('required');
-        codigoMppeLabel.classList.remove('required');
-        campoCodigoMPPE.classList.add('hidden');
+      
+      // Habilitar RIF editable para "otra"
+      rifLetra.style.pointerEvents = '';
+      rifLetra.style.opacity = '';
+      rifNumero.removeAttribute('readonly');
+      codigoMppe.removeAttribute('required');
+      codigoMppeLabel.classList.remove('required');
+      campoCodigoMPPE.classList.add('hidden');
 
-        if (naturaleza === 'publica') rifLetra.value = 'G';
-        else if (naturaleza === 'privada') rifLetra.value = 'J';
-
-        if (rifNumero.value === '20000009-0') rifNumero.value = '';
+      // Cambiar RIF dinámicamente según naturaleza
+      if (naturaleza === 'publica') {
+        rifLetra.value = 'G';
+      } else if (naturaleza === 'privada') {
+        rifLetra.value = 'J';
       }
+
+      if (rifNumero.value === '20000009-0') rifNumero.value = '';
     } else if (tipo !== 'infocentro') {
       rifLetra.style.pointerEvents = '';
       rifLetra.style.opacity = '';
@@ -885,14 +896,6 @@
       }
 
       if (rifNumero.value === '20000009-0') rifNumero.value = '';
-    }
-
-    if (tipo === 'otra' && naturaleza === 'publica') {
-      depContainer.classList.remove('hidden');
-    } else {
-      depContainer.classList.add('hidden');
-      $('#dependenciaSelect').val('').trigger('change');
-      document.getElementById('nuevaDependencia').value = '';
     }
 
     cargarSubcategorias();

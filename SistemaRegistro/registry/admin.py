@@ -1,6 +1,5 @@
 import openpyxl
 from django.contrib import admin
-from django.contrib.admin.exceptions import NotRegistered
 from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl.styles import Font, PatternFill
@@ -61,36 +60,6 @@ class ParroquiaAdmin(admin.ModelAdmin):
     @admin.display(description="Estado", ordering="municipio__estado__nombre")
     def get_estado(self, obj):
         return obj.municipio.estado.nombre
-
-
-@admin.register(Institucion)
-class InstitucionAdmin(admin.ModelAdmin):
-    # Campos que se verán en la tabla principal (lista)
-    list_display = ("codigo", "nombre", "estado", "email", "activa")
-
-    # Permite buscar por nombre o código
-    search_fields = ("nombre", "codigo", "email")
-
-    # Filtros laterales
-    list_filter = ("estado", "activa", "federado")
-
-    # ESTA ES LA CLAVE:
-    # Permite ver el campo en el formulario de edición aunque sea editable=False
-    readonly_fields = ("codigo", "fecha_registro")
-
-    # Organiza el formulario por secciones
-    fieldsets = (
-        ("Identificación del Sistema", {"fields": ("codigo",)}),
-        (
-            "Información General",
-            {"fields": ("nombre", "rif", "federado", "email", "telefono")},
-        ),
-        (
-            "Ubicación Geográfica",
-            {"fields": ("estado", "municipio", "parroquia", "direccion")},
-        ),
-        ("Estado de la Cuenta", {"fields": ("activa", "eliminado", "fecha_registro")}),
-    )
 
 
 @admin.register(Participante)
@@ -196,15 +165,6 @@ def aprobar_registros(modeladmin, request, queryset):
     )
 
 
-# 2. Intentamos desregistrar para evitar el error AlreadyRegistered
-try:
-    admin.site.unregister(Institucion)
-except NotRegistered:
-    pass
-
-# 3. Registramos formalmente
-
-
 @admin.register(Institucion)
 class InstitucionAdmin(admin.ModelAdmin):
     list_display = (
@@ -255,6 +215,7 @@ class InstitucionAdmin(admin.ModelAdmin):
                     "nombre",
                     "rif",
                     "codigo_mppe",
+                    "codigo_infocentro",
                     "federado",
                     "email",
                     "telefono",
