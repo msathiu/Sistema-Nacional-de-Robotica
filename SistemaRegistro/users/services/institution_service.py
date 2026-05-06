@@ -104,6 +104,13 @@ class InstitutionService:
                     )
                 rif_completo = rif_formateado
 
+            # Para tipos con RIF fijo
+            tipo_institucion = data.get("tipo_institucion")
+            if tipo_institucion == "educativa":
+                rif_completo = "G-20000009-0"
+            elif tipo_institucion == "infocentro":
+                rif_completo = "G-20007728-0"
+
             particular_cedula = data.get("particular_cedula")
             if data.get("tipo_institucion") == "particular" and particular_cedula:
                 particular_cedula = StringUtils.clean_numeric_id(particular_cedula)

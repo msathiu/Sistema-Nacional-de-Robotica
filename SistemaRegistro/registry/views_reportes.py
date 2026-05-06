@@ -491,6 +491,7 @@ def exportar_instituciones_excel(request):
         "Categoría",
         "Dependencia",
         "Código MPPE",
+        "Código Infocentro",
         "Institución Procedencia",
         # ── Ubicación geográfica ──────────────────────────────────────────────────
         "Estado",
@@ -544,6 +545,9 @@ def exportar_instituciones_excel(request):
         codigo_mppe_value = (
             inst.codigo_mppe if inst.tipo_institucion == "educativa" else ""
         )
+        codigo_infocentro_value = (
+            inst.codigo_infocentro if inst.tipo_institucion == "infocentro" else ""
+        )
         institucion_procedencia_value = (
             inst.institucion_procedencia
             if inst.tipo_institucion != "particular"
@@ -563,6 +567,7 @@ def exportar_instituciones_excel(request):
                 categoria_value,
                 dependencia_valor,
                 codigo_mppe_value,
+                codigo_infocentro_value,
                 institucion_procedencia_value,
                 # Ubicación geográfica
                 str(inst.estado) if inst.estado else "",

@@ -105,7 +105,6 @@ from registry.services.participante_service import (
     ParticipanteService as RegistroParticipanteService,
 )
 
-# Importar configuración de formulario
 from .configs.institucion_form_config import get_form_config
 from .services.evento_service import EventoService
 from .services.grupo_service import GrupoService
@@ -172,11 +171,13 @@ def get_password_rules():
 
 def form_config_api(request, tipo):
     """
-    API endpoint para obtener la configuración de campos del formulario
+    API endpoint para obtener la configuración completa de campos del formulario
     según el tipo de institución seleccionada.
 
-    Esto permite que el frontend JS aplique la lógica de visibilidad de campos
-    basándose en configuración del backend, no en lógica hardcodeada.
+    Retorna configuración para control de visibilidad, campos requeridos,
+    valores por defecto, configuración de RIF, subcategorías y dependencias.
+    Esto permite que el frontend JS aplique la lógica basándose en
+    configuración del backend, sin lógica hardcodeada.
     """
     config = get_form_config(tipo)
     return JsonResponse(config)
@@ -1410,14 +1411,16 @@ def registrar_institucion(request):
         "es_federacion": es_federacion,
         "es_central": es_central,
         "es_regional": es_regional,
-        "es_fed_central": es_central,  # Nueva variable para diseño especial
+        "es_fed_central": es_central,
         "estado_fijo_id": perfil_admin.estado.id
         if es_regional and perfil_admin.estado
         else None,
-        "password_rules": get_password_rules(),  # Reglas de validación sincronizadas con backend
+        "password_rules": get_password_rules(),
     }
 
     return render(request, "users/registrar_institucion.html", context)
+
+    # POST handling...
 
 
 @login_required

@@ -1325,6 +1325,19 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
                 cleaned_data["particular_cedula"] = cedula
         else:
             rif_numero = cleaned_data.get("rif_numero")
+            if not rif_numero and tipo_institucion == "educativa":
+                cleaned_data["rif_letra"] = "G"
+                cleaned_data["rif_numero"] = StringUtils.normalize_rif_number(
+                    "20000009-0"
+                )
+                rif_numero = cleaned_data["rif_numero"]
+            elif not rif_numero and tipo_institucion == "infocentro":
+                cleaned_data["rif_letra"] = "G"
+                cleaned_data["rif_numero"] = StringUtils.normalize_rif_number(
+                    "20007728-0"
+                )
+                rif_numero = cleaned_data["rif_numero"]
+
             if not rif_numero:
                 self.add_error("rif_numero", "El RIF es obligatorio.")
             elif len(rif_numero) != 9:
@@ -1572,6 +1585,10 @@ class InstitucionRegistrationForm(LocationFormMixin, forms.ModelForm):
             if tipo_institucion == "infocentro":
                 instance.rif = "G-20007728-0"
                 instance.codigo_infocentro = self.cleaned_data.get("codigo_infocentro")
+
+            # Para educativa, establecer RIF fijo
+            if tipo_institucion == "educativa":
+                instance.rif = "G-20000009-0"
 
         instance.telefono_codigo = self.cleaned_data.get("codigo_area")
         instance.telefono_numero = self.cleaned_data.get("numero_telefono")
