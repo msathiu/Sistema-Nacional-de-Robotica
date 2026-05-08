@@ -201,6 +201,11 @@
   .section-card.active { border-color: var(--secondary-blue); }
   .section-header { display: flex; align-items: center; margin-bottom: 1rem; }
   .section-number { background: var(--secondary-blue); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: .75rem; }
+  .section-help {
+    color: #475569;
+    font-size: .92rem;
+    margin: .2rem 0 0;
+  }
   .required::after { content: " *"; color: var(--error-color); }
   .form-control, .form-select, .select2-container--default .select2-selection--single { border: 2px solid var(--border-color); border-radius: 10px; min-height: 44px; }
   .validation-text { color: var(--error-color); font-size: .85rem; margin-top: .25rem; }
@@ -288,6 +293,28 @@
     transition: all .25s ease;
   }
   .btn-back:hover { border-color: var(--secondary-blue); background: #eff6ff; color: #1d4ed8; transform: translateY(-1px); }
+  .btn-particular {
+    min-height: 44px;
+    border: 2px solid #0ea5e9;
+    color: #075985;
+    background: #f0f9ff;
+    border-radius: 10px;
+    font-weight: 700;
+    transition: all .2s ease;
+  }
+  .btn-particular:hover {
+    border-color: var(--secondary-blue);
+    background: #e0f2fe;
+    color: #0b2c6d;
+    transform: translateY(-1px);
+  }
+  .btn-particular.active,
+  .btn-particular[aria-pressed="true"] {
+    border-color: var(--primary-blue);
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(0, 82, 180, 0.22);
+  }
   .actions-stack { gap: .75rem; }
   .actions-stack .btn-submit { width: auto; }
   @media (max-width: 768px) {
@@ -325,22 +352,35 @@
       <div class="section-card active" id="section1">
         <div class="section-header">
           <div class="section-number">1</div>
-          <div><h5 class="mb-0">Datos de Identificación Institucional</h5></div>
+          <div>
+            <h5 class="mb-0">Datos de Identificación Institucional</h5>
+            <p class="section-help">Para persona jurídica, seleccione el tipo de institución. Para persona natural, use el botón Registro particular.</p>
+          </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-8">
-            <label class="form-label required">Tipo de Institución/Particular</label>
-            <select class="form-select" id="tipoInstitucion" name="tipo_institucion" required>
-              <option value="">Seleccione el tipo de institución/Particular</option>
+            <label class="form-label required">Tipo Institución</label>
+            <input type="hidden" id="tipoInstitucion" name="tipo_institucion" value="{{ form.tipo_institucion.value|default:'' }}">
+            <select class="form-select" id="tipoInstitucionSelector" required>
+              <option value="" {% if not form.tipo_institucion.value or form.tipo_institucion.value == 'particular' %}selected{% endif %}>Seleccione el tipo de institución</option>
               <option value="educativa" {% if form.tipo_institucion.value == 'educativa' %}selected{% endif %}>Institución Educativa (Adscrita a MPPE)</option>
               <option value="publica" {% if form.tipo_institucion.value == 'publica' %}selected{% endif %}>Pública</option>
               <option value="privada" {% if form.tipo_institucion.value == 'privada' %}selected{% endif %}>Privada</option>
               <option value="otra" {% if form.tipo_institucion.value == 'otra' %}selected{% endif %}>Otras Instituciones</option>
               <option value="infocentro" {% if form.tipo_institucion.value == 'infocentro' %}selected{% endif %}>Infocentro</option>
-              <option value="particular" {% if form.tipo_institucion.value == 'particular' %}selected{% endif %}>Particular (Persona Natural)</option>
             </select>
             {% if form.tipo_institucion.errors %}<div class="validation-text">{{ form.tipo_institucion.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button
+              type="button"
+              id="btnRegistroParticular"
+              class="btn btn-particular w-100 {% if form.tipo_institucion.value == 'particular' %}active{% endif %}"
+              aria-pressed="{% if form.tipo_institucion.value == 'particular' %}true{% else %}false{% endif %}"
+            >
+              <i class="bi bi-person-badge me-1"></i> Registro particular
+            </button>
           </div>
         </div>
 
@@ -836,8 +876,44 @@
      actualizarPreviewDependencia();
    }
 
+    function actualizarBotonParticular() {
+      const tipoSelect = document.getElementById('tipoInstitucion');
+      const tipoSelector = document.getElementById('tipoInstitucionSelector');
+      const btnParticular = document.getElementById('btnRegistroParticular');
+      if (!tipoSelect || !btnParticular) return;
+
+      const esParticular = tipoSelect.value === 'particular';
+      btnParticular.classList.toggle('active', esParticular);
+      btnParticular.setAttribute('aria-pressed', esParticular ? 'true' : 'false');
+
+      if (tipoSelector) {
+        tipoSelector.required = !esParticular;
+        if (esParticular) tipoSelector.value = '';
+      }
+    }
+
+    function seleccionarTipoInstitucionDesdeSelector() {
+      const tipoSelect = document.getElementById('tipoInstitucion');
+      const tipoSelector = document.getElementById('tipoInstitucionSelector');
+      if (!tipoSelect || !tipoSelector) return;
+
+      tipoSelect.value = tipoSelector.value;
+      aplicarTipoInstitucion();
+    }
+
+    function seleccionarRegistroParticular() {
+      const tipoSelect = document.getElementById('tipoInstitucion');
+      const tipoSelector = document.getElementById('tipoInstitucionSelector');
+      if (!tipoSelect) return;
+
+      tipoSelect.value = 'particular';
+      if (tipoSelector) tipoSelector.value = '';
+      aplicarTipoInstitucion();
+    }
+
     function aplicarTipoInstitucion() {
       const tipo = document.getElementById('tipoInstitucion').value;
+      actualizarBotonParticular();
       if (!tipo) { resetFormToDefault(); return; }
 
       fetch(`/api/form-config/${tipo}/`)
@@ -850,14 +926,14 @@
           console.error('Error cargando configuración:', err);
           // Fallback: ocultar todos los campos exceptoselector
           const configDefault = {
-            visible_fields: [], 
+            visible_fields: [],
             hidden_fields: ['campoRazonSocial','camposRIF','categoriasContainer','dependenciaContainer','campoCodigoMPPE','campoCodigoInfocentro','camposParticular'],
-            required_fields: [], 
-            mostrar_categorias:false, 
-            mostrar_dependencia:false, 
-            mostrar_codigo_mppe:false, 
+            required_fields: [],
+            mostrar_categorias:false,
+            mostrar_dependencia:false,
+            mostrar_codigo_mppe:false,
             mostrar_codigo_infocentro:false,
-            rif_config:{letra:'',fijo:false,numero_fijo:''}, 
+            rif_config:{letra:'',fijo:false,numero_fijo:''},
             default_values:{}
           };
           formConfig = configDefault;
@@ -874,6 +950,7 @@
       const rifNumero = document.getElementById('rifNumero');
       if (rifLetra) { rifLetra.disabled = false; rifLetra.style.opacity = ''; }
       if (rifNumero) rifNumero.disabled = false;
+      actualizarBotonParticular();
     }
 
    function cargarMunicipios() {
@@ -1060,7 +1137,8 @@
     });
 
     // Eventos de Formulario
-document.getElementById('tipoInstitucion').addEventListener('change', aplicarTipoInstitucion);
+document.getElementById('tipoInstitucionSelector').addEventListener('change', seleccionarTipoInstitucionDesdeSelector);
+document.getElementById('btnRegistroParticular').addEventListener('click', seleccionarRegistroParticular);
 document.getElementById('naturaleza').addEventListener('change', aplicarTipoInstitucion);
 
 // Validación cédula en tiempo real
